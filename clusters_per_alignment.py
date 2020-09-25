@@ -19,7 +19,7 @@ from pathlib import Path
 # Instantiate brain atlas and one
 brain_atlas = atlas.AllenAtlas(25)
 one = ONE()
-fig_path = Path('C:/Users/Mayo/Documents/PYTHON/alignment_figures/')
+fig_path = Path('/home/guido/Figures/Ephys/RepeatedSite')
 
 # Get all repeated sites and the associated probe insertions
 traj = one.alyx.rest('trajectories', 'list', provenance='Planned',
