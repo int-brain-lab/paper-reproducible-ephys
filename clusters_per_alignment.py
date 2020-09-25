@@ -8,6 +8,7 @@ the difference in the average euclidean distance between clusters for different 
 
 # import modules
 from oneibl.one import ONE
+from reproducible_ephys_paths import FIG_PATH
 from ibllib.pipes.ephys_alignment import EphysAlignment
 import numpy as np
 import matplotlib.pyplot as plt
@@ -19,7 +20,7 @@ from pathlib import Path
 # Instantiate brain atlas and one
 brain_atlas = atlas.AllenAtlas(25)
 one = ONE()
-fig_path = Path('/home/guido/Figures/Ephys/RepeatedSite')
+fig_path = Path(FIG_PATH)
 
 # Get all repeated sites and the associated probe insertions
 traj = one.alyx.rest('trajectories', 'list', provenance='Planned',
