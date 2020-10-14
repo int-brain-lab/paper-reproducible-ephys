@@ -23,7 +23,7 @@ probe_insertion = [t['probe_insertion'] for t in trajectories]
 depths = SITES_COORDINATES[:, 1] / 1e6
 _, depth_idx = np.unique(SITES_COORDINATES[:, 1], return_index=True)
 
-data_type = 'RMS AP'
+data_type = 'LFP Spectrum'
 # Gather all the data together
 is_aligned = []
 for ip, p in enumerate(probe_insertion):
@@ -97,14 +97,14 @@ for ip, p in enumerate(probe_insertion):
 
 
 # Now plot everything
-min_val, max_val = np.quantile(data_all, [0.1, 0.9])
+#min_val, max_val = np.quantile(data_all, [0.1, 0.9])
 
 fig = mlab.figure(bgcolor=(1, 1, 1))
-
+data_all[np.isinf(data_all)] = np.nan
 for iT in np.where(is_aligned)[0].tolist():
-    min_val, max_val = np.quantile(data_all[iT, :], [0.1, 0.9])
+    min_val, max_val = np.nanquantile(data_all[iT, :], [0.1, 0.9])
     mlab.plot3d(mlapdv_all[:, 1, iT], mlapdv_all[:, 2, iT], mlapdv_all[:, 0, iT],
-                data_all[iT, :], line_width=1, tube_radius=40, colormap='plasma',
+                data_all[iT, :], line_width=1, tube_radius=40, colormap='viridis',
                 vmin=min_val, vmax=max_val)
 
 # for iT in range(data_all.shape[0]):
