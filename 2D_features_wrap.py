@@ -24,6 +24,7 @@ if not credentials or credentials.invalid:
 drive_service = build('drive', 'v3', http=credentials.authorize(Http()))
 sheets = build('sheets', 'v4', http=credentials.authorize(Http()))
 
+# Get data from repeated site status googlesheet
 read_spreadsheetID = '1pRLFvyVgmIJfKSX4GqmmAFuNRTpU1NvMlYOijq7iNIA'
 read_spreadsheetRange = 'Sheet1'
 rows = sheets.spreadsheets().values().get(spreadsheetId=read_spreadsheetID,
@@ -31,6 +32,7 @@ rows = sheets.spreadsheets().values().get(spreadsheetId=read_spreadsheetID,
 data = pd.DataFrame(rows.get('values'))
 data = data.rename(columns=data.iloc[0]).drop(data.index[0]).reset_index(drop=True)
 
+# Find the sessions that have raw_ephys data and tracing
 idx_ephys = data['raw_ephys'] == 'TRUE'
 idx_tracing = data['tracing'] == 'TRUE'
 subjects = data['Subject'][idx_ephys & idx_tracing].values
@@ -40,7 +42,12 @@ probes = data['Probe'][idx_ephys & idx_tracing].values
 
 one = ONE()
 brain_atlas = atlas.AllenAtlas(25)
+
+# Sort insertions by distance from mean trajectory across all sites
 _, idx_sort = sort_repeated_site_by_distance(subjects, dates, probes, reference='mean', one=one,
                                              brain_atlas=brain_atlas)
+
+# Plot the features
+# TODO pass in the type of feature that you want to display
 plot_2D_features(subjects[idx_sort], dates[idx_sort], probes[idx_sort], one=one,
                  brain_atlas=brain_atlas)

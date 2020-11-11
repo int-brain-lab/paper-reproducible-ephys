@@ -19,13 +19,16 @@ chn_inds = np.load('C:/Users/Mayo/Downloads/FlatIron/churchlandlab/Subjects/CSHL
 
 
 def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None):
-    plot_type = 'psd'
+    plot_type = 'psd' #TODO this should be an argument
     one = one or ONE()
     brain_atlas = brain_atlas or atlas.AllenAtlas(25)
     r = regions_from_allen_csv()
     depths = SITES_COORDINATES[:, 1]
 
-    fig, axs = plt.subplots(1, len(subjects), constrained_layout=True, sharey=True)
+    if len(subjects) < 20:
+        fig, axs = plt.subplots(1, len(subjects), constrained_layout=False, sharey=True)
+    else:
+        fig, axs = plt.subplots(2, 20, constrained_layout=False, sharey=True)
     z_extent = []
 
     for iR, (subj, date, probe_label) in enumerate(zip(subjects, dates, probes)):
@@ -89,22 +92,25 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None):
         z_extent.append(z_min)
         z_max = np.max(z)
         z_extent.append(z_max)
-        ax = axs[iR]
+        if len(subjects) < 20:
+            ax = axs[iR]
+        else:
+            if iR < 20:
+                ax = axs[0][iR]
+            else:
+                ax = axs[1][np.mod(iR, 20)]
 
         if plot_type == 'psd':
-            x, vals = psd_data(ephys_path, one, eid)
-            y = z
-            vals = np.insert(vals, 0, np.full(vals.shape[0], np.nan), axis=1)
-            vals = np.append(vals, np.full((vals.shape[0], 1), np.nan), axis=1)
-            y = np.insert(y, 0, y[0] - np.abs(y[2] - y[0]))
-            y = np.append(y, y[-1] + np.abs(y[-3] - y[-1]))
-            im = NonUniformImage(ax, interpolation='nearest', extent=(0, 300, z_min, z_max),
-                                 cmap='viridis')
-            levels = np.nanquantile(vals, [0.1, 0.9])
-            im.set_clim(levels[0], levels[1])
-            im.set_data(x, y, vals.T)
-            ax.images.append(im)
-            ax.set_xlim(0, 300)
+            data = psd_data(ephys_path, one, eid)
+            bnk_x, bnk_y, bnk_data = arrange_channels2banks(data, z)
+            for x, y, dat in zip(bnk_x, bnk_y, bnk_data):
+                im = NonUniformImage(ax, interpolation='nearest', cmap='viridis')
+                levels = np.nanquantile(bnk_data[0], [0.1, 0.9])
+                im.set_clim(levels[0], levels[1])
+                im.set_data(x, y, dat.T)
+                ax.images.append(im)
+
+            ax.set_xlim(0, 4.5)
 
         elif plot_type == 'fr':
             _, y, vals = fr_data(alf_path, one, eid, depths)
@@ -116,7 +122,7 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None):
         for bound, col in zip(boundaries, colours):
             ax.hlines(bound, *ax.get_xlim(), linestyles='dashed', linewidth=3, colors=col/255)
 
-    for ax in axs:
+    for ax in np.ravel(axs):
         z_max = np.max(z_extent)
         z_min = np.min(z_extent)
         ax.set_ylim(z_min, z_max)
@@ -137,16 +143,16 @@ def psd_data(ephys_path, one, eid):
     lfp_power = lfp_spectrum['power'][:, chn_inds]
 
     # Define a frequency range of interest
-    freq_range = [0, 300]
+    freq_range = [0, 300] #TODO this should be an argument
     freq_idx = np.where((lfp_freq >= freq_range[0]) &
                         (lfp_freq < freq_range[1]))[0]
-    freqs = lfp_freq[freq_idx]
 
     # Limit data to freq range of interest and also convert to dB
     lfp_spectrum_data = 10 * np.log(lfp_power[freq_idx, :])
     lfp_spectrum_data[np.isinf(lfp_spectrum_data)] = np.nan
+    lfp_mean = np.mean(lfp_spectrum_data, axis=0)
 
-    return freqs, lfp_spectrum_data
+    return lfp_mean
 
 
 def fr_data(alf_path, one, eid, depths):
@@ -216,3 +222,31 @@ def get_brain_boundaries(brain_regions, z, r=None):
         colours.append(rgb)
 
     return boundaries, colours
+
+
+def arrange_channels2banks(data, y):
+    bnk_data = []
+    bnk_y = []
+    bnk_x = []
+    for iX, x in enumerate(np.unique(SITES_COORDINATES[:, 0])):
+        bnk_idx = np.where(SITES_COORDINATES[:, 0] == x)[0]
+        bnk_vals = data[bnk_idx]
+        bnk_vals = np.insert(bnk_vals, 0, np.nan)
+        bnk_vals = np.append(bnk_vals, np.nan)
+        bnk_vals = bnk_vals[:, np.newaxis].T
+        bnk_vals = np.insert(bnk_vals, 0, np.full(bnk_vals.shape[1], np.nan), axis=0)
+        bnk_vals = np.append(bnk_vals, np.full((1, bnk_vals.shape[1]), np.nan), axis=0)
+        bnk_data.append(bnk_vals)
+
+        y_pos = y[bnk_idx]
+        y_pos = np.insert(y_pos, 0, y_pos[0] - np.abs(y_pos[2] - y_pos[0]))
+        y_pos = np.append(y_pos, y_pos[-1] + np.abs(y_pos[-3] - y_pos[-1]))
+        bnk_y.append(y_pos)
+
+        x = np.arange(iX, iX + 3)
+        bnk_x.append(x)
+
+    return bnk_x, bnk_y, bnk_data
+
+
+
