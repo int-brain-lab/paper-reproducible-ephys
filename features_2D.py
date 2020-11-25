@@ -14,9 +14,6 @@ import matplotlib.pyplot as plt
 dtypes = ['_iblqc_ephysSpectralDensity.freqs',
           '_iblqc_ephysSpectralDensity.power']
 
-chn_inds = np.load('C:/Users/Mayo/Downloads/FlatIron/churchlandlab/Subjects/CSHL049/2020-01-08/'
-                   '001/alf/probe00/channels.rawInd.npy')
-
 
 def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None):
     plot_type = 'psd' #TODO this should be an argument
@@ -35,6 +32,9 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None):
         print(iR)
         # Download the data and get paths to downloaded data
         eid = one.search(subject=subj, date=date)[0]
+        if iR == 0:
+            chn_inds = one.load(eid, dataset_types=['channels.rawInd'])[0]
+
         ephys_path = one.path_from_eid(eid).joinpath('raw_ephys_data', probe_label)
         alf_path = one.path_from_eid(eid).joinpath('alf', probe_label)
 
@@ -101,7 +101,7 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None):
                 ax = axs[1][np.mod(iR, 20)]
 
         if plot_type == 'psd':
-            data = psd_data(ephys_path, one, eid)
+            data = psd_data(ephys_path, one, eid, chn_inds)
             bnk_x, bnk_y, bnk_data = arrange_channels2banks(data, z)
             for x, y, dat in zip(bnk_x, bnk_y, bnk_data):
                 im = NonUniformImage(ax, interpolation='nearest', cmap='viridis')
@@ -130,7 +130,7 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None):
     plt.show()
 
 
-def psd_data(ephys_path, one, eid):
+def psd_data(ephys_path, one, eid, chn_inds):
     try:
         lfp_spectrum = alf.io.load_object(ephys_path, 'ephysSpectralDensityLF',
                                           namespace='iblqc')

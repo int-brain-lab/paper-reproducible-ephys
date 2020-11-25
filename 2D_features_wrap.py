@@ -46,7 +46,7 @@ brain_atlas = atlas.AllenAtlas(25)
 # Sort insertions by distance from mean trajectory across all sites
 _, idx_sort = sort_repeated_site_by_distance(subjects, dates, probes, reference='mean', one=one,
                                              brain_atlas=brain_atlas)
-
+idx_sort = idx_sort[:19]
 # Plot the features
 # TODO pass in the type of feature that you want to display
 plot_2D_features(subjects[idx_sort], dates[idx_sort], probes[idx_sort], one=one,

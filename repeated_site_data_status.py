@@ -15,7 +15,7 @@ def get_repeated_site_status(subj, date, probe, one=None):
         'clusters.amps',
         'clusters.peakToTrough',
         'clusters.waveforms',
-        'clusters.metrics',
+        #'clusters.metrics',
         'channels.localCoordinates',
         'channels.rawInd'
     ]
