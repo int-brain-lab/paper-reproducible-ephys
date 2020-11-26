@@ -34,6 +34,7 @@ data = data.rename(columns=data.iloc[0]).drop(data.index[0]).reset_index(drop=Tr
 
 # Find the sessions that have raw_ephys data and tracing
 idx_ephys = data['raw_ephys'] == 'TRUE'
+idx_ephys = data['ks2'] == 'TRUE'
 idx_tracing = data['tracing'] == 'TRUE'
 subjects = data['Subject'][idx_ephys & idx_tracing].values
 dates = data['Date'][idx_ephys & idx_tracing].values
@@ -46,8 +47,8 @@ brain_atlas = atlas.AllenAtlas(25)
 # Sort insertions by distance from mean trajectory across all sites
 _, idx_sort = sort_repeated_site_by_distance(subjects, dates, probes, reference='mean', one=one,
                                              brain_atlas=brain_atlas)
-idx_sort = idx_sort[:19]
+#idx_sort = idx_sort[:19]
 # Plot the features
 # TODO pass in the type of feature that you want to display
 plot_2D_features(subjects[idx_sort], dates[idx_sort], probes[idx_sort], one=one,
-                 brain_atlas=brain_atlas)
+                 brain_atlas=brain_atlas, plot_type='amp_line')

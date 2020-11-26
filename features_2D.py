@@ -8,24 +8,22 @@ from ibllib.pipes.ephys_alignment import EphysAlignment
 from ibllib.atlas import atlas, regions_from_allen_csv
 from brainbox.processing import bincount2D
 from matplotlib.image import NonUniformImage
-import matplotlib.pyplot as plt
-
-# Specify the dataset types of interest
-dtypes = ['_iblqc_ephysSpectralDensity.freqs',
-          '_iblqc_ephysSpectralDensity.power']
+from pathlib import Path
 
 
-def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None):
-    plot_type = 'psd' #TODO this should be an argument
+def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_range=[2, 15],
+                     plot_type='fr'):
+
     one = one or ONE()
     brain_atlas = brain_atlas or atlas.AllenAtlas(25)
     r = regions_from_allen_csv()
     depths = SITES_COORDINATES[:, 1]
 
     if len(subjects) < 20:
-        fig, axs = plt.subplots(1, len(subjects), constrained_layout=False, sharey=True)
+        fig, axs = plt.subplots(1, len(subjects), constrained_layout=False, sharey=True,
+                                figsize=(18, 10))
     else:
-        fig, axs = plt.subplots(2, 20, constrained_layout=False, sharey=True)
+        fig, axs = plt.subplots(2, 20, constrained_layout=False, sharey=True, figsize=(18, 10))
     z_extent = []
 
     for iR, (subj, date, probe_label) in enumerate(zip(subjects, dates, probes)):
@@ -101,22 +99,50 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None):
                 ax = axs[1][np.mod(iR, 20)]
 
         if plot_type == 'psd':
-            data = psd_data(ephys_path, one, eid, chn_inds)
-            bnk_x, bnk_y, bnk_data = arrange_channels2banks(data, z)
-            for x, y, dat in zip(bnk_x, bnk_y, bnk_data):
-                im = NonUniformImage(ax, interpolation='nearest', cmap='viridis')
-                levels = np.nanquantile(bnk_data[0], [0.1, 0.9])
-                im.set_clim(levels[0], levels[1])
-                im.set_data(x, y, dat.T)
-                ax.images.append(im)
+            data = psd_data(ephys_path, one, eid, chn_inds, freq_range)
+            plot_probe(data, z, ax, cmap='viridis')
 
-            ax.set_xlim(0, 4.5)
+        elif plot_type == 'rms_ap':
+            data = rms_data(ephys_path, one, eid, chn_inds, 'AP')
+            plot_probe(data, z, ax, cmap='plasma')
+
+        elif plot_type == 'rms_lf':
+            data = rms_data(ephys_path, one, eid, chn_inds, 'LF')
+            plot_probe(data, z, ax, cmap='magma')
+
+        elif plot_type == 'fr_alt':
+            data = fr_data_alt(alf_path, one, eid, depths)
+            plot_probe(data, z, ax, cmap='magma')
 
         elif plot_type == 'fr':
-            _, y, vals = fr_data(alf_path, one, eid, depths)
+            y, data = fr_data(alf_path, one, eid, depths)
             y = ephysalign.get_channel_locations(feature, track, y / 1e6)[:, 2] * 1e6
-            ax.plot(vals, y, 'k', linewidth=2)
+            im = NonUniformImage(ax, interpolation='nearest', cmap='magma')
+            levels = np.nanquantile(data, [0.1, 0.9])
+            im.set_clim(levels[0], levels[1])
+            im.set_data(np.array([0]), y, data)
+            ax.images.append(im)
+
+        elif plot_type == 'amp':
+            y, data = amp_data(alf_path, one, eid, depths)
+            y = ephysalign.get_channel_locations(feature, track, y / 1e6)[:, 2] * 1e6
+            im = NonUniformImage(ax, interpolation='nearest', cmap='magma')
+            levels = np.nanquantile(data, [0.1, 0.9])
+            im.set_clim(levels[0], levels[1])
+            im.set_data(np.array([0]), y, data)
+            ax.images.append(im)
+
+        elif plot_type == 'fr_line':
+            y, data = fr_data(alf_path, one, eid, depths)
+            y = ephysalign.get_channel_locations(feature, track, y / 1e6)[:, 2] * 1e6
+            ax.plot(data, y, 'k', linewidth=2)
             ax.set_xlim(0, 50)
+
+        elif plot_type == 'amp_line':
+            y, data = amp_data(alf_path, one, eid, depths)
+            y = ephysalign.get_channel_locations(feature, track, y / 1e6)[:, 2] * 1e6
+            ax.plot(data, y, 'k', linewidth=2)
+            ax.set_xlim(0, 100)
 
         ax.set_title(subj + '\n' + status, fontsize=8, color=col)
         for bound, col in zip(boundaries, colours):
@@ -130,11 +156,27 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None):
     plt.show()
 
 
-def psd_data(ephys_path, one, eid, chn_inds):
+def plot_probe(data, z, ax, cmap=None):
+    bnk_x, bnk_y, bnk_data = arrange_channels2banks(data, z)
+    for x, y, dat in zip(bnk_x, bnk_y, bnk_data):
+        im = NonUniformImage(ax, interpolation='nearest', cmap=cmap)
+        levels = np.nanquantile(bnk_data[0], [0.1, 0.9])
+        im.set_clim(levels[0], levels[1])
+        im.set_data(x, y, dat.T)
+        ax.images.append(im)
+
+    ax.set_xlim(0, 4.5)
+
+
+def psd_data(ephys_path, one, eid, chn_inds, freq_range=[2, 15]):
     try:
         lfp_spectrum = alf.io.load_object(ephys_path, 'ephysSpectralDensityLF',
                                           namespace='iblqc')
     except Exception:
+        # Specify the dataset types of interest
+        dtypes = ['_iblqc_ephysSpectralDensity.freqs',
+                  '_iblqc_ephysSpectralDensity.power']
+
         _ = one.load(eid, dataset_types=dtypes, download_only=True)
         lfp_spectrum = alf.io.load_object(ephys_path, 'ephysSpectralDensityLF',
                                           namespace='iblqc')
@@ -143,7 +185,6 @@ def psd_data(ephys_path, one, eid, chn_inds):
     lfp_power = lfp_spectrum['power'][:, chn_inds]
 
     # Define a frequency range of interest
-    freq_range = [0, 300] #TODO this should be an argument
     freq_idx = np.where((lfp_freq >= freq_range[0]) &
                         (lfp_freq < freq_range[1]))[0]
 
@@ -153,6 +194,23 @@ def psd_data(ephys_path, one, eid, chn_inds):
     lfp_mean = np.mean(lfp_spectrum_data, axis=0)
 
     return lfp_mean
+
+
+def rms_data(ephys_path, one, eid, chn_inds, format):
+    try:
+        rms_amps = alf.io.load_file_content(Path(ephys_path, '_iblqc_ephysTimeRms' +
+                                                 format + '.rms.npy'))
+    except Exception:
+        dtypes = [
+            '_iblqc_ephysTimeRms.rms',
+        ]
+        _ = one.load(eid, dataset_types=dtypes, download_only=True)
+        rms_amps = alf.io.load_file_content(Path(ephys_path, '_iblqc_ephysTimeRms' +
+                                                 format + '.rms.npy'))
+
+    rms_avg = (np.mean(rms_amps, axis=0)[chn_inds]) * 1e6
+
+    return rms_avg
 
 
 def fr_data(alf_path, one, eid, depths):
@@ -170,11 +228,67 @@ def fr_data(alf_path, one, eid, depths):
     kp_idx = np.where(~np.isnan(spikes['depths']))[0]
     T_BIN = np.max(spikes['times'])
     D_BIN = 20
-    nspikes, times, depths = bincount2D(spikes['times'][kp_idx], spikes['depths'][kp_idx],
+    nspikes, _, depths = bincount2D(spikes['times'][kp_idx], spikes['depths'][kp_idx],
                                         T_BIN, D_BIN, ylim=[np.min(depths), np.max(depths)])
     mean_fr = nspikes[:, 0] / T_BIN
+    mean_fr = mean_fr[:, np.newaxis]
 
-    return times, depths, mean_fr
+    return depths, mean_fr
+
+
+def fr_data_alt(alf_path, one, eid, depths):
+    try:
+        spikes = alf.io.load_object(alf_path, 'spikes')
+        clusters = alf.io.load_object(alf_path, 'clusters')
+    except Exception:
+        dtypes = [
+            'spikes.times',
+            'spikes.clusters',
+            'clusters.channels'
+        ]
+        _ = one.load(eid, dataset_types=dtypes, download_only=True)
+        spikes = alf.io.load_object(alf_path, 'spikes')
+        clusters = alf.io.load_object(alf_path, 'clusters')
+    spk_chn = clusters.channels[spikes.clusters]
+    chn_idx, count = np.unique(spk_chn, return_counts=True)
+
+    fr_chns = np.zeros(depths.shape)
+    fr_chns[chn_idx] = count / spikes.times[-1] - spikes.times[0]
+
+    return fr_chns
+
+
+def amp_data(alf_path, one, eid, depths):
+    try:
+        spikes = alf.io.load_object(alf_path, 'spikes')
+    except Exception:
+        dtypes = [
+            'spikes.depths',
+            'spikes.amps',
+            'spikes.times'
+        ]
+        _ = one.load(eid, dataset_types=dtypes, download_only=True)
+        spikes = alf.io.load_object(alf_path, 'spikes')
+
+    kp_idx = np.where(~np.isnan(spikes['depths']))[0]
+    T_BIN = np.max(spikes['times'])
+    D_BIN = 20
+
+    nspikes, _, _ = bincount2D(spikes['times'][kp_idx], spikes['depths'][kp_idx], T_BIN,
+                                D_BIN, ylim=[np.min(depths), np.max(depths)])
+    amp, times, depths = bincount2D(spikes['times'][kp_idx], spikes['depths'][kp_idx],
+                                    T_BIN, D_BIN, ylim=[np.min(depths), np.max(depths)],
+                                    weights=spikes['amps'][kp_idx])
+
+    mean_amp = np.divide(amp[:, 0], nspikes[:, 0]) * 1e6
+    mean_amp[np.isnan(mean_amp)] = 0
+    mean_amp = mean_amp[:, np.newaxis]
+    
+    return depths, mean_amp
+
+
+def neuron_yield(alf_path):
+    return
 
 
 def get_brain_boundaries(brain_regions, z, r=None):
