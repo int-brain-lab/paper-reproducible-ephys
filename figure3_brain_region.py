@@ -19,8 +19,9 @@ one = ONE()
 # Settings
 MIN_SPIKE_AMP = 50
 MIN_FR = 0.1
+MAX_AP_RMS = 100
 KS2_GOOD = True
-DOWNLOAD_DATA = True
+DOWNLOAD_DATA = False
 REGIONS = ['VISa', 'CA1', 'DG', 'LP', 'PO']
 LFP_BAND_HIGH = [20, 80]
 LFP_BAND_LOW = [2, 15]
@@ -76,6 +77,16 @@ for i in range(len(traj)):
 
     if 'acronym' not in clusters[probe].keys():
         print('Brain regions not found')
+        continue
+
+    # Get ap band rms
+    rms_ap = alf.io.load_object(ephys_path, 'ephysTimeRmsAP', namespace='iblqc')
+    rms_ap_data = rms_ap['rms'] * 1e6  # convert to uV
+    median = np.mean(np.apply_along_axis(lambda x: np.median(x), 1, rms_ap_data))
+    rms_ap_data_median = (np.apply_along_axis(lambda x: x - np.median(x), 1, rms_ap_data)
+                          + median)
+    if np.mean(rms_ap_data_median[:, 20]) > MAX_AP_RMS:
+        print('AP band RMS too high')
         continue
 
     # Loop over regions of interest
@@ -144,11 +155,6 @@ for i in range(len(traj)):
         lfp_low_region = np.mean(10 * np.log(chan_power[freqs]))  # convert to dB
 
         # Get AP band rms
-        rms_ap = alf.io.load_object(ephys_path, 'ephysTimeRmsAP', namespace='iblqc')
-        rms_ap_data = rms_ap['rms'] * 1e6  # convert to uV
-        median = np.mean(np.apply_along_axis(lambda x: np.median(x), 1, rms_ap_data))
-        rms_ap_data_median = (np.apply_along_axis(lambda x: x - np.median(x), 1, rms_ap_data)
-                              + median)
         rms_ap_region = rms_ap_data_median[:, region_chan].mean()
 
         # Add to dataframe
