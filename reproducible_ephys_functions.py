@@ -7,26 +7,19 @@ import seaborn as sns
 import matplotlib
 
 
-def query(resolved=True):
+def query(resolved=True, behavior=False):
     from oneibl.one import ONE
     one = ONE()
+    str_query = 'probe_insertion__session__project__name__icontains,ibl_neuropixel_brainwide_01,' \
+                 'probe_insertion__session__qc__lt,50'
     if resolved:
-        trajectories = one.alyx.rest('trajectories', 'list', provenance='Planned',
-                                     x=-2243, y=-2000,  # repeated site coordinate
-                                     project='ibl_neuropixel_brainwide_01',
-                                     django='probe_insertion__session__qc__lt,50',  # excl CRITICAL
-                                     histology=True)
-        resolved_insertions = one.alyx.rest('insertions', 'list',
-                                            provenance='Ephys aligned histology track',
-                                            django='json__extended_qc__alignment_resolved,True')
-        resolved_eids = [i['session'] for i in resolved_insertions]
-        trajectories = [i for i in trajectories if str(i['session']['id']) in resolved_eids]
-    else:
-        trajectories = one.alyx.rest('insertions', 'list', provenance='Planned',
-                                     x=-2243, y=-2000,  # repeated site coordinate
-                                     project='ibl_neuropixel_brainwide_01',
-                                     django='probe_insertion__session__qc__lt,50,',
-                                     histology=True)
+        str_query = str_query + ',' + 'probe_insertion__json__extended_qc__alignment_resolved,True'
+    if behavior:
+        str_query = str_query + ',' + 'probe_insertion__session__extended_qc__behavior,1'
+
+    trajectories = one.alyx.rest('trajectories', 'list', provenance='Planned',
+                                 x=-2243, y=-2000,
+                                 django=str_query)
     return trajectories
 
 
