@@ -20,7 +20,7 @@ one = ONE()
 MIN_SPIKE_AMP = 50
 MIN_FR = 0.1
 KS2_GOOD = True
-DOWNLOAD_DATA = False
+DOWNLOAD_DATA = True
 REGIONS = ['VISa', 'CA1', 'DG', 'LP', 'PO']
 LFP_BAND_HIGH = [20, 80]
 LFP_BAND_LOW = [2, 15]
@@ -55,14 +55,20 @@ for i in range(len(traj)):
         ses_path = one.path_from_eid(eid)
         alf_path = one.path_from_eid(eid).joinpath('alf', probe)
         chn_inds = np.load(Path(join(alf_path, 'channels.rawInd.npy')))
-        waveforms = np.load(Path(join(alf_path, '_phy_spikes_subset.waveforms.npy')))
-        wf_spikes = np.load(Path(join(alf_path, '_phy_spikes_subset.spikes.npy')))
         ephys_path = one.path_from_eid(eid).joinpath('raw_ephys_data', probe)
         lfp_spectrum = alf.io.load_object(ephys_path, 'ephysSpectralDensityLF',
                                           namespace='iblqc')
     except Exception as error_message:
         print(error_message)
         continue
+
+    try:
+        waveforms = np.load(Path(join(alf_path, '_phy_spikes_subset.waveforms.npy')))
+        wf_spikes = np.load(Path(join(alf_path, '_phy_spikes_subset.spikes.npy')))
+    except Exception as error_message:
+        print(error_message)
+        waveforms = np.nan
+        wf_spikes = np.nan
 
     if len(clusters) == 0:
         print('Spike data not found')
@@ -88,24 +94,31 @@ for i in range(len(traj)):
                             / np.max(spikes[probe]['times']))
 
             # Get mean waveform of channel with max amplitude
-            mean_wf_ch = np.mean(waveforms[spikes[probe].clusters[wf_spikes] == neuron_id], axis=0)
-            mean_wf_ch = (mean_wf_ch
-                          - np.tile(np.mean(mean_wf_ch, axis=0), (mean_wf_ch.shape[0], 1)))
-            mean_wf = mean_wf_ch[:, np.argmin(np.min(mean_wf_ch, axis=0))] * 1000000
-            spike_amp[n] = np.abs(np.min(mean_wf) - np.max(mean_wf))
+            if type(wf_spikes) != float:
+                mean_wf_ch = np.mean(waveforms[spikes[probe].clusters[wf_spikes] == neuron_id],
+                                     axis=0)
+                mean_wf_ch = (mean_wf_ch
+                              - np.tile(np.mean(mean_wf_ch, axis=0), (mean_wf_ch.shape[0], 1)))
+                mean_wf = mean_wf_ch[:, np.argmin(np.min(mean_wf_ch, axis=0))] * 1000000
+                spike_amp[n] = np.abs(np.min(mean_wf) - np.max(mean_wf))
 
-            # Get peak-to-trough ration
-            pt_ratio[n] = np.max(mean_wf) / np.abs(np.min(mean_wf))
+                # Get peak-to-trough ration
+                pt_ratio[n] = np.max(mean_wf) / np.abs(np.min(mean_wf))
 
-            # Get repolarization slope
-            if ((np.isnan(mean_wf[0])) or (np.argmin(mean_wf) > np.argmax(mean_wf))
-                or (np.abs(np.argmin(mean_wf) - np.argmax(mean_wf)) <= 2)):
-                rp_slope[n] = np.nan
+                # Get repolarization slope
+                if ((np.isnan(mean_wf[0])) or (np.argmin(mean_wf) > np.argmax(mean_wf))
+                    or (np.abs(np.argmin(mean_wf) - np.argmax(mean_wf)) <= 2)):
+                    rp_slope[n] = np.nan
+                else:
+                    rp_slope[n] = np.max(np.gradient(mean_wf[
+                                            np.argmin(mean_wf):np.argmax(mean_wf)]))
             else:
-                rp_slope[n] = np.max(np.gradient(mean_wf[np.argmin(mean_wf):np.argmax(mean_wf)]))
+                spike_amp[n] = np.nan
+                pt_ratio[n] = np.nan
+                rp_slope[n] = np.nan
 
         # Impose neuron selection
-        neuron_select = (spike_amp > MIN_SPIKE_AMP) & (neuron_fr > MIN_FR)
+        neuron_select = neuron_fr > MIN_FR
         neuron_fr = neuron_fr[neuron_select]
         spike_amp = spike_amp[neuron_select]
         neuron_count = np.sum(neuron_select)
