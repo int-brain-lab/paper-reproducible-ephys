@@ -36,10 +36,10 @@ def plot_traj(traj, ba=atlas.AllenAtlas(25), fig_handle=None,
 
     mlab.plot3d(mlapdv[:, 1], mlapdv[:, 2], mlapdv[:, 0],
                 line_width=line_width, color=color, tube_radius=tube_radius, figure=fig_handle)
-
-    # Setup the  label at the top of the trajectory
-    mlab.text3d(mlapdv[0, 1], mlapdv[0, 2], mlapdv[0, 0] - label_shift, label_text,
-                line_width=label_width, color=label_color, figure=fig_handle, scale=500)
+    if label_text is not None:
+        # Setup the  label at the top of the trajectory
+        mlab.text3d(mlapdv[0, 1], mlapdv[0, 2], mlapdv[0, 0] - label_shift, label_text,
+                    line_width=label_width, color=label_color, figure=fig_handle, scale=500)
 
     return fig_handle
 
