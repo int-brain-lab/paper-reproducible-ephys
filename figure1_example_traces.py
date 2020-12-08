@@ -25,7 +25,7 @@ str_query = 'probe_insertion__session__project__name__icontains,ibl_neuropixel_b
 
 def plot_traj(traj, ba=atlas.AllenAtlas(25), fig_handle=None,
               line_width=3, color=(0., 0., 0.), tube_radius=20,
-              label_text=None, label_width=4, label_color='k', label_shift=500):
+              label_text=None, label_width=4, label_color=(0., 0., 0.), label_shift=500):
 
     ins = atlas.Insertion.from_dict(traj)
     mlapdv = ba.xyz2ccf(ins.xyz)
@@ -78,11 +78,7 @@ for i_traj in range(0, len(traj_sub_all)):
         if traj_mic['probe_insertion'] in ins_id_align:
             traj = [item for item in traj_sub_aligned if item['probe_insertion'] in traj_mic['probe_insertion']]
             traj = traj[0]
-            print('h222222')
-            print(traj)
         else:
             print('No resolved alignment found, using micromanip instead')
             traj = traj_mic
-            print('h111111')
-            print(traj)
         plot_traj(traj=traj, fig_handle=fig_handle)
