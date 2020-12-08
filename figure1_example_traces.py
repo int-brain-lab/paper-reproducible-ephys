@@ -63,10 +63,11 @@ traj_rep = one.alyx.rest('trajectories', 'list', provenance='Planned',
                          django=str_query)
 ins_id_rep = traj_rep[0]['probe_insertion']
 traj_rep_align = [item for item in traj_sub_aligned if item['probe_insertion'] in ins_id_rep]
+traj_rep_align=traj_rep_align[0]
 
 if len(traj_rep_align) > 0:
     color = (1., 0., 0.)
-    plot_traj(traj=traj_rep_align[0], fig_handle=fig_handle,
+    plot_traj(traj=traj_rep_align, fig_handle=fig_handle,
               color=color, label_text='Repeated site', label_color=color)
 
 # Display other traj in black
@@ -76,7 +77,8 @@ for i_traj in range(0, len(traj_sub_all)):
     if traj_mic['probe_insertion'] not in ins_id_rep:
         if traj_mic['probe_insertion'] in ins_id_align:
             traj = [item for item in traj_sub_aligned if item['probe_insertion'] in traj_mic['probe_insertion']]
+            traj = traj[0]
         else:
             print('No resolved alignment found, using micromanip instead')
             traj = traj_mic
-        plot_traj(traj=traj[0], fig_handle=fig_handle)
+        plot_traj(traj=traj, fig_handle=fig_handle)
