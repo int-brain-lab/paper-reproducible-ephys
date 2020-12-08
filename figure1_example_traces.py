@@ -1,5 +1,7 @@
 """
-3D rendering single subject trajectories - Accentuate on repeated site
+For a single subject:
+3D rendering trajectories - Accentuate on repeated site
+Plot raster + drift for rep site
 ===========================
 Generates 3D rendering of all probe trajectories for a single subject.
 Repeated site plotted in red, other sites in black.
@@ -12,6 +14,10 @@ from mayavi import mlab
 from atlaselectrophysiology import rendering
 import ibllib.atlas as atlas
 from oneibl.one import ONE
+import alf.io
+from brainbox.metrics import electrode_drift
+import matplotlib.pyplot as plt
+import brainbox.plot as bbplot
 
 one = ONE(base_url="https://alyx.internationalbrainlab.org")
 subject = 'CSHL045'
@@ -82,3 +88,32 @@ for i_traj in range(0, len(traj_sub_all)):
             print('No resolved alignment found, using micromanip instead')
             traj = traj_mic
         plot_traj(traj=traj, fig_handle=fig_handle)
+
+# Plot raster + drift
+# inspired from docs_compute_drift.py
+
+# Specify subject, date and probe we are interested in
+date = traj_rep_align['session']['start_time'][0:10]
+sess_no = traj_rep_align['session']['number']
+probe_label = traj_rep_align['probe_name']
+eid = one.search(subject=subject, date=date, number=sess_no)[0]
+
+# define datasets to download
+dtypes = ['spikes.times',
+          'spikes.depths',
+          'spikes.amps']
+
+# Download the data and get paths to downloaded data
+_ = one.load(eid, dataset_types=dtypes, download_only=True)
+alf_path = one.path_from_eid(eid).joinpath('alf', probe_label)
+
+# Load in spikes object and use brainbox function to compute drift over session
+spikes = alf.io.load_object(alf_path, 'spikes')
+drift = electrode_drift.estimate_drift(spikes['times'], spikes['amps'], spikes['depths'],
+                                       display=True)
+
+# bbplot.driftmap(spikes['times'],
+#                 spikes['depths'],
+#                 plot_style='bincount')
+
+plt.show()
