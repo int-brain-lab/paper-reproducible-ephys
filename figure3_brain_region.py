@@ -45,11 +45,11 @@ for i in range(len(traj)):
 
     if DOWNLOAD_DATA:
         _ = one.load(eid, dataset_types=['_iblqc_ephysSpectralDensity.freqs',
-                             '_iblqc_ephysSpectralDensity.power',
-                             '_iblqc_ephysTimeRms.rms',
-                             '_phy_spikes_subset.waveforms',
-                             '_phy_spikes_subset.spikes',
-                             'channels.rawInd'], download_only=True)
+                                         '_iblqc_ephysSpectralDensity.power',
+                                         '_iblqc_ephysTimeRms.rms',
+                                         '_phy_spikes_subset.waveforms',
+                                         '_phy_spikes_subset.spikes',
+                                         'channels.rawInd'], download_only=True)
     try:
         spikes, clusters, channels = bbone.load_spike_sorting_with_channel(
             eid, aligned=True, dataset_types=['spikes.amps'], one=one)
@@ -63,14 +63,6 @@ for i in range(len(traj)):
         print(error_message)
         continue
 
-    try:
-        waveforms = np.load(Path(join(alf_path, '_phy_spikes_subset.waveforms.npy')))
-        wf_spikes = np.load(Path(join(alf_path, '_phy_spikes_subset.spikes.npy')))
-    except Exception as error_message:
-        print(error_message)
-        waveforms = np.nan
-        wf_spikes = np.nan
-
     if len(clusters) == 0:
         print('Spike data not found')
         continue
@@ -78,6 +70,13 @@ for i in range(len(traj)):
     if 'acronym' not in clusters[probe].keys():
         print('Brain regions not found')
         continue
+
+    try:
+        waveforms = np.load(Path(join(alf_path, '_phy_spikes_subset.waveforms.npy')))
+        wf_spikes = np.load(Path(join(alf_path, '_phy_spikes_subset.spikes.npy')))
+    except:
+        waveforms = []
+        wf_spikes = []
 
     # Get ap band rms
     rms_ap = alf.io.load_object(ephys_path, 'ephysTimeRmsAP', namespace='iblqc')
@@ -104,8 +103,8 @@ for i in range(len(traj)):
             neuron_fr[n] = (np.sum(spikes[probe]['clusters'] == neuron_id)
                             / np.max(spikes[probe]['times']))
 
-            # Get mean waveform of channel with max amplitude
-            if type(wf_spikes) != float:
+            if len(wf_spikes) > 0:
+                # Get mean waveform of channel with max amplitude
                 mean_wf_ch = np.mean(waveforms[spikes[probe].clusters[wf_spikes] == neuron_id],
                                      axis=0)
                 mean_wf_ch = (mean_wf_ch
@@ -129,7 +128,8 @@ for i in range(len(traj)):
                 rp_slope[n] = np.nan
 
         # Impose neuron selection
-        neuron_select = neuron_fr > MIN_FR
+        # neuron_select = (neuron_fr > MIN_FR) & (spike_amp > MIN_SPIKE_AMP)
+        neuron_select = (neuron_fr > MIN_FR)
         neuron_fr = neuron_fr[neuron_select]
         spike_amp = spike_amp[neuron_select]
         neuron_count = np.sum(neuron_select)

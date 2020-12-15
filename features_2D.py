@@ -27,7 +27,6 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
     z_extent = []
 
     for iR, (subj, date, probe_label) in enumerate(zip(subjects, dates, probes)):
-        print(iR)
         # Download the data and get paths to downloaded data
         eid = one.search(subject=subj, date=date)[0]
         if iR == 0:
@@ -154,6 +153,7 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
         ax.set_ylim(z_min, z_max)
 
     plt.show()
+    return fig, axs
 
 
 def plot_probe(data, z, ax, cmap=None):
@@ -216,6 +216,7 @@ def rms_data(ephys_path, one, eid, chn_inds, format):
 def fr_data(alf_path, one, eid, depths):
     try:
         spikes = alf.io.load_object(alf_path, 'spikes')
+        spikes['depths']
     except Exception:
         dtypes = [
             'spikes.depths',
@@ -283,7 +284,7 @@ def amp_data(alf_path, one, eid, depths):
     mean_amp = np.divide(amp[:, 0], nspikes[:, 0]) * 1e6
     mean_amp[np.isnan(mean_amp)] = 0
     mean_amp = mean_amp[:, np.newaxis]
-    
+
     return depths, mean_amp
 
 

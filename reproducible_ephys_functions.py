@@ -3,24 +3,9 @@ General functions for reproducible ephys paper
 """
 
 import os
+import pandas as pd
 import seaborn as sns
 import matplotlib
-
-
-def query(resolved=True, behavior=False):
-    from oneibl.one import ONE
-    one = ONE()
-    str_query = 'probe_insertion__session__project__name__icontains,ibl_neuropixel_brainwide_01,' \
-                 'probe_insertion__session__qc__lt,50'
-    if resolved:
-        str_query = str_query + ',' + 'probe_insertion__json__extended_qc__alignment_resolved,True'
-    if behavior:
-        str_query = str_query + ',' + 'probe_insertion__session__extended_qc__behavior,1'
-
-    trajectories = one.alyx.rest('trajectories', 'list', provenance='Planned',
-                                 x=-2243, y=-2000,
-                                 django=str_query)
-    return trajectories
 
 
 def labs():
@@ -40,6 +25,31 @@ def labs():
     for i, inst in enumerate(institutions):
         institution_colors[inst] = colors[i]
     return lab_number_map, institution_map, institution_colors
+
+
+def query(resolved=True, behavior=False, as_dataframe=False):
+    from oneibl.one import ONE
+    one = ONE()
+    str_query = 'probe_insertion__session__project__name__icontains,ibl_neuropixel_brainwide_01,' \
+                 'probe_insertion__session__qc__lt,50'
+    if resolved:
+        str_query = str_query + ',' + 'probe_insertion__json__extended_qc__alignment_resolved,True'
+    if behavior:
+        str_query = str_query + ',' + 'probe_insertion__session__extended_qc__behavior,1'
+
+    trajectories = one.alyx.rest('trajectories', 'list', provenance='Planned',
+                                 x=-2243, y=-2000,
+                                 django=str_query)
+    if as_dataframe:
+        trajectories = pd.DataFrame(data={
+                            'subjects': [i['session']['subject'] for i in trajectories],
+                            'dates': [i['session']['start_time'][:10] for i in trajectories],
+                            'probes': [i['probe_name'] for i in trajectories],
+                            'lab': [i['session']['lab'] for i in trajectories],
+                            'eid': [i['session']['id'] for i in trajectories]})
+        institution_map = labs()[1]
+        trajectories['institution'] = trajectories.lab.map(institution_map)
+    return trajectories
 
 
 def data_path():
