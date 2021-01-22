@@ -30,6 +30,7 @@ plot_titles = traj.groupby('institution').mean()
 
 # Plot
 PLOTS = ['fr', 'psd', 'rms_ap', 'rms_lf', 'fr_alt', 'amp', 'fr_line', 'amp_line']
+NICKNAMES = True
 
 # %% Plotting
 for p, plot_name in enumerate(PLOTS):
@@ -37,8 +38,12 @@ for p, plot_name in enumerate(PLOTS):
     f, axs = plot_2D_features(traj['subjects'], traj['dates'], traj['probes'], one=one,
                               brain_atlas=brain_atlas, plot_type=plot_name)
     for i, ax in enumerate(axs):
-        ax.set_title(traj.loc[i, 'recording'] + 1, color=lab_colors[traj.loc[i, 'institution']],
-                     fontsize=20)
+        if NICKNAMES:
+            ax.set_title(traj['subjects'][i], color='k', rotation=30, ha='left')
+        else:
+            ax.set_title(traj.loc[i, 'recording'] + 1,
+                         color=lab_colors[traj.loc[i, 'institution']], fontsize=20)
+
         if i == 0:
             ax.tick_params(axis='y', labelsize=16)
             ax.spines["right"].set_visible(False)
@@ -50,7 +55,8 @@ for p, plot_name in enumerate(PLOTS):
         ax.set(xticks=[], ylim=[-5000, 0])
     f.colorbar(ax.collections[0])
 
-    for i, inst in enumerate(plot_titles.index.values):
-        plt.figtext(plot_titles.loc[inst, 'lab_position'], 0.94, inst, color=lab_colors[inst],
-                    fontsize=20)
+    if not NICKNAMES:
+        for i, inst in enumerate(plot_titles.index.values):
+            plt.figtext(plot_titles.loc[inst, 'lab_position'], 0.94, inst, color=lab_colors[inst],
+                        fontsize=20)
     plt.savefig(join(FIG_PATH, 'figure3_probe_%s' % plot_name))

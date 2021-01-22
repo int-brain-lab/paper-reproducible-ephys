@@ -19,7 +19,7 @@ one = ONE()
 # Settings
 MIN_SPIKE_AMP = 50
 MIN_FR = 0.1
-MAX_AP_RMS = 100
+MAX_AP_RMS = 10000
 KS2_GOOD = True
 DOWNLOAD_DATA = False
 REGIONS = ['VISa', 'CA1', 'DG', 'LP', 'PO']
@@ -42,6 +42,7 @@ for i in range(len(traj)):
     eid = traj[i]['session']['id']
     probe = traj[i]['probe_name']
     lab = traj[i]['session']['lab']
+    nickname = traj[i]['session']['subject']
 
     if DOWNLOAD_DATA:
         _ = one.load(eid, dataset_types=['_iblqc_ephysSpectralDensity.freqs',
@@ -63,12 +64,9 @@ for i in range(len(traj)):
         print(error_message)
         continue
 
-    if len(clusters) == 0:
-        print('Spike data not found')
-        continue
-
-    if 'acronym' not in clusters[probe].keys():
-        print('Brain regions not found')
+    if (('acronym' not in clusters[probe].keys()) | ('metrics' not in clusters[probe].keys())
+            | (len(clusters) == 0)):
+        print('Missing data, skipping session')
         continue
 
     try:
@@ -160,7 +158,7 @@ for i in range(len(traj)):
         # Add to dataframe
         metrics = metrics.append(pd.DataFrame(
                 index=[metrics.shape[0] + 1], data={'eid': eid, 'probe': probe, 'lab': lab,
-                                                    'region': region,
+                                                    'subject': nickname, 'region': region,
                                                     'n_channels': region_chan.shape[0],
                                                     'neuron_yield': neuron_count,
                                                     'firing_rate': neuron_fr.mean(),

@@ -19,7 +19,7 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
     r = regions_from_allen_csv()
     depths = SITES_COORDINATES[:, 1]
 
-    if len(subjects) < 20:
+    if len(subjects) <= 20:
         fig, axs = plt.subplots(1, len(subjects), constrained_layout=False, sharey=True,
                                 figsize=(18, 10))
     else:
@@ -89,10 +89,10 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
         z_extent.append(z_min)
         z_max = np.max(z)
         z_extent.append(z_max)
-        if len(subjects) < 20:
+        if len(subjects) <= 20:
             ax = axs[iR]
         else:
-            if iR < 20:
+            if iR <= 20:
                 ax = axs[0][iR]
             else:
                 ax = axs[1][np.mod(iR, 20)]
@@ -141,7 +141,7 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
             y, data = amp_data(alf_path, one, eid, depths)
             y = ephysalign.get_channel_locations(feature, track, y / 1e6)[:, 2] * 1e6
             ax.plot(data, y, 'k', linewidth=2)
-            ax.set_xlim(0, 100)
+            ax.set_xlim(0, 200)
 
         ax.set_title(subj + '\n' + status, fontsize=8, color=col)
         for bound, col in zip(boundaries, colours):

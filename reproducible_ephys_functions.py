@@ -38,8 +38,9 @@ def query(resolved=True, behavior=False, as_dataframe=False):
         str_query = str_query + ',' + 'probe_insertion__session__extended_qc__behavior,1'
 
     trajectories = one.alyx.rest('trajectories', 'list', provenance='Planned',
-                                 x=-2243, y=-2000,
+                                 x=-2243, y=-2000, theta=15,
                                  django=str_query)
+
     if as_dataframe:
         trajectories = pd.DataFrame(data={
                             'subjects': [i['session']['subject'] for i in trajectories],
