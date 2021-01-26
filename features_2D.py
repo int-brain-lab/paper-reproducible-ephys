@@ -92,7 +92,7 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
         if len(subjects) <= 20:
             ax = axs[iR]
         else:
-            if iR <= 20:
+            if iR < 20:
                 ax = axs[0][iR]
             else:
                 ax = axs[1][np.mod(iR, 20)]

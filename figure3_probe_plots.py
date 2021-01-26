@@ -37,23 +37,24 @@ for p, plot_name in enumerate(PLOTS):
     print('Generating %s plot' % plot_name)
     f, axs = plot_2D_features(traj['subjects'], traj['dates'], traj['probes'], one=one,
                               brain_atlas=brain_atlas, plot_type=plot_name)
-    for i, ax in enumerate(axs):
+    axs = [j for i in axs for j in i]
+    for i, subject in enumerate(traj['subjects']):
         if NICKNAMES:
-            ax.set_title(traj['subjects'][i], color='k', rotation=30, ha='left')
+            axs[i].set_title(subject, color='k', rotation=30, ha='left')
         else:
-            ax.set_title(traj.loc[i, 'recording'] + 1,
+            axs[i].set_title(traj.loc[i, 'recording'] + 1,
                          color=lab_colors[traj.loc[i, 'institution']], fontsize=20)
 
         if i == 0:
-            ax.tick_params(axis='y', labelsize=16)
-            ax.spines["right"].set_visible(False)
-            ax.spines["bottom"].set_visible(False)
-            ax.spines["top"].set_visible(False)
-            ax.set_ylabel('Depth relative to Bregma (\u03BCm)', fontsize=20)
+            axs[i].tick_params(axis='y', labelsize=16)
+            axs[i].spines["right"].set_visible(False)
+            axs[i].spines["bottom"].set_visible(False)
+            axs[i].spines["top"].set_visible(False)
+            axs[i].set_ylabel('Depth relative to Bregma (\u03BCm)', fontsize=20)
         else:
-            ax.set_axis_off()
-        ax.set(xticks=[], ylim=[-5000, 0])
-    f.colorbar(ax.collections[0])
+            axs[i].set_axis_off()
+        axs[i].set(xticks=[], ylim=[-5000, 0])
+    f.colorbar(axs[i].collections[0])
 
     if not NICKNAMES:
         for i, inst in enumerate(plot_titles.index.values):
