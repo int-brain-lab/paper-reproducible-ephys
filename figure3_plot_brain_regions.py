@@ -31,7 +31,7 @@ metrics.loc[metrics['lfp_power_high'] < -100000, 'lfp_power_high'] = np.nan
 metrics['institution'] = metrics.lab.map(institution_map)
 for i, region in enumerate(REGIONS):
     metrics.loc[metrics['region'] == region, 'region_number'] = i
-metrics = metrics.sort_values(by=['institution', 'eid', 'region_number'], ignore_index=True).reset_index(drop=True)
+metrics = metrics.sort_values(by=['subject'], ignore_index=True).reset_index(drop=True)
 n_rec = np.concatenate([np.arange(i) + 1 for i in (metrics.groupby('institution').size()
                                                    / len(REGIONS))]).astype(int)
 metrics['yield_per_channel'] = metrics['neuron_yield'] / metrics['n_channels']
@@ -49,7 +49,8 @@ else:
     metrics_plot = metrics.pivot(index='region_number', columns='recording_number',
                                  values='yield_per_channel').sort_values('region_number')
 sns.heatmap(metrics_plot, square=True, cmap='twilight_shifted', center=0,
-            cbar_kws={'label': 'Neurons per channel'}, annot=True, linewidths=.5, fmt='.2f')
+            cbar_kws={'label': 'Neurons per channel'}, annot=True, annot_kws={"size": 12},
+            linewidths=.5, fmt='.2f')
 ax1.xaxis.tick_top()
 ax1.set(xlabel='', ylabel='', xticklabels=metrics_plot.columns.values)
 ax1.set_yticklabels(REGIONS, va='center')
@@ -77,7 +78,8 @@ else:
     metrics_plot = metrics.pivot(index='region_number', columns='recording_number',
                                  values='firing_rate').sort_values('region_number')
 sns.heatmap(metrics_plot, square=True, cmap='twilight_shifted', center=0,
-            cbar_kws={'label': 'Firing rate (spks/s)'}, annot=True, linewidths=.5)
+            cbar_kws={'label': 'Firing rate (spks/s)'}, annot=True, annot_kws={"size": 12},
+            linewidths=.5)
 ax1.xaxis.tick_top()
 ax1.set(xlabel='', ylabel='', xticklabels=n_rec)
 ax1.set_yticklabels(REGIONS, va='center')
@@ -104,7 +106,8 @@ else:
     metrics_plot = metrics.pivot(index='region_number', columns='recording_number',
                                  values='spike_amp_mean').sort_values('region_number')
 sns.heatmap(metrics_plot, square=True, cmap='twilight_shifted', center=0, fmt='.0f',
-            cbar_kws={'label': 'Spike amplitude (mV)'}, annot=True, linewidths=.5)
+            cbar_kws={'label': 'Spike amplitude (mV)'}, annot=True, annot_kws={"size": 12},
+            linewidths=.5)
 ax1.xaxis.tick_top()
 ax1.set(xlabel='', ylabel='', xticklabels=n_rec)
 ax1.set_yticklabels(REGIONS, va='center')
@@ -131,7 +134,8 @@ else:
     metrics_plot = metrics.pivot(index='region_number', columns='recording_number',
                                  values='pt_ratio').sort_values('region_number')
 sns.heatmap(metrics_plot, square=True, cmap='twilight_shifted', center=0, fmt='.2f',
-            cbar_kws={'label': 'Peak-to-trough ratio'}, annot=True, linewidths=.5)
+            cbar_kws={'label': 'Peak-to-trough ratio'}, annot=True, annot_kws={"size": 12},
+            linewidths=.5)
 ax1.xaxis.tick_top()
 ax1.set(xlabel='', ylabel='', xticklabels=n_rec)
 ax1.set_yticklabels(REGIONS, va='center')
@@ -158,7 +162,8 @@ else:
     metrics_plot = metrics.pivot(index='region_number', columns='recording_number',
                                  values='rp_slope').sort_values('region_number')
 sns.heatmap(metrics_plot, square=True, cmap='twilight_shifted', center=0, fmt='.0f',
-            cbar_kws={'label': 'Repolarization slope'}, annot=True, linewidths=.5)
+            cbar_kws={'label': 'Repolarization slope'}, annot=True, annot_kws={"size": 12},
+            linewidths=.5)
 ax1.xaxis.tick_top()
 ax1.set(xlabel='', ylabel='', xticklabels=n_rec)
 ax1.set_yticklabels(REGIONS, va='center')
@@ -185,7 +190,8 @@ else:
     metrics_plot = metrics.pivot(index='region_number', columns='recording_number',
                                  values='lfp_power_high').sort_values('region_number')
 sns.heatmap(metrics_plot, square=True, cmap='twilight_shifted', center=metrics['lfp_power_high'].min(),
-            cbar_kws={'label': 'LFP power (dB)'}, annot=True, linewidths=.5, fmt='.0f')
+            cbar_kws={'label': 'LFP power (dB)'}, annot=True, annot_kws={"size": 12},
+            linewidths=.5, fmt='.0f')
 ax1.xaxis.tick_top()
 ax1.set(xlabel='', ylabel='', xticklabels=n_rec)
 ax1.set_yticklabels(REGIONS, va='center')
@@ -212,7 +218,8 @@ else:
     metrics_plot = metrics.pivot(index='region_number', columns='recording_number',
                                  values='rms_ap').sort_values('region_number')
 sns.heatmap(metrics_plot, square=True, cmap='twilight_shifted', center=0, fmt='.0f',
-            cbar_kws={'label': 'AP band (rms)'}, annot=True, linewidths=.5)
+            cbar_kws={'label': 'AP band (rms)'}, annot=True, annot_kws={"size": 12},
+            linewidths=.5)
 ax1.xaxis.tick_top()
 ax1.set(xlabel='', ylabel='', xticklabels=n_rec)
 ax1.set_yticklabels(REGIONS, va='center')

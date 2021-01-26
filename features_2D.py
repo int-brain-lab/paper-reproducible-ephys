@@ -19,11 +19,9 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
     r = regions_from_allen_csv()
     depths = SITES_COORDINATES[:, 1]
 
-    if len(subjects) <= 20:
-        fig, axs = plt.subplots(1, len(subjects), constrained_layout=False, sharey=True,
-                                figsize=(18, 10))
-    else:
-        fig, axs = plt.subplots(2, 20, constrained_layout=False, sharey=True, figsize=(18, 10))
+    fig, axs = plt.subplots(1, len(subjects), constrained_layout=False, sharey=True,
+                            figsize=(20, 10), dpi=150)
+
     z_extent = []
 
     for iR, (subj, date, probe_label) in enumerate(zip(subjects, dates, probes)):
@@ -89,13 +87,7 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
         z_extent.append(z_min)
         z_max = np.max(z)
         z_extent.append(z_max)
-        if len(subjects) <= 20:
-            ax = axs[iR]
-        else:
-            if iR < 20:
-                ax = axs[0][iR]
-            else:
-                ax = axs[1][np.mod(iR, 20)]
+        ax = axs[iR]
 
         if plot_type == 'psd':
             data = psd_data(ephys_path, one, eid, chn_inds, freq_range)

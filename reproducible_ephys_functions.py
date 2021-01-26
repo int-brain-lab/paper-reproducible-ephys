@@ -6,6 +6,7 @@ import os
 import pandas as pd
 import seaborn as sns
 import matplotlib
+import numpy as np
 
 
 def labs():
@@ -27,20 +28,34 @@ def labs():
     return lab_number_map, institution_map, institution_colors
 
 
-def query(resolved=True, behavior=False, as_dataframe=False):
+def query(resolved=True, behavior=False, min_regions=2, as_dataframe=False):
     from oneibl.one import ONE
     one = ONE()
+
+    # Query repeated site recordings
     str_query = 'probe_insertion__session__project__name__icontains,ibl_neuropixel_brainwide_01,' \
-                 'probe_insertion__session__qc__lt,50'
+                'probe_insertion__session__qc__lt,50'
     if resolved:
         str_query = str_query + ',' + 'probe_insertion__json__extended_qc__alignment_resolved,True'
     if behavior:
         str_query = str_query + ',' + 'probe_insertion__session__extended_qc__behavior,1'
-
     trajectories = one.alyx.rest('trajectories', 'list', provenance='Planned',
                                  x=-2243, y=-2000, theta=15,
                                  django=str_query)
 
+    # Query how many of the target regions were hit per recording
+    region_traj = []
+    for i, region in enumerate(['VISa', 'CA1', 'DG', 'LP', 'PO']):
+        region_query = one.alyx.rest(
+                    'trajectories', 'list', provenance='Ephys aligned histology track',
+                    django=(str_query + ',channels__brain_region__acronym__icontains,%s' % region))
+        region_traj = np.append(region_traj, [i['probe_insertion'] for i in region_query])
+    num_regions = np.empty(len(trajectories))
+    for i, trajectory in enumerate(trajectories):
+        num_regions[i] = sum(trajectory['probe_insertion'] in s for s in region_traj)
+    trajectories = [trajectories[i] for i in np.where(num_regions >= min_regions)[0]]
+
+    # Convert to dataframe if necessary
     if as_dataframe:
         trajectories = pd.DataFrame(data={
                             'subjects': [i['session']['subject'] for i in trajectories],
