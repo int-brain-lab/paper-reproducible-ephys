@@ -90,10 +90,20 @@ def get_repeated_site_status(subj, date, probe, one=None):
             print(f'no extended qc {subj}, {date}, {probe}')
             align_resolved = False
 
+    if align_exists:
+        traj = one.alyx.rest('trajectories', 'list', probe_insertion=insertion[0]['id'],
+                             provenance='Ephys aligned histology track')
+        users = [*traj[0]['json'].keys()]
+        username = [us[20:] for us in users]
+        user_note = str(username)
+    else:
+        user_note = ''
+
     status = {'Subject': subj, 'Date': date, 'Probe': probe, 'ks2': ks2_exists,
               'raw_ephys': ephys_exists, 'trials': trials_exists, 'wheel': wheel_exists,
               'dlc': dlc_exists, 'passive': passive_exists, 'histology': histology_exists,
               'insertion': insertion_exists, 'planned': planned_exists, 'micro': micro_exists,
-              'tracing': hist_exists, 'aligned': align_exists, 'resolved': align_resolved}
+              'tracing': hist_exists, 'aligned': align_exists, 'resolved': align_resolved,
+              'user_note': user_note}
 
     return status
