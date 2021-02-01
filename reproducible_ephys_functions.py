@@ -62,7 +62,8 @@ def query(resolved=True, behavior=False, min_regions=2, as_dataframe=False):
                             'dates': [i['session']['start_time'][:10] for i in trajectories],
                             'probes': [i['probe_name'] for i in trajectories],
                             'lab': [i['session']['lab'] for i in trajectories],
-                            'eid': [i['session']['id'] for i in trajectories]})
+                            'eid': [i['session']['id'] for i in trajectories],
+                            'probe_insertion': [i['probe_insertion'] for i in trajectories]})
         institution_map = labs()[1]
         trajectories['institution'] = trajectories.lab.map(institution_map)
     return trajectories
@@ -99,6 +100,17 @@ def figure_style():
     matplotlib.rcParams['ps.fonttype'] = 42
 
 
-
-
+def combine_regions(regions):
+    """
+    Combine all layers of cortex and the dentate gyrus molecular and granular layer
+    """
+    remove = ['1', '2', '3', '4', '5', '6a', '6b', '/']
+    for i, region in enumerate(regions):
+        if region[:2] == 'CA':
+            continue
+        if (region == 'DG-mo') or (region == 'DG-sg'):
+            regions[i] = 'DG'
+        for j, char in enumerate(remove):
+            regions[i] = regions[i].replace(char, '')
+    return regions
 

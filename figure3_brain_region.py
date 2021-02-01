@@ -12,7 +12,7 @@ from os.path import join
 import alf
 from pathlib import Path
 import brainbox.io.one as bbone
-from reproducible_ephys_functions import query, data_path
+from reproducible_ephys_functions import query, data_path, combine_regions
 from oneibl.one import ONE
 one = ONE()
 
@@ -20,7 +20,7 @@ one = ONE()
 MIN_SPIKE_AMP = 50
 MIN_FR = 0.1
 MAX_AP_RMS = 10000
-KS2_GOOD = True
+NEURON_QC = True
 DOWNLOAD_DATA = False
 REGIONS = ['VISa', 'CA1', 'DG', 'LP', 'PO']
 LFP_BAND_HIGH = [20, 80]
@@ -86,12 +86,15 @@ for i in range(len(traj)):
         print('AP band RMS too high')
         continue
 
+    # Get neurons that pass QC
+    clusters_pass = np.where(clusters[probe]['metrics']['label'] == 1)[0]
+
     # Loop over regions of interest
     for k, region in enumerate(REGIONS):
 
         # Get neuron count and firing rate
-        region_clusters = [x for x, y in enumerate(clusters[probe]['acronym']) if (region in y)
-                           and (clusters[probe]['metrics']['ks2_label'][x] == 'good')]
+        region_clusters = [x for x, y in enumerate(combine_regions(clusters[probe]['acronym']))
+                           if (region == y) and (x in clusters_pass)]
         neuron_fr = np.empty(len(region_clusters))
         spike_amp = np.empty(len(region_clusters))
         pt_ratio = np.empty(len(region_clusters))
@@ -139,14 +142,15 @@ for i in range(len(traj)):
             spike_amp_90 = np.percentile(spike_amp, 95)
 
         # Get LFP power on high frequencies
-        region_chan = chn_inds[[region in s for s in channels[probe]['acronym']]]
+        region_chan = chn_inds[[x for x, y
+                                in enumerate(combine_regions(channels[probe]['acronym']))
+                                if y == region]]
         freqs = ((lfp_spectrum['freqs'] > LFP_BAND_HIGH[0])
                  & (lfp_spectrum['freqs'] < LFP_BAND_HIGH[1]))
         chan_power = lfp_spectrum['power'][:, region_chan]
         lfp_high_region = np.mean(10 * np.log(chan_power[freqs]))  # convert to dB
 
         # Get LFP power on low frequencies
-        region_chan = chn_inds[[region in s for s in channels[probe]['acronym']]]
         freqs = ((lfp_spectrum['freqs'] > LFP_BAND_LOW[0])
                  & (lfp_spectrum['freqs'] < LFP_BAND_LOW[1]))
         chan_power = lfp_spectrum['power'][:, region_chan]

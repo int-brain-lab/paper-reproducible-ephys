@@ -11,7 +11,7 @@ import pandas as pd
 from os.path import join
 from pathlib import Path
 import brainbox.io.one as bbone
-from reproducible_ephys_functions import query, data_path
+from reproducible_ephys_functions import query, data_path, combine_regions
 from oneibl.one import ONE
 one = ONE()
 
@@ -19,7 +19,7 @@ one = ONE()
 MIN_SPIKE_AMP = 50
 MIN_FR = 0.1
 MIN_WAVEFORMS = 20
-KS2_GOOD = True
+NEURON_QC = True
 DOWNLOAD_DATA = False
 REGIONS = ['VISa', 'CA1', 'DG', 'LP', 'PO']
 DATA_DIR = data_path()
@@ -59,12 +59,15 @@ for i in range(len(traj)):
         print('Brain regions not found')
         continue
 
+    # Get neurons that pass QC
+    clusters_pass = np.where(clusters[probe]['metrics']['label'] == 1)[0]
+
     # Loop over regions of interest
     for k, region in enumerate(REGIONS):
 
         # Get neuron count and firing rate
-        region_clusters = [x for x, y in enumerate(clusters[probe]['acronym']) if (region in y)
-                           and (clusters[probe]['metrics']['ks2_label'][x] == 'good')]
+        region_clusters = [x for x, y in enumerate(combine_regions(clusters[probe]['acronym']))
+                           if (region == y) and (x in clusters_pass)]
         neuron_fr = np.empty(len(region_clusters))
         spike_amp = np.empty(len(region_clusters))
         n_waveforms = np.empty(len(region_clusters))
