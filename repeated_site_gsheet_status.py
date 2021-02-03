@@ -1,6 +1,6 @@
 """
 Update G-sheet rep.site status
-Author: Mayo
+Author: Mayo, Gaelle
 (turn into function for ease of call - GC)
 """
 
@@ -14,6 +14,7 @@ def update_rep_site():
     import numpy as np
     from oneibl.one import ONE
     from repeated_site_data_status import get_repeated_site_status
+    import brainbox.behavior.training as training
 
     one = ONE()
 
@@ -119,9 +120,21 @@ def update_rep_site():
                                       django='json__extended_qc__tracing_exists,False')
 
             if len(sess_crit) > 0 or len(behav_crit) > 0 or len(ins_crit) > 0 or len(trac_crit) > 0:
-                is_critical = True
+                is_critical = 'FAIL'
+                # Check if only behavior status fails
+                if len(behav_crit) > 0 and \
+                        len(sess_crit) == 0 and \
+                        len(ins_crit) == 0 and \
+                        len(trac_crit) == 0:
+                    # Compute behavior N trials and perf
+                    trials_all = one.load_object(eid, 'trials')
+                    trials = dict()
+                    trials['temp_key'] = trials_all
+                    perf_easy, n_trials, _, _, _ = training.compute_bias_info(trials, trials_all)
+                    if perf_easy > 0.88 and n_trials >= 400:
+                        is_critical = 'BORDERLINE'
             else:
-                is_critical = False
+                is_critical = 'PASS'
         status['is_critical'] = is_critical
         status['ins_id'] = ins_id
 
