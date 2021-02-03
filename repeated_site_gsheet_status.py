@@ -96,7 +96,7 @@ def update_rep_site():
                                'tracing', 'aligned', 'resolved', 'user_note', 'origin_lab', 'assign_lab'})
 
     # get insertions used in analysis
-    q = query(resolved=False)
+    q = query(resolved=False, min_regions=0)
     q_ins_id = [item['probe_insertion'] for item in q]
 
     for subj, date, probe in zip(subjects, dates, probes):
