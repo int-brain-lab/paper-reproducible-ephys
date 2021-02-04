@@ -10,7 +10,8 @@ from reproducible_ephys_functions import query, labs
 from features_2D import plot_2D_features
 from oneibl.one import ONE
 import numpy as np
-from os.path import join
+from os.path import join, isdir
+from os import mkdir
 from reproducible_ephys_paths import FIG_PATH
 import matplotlib.pyplot as plt
 from ibllib.atlas import atlas
@@ -57,4 +58,7 @@ for p, plot_name in enumerate(PLOTS):
         axs[i].set(xticks=[], ylim=[-5000, 0])
     #f.colorbar(axs[i].collections[0])
 
-    plt.savefig(join(FIG_PATH, 'probe_targeting_error_%s' % plot_name))
+    if not isdir(join(FIG_PATH, 'probe_plots_targeting_error')):
+        mkdir(join(FIG_PATH, 'probe_plots_targeting_error'))
+    plt.savefig(join(FIG_PATH, 'probe_plots_targeting_error',
+                     'probe_targeting_error_%s' % plot_name))

@@ -10,7 +10,8 @@ from reproducible_ephys_functions import query, labs
 from features_2D import plot_2D_features
 from oneibl.one import ONE
 import numpy as np
-from os.path import join
+from os.path import join, isdir
+from os import mkdir
 from reproducible_ephys_paths import FIG_PATH
 import matplotlib.pyplot as plt
 from ibllib.atlas import atlas
@@ -60,4 +61,6 @@ for p, plot_name in enumerate(PLOTS):
         for i, inst in enumerate(plot_titles.index.values):
             plt.figtext(plot_titles.loc[inst, 'lab_position'], 0.94, inst, color=lab_colors[inst],
                         fontsize=20)
+    if not isdir(join(FIG_PATH, 'probe_plots')):
+        mkdir(join(FIG_PATH, 'probe_plots'))
     plt.savefig(join(FIG_PATH, 'probe_plots', 'figure3_probe_%s' % plot_name))

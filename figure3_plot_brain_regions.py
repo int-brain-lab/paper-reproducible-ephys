@@ -6,7 +6,8 @@ Created on Fri Nov 13 09:48:00 2020
 @author: guido
 """
 
-from os.path import join
+from os.path import join, isdir
+from os import mkdir
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -40,6 +41,9 @@ for i, eid in enumerate(metrics['eid'].unique()):
 
 # %% Plots
 
+if not isdir(join(FIG_PATH, 'brain_regions')):
+    mkdir(join(FIG_PATH, 'brain_regions'))
+
 sns.set(style='ticks', context='paper', font_scale=1.8)
 f, ax1 = plt.subplots(1, 1, figsize=(15, 4), dpi=150)
 if NICKNAMES:
@@ -65,8 +69,7 @@ else:
             plt.gca().get_xticklabels()[j].set_color(lab_colors[inst])
         offset += rec_per_lab[inst]
 plt.tight_layout()
-plt.savefig(join(FIG_PATH, 'figure3_regions_yield-per-channel'))
-
+plt.savefig(join(FIG_PATH, 'brain_regions', 'figure3_regions_yield-per-channel'))
 
 # %% Plot firing rate
 sns.set(style='ticks', context='paper', font_scale=1.8)
@@ -94,7 +97,7 @@ else:
             plt.gca().get_xticklabels()[j].set_color(lab_colors[inst])
         offset += rec_per_lab[inst]
 plt.tight_layout()
-plt.savefig(join(FIG_PATH, 'figure3_regions_firing-rate'))
+plt.savefig(join(FIG_PATH, 'brain_regions', 'figure3_regions_firing-rate'))
 
 # %% Plot spike amplitude
 sns.set(style='ticks', context='paper', font_scale=1.8)
@@ -122,7 +125,7 @@ else:
             plt.gca().get_xticklabels()[j].set_color(lab_colors[inst])
         offset += rec_per_lab[inst]
 plt.tight_layout()
-plt.savefig(join(FIG_PATH, 'figure3_regions_spike-amplitude'))
+plt.savefig(join(FIG_PATH, 'brain_regions', 'figure3_regions_spike-amplitude'))
 
 # %% Plot peak-to-trough ratio
 sns.set(style='ticks', context='paper', font_scale=1.8)
@@ -150,7 +153,7 @@ else:
             plt.gca().get_xticklabels()[j].set_color(lab_colors[inst])
         offset += rec_per_lab[inst]
 plt.tight_layout()
-plt.savefig(join(FIG_PATH, 'figure3_regions_pt-ratio'))
+plt.savefig(join(FIG_PATH, 'brain_regions', 'figure3_regions_pt-ratio'))
 
 # %% Plot repolarization slope
 sns.set(style='ticks', context='paper', font_scale=1.8)
@@ -178,7 +181,7 @@ else:
             plt.gca().get_xticklabels()[j].set_color(lab_colors[inst])
         offset += rec_per_lab[inst]
 plt.tight_layout()
-plt.savefig(join(FIG_PATH, 'figure3_regions_rp-slope'))
+plt.savefig(join(FIG_PATH, 'brain_regions', 'figure3_regions_rp-slope'))
 
 # %% Plot LFP power
 sns.set(style='ticks', context='paper', font_scale=1.8)
@@ -206,7 +209,7 @@ else:
             plt.gca().get_xticklabels()[j].set_color(lab_colors[inst])
         offset += rec_per_lab[inst]
 plt.tight_layout()
-plt.savefig(join(FIG_PATH, 'figure3_regions_lfp-power'))
+plt.savefig(join(FIG_PATH, 'brain_regions', 'figure3_regions_lfp-power'))
 
 #%%  Plot rms AP
 sns.set(style='ticks', context='paper', font_scale=1.8)
@@ -234,6 +237,6 @@ else:
             plt.gca().get_xticklabels()[j].set_color(lab_colors[inst])
         offset += rec_per_lab[inst]
 plt.tight_layout()
-plt.savefig(join(FIG_PATH, 'figure3_regions_rms-ap'))
+plt.savefig(join(FIG_PATH, 'brain_regions', 'figure3_regions_rms-ap'))
 
 
