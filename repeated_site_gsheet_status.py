@@ -1,6 +1,6 @@
 """
 Update G-sheet rep.site status
-Author: Mayo
+Author: Mayo, Gaelle
 (turn into function for ease of call - GC)
 """
 
@@ -14,6 +14,8 @@ def update_rep_site():
     import numpy as np
     from oneibl.one import ONE
     from repeated_site_data_status import get_repeated_site_status
+    import brainbox.behavior.training as training
+    from reproducible_ephys_functions import query
 
     one = ONE()
 
@@ -93,6 +95,10 @@ def update_rep_site():
                                'dlc', 'passive', 'histology', 'insertion', 'planned', 'micro',
                                'tracing', 'aligned', 'resolved', 'user_note', 'origin_lab', 'assign_lab'})
 
+    # get insertions used in analysis
+    q = query(resolved=False, min_regions=0)
+    q_ins_id = [item['probe_insertion'] for item in q]
+
     for subj, date, probe in zip(subjects, dates, probes):
         status = get_repeated_site_status(subj, date, probe, one=one)
 
@@ -103,26 +109,16 @@ def update_rep_site():
         # - impossible to trace
         insertion = one.alyx.rest('insertions', 'list', subject=subj, date=date, name=probe)
         if len(insertion) == 0:
-            is_critical = False
+            is_used_analysis = False
             ins_id = 'NaN'
         else:
             ins = insertion[0]
             ins_id = ins['id']
-            eid = ins['session_info']['id']
-            sess_crit = one.alyx.rest('sessions', 'list', id=eid,
-                                      django='qc,50')
-            behav_crit = one.alyx.rest('sessions', 'list', id=eid,
-                                       django='extended_qc__behavior,0')
-            ins_crit = one.alyx.rest('insertions', 'list', id=ins['id'],
-                                     django='json__qc__icontains,CRITICAL')
-            trac_crit = one.alyx.rest('insertions', 'list', id=ins['id'],
-                                      django='json__extended_qc__tracing_exists,False')
-
-            if len(sess_crit) > 0 or len(behav_crit) > 0 or len(ins_crit) > 0 or len(trac_crit) > 0:
-                is_critical = True
+            if ins_id in q_ins_id:
+                is_used_analysis = True
             else:
-                is_critical = False
-        status['is_critical'] = is_critical
+                is_used_analysis = False
+        status['is_used_analysis'] = is_used_analysis
         status['ins_id'] = ins_id
 
         # Use ins_id to find who is assigned to do alignment
@@ -137,7 +133,7 @@ def update_rep_site():
 
         df = df.append(status, ignore_index=True)
 
-    df = df.reindex(columns=['ins_id', 'Subject', 'Date', 'Probe', 'is_critical', 'ks2', 'raw_ephys', 'trials', 'wheel',
+    df = df.reindex(columns=['ins_id', 'Subject', 'Date', 'Probe', 'is_used_analysis', 'ks2', 'raw_ephys', 'trials', 'wheel',
                              'dlc', 'passive', 'histology', 'insertion', 'planned', 'micro',
                              'tracing', 'aligned', 'resolved', 'user_note', 'origin_lab', 'assign_lab'])
 

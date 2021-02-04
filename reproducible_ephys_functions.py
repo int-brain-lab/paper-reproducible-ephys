@@ -34,11 +34,13 @@ def query(resolved=True, behavior=False, min_regions=2, as_dataframe=False):
 
     # Query repeated site recordings
     str_query = 'probe_insertion__session__project__name__icontains,ibl_neuropixel_brainwide_01,' \
-                'probe_insertion__session__qc__lt,50'
+                'probe_insertion__session__qc__lt,50,' \
+                'probe_insertion__session__n_trials__gte,400'
     if resolved:
         str_query = str_query + ',' + 'probe_insertion__json__extended_qc__alignment_resolved,True'
     if behavior:
         str_query = str_query + ',' + 'probe_insertion__session__extended_qc__behavior,1'
+
     trajectories = one.alyx.rest('trajectories', 'list', provenance='Planned',
                                  x=-2243, y=-2000, theta=15,
                                  django=str_query)
