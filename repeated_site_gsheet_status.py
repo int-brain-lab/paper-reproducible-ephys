@@ -93,7 +93,7 @@ def update_rep_site():
 
     df = pd.DataFrame(columns={'Subject', 'Date', 'Probe', 'ks2', 'raw_ephys', 'trials', 'wheel',
                                'dlc', 'passive', 'histology', 'insertion', 'planned', 'micro',
-                               'tracing', 'aligned', 'resolved', 'user_note', 'origin_lab', 'assign_lab'})
+                               'tracing', 'aligned', 'resolved', 'user_note', 'origin_lab', 'assign_lab', 'manual_entry'})
 
     # get insertions used in analysis
     q = query(resolved=False, min_regions=0)
@@ -135,7 +135,7 @@ def update_rep_site():
 
     df = df.reindex(columns=['ins_id', 'Subject', 'Date', 'Probe', 'is_used_analysis', 'ks2', 'raw_ephys', 'trials', 'wheel',
                              'dlc', 'passive', 'histology', 'insertion', 'planned', 'micro',
-                             'tracing', 'aligned', 'resolved', 'user_note', 'origin_lab', 'assign_lab'])
+                             'tracing', 'aligned', 'resolved', 'user_note', 'origin_lab', 'assign_lab', 'manual_entry'])
 
     df = df.sort_values(by=['Subject', 'Date'], ascending=True)
 
