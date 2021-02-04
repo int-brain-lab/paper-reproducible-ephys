@@ -102,11 +102,7 @@ def update_rep_site():
     for subj, date, probe in zip(subjects, dates, probes):
         status = get_repeated_site_status(subj, date, probe, one=one)
 
-        # Check if insertion is critical, criteria (OR):
-        # - session critical
-        # - insertion critical
-        # - behavior fail
-        # - impossible to trace
+        # Check if insertion is used in analysis as per query
         insertion = one.alyx.rest('insertions', 'list', subject=subj, date=date, name=probe)
         if len(insertion) == 0:
             is_used_analysis = False
