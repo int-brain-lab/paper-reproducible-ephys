@@ -19,11 +19,16 @@ one = ONE()
 
 # Plot settings
 PLOTS = ['fr', 'psd', 'rms_ap', 'rms_lf', 'fr_alt', 'amp', 'fr_line', 'amp_line']
-NICKNAMES = True
 
 # Query repeated site trajectories
 traj = query(as_dataframe=True)
-traj = traj.sort_values(by=['subjects'], ignore_index=True).reset_index(drop=True)
+
+# Get targeting error
+for i, ins in enumerate(traj['probe_insertion']):
+    insertion = one.alyx.rest('trajectories', 'list', provenance='Ephys aligned histology track',
+                              probe_insertion=ins)
+    traj.loc[i, 'error'] = np.sqrt((insertion[0]['x'] - -2240)**2 + (insertion[0]['y'] - -2000)**2)
+traj = traj.sort_values(by=['error'], ignore_index=True).reset_index(drop=True)
 
 # Get lab info
 lab_number_map, institution_map, lab_colors = labs()
@@ -39,12 +44,8 @@ for p, plot_name in enumerate(PLOTS):
     f, axs = plot_2D_features(traj['subjects'], traj['dates'], traj['probes'], one=one,
                               brain_atlas=brain_atlas, plot_type=plot_name)
     for i, subject in enumerate(traj['subjects']):
-        if NICKNAMES:
-            axs[i].set_title(subject, color='k', rotation=30, ha='left')
-        else:
-            axs[i].set_title(traj.loc[i, 'recording'] + 1,
-                         color=lab_colors[traj.loc[i, 'institution']], fontsize=20)
-
+        axs[i].set_title('%s\nError: %d um' % (subject, traj.loc[i, 'error']), color='k',
+                         rotation=30, ha='left', fontsize=10)
         if i == 0:
             axs[i].tick_params(axis='y', labelsize=16)
             axs[i].spines["right"].set_visible(False)
@@ -56,8 +57,4 @@ for p, plot_name in enumerate(PLOTS):
         axs[i].set(xticks=[], ylim=[-5000, 0])
     #f.colorbar(axs[i].collections[0])
 
-    if not NICKNAMES:
-        for i, inst in enumerate(plot_titles.index.values):
-            plt.figtext(plot_titles.loc[inst, 'lab_position'], 0.94, inst, color=lab_colors[inst],
-                        fontsize=20)
-    plt.savefig(join(FIG_PATH, 'probe_plots', 'figure3_probe_%s' % plot_name))
+    plt.savefig(join(FIG_PATH, 'probe_targeting_error_%s' % plot_name))
