@@ -94,7 +94,7 @@ def update_rep_site():
 
     df = pd.DataFrame(columns={'Subject', 'Date', 'Probe', 'ks2', 'raw_ephys', 'trials', 'wheel',
                                'dlc', 'passive', 'histology', 'insertion', 'planned', 'micro',
-                               'tracing', 'aligned', 'resolved', 'user_note', 'origin_lab', 'assign_lab', 'manual_entry'})
+                               'tracing', 'aligned', 'resolved', 'user_note', 'origin_lab', 'assign_lab'})
 
     # get insertions used in analysis
     q = query()
@@ -104,6 +104,36 @@ def update_rep_site():
     # get insertions potentially good
     q = one.alyx.rest('trajectories', 'list', django=STR_QUERY)
     q_ins_potential = [item['probe_insertion'] for item in q]
+    del q
+
+    # get insertions that are potentially good but do not match traj coord
+    q = one.alyx.rest('trajectories', 'list', provenance='Planned',
+                                 x=-2243, y=-2000, theta=15,
+                                 django=STR_QUERY)
+    # TODO should be equivalent to query(resolved=False, min_regions=0)
+    q_ins_coordcorrect = [item['probe_insertion'] for item in q]
+    del q
+
+    # get insertions that are passing L1 QC
+    q = one.alyx.rest('trajectories', 'list', provenance='Planned',
+                      django='probe_insertion__session__project__name__'
+                             'icontains,ibl_neuropixel_brainwide_01,'
+                             'probe_insertion__session__qc__lt,50,'
+                             'probe_insertion__session__extended_qc__behavior,1,'
+                             'probe_insertion__json__extended_qc__tracing_exists,True,'
+                             '~probe_insertion__session__extended_qc___task_stimOn_goCue_delays__lt,0.9,'
+                             '~probe_insertion__session__extended_qc___task_response_feedback_delays__lt,0.9,'
+                             '~probe_insertion__session__extended_qc___task_response_stimFreeze_delays__lt,0.9,'
+                             '~probe_insertion__session__extended_qc___task_wheel_move_before_feedback__lt,0.9,'
+                             '~probe_insertion__session__extended_qc___task_wheel_freeze_during_quiescence__lt,0.9,'
+                             '~probe_insertion__session__extended_qc___task_error_trial_event_sequence__lt,0.9,'
+                             '~probe_insertion__session__extended_qc___task_correct_trial_event_sequence__lt,0.9,'
+                             '~probe_insertion__session__extended_qc___task_n_trial_events__lt,0.9,'
+                             '~probe_insertion__session__extended_qc___task_reward_volumes__lt,0.9,'
+                             '~probe_insertion__session__extended_qc___task_reward_volume_set__lt,0.9,'
+                             '~probe_insertion__session__extended_qc___task_stimulus_move_before_goCue__lt,0.9,'
+                             '~probe_insertion__session__extended_qc___task_audio_pre_trial__lt,0.9')
+    q_ins_passl1 = [item['probe_insertion'] for item in q]
 
     for subj, date, probe in zip(subjects, dates, probes):
         status = get_repeated_site_status(subj, date, probe, one=one)
@@ -113,7 +143,7 @@ def update_rep_site():
         if len(insertion) == 0:
             is_used_analysis = False
             is_potential = False
-            ins_id = 'NaN'
+            ins_id = "NaN"
         else:
             ins = insertion[0]
             ins_id = ins['id']
@@ -126,8 +156,21 @@ def update_rep_site():
                 is_potential = True
             else:
                 is_potential = False
+
+            if ins_id in q_ins_coordcorrect:
+                is_coordcorrect = True
+            else:
+                is_coordcorrect = False
+
+            if ins_id in q_ins_passl1:
+                is_passl1 = True
+            else:
+                is_passl1 = False
+
         status['is_used_analysis'] = is_used_analysis
         status['is_potential'] = is_potential
+        status['is_coordcorrect'] = is_coordcorrect
+        status['is_passl1'] = is_passl1
         status['ins_id'] = ins_id
 
         # Use ins_id to find who is assigned to do alignment
@@ -142,9 +185,11 @@ def update_rep_site():
 
         df = df.append(status, ignore_index=True)
 
-    df = df.reindex(columns=['ins_id', 'Subject', 'Date', 'Probe', 'is_potential', 'is_used_analysis', 'ks2', 'raw_ephys', 'trials', 'wheel',
+    df = df.reindex(columns=['ins_id', 'Subject', 'Date', 'Probe',
+                             'is_potential', 'is_coordcorrect',  'is_used_analysis', 'is_passl1',
+                             'ks2', 'raw_ephys', 'trials', 'wheel',
                              'dlc', 'passive', 'histology', 'insertion', 'planned', 'micro',
-                             'tracing', 'aligned', 'resolved', 'user_note', 'origin_lab', 'assign_lab', 'manual_entry'])
+                             'tracing', 'aligned', 'resolved', 'user_note', 'origin_lab', 'assign_lab'])
 
     df = df.sort_values(by=['Subject', 'Date'], ascending=True)
 
@@ -162,7 +207,7 @@ def update_rep_site():
         'sheetId': 0,
         'startRowIndex': 1,
         'endRowIndex': len(df) + 1,
-        'startColumnIndex': 4,
+        'startColumnIndex': 8,
         'endColumnIndex': 18  # len(df.columns),
     }
     requests = [{
