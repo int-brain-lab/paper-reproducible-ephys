@@ -8,6 +8,9 @@ import seaborn as sns
 import matplotlib
 import numpy as np
 
+STR_QUERY = 'probe_insertion__session__project__name__icontains,ibl_neuropixel_brainwide_01,' \
+            'probe_insertion__session__qc__lt,50,' \
+            'probe_insertion__session__n_trials__gte,400'
 
 def labs():
     lab_number_map = {'cortexlab': 'Lab 1', 'mainenlab': 'Lab 2', 'zadorlab': 'Lab 3',
@@ -28,14 +31,11 @@ def labs():
     return lab_number_map, institution_map, institution_colors
 
 
-def query(resolved=True, behavior=False, min_regions=2, as_dataframe=False):
+def query(resolved=True, behavior=False, min_regions=2, as_dataframe=False, str_query=STR_QUERY):
     from oneibl.one import ONE
     one = ONE()
 
     # Query repeated site recordings
-    str_query = 'probe_insertion__session__project__name__icontains,ibl_neuropixel_brainwide_01,' \
-                'probe_insertion__session__qc__lt,50,' \
-                'probe_insertion__session__n_trials__gte,400'
     if resolved:
         str_query = str_query + ',' + 'probe_insertion__json__extended_qc__alignment_resolved,True'
     if behavior:

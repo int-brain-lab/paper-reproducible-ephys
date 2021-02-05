@@ -14,8 +14,9 @@ def update_rep_site():
     import numpy as np
     from oneibl.one import ONE
     from repeated_site_data_status import get_repeated_site_status
-    import brainbox.behavior.training as training
+    # import brainbox.behavior.training as training
     from reproducible_ephys_functions import query
+    from reproducible_ephys_functions import STR_QUERY
 
     one = ONE()
 
@@ -96,8 +97,13 @@ def update_rep_site():
                                'tracing', 'aligned', 'resolved', 'user_note', 'origin_lab', 'assign_lab', 'manual_entry'})
 
     # get insertions used in analysis
-    q = query(resolved=False, min_regions=0)
+    q = query()
     q_ins_id = [item['probe_insertion'] for item in q]
+    del q
+
+    # get insertions potentially good
+    q = one.alyx.rest('trajectories', 'list', django=STR_QUERY)
+    q_ins_potential = [item['probe_insertion'] for item in q]
 
     for subj, date, probe in zip(subjects, dates, probes):
         status = get_repeated_site_status(subj, date, probe, one=one)
@@ -106,6 +112,7 @@ def update_rep_site():
         insertion = one.alyx.rest('insertions', 'list', subject=subj, date=date, name=probe)
         if len(insertion) == 0:
             is_used_analysis = False
+            is_potential = False
             ins_id = 'NaN'
         else:
             ins = insertion[0]
@@ -114,7 +121,13 @@ def update_rep_site():
                 is_used_analysis = True
             else:
                 is_used_analysis = False
+
+            if ins_id in q_ins_potential:
+                is_potential = True
+            else:
+                is_potential = False
         status['is_used_analysis'] = is_used_analysis
+        status['is_potential'] = is_potential
         status['ins_id'] = ins_id
 
         # Use ins_id to find who is assigned to do alignment
@@ -129,7 +142,7 @@ def update_rep_site():
 
         df = df.append(status, ignore_index=True)
 
-    df = df.reindex(columns=['ins_id', 'Subject', 'Date', 'Probe', 'is_used_analysis', 'ks2', 'raw_ephys', 'trials', 'wheel',
+    df = df.reindex(columns=['ins_id', 'Subject', 'Date', 'Probe', 'is_potential', 'is_used_analysis', 'ks2', 'raw_ephys', 'trials', 'wheel',
                              'dlc', 'passive', 'histology', 'insertion', 'planned', 'micro',
                              'tracing', 'aligned', 'resolved', 'user_note', 'origin_lab', 'assign_lab', 'manual_entry'])
 
