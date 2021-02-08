@@ -28,12 +28,12 @@ for count, t in enumerate(traj):
 
     # load data
     try:
-        spikes, clusters, channels = pickle.load(open("./data_{}.p".format(eid), "rb"))
+        spikes, clusters, channels = pickle.load(open("../data/data_{}.p".format(eid), "rb"))
     except FileNotFoundError:
         try:
             spk, clus, chn = load_spike_sorting_with_channel(eid, one=one, force=True)
             spikes, clusters, channels = spk[probe], clus[probe], chn[probe]
-            pickle.dump((spikes, clusters, channels), (open("./data_{}.p".format(eid), "wb")))
+            pickle.dump((spikes, clusters, channels), (open("../data/data_{}.p".format(eid), "wb")))
         except KeyError:
             print(eid)
             continue
