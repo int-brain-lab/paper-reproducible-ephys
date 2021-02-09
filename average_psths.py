@@ -13,10 +13,11 @@ regions = ['CA1', 'VISa', 'DG', 'LP', 'PO']
 
 one = ONE()
 
-event = 'Move'
+event = 'Stim'
 regions = regions
 left_region_activities = {x: [] for x in regions}
 right_region_activities = {x: [] for x in regions}
+zero_region_activities = {x: [] for x in regions}
 region_names = {x: [] for x in regions}
 traj = query(behavior=True)
 names = []
@@ -45,6 +46,7 @@ for count, t in enumerate(traj):
         contrast_L, contrast_R = one.load(eid, dataset_types=['trials.contrastLeft', 'trials.contrastRight'])
         event_times_left = times[contrast_L > 0]
         event_times_right = times[contrast_R > 0]
+        event_times_0 = times[np.logical_or(contrast_R == 0, contrast_L == 0)]
         pre_time, post_time = 0.2, 0.4
     elif event == 'Block':
         times = one.load(eid, dataset_types=['trials.stimOn_times'])[0]
@@ -91,6 +93,10 @@ for count, t in enumerate(traj):
         right_region_activities[br].append(activity_right_norm)
         region_names[br].append(t['session']['subject'])
 
+        if event == 'Stim':
+            activity_0, _ = bb.singlecell.calculate_peths(spikes.times, spikes.clusters, np.arange(len(clusters.metrics))[mask], event_times_0, pre_time=pre_time, post_time=post_time, smoothing=0, bin_size=0.01)
+            activity_zero_norm = ((activity_0.means.T - baseline) / (1 + baseline)).T
+            zero_region_activities[br].append(activity_zero_norm)
 
 kernel_len = 10
 kernel = np.exp(-np.arange(kernel_len) * 0.75)
@@ -125,17 +131,25 @@ name2line = dict(zip(names, ['-' if i % 2 == 0 else '--' for i in range(len(name
 
 for i, br in enumerate(regions):
 
-    left_act = np.vstack(left_region_activities[br])
-    right_act = np.vstack(right_region_activities[br])
+    all_left_act = np.vstack(left_region_activities[br])
+    all_right_act = np.vstack(right_region_activities[br])
     plt.figure(figsize=(11, 8))
-    plt.plot(activity_left.tscale[kernel_len-1:], np.convolve(kernel, np.mean(left_act, axis=0))[kernel_len-1:-kernel_len+1], label="{} left".format(event), c='b', lw=2.5)
-    plt.plot(activity_left.tscale[kernel_len-1:], np.convolve(kernel, np.mean(right_act, axis=0))[kernel_len-1:-kernel_len+1], label="{} right".format(event), c='orange', lw=2.5)
+    plt.plot(activity_left.tscale[kernel_len-1:], np.convolve(kernel, np.mean(all_left_act, axis=0))[kernel_len-1:-kernel_len+1], label="{} left".format(event), c='b', lw=3.5)
+    plt.plot(activity_left.tscale[kernel_len-1:], np.convolve(kernel, np.mean(all_right_act, axis=0))[kernel_len-1:-kernel_len+1], label="{} right".format(event), c='orange', lw=3.5)
+    if event == 'Stim':
+        all_0_act = np.vstack(zero_region_activities[br])
+        plt.plot(activity_left.tscale[kernel_len-1:], np.convolve(kernel, np.mean(all_0_act, axis=0))[kernel_len-1:-kernel_len+1], label="{} 0".format(event), c='k', lw=3.5)
+
 
     for name, left_act, right_act in zip(region_names[br], left_region_activities[br], right_region_activities[br]):
         plt.plot(activity_left.tscale[kernel_len-1:], np.convolve(kernel, np.mean(left_act, axis=0))[kernel_len-1:-kernel_len+1], c=name2colors[name], linestyle=name2line[name], label=name)
         plt.plot(activity_left.tscale[kernel_len-1:], np.convolve(kernel, np.mean(right_act, axis=0))[kernel_len-1:-kernel_len+1], c=name2colors[name], linestyle=name2line[name])
         #plt.plot(activity_left.tscale[kernel_len-1::10], np.convolve(kernel, np.mean(left_act, axis=0))[kernel_len-1:-kernel_len+1:10], c='b', alpha=0.25, marker=marker, ls='', markersize=8)
         #plt.plot(activity_left.tscale[kernel_len-1::10], np.convolve(kernel, np.mean(right_act, axis=0))[kernel_len-1:-kernel_len+1:10], c='orange', alpha=0.25, marker=marker, ls='', markersize=8)
+    if event == 'Stim':
+        for name, zero_act in zip(region_names[br], zero_region_activities[br]):
+            plt.plot(activity_left.tscale[kernel_len-1:], np.convolve(kernel, np.mean(zero_act, axis=0))[kernel_len-1:-kernel_len+1], c=name2colors[name], linestyle=name2line[name])
+
     plt.axvline(0, c='k', alpha=0.5)
     plt.axvline(0.2, c='k', alpha=0.25)
     plt.ylabel("Normalised firing rate", size=18)
@@ -147,5 +161,5 @@ for i, br in enumerate(regions):
     sns.despine()
 
     plt.tight_layout()
-    plt.savefig(FIG_PATH + "PSTHS_{}_baselined_region_{}".format(event, br))
+    plt.savefig(FIG_PATH + "new PSTHS_{}_baselined_region_{}".format(event, br))
     plt.show()
