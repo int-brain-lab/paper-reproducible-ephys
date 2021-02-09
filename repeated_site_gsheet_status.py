@@ -92,7 +92,7 @@ def update_rep_site():
 
     probes[subjects == 'NYU-11'] = 'probe00'
 
-    df = pd.DataFrame(columns={'Subject', 'Date', 'Probe', 'ks2', 'raw_ephys', 'trials', 'wheel',
+    df = pd.DataFrame(columns={'Subject', 'Date', 'Probe', 'ks2', 'raw_ephys_qc', 'trials', 'wheel',
                                'dlc', 'passive', 'histology', 'insertion', 'planned', 'micro',
                                'tracing', 'aligned', 'resolved', 'user_note', 'origin_lab', 'assign_lab'})
 
@@ -187,7 +187,7 @@ def update_rep_site():
 
     df = df.reindex(columns=['ins_id', 'Subject', 'Date', 'Probe',
                              'is_potential', 'is_coordcorrect',  'is_used_analysis', 'is_passl1',
-                             'ks2', 'raw_ephys', 'trials', 'wheel',
+                             'ks2', 'raw_ephys_qc', 'trials', 'wheel',
                              'dlc', 'passive', 'histology', 'insertion', 'planned', 'micro',
                              'tracing', 'aligned', 'resolved', 'user_note', 'origin_lab', 'assign_lab'])
 

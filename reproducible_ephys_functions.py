@@ -10,6 +10,7 @@ import numpy as np
 
 STR_QUERY = 'probe_insertion__session__project__name__icontains,ibl_neuropixel_brainwide_01,' \
             'probe_insertion__session__qc__lt,50,' \
+            '~probe_insertion__json__qc,CRITICAL,' \
             'probe_insertion__session__n_trials__gte,400'
 
 def labs():
