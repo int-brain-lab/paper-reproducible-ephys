@@ -100,7 +100,7 @@ def get_repeated_site_status(subj, date, probe, one=None):
         user_note = ''
 
     status = {'Subject': subj, 'Date': date, 'Probe': probe, 'ks2': ks2_exists,
-              'raw_ephys': ephys_exists, 'trials': trials_exists, 'wheel': wheel_exists,
+              'raw_ephys_qc': ephys_exists, 'trials': trials_exists, 'wheel': wheel_exists,
               'dlc': dlc_exists, 'passive': passive_exists, 'histology': histology_exists,
               'insertion': insertion_exists, 'planned': planned_exists, 'micro': micro_exists,
               'tracing': hist_exists, 'aligned': align_exists, 'resolved': align_resolved,

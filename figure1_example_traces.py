@@ -9,6 +9,8 @@ Repeated site plotted in red, other sites in black.
 # Author: Gaelle
 # inspired from:
 # https://github.com/int-brain-lab/ibllib/blob/master/examples/one/histology/visualization3D_alyx_traj_planned_histology.py
+# Could diplay channels instead of traj, cf:
+# https://github.com/int-brain-lab/ibllib/blob/master/examples/one/histology/docs_visualization3D_subject_channels.py
 
 from mayavi import mlab
 from atlaselectrophysiology import rendering

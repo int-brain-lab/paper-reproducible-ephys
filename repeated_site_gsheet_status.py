@@ -1,6 +1,6 @@
 """
 Update G-sheet rep.site status
-Author: Mayo
+Author: Mayo, Gaelle
 (turn into function for ease of call - GC)
 """
 
@@ -14,6 +14,9 @@ def update_rep_site():
     import numpy as np
     from oneibl.one import ONE
     from repeated_site_data_status import get_repeated_site_status
+    # import brainbox.behavior.training as training
+    from reproducible_ephys_functions import query
+    from reproducible_ephys_functions import STR_QUERY
 
     one = ONE()
 
@@ -89,40 +92,85 @@ def update_rep_site():
 
     probes[subjects == 'NYU-11'] = 'probe00'
 
-    df = pd.DataFrame(columns={'Subject', 'Date', 'Probe', 'ks2', 'raw_ephys', 'trials', 'wheel',
+    df = pd.DataFrame(columns={'Subject', 'Date', 'Probe', 'ks2', 'raw_ephys_qc', 'trials', 'wheel',
                                'dlc', 'passive', 'histology', 'insertion', 'planned', 'micro',
                                'tracing', 'aligned', 'resolved', 'user_note', 'origin_lab', 'assign_lab'})
+
+    # get insertions used in analysis
+    q = query()
+    q_ins_id = [item['probe_insertion'] for item in q]
+    del q
+
+    # get insertions potentially good
+    q = one.alyx.rest('trajectories', 'list', django=STR_QUERY)
+    q_ins_potential = [item['probe_insertion'] for item in q]
+    del q
+
+    # get insertions that are potentially good but do not match traj coord
+    q = one.alyx.rest('trajectories', 'list', provenance='Planned',
+                                 x=-2243, y=-2000, theta=15,
+                                 django=STR_QUERY)
+    # TODO should be equivalent to query(resolved=False, min_regions=0)
+    q_ins_coordcorrect = [item['probe_insertion'] for item in q]
+    del q
+
+    # get insertions that are passing L1 QC
+    q = one.alyx.rest('trajectories', 'list', provenance='Planned',
+                      django='probe_insertion__session__project__name__'
+                             'icontains,ibl_neuropixel_brainwide_01,'
+                             'probe_insertion__session__qc__lt,50,'
+                             'probe_insertion__session__extended_qc__behavior,1,'
+                             'probe_insertion__json__extended_qc__tracing_exists,True,'
+                             '~probe_insertion__session__extended_qc___task_stimOn_goCue_delays__lt,0.9,'
+                             '~probe_insertion__session__extended_qc___task_response_feedback_delays__lt,0.9,'
+                             '~probe_insertion__session__extended_qc___task_response_stimFreeze_delays__lt,0.9,'
+                             '~probe_insertion__session__extended_qc___task_wheel_move_before_feedback__lt,0.9,'
+                             '~probe_insertion__session__extended_qc___task_wheel_freeze_during_quiescence__lt,0.9,'
+                             '~probe_insertion__session__extended_qc___task_error_trial_event_sequence__lt,0.9,'
+                             '~probe_insertion__session__extended_qc___task_correct_trial_event_sequence__lt,0.9,'
+                             '~probe_insertion__session__extended_qc___task_n_trial_events__lt,0.9,'
+                             '~probe_insertion__session__extended_qc___task_reward_volumes__lt,0.9,'
+                             '~probe_insertion__session__extended_qc___task_reward_volume_set__lt,0.9,'
+                             '~probe_insertion__session__extended_qc___task_stimulus_move_before_goCue__lt,0.9,'
+                             '~probe_insertion__session__extended_qc___task_audio_pre_trial__lt,0.9')
+    q_ins_passl1 = [item['probe_insertion'] for item in q]
 
     for subj, date, probe in zip(subjects, dates, probes):
         status = get_repeated_site_status(subj, date, probe, one=one)
 
-        # Check if insertion is critical, criteria (OR):
-        # - session critical
-        # - insertion critical
-        # - behavior fail
-        # - impossible to trace
+        # Check if insertion is used in analysis as per query
         insertion = one.alyx.rest('insertions', 'list', subject=subj, date=date, name=probe)
         if len(insertion) == 0:
-            is_critical = False
-            ins_id = 'NaN'
+            is_used_analysis = False
+            is_potential = False
+            ins_id = "NaN"
         else:
             ins = insertion[0]
             ins_id = ins['id']
-            eid = ins['session_info']['id']
-            sess_crit = one.alyx.rest('sessions', 'list', id=eid,
-                                      django='qc,50')
-            behav_crit = one.alyx.rest('sessions', 'list', id=eid,
-                                       django='extended_qc__behavior,0')
-            ins_crit = one.alyx.rest('insertions', 'list', id=ins['id'],
-                                     django='json__qc__icontains,CRITICAL')
-            trac_crit = one.alyx.rest('insertions', 'list', id=ins['id'],
-                                      django='json__extended_qc__tracing_exists,False')
-
-            if len(sess_crit) > 0 or len(behav_crit) > 0 or len(ins_crit) > 0 or len(trac_crit) > 0:
-                is_critical = True
+            if ins_id in q_ins_id:
+                is_used_analysis = True
             else:
-                is_critical = False
-        status['is_critical'] = is_critical
+                is_used_analysis = False
+
+            if ins_id in q_ins_potential:
+                is_potential = True
+            else:
+                is_potential = False
+
+            if ins_id in q_ins_coordcorrect:
+                is_coordcorrect = True
+            else:
+                is_coordcorrect = False
+
+            if ins_id in q_ins_passl1:
+                is_passl1 = True
+            else:
+                is_passl1 = False
+
+        status['is_used_analysis'] = is_used_analysis
+        status['is_potential'] = is_potential
+        status['is_coordcorrect'] = is_coordcorrect
+        status['is_passl1'] = is_passl1
         status['ins_id'] = ins_id
 
         # Use ins_id to find who is assigned to do alignment
@@ -137,7 +185,9 @@ def update_rep_site():
 
         df = df.append(status, ignore_index=True)
 
-    df = df.reindex(columns=['ins_id', 'Subject', 'Date', 'Probe', 'is_critical', 'ks2', 'raw_ephys', 'trials', 'wheel',
+    df = df.reindex(columns=['ins_id', 'Subject', 'Date', 'Probe',
+                             'is_potential', 'is_coordcorrect',  'is_used_analysis', 'is_passl1',
+                             'ks2', 'raw_ephys_qc', 'trials', 'wheel',
                              'dlc', 'passive', 'histology', 'insertion', 'planned', 'micro',
                              'tracing', 'aligned', 'resolved', 'user_note', 'origin_lab', 'assign_lab'])
 
@@ -157,7 +207,7 @@ def update_rep_site():
         'sheetId': 0,
         'startRowIndex': 1,
         'endRowIndex': len(df) + 1,
-        'startColumnIndex': 4,
+        'startColumnIndex': 8,
         'endColumnIndex': 18  # len(df.columns),
     }
     requests = [{

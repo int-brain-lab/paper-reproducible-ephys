@@ -5,7 +5,7 @@ import alf.io
 import numpy as np
 from ibllib.ephys.neuropixel import SITES_COORDINATES
 from ibllib.pipes.ephys_alignment import EphysAlignment
-from ibllib.atlas import atlas, regions_from_allen_csv
+from ibllib.atlas import atlas, BrainRegions
 from brainbox.processing import bincount2D
 from matplotlib.image import NonUniformImage
 from pathlib import Path
@@ -16,7 +16,7 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
 
     one = one or ONE()
     brain_atlas = brain_atlas or atlas.AllenAtlas(25)
-    r = regions_from_allen_csv()
+    r = BrainRegions()
     depths = SITES_COORDINATES[:, 1]
 
     fig, axs = plt.subplots(1, len(subjects), constrained_layout=False, sharey=True,
@@ -286,7 +286,7 @@ def neuron_yield(alf_path):
 
 def get_brain_boundaries(brain_regions, z, r=None):
 
-    r = r or regions_from_allen_csv()
+    r = r or BrainRegions()
     all_levels = {}
     _brain_id = r.get(ids=brain_regions['id'])
     level = 10
