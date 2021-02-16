@@ -9,10 +9,11 @@ from ibllib.atlas import atlas, BrainRegions
 from brainbox.processing import bincount2D
 from matplotlib.image import NonUniformImage
 from pathlib import Path
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 
 def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_range=[2, 15],
-                     plot_type='fr'):
+                     plot_type='fr', boundary_align=None):
 
     one = one or ONE()
     brain_atlas = brain_atlas or atlas.AllenAtlas(25)
@@ -21,7 +22,6 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
 
     fig, axs = plt.subplots(1, len(subjects), constrained_layout=False, sharey=True,
                             figsize=(20, 10), dpi=150)
-
     z_extent = []
 
     for iR, (subj, date, probe_label) in enumerate(zip(subjects, dates, probes)):
@@ -54,7 +54,7 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
             z = xyz_channels[:, 2] * 1e6
             brain_regions = ephysalign.get_brain_locations(xyz_channels)
 
-            boundaries, colours = get_brain_boundaries(brain_regions, z, r)
+            boundaries, colours, regions = get_brain_boundaries(brain_regions, z, r)
 
             if resolved:
                 status = 'resolved'
@@ -72,7 +72,7 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
             z = xyz_channels[:, 2] * 1e6
             brain_regions = ephysalign.get_brain_locations(xyz_channels)
 
-            boundaries, colours = get_brain_boundaries(brain_regions, z, r)
+            boundaries, colours, regions = get_brain_boundaries(brain_regions, z, r)
 
             status = 'histology'
             col = 'r'
@@ -83,6 +83,11 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
             col = 'k'
             boundaries = []
 
+        if boundary_align is not None:
+            z_subtract = boundaries[np.where(np.array(regions) == boundary_align)[0][0]]
+            z = z - z_subtract
+            boundaries, colours, regions = get_brain_boundaries(brain_regions, z, r)
+
         z_min = np.min(z)
         z_extent.append(z_min)
         z_max = np.max(z)
@@ -91,23 +96,25 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
 
         if plot_type == 'psd':
             data = psd_data(ephys_path, one, eid, chn_inds, freq_range)
-            plot_probe(data, z, ax, cmap='viridis')
+            im = plot_probe(data, z, ax, cmap='viridis')
 
         elif plot_type == 'rms_ap':
             data = rms_data(ephys_path, one, eid, chn_inds, 'AP')
-            plot_probe(data, z, ax, cmap='plasma')
+            im = plot_probe(data, z, ax, cmap='plasma')
 
         elif plot_type == 'rms_lf':
             data = rms_data(ephys_path, one, eid, chn_inds, 'LF')
-            plot_probe(data, z, ax, cmap='magma')
+            im = plot_probe(data, z, ax, cmap='magma')
 
         elif plot_type == 'fr_alt':
             data = fr_data_alt(alf_path, one, eid, depths)
-            plot_probe(data, z, ax, cmap='magma')
+            im = plot_probe(data, z, ax, cmap='magma')
 
         elif plot_type == 'fr':
             y, data = fr_data(alf_path, one, eid, depths)
             y = ephysalign.get_channel_locations(feature, track, y / 1e6)[:, 2] * 1e6
+            if boundary_align is not None:
+                y = y - z_subtract
             im = NonUniformImage(ax, interpolation='nearest', cmap='magma')
             levels = np.nanquantile(data, [0.1, 0.9])
             im.set_clim(levels[0], levels[1])
@@ -117,6 +124,8 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
         elif plot_type == 'amp':
             y, data = amp_data(alf_path, one, eid, depths)
             y = ephysalign.get_channel_locations(feature, track, y / 1e6)[:, 2] * 1e6
+            if boundary_align is not None:
+                y = y - z_subtract
             im = NonUniformImage(ax, interpolation='nearest', cmap='magma')
             levels = np.nanquantile(data, [0.1, 0.9])
             im.set_clim(levels[0], levels[1])
@@ -126,12 +135,16 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
         elif plot_type == 'fr_line':
             y, data = fr_data(alf_path, one, eid, depths)
             y = ephysalign.get_channel_locations(feature, track, y / 1e6)[:, 2] * 1e6
+            if boundary_align is not None:
+                y = y - z_subtract
             ax.plot(data, y, 'k', linewidth=2)
             ax.set_xlim(0, 50)
 
         elif plot_type == 'amp_line':
             y, data = amp_data(alf_path, one, eid, depths)
             y = ephysalign.get_channel_locations(feature, track, y / 1e6)[:, 2] * 1e6
+            if boundary_align is not None:
+                y = y - z_subtract
             ax.plot(data, y, 'k', linewidth=2)
             ax.set_xlim(0, 200)
 
@@ -143,6 +156,12 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
         z_max = np.max(z_extent)
         z_min = np.min(z_extent)
         ax.set_ylim(z_min, z_max)
+
+    if plot_type[-4:] != 'line':
+        axin = inset_axes(axs[-1], width="25%", height="80%", loc='lower right', borderpad=0,
+                         bbox_to_anchor=(0.5, 0.1, 1, 1), bbox_transform=axs[-1].transAxes)
+        cbar = fig.colorbar(im, cax=axin, ticks=im.get_clim())
+        cbar.ax.set_yticklabels(['10th\nperc.', '90th\nperc'])
 
     plt.show()
     return fig, axs
@@ -156,8 +175,8 @@ def plot_probe(data, z, ax, cmap=None):
         im.set_clim(levels[0], levels[1])
         im.set_data(x, y, dat.T)
         ax.images.append(im)
-
     ax.set_xlim(0, 4.5)
+    return im
 
 
 def psd_data(ephys_path, one, eid, chn_inds, freq_range=[2, 15]):
@@ -300,19 +319,21 @@ def get_brain_boundaries(brain_regions, z, r=None):
 
     boundaries = []
     colours = []
+    regions = []
     void = np.where(all_levels['level_3'] == 'void')[0]
     if len(void) > 2:
         boundaries.append(z[void[0]])
         idx = np.where(r.acronym == 'VIS')[0]
         rgb = r.rgb[idx[0]]
         colours.append(rgb)
-
+        regions.append('void-VIS')
     ctx = np.where(all_levels['level_5'] == 'Isocortex')[0]
     if len(ctx) > 2:
         boundaries.append(z[ctx[0]])
         idx = np.where(r.acronym == 'VIS')[0]
         rgb = r.rgb[idx[0]]
         colours.append(rgb)
+        regions.append('VIS-HPF')
     hip = np.where(all_levels['level_5'] == 'HPF')[0]
     if len(hip) > 2:
         boundaries.append(z[hip[-1]])
@@ -321,14 +342,16 @@ def get_brain_boundaries(brain_regions, z, r=None):
         rgb = r.rgb[idx[0]]
         colours.append(rgb)
         colours.append(rgb)
+        regions.append('HPF-DG')
     thal = np.where(all_levels['level_2'] == 'BS')[0]
     if len(thal) > 2:
         boundaries.append(z[thal[-1]])
         idx = np.where(r.acronym == 'TH')[0]
         rgb = r.rgb[idx[0]]
         colours.append(rgb)
+        regions.append('DG-TH')
 
-    return boundaries, colours
+    return boundaries, colours, regions
 
 
 def arrange_channels2banks(data, y):

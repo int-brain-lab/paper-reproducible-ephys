@@ -20,6 +20,10 @@ one = ONE()
 
 # Plot settings
 PLOTS = ['fr', 'psd', 'rms_ap', 'rms_lf', 'fr_alt', 'amp', 'fr_line', 'amp_line']
+LABELS = ['Firing rate (spks/s)', 'Power spectral density', 'AP band RMS', 'LFP band RMS',
+          'Firing rate (spks/s)', 'Spike amplitude', '', '']
+#PLOTS = ['rms_ap']
+#LABELS = ['AP band RMS']
 NICKNAMES = True
 
 # Query repeated site trajectories
@@ -38,10 +42,11 @@ plot_titles = traj.groupby('institution').mean()
 for p, plot_name in enumerate(PLOTS):
     print('Generating %s plot' % plot_name)
     f, axs = plot_2D_features(traj['subjects'], traj['dates'], traj['probes'], one=one,
-                              brain_atlas=brain_atlas, plot_type=plot_name)
+                              brain_atlas=brain_atlas, plot_type=plot_name,
+                              boundary_align='VIS-HPF')
     for i, subject in enumerate(traj['subjects']):
         if NICKNAMES:
-            axs[i].set_title(subject, color='k', rotation=30, ha='left')
+            axs[i].set_title(subject, color='k', rotation=30, ha='left', fontsize=16)
         else:
             axs[i].set_title(traj.loc[i, 'recording'] + 1,
                          color=lab_colors[traj.loc[i, 'institution']], fontsize=20)
@@ -51,11 +56,16 @@ for p, plot_name in enumerate(PLOTS):
             axs[i].spines["right"].set_visible(False)
             axs[i].spines["bottom"].set_visible(False)
             axs[i].spines["top"].set_visible(False)
-            axs[i].set_ylabel('Depth relative to Bregma (\u03BCm)', fontsize=20)
+            axs[i].set_ylabel('Depth relative to cortex-hippocampus boundary (\u03BCm)',
+                              fontsize=20)
         else:
             axs[i].set_axis_off()
-        axs[i].set(xticks=[], ylim=[-5000, 0])
-    #f.colorbar(axs[i].collections[0])
+        axs[i].set(xticks=[], ylim=[-3000, 1000])
+
+    if plot_name[-4:] != 'line':
+        cbar = axs[-1].images[-1].colorbar
+        cbar.set_label(LABELS[p], rotation=270, labelpad=-8, fontsize=16)
+        cbar.ax.tick_params(labelsize=12)
 
     if not NICKNAMES:
         for i, inst in enumerate(plot_titles.index.values):
@@ -63,4 +73,5 @@ for p, plot_name in enumerate(PLOTS):
                         fontsize=20)
     if not isdir(join(FIG_PATH, 'probe_plots')):
         mkdir(join(FIG_PATH, 'probe_plots'))
+
     plt.savefig(join(FIG_PATH, 'probe_plots', 'figure3_probe_%s' % plot_name))

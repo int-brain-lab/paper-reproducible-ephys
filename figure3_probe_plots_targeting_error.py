@@ -20,6 +20,8 @@ one = ONE()
 
 # Plot settings
 PLOTS = ['fr', 'psd', 'rms_ap', 'rms_lf', 'fr_alt', 'amp', 'fr_line', 'amp_line']
+LABELS = ['Firing rate (spks/s)', 'Power spectral density', 'AP band RMS', 'LFP band RMS',
+          'Firing rate (spks/s)', 'Spike amplitude', '', '']
 
 # Query repeated site trajectories
 traj = query(as_dataframe=True)
@@ -46,7 +48,7 @@ for p, plot_name in enumerate(PLOTS):
                               brain_atlas=brain_atlas, plot_type=plot_name)
     for i, subject in enumerate(traj['subjects']):
         axs[i].set_title('%s\nError: %d um' % (subject, traj.loc[i, 'error']), color='k',
-                         rotation=30, ha='left', fontsize=10)
+                         rotation=45, ha='left', fontsize=7)
         if i == 0:
             axs[i].tick_params(axis='y', labelsize=16)
             axs[i].spines["right"].set_visible(False)
@@ -56,7 +58,10 @@ for p, plot_name in enumerate(PLOTS):
         else:
             axs[i].set_axis_off()
         axs[i].set(xticks=[], ylim=[-5000, 0])
-    #f.colorbar(axs[i].collections[0])
+
+    if plot_name[-4:] != 'line':
+        cbar = axs[-1].images[-1].colorbar
+        cbar.set_label(LABELS[p], rotation=270, labelpad=-10)
 
     if not isdir(join(FIG_PATH, 'probe_plots_targeting_error')):
         mkdir(join(FIG_PATH, 'probe_plots_targeting_error'))
