@@ -45,7 +45,8 @@ plot_titles = traj.groupby('institution').mean()
 for p, plot_name in enumerate(PLOTS):
     print('Generating %s plot' % plot_name)
     f, axs = plot_2D_features(traj['subjects'], traj['dates'], traj['probes'], one=one,
-                              brain_atlas=brain_atlas, plot_type=plot_name)
+                              brain_atlas=brain_atlas, plot_type=plot_name,
+                              boundary_align='VIS-HPF')
     for i, subject in enumerate(traj['subjects']):
         axs[i].set_title('%s\nError: %d um' % (subject, traj.loc[i, 'error']), color='k',
                          rotation=45, ha='left', fontsize=7)
@@ -57,7 +58,7 @@ for p, plot_name in enumerate(PLOTS):
             axs[i].set_ylabel('Depth relative to Bregma (\u03BCm)', fontsize=20)
         else:
             axs[i].set_axis_off()
-        axs[i].set(xticks=[], ylim=[-5000, 0])
+        axs[i].set(xticks=[], ylim=[-3000, 1000])
 
     if plot_name[-4:] != 'line':
         cbar = axs[-1].images[-1].colorbar
