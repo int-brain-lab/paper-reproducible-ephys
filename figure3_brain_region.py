@@ -17,9 +17,6 @@ from oneibl.one import ONE
 one = ONE()
 
 # Settings
-MIN_SPIKE_AMP = 50
-MIN_FR = 0.1
-MAX_AP_RMS = 10000
 NEURON_QC = True
 DOWNLOAD_DATA = True
 REGIONS = ['VISa', 'CA1', 'DG', 'LP', 'PO']
@@ -82,9 +79,6 @@ for i in range(len(traj)):
     median = np.mean(np.apply_along_axis(lambda x: np.median(x), 1, rms_ap_data))
     rms_ap_data_median = (np.apply_along_axis(lambda x: x - np.median(x), 1, rms_ap_data)
                           + median)
-    if np.mean(rms_ap_data_median[:, 20]) > MAX_AP_RMS:
-        print('AP band RMS too high')
-        continue
 
     # Get neurons that pass QC
     clusters_pass = np.where(clusters[probe]['metrics']['label'] == 1)[0]
@@ -128,13 +122,6 @@ for i in range(len(traj)):
                 pt_ratio[n] = np.nan
                 rp_slope[n] = np.nan
 
-        # Impose neuron selection
-        # neuron_select = (neuron_fr > MIN_FR) & (spike_amp > MIN_SPIKE_AMP)
-        neuron_select = (neuron_fr > MIN_FR)
-        neuron_fr = neuron_fr[neuron_select]
-        spike_amp = spike_amp[neuron_select]
-        neuron_count = np.sum(neuron_select)
-
         # Get mean and 90th percentile of spike amplitudes
         if len(spike_amp) == 0:
             spike_amp_90 = np.nan
@@ -158,6 +145,12 @@ for i in range(len(traj)):
 
         # Get AP band rms
         rms_ap_region = rms_ap_data_median[:, region_chan].mean()
+
+        # Get neuron count
+        if len(region_chan) == 0:
+            neuron_count = np.nan
+        else:
+            neuron_count = len(region_clusters)
 
         # Add to dataframe
         metrics = metrics.append(pd.DataFrame(
