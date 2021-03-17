@@ -23,8 +23,6 @@ traj = query()
 rep_site = pd.DataFrame()
 
 # %% Loop through repeated site recordings and extract the data
-
-noam_var = 5
 for i in range(len(traj)):
     print('Processing repeated site recording %d of %d' % (i+1, len(traj)))
 
