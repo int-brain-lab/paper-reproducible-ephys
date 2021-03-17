@@ -69,7 +69,7 @@ def update_rep_site():
 
     # For NYU and witten change from gsheet as they messed up!
     probes[subjects == 'NYU-21'] = 'probe00'
-    probes[subjects == 'ibl_witten_13'] = 'probe00'
+    # probes[subjects == 'ibl_witten_13'] = 'probe00'  # GC note: comment out as probe01 seems correct
     probes[subjects == 'NYU-11'] = 'Probe00'
 
     gsheet_list = [subj + '*' + date + '*' + probe for subj, date, probe in
@@ -136,6 +136,7 @@ def update_rep_site():
     q_ins_passl1 = [item['probe_insertion'] for item in q]
 
     for subj, date, probe in zip(subjects, dates, probes):
+        print(f'====== {subj}, {date}, {probe} ======')  # todo remove, for debugging
         status = get_repeated_site_status(subj, date, probe, one=one)
 
         # Check if insertion is used in analysis as per query
