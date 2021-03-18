@@ -91,7 +91,7 @@ def get_repeated_site_status(subj, date, probe, one=None):
             align_resolved = False
 
     if align_exists:
-        traj = one.alyx.rest('trajectories', 'list', probe_insertion=insertion[0]['id'],
+        traj = one.alyx.rest('trajectories', 'list', probe_insertion=insertion[len(insertion)-1]['id'],
                              provenance='Ephys aligned histology track')
         users = [*traj[0]['json'].keys()]
         username = [us[20:] for us in users]
