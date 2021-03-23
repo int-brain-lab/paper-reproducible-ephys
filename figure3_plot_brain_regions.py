@@ -20,10 +20,10 @@ REGIONS = ['VISa', 'CA1', 'DG', 'LP', 'PO']
 NICKNAMES = True  # Whether to plot the animal nicknames instead of numbers
 
 #exclude sessions without certain amounts of data
-nchannels_region_thresh = 2 #Whether to exclude sessions if they do not have 
-    #"required_yield good neurons in at LEAST X regions. 
+nchannels_region_thresh = 2 #Whether to exclude sessions if they do not have
+    #"required_yield good neurons in at LEAST X regions.
     #Set to 0 to never exclude sessions.
-required_yield = 10 #number of good neurons required in a region to plot this session.
+required_yield = 0 #number of good neurons required in a region to plot this session.
 
 # Load in data
 metrics = pd.read_csv(join(data_path(), 'figure3_brain_regions.csv'))
@@ -59,8 +59,8 @@ if NICKNAMES:
 else:
     metrics_plot = metrics.pivot(index='region_number', columns='recording_number',
                                  values='yield_per_channel').sort_values('region_number')
-    
-metrics_plot_thresh = metrics_plot.dropna(axis = 1,thresh = 5-nchannels_region_thresh)    
+
+metrics_plot_thresh = metrics_plot.dropna(axis = 1,thresh = 5-nchannels_region_thresh)
 metrics_plot.drop(metrics_plot.columns.difference(metrics_plot_thresh.columns), 1, inplace=True)
 sns.heatmap(metrics_plot, square=True, cmap='twilight_shifted', center=0,
             cbar_kws={'label': 'Neurons per channel'}, annot=True, annot_kws={"size": 12},
