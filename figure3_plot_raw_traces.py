@@ -34,9 +34,9 @@ GLOBAL_REF = False
 BAND_PASS_AP = [300, 2000]
 BAND_PASS_LF = [0.5, 300]
 
-#SUBJECT = 'KS023'
-#eid = 'aad23144-0e52-4eac-80c5-c4ee2decb198'  # KS023
-#probe = 'probe01'
+SUBJECT = 'KS023'
+eid = 'aad23144-0e52-4eac-80c5-c4ee2decb198'  # KS023
+probe = 'probe01'
 PLOT_START_SEC = 610.3
 DROP_CH = [9, 11, 19, 22, 24, 73]
 RIPPLE_START = 1.57
@@ -46,9 +46,9 @@ RIPPLE_CH = np.arange(110, 136)
 #SUBJECT = 'ZM_2241'
 #eid = 'ee40aece-cffd-4edb-a4b6-155f158c666a'  # ZM_2241
 # eid = 'f312aaec-3b6f-44b3-86b4-3a0c119c0438'  # CSHL058
-SUBJECT = 'DY_010'
-eid = 'b03fbc44-3d8e-4a6c-8a50-5ea3498568e0'  # DY_010
-probe = 'probe00'
+#SUBJECT = 'DY_010'
+#eid = 'b03fbc44-3d8e-4a6c-8a50-5ea3498568e0'  # DY_010
+#probe = 'probe00'
 
 ses_info = one.get_details(eid)
 
@@ -207,7 +207,7 @@ plt.savefig(join(FIG_PATH, f'{SUBJECT}_raw_lf_traces.pdf'))
 # %% Plot color plot
 
 f, ax1 = plt.subplots(1, 1, figsize=(2, 10), dpi=300)
-sns.heatmap(signal_ap, cmap='seismic', vmin=-15, vmax=15, cbar=False, ax=ax1)
+sns.heatmap(signal_ap, cmap='twilight_shifted', center=0, vmin=-6, vmax=6, cbar=False, ax=ax1)
 ax1.axis('off')
 plt.savefig(join(FIG_PATH, f'{SUBJECT}_color_probe_plot.png'))
 

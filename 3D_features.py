@@ -10,14 +10,11 @@ import alf.io
 from brainbox.processing import bincount2D
 from atlaselectrophysiology import rendering
 from pathlib import Path
+from reproducible_ephys_functions import query
 one = ONE()
 ba = atlas.AllenAtlas(25)
 
-trajectories = one.alyx.rest('trajectories', 'list', provenance='Planned',
-                             x=-2243, y=-2000,  # repeated site coordinate
-                             project='ibl_neuropixel_brainwide_01',
-                             django='probe_insertion__session__qc__lt,50')  # All except CRITICAL
-
+trajectories = query()
 
 probe_insertion = [t['probe_insertion'] for t in trajectories]
 depths = SITES_COORDINATES[:, 1] / 1e6

@@ -15,12 +15,15 @@ from scipy import stats
 import statsmodels.api as sm
 from statsmodels.formula.api import ols
 import matplotlib.pyplot as plt
-from reproducible_ephys_functions import data_path, labs
+from reproducible_ephys_functions import data_path, labs, exclude_recordings
 from reproducible_ephys_paths import FIG_PATH
 
 # Settings
 MIN_REC_ANOVA = 0
-MIN_REC_KW = 4
+MIN_REC_KW = 0
+MAX_AP_RMS = 50  # max ap band rms to be included
+MIN_REGIONS = 3  # min amount of regions to be included
+MIN_CHANNELS = 10  # min amount of channels in a region to say it was targeted
 REGIONS = ['VISa', 'CA1', 'DG', 'LP', 'PO']
 METRICS = ['neuron_yield', 'firing_rate', 'lfp_power_low', 'rms_ap']
 LABELS = ['Neuron yield', 'Firing rate', 'LFP power', 'AP band RMS']
@@ -29,6 +32,9 @@ lab_number_map, institution_map, lab_colors = labs()
 # Load in data
 data = pd.read_csv(join(data_path(), 'figure3_brain_regions.csv'))
 data['institute'] = data['lab'].map(institution_map)
+
+# Exclude recordings
+data = exclude_recordings(data)
 
 # Do some cleanup
 data.loc[data['lfp_power_low'] < -100000, 'lfp_power_low'] = np.nan
@@ -104,7 +110,7 @@ n_recordings = n_recordings.unstack(level=0)
 # n_recordings.columns = n_recordings.columns.map(institution_map)
 sns.heatmap(n_recordings, cmap='twilight_shifted', center=0, square=True,
             annot=True, annot_kws={"size": 12},
-            linewidths=.5, fmt='d', cbar=False, ax=ax3)
+            linewidths=.5, fmt='.0f', cbar=False, ax=ax3)
 #ax3.xaxis.tick_top()
 ax3.set(xlabel='', ylabel='', title='Number of recordings')
 ax3.set_xticklabels(n_recordings.columns.values, rotation=45)
