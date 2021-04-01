@@ -69,8 +69,8 @@ def get_repeated_site_status(subj, date, probe, one=None):
                                     provenance='Histology track')
 
     hist_exists = len(hist_trajectory) == 1
-    if hist_exists and not histology_exists:
-        histology_exists = True
+    # if hist_exists and not histology_exists:
+    #     histology_exists = True
 
     align_trajectory = one.alyx.rest('trajectories', 'list', subject=subj, date=date, probe=probe,
                                      provenance='Ephys aligned histology track')
