@@ -58,7 +58,7 @@ def get_picks_mean_vectors(xyz_picks, extent=3):
     return np.array(vectors), ids
 
 
-def add_insertion_probes(controller, one_connection, reduced=True, with_labels=False):
+def add_insertion_probes(controller, one_connection, reduced=True, line_width=5):
     """
     Add insertion probe vectors
     :param controller: The IBLViewer controller
@@ -69,14 +69,10 @@ def add_insertion_probes(controller, one_connection, reduced=True, with_labels=F
     vectors = get_bwm_ins_alyx(one_connection)
     if reduced:
         vectors, ids = get_picks_mean_vectors(vectors)
-        lines = controller.view.add_lines(vectors)
+        lines = controller.view.add_segments(vectors, line_width=line_width)
     else:
-        lines = controller.view.add_lines(vectors)
+        lines = controller.view.add_lines(vectors, line_width=line_width)
     actors = [lines]
-
-    if with_labels:
-        labels = lines.labels('ids', rotX=-180, cells=True)
-        actors.append(labels)
 
     controller.plot.add(actors)
     return lines

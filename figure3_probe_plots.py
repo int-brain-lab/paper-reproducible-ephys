@@ -75,7 +75,7 @@ for p, plot_name in enumerate(PLOTS):
             axs[i].spines["right"].set_visible(False)
             axs[i].spines["bottom"].set_visible(False)
             axs[i].spines["top"].set_visible(False)
-            axs[i].set_ylabel('Depth relative to hippocampus-thalamus boundary (\u03BCm)',
+            axs[i].set_ylabel('Depth relative to DG-Thalamus boundary (\u03BCm)',
                               fontsize=20)
         else:
             axs[i].set_axis_off()
@@ -88,7 +88,7 @@ for p, plot_name in enumerate(PLOTS):
 
     for i, inst in enumerate(plot_titles.index.values):
         if NICKNAMES:
-            plt.figtext(plot_titles.loc[inst, 'lab_position'], 0.98, inst, color=lab_colors[inst],
+            plt.figtext(plot_titles.loc[inst, 'lab_position'], 0.975, inst, color=lab_colors[inst],
                             fontsize=20, ha='center')
         else:
             plt.figtext(plot_titles.loc[inst, 'lab_position'], 0.94, inst, color=lab_colors[inst],
