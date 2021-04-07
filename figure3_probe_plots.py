@@ -26,7 +26,7 @@ LABELS = ['Firing rate (spks/s)', 'Power spectral density', 'AP band RMS', 'LFP 
           'Firing rate (spks/s)', 'Spike amplitude', '', '']
 #PLOTS = ['rms_ap']
 #LABELS = ['AP band RMS']
-NICKNAMES = False
+NICKNAMES = True
 
 # Load in recordings
 data = pd.read_csv(join(data_path(), 'figure3_brain_regions.csv'))
@@ -43,7 +43,7 @@ data = data.sort_values(by=['institution', 'subject']).reset_index(drop=True)
 # Get lab info
 rec_per_lab = data.groupby('institution').size()
 data['recording'] =  np.concatenate([np.arange(i) for i in rec_per_lab.values])
-data['lab_position'] = np.linspace(0.12, 0.865, data.shape[0])
+data['lab_position'] = np.linspace(0.18, 0.9, data.shape[0])
 plot_titles = data.groupby('institution').mean()
 
 """
@@ -64,7 +64,8 @@ for p, plot_name in enumerate(PLOTS):
                               boundary_align=BOUNDARY)
     for i, subject in enumerate(data['subject']):
         if NICKNAMES:
-            axs[i].set_title(subject, color='k', rotation=30, ha='left', fontsize=16)
+            axs[i].set_title(subject, rotation=30, ha='left',
+                             color=lab_colors[data.loc[i, 'institution']], fontsize=16)
         else:
             axs[i].set_title(data.loc[i, 'recording'] + 1,
                          color=lab_colors[data.loc[i, 'institution']], fontsize=20)
@@ -85,16 +86,14 @@ for p, plot_name in enumerate(PLOTS):
         cbar.set_label(LABELS[p], rotation=270, labelpad=-8, fontsize=16)
         cbar.ax.tick_params(labelsize=12)
 
-    if not NICKNAMES:
-        for i, inst in enumerate(plot_titles.index.values):
+    for i, inst in enumerate(plot_titles.index.values):
+        if NICKNAMES:
+            plt.figtext(plot_titles.loc[inst, 'lab_position'], 0.98, inst, color=lab_colors[inst],
+                            fontsize=20, ha='center')
+        else:
             plt.figtext(plot_titles.loc[inst, 'lab_position'], 0.94, inst, color=lab_colors[inst],
-                        fontsize=20)
+                            fontsize=20)
     if not isdir(join(FIG_PATH, 'probe_plots')):
         mkdir(join(FIG_PATH, 'probe_plots'))
-        mkdir(join(FIG_PATH, 'probe_plots', 'nicknames'))
-        mkdir(join(FIG_PATH, 'probe_plots', 'labs'))
 
-    if NICKNAMES:
-        plt.savefig(join(FIG_PATH, 'probe_plots', 'nicknames', 'figure3_probe_%s' % plot_name))
-    else:
-        plt.savefig(join(FIG_PATH, 'probe_plots', 'labs', 'figure3_probe_%s' % plot_name))
+    plt.savefig(join(FIG_PATH, 'probe_plots', 'figure3_probe_%s' % plot_name))

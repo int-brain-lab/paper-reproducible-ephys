@@ -23,19 +23,18 @@ def get_bwm_ins_alyx(one):
                 'probe_insertion__session__n_trials__gte,400,' \
                 'probe_insertion__json__extended_qc__alignment_resolved,True'
 
-    ins = one.alyx.rest('trajectories', 'list', provenance='Planned',
+    traj = one.alyx.rest('trajectories', 'list', provenance='Planned',
                         x=-2243, y=-2000, theta=15, django=STR_QUERY)
 
-    ins_id = [item['id'] for item in ins]
-    sess_id = [item['session']['id'] for item in ins]
+    ins_id = [item['probe_insertion'] for item in traj]
+    sess_id = [item['session']['id'] for item in traj]
     # Here's what's in 'json':
     # dict_keys(['qc', 'n_units', 'xyz_picks', 'extended_qc', 'drift_rms_um', 'firing_rate_max', 'n_units_qc_pass',
     # 'amplitude_max_uV', 'firing_rate_median', 'amplitude_median_uV', 'whitening_matrix_conditioning'])
     xyz_picks = {}
-    for item in ins:
-        ins_id = item['id']
-        picks = np.array(item['json'].get('xyz_picks', []))
-        xyz_picks[ins_id] = picks
+    for item in ins_id:
+        ins = one.alyx.rest('insertions', 'list', id=item)
+        xyz_picks[item] = np.array(ins[0]['json'].get('xyz_picks', []))
     sess_id = np.unique(sess_id)
     return xyz_picks
 
@@ -70,7 +69,7 @@ def add_insertion_probes(controller, one_connection, reduced=True, with_labels=F
     vectors = get_bwm_ins_alyx(one_connection)
     if reduced:
         vectors, ids = get_picks_mean_vectors(vectors)
-        lines = controller.view.add_segments(vectors)
+        lines = controller.view.add_lines(vectors)
     else:
         lines = controller.view.add_lines(vectors)
     actors = [lines]
@@ -89,5 +88,5 @@ if __name__ == '__main__':
     controller = atlas_controller.AtlasController()
     controller.initialize(resolution=25, mapping='Allen', embed_ui=True, jupyter=False)
 
-    add_insertion_probes(controller, one_connection, reduced=False)
+    add_insertion_probes(controller, one_connection, reduced=True)
     controller.render()

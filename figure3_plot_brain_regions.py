@@ -17,7 +17,7 @@ from reproducible_ephys_paths import FIG_PATH
 
 # Settings
 REGIONS = ['VISa', 'CA1', 'DG', 'LP', 'PO']
-NICKNAMES = False  # Whether to plot the animal nicknames instead of numbers
+NICKNAMES = True  # Whether to plot the animal nicknames instead of numbers
 MIN_CHANNELS = 5
 
 # Load in data
@@ -27,7 +27,7 @@ metrics = pd.read_csv(join(data_path(), 'figure3_brain_regions.csv'))
 lab_number_map, institution_map, lab_colors = labs()
 
 # Exclude recordings
-metrics = exclude_recordings(metrics)
+#metrics = exclude_recordings(metrics, max_ap_rms=1000000000000)
 
 # Reformat data
 metrics.loc[metrics['n_channels'] < MIN_CHANNELS, 'neuron_yield'] = np.nan
@@ -58,7 +58,7 @@ else:
 
 
 sns.set(style='ticks', context='paper', font_scale=1.8)
-f, ax1 = plt.subplots(1, 1, figsize=(15, 4), dpi=150)
+f, ax1 = plt.subplots(1, 1, figsize=(15, 5), dpi=150)
 if NICKNAMES:
     metrics_plot = metrics.pivot(index='region_number', columns='subject',
                                  values='yield_per_channel').sort_values('region_number')
@@ -73,15 +73,21 @@ ax1.set(xlabel='', ylabel='', xticklabels=metrics_plot.columns.values)
 ax1.set_yticklabels(REGIONS, va='center')
 if NICKNAMES:
     ax1.set_xticklabels(metrics_plot.columns.values, rotation=30, fontsize=12, ha='left')
+    lab_title_y = -2.5
+    lab_title_ha = 'left'
 else:
-    rec_per_lab = metrics.groupby('institution').size() / len(REGIONS)
-    offset = 0
-    for i, inst in enumerate(rec_per_lab.index.values):
-        ax1.text((rec_per_lab[inst] / 2) + offset, -0.8, inst, ha='center', color=lab_colors[inst])
-        for j in range(int(offset), int(offset + rec_per_lab[inst])):
-            plt.gca().get_xticklabels()[j].set_color(lab_colors[inst])
-        offset += rec_per_lab[inst]
     ax1.set(xticklabels=n_rec)
+    lab_title_y = -0.8
+    lab_title_ha = 'center'
+rec_per_lab = metrics.groupby('institution').size() / len(REGIONS)
+offset = 0
+for i, inst in enumerate(rec_per_lab.index.values):
+    ax1.text((rec_per_lab[inst] / 2) + offset, lab_title_y, inst, ha=lab_title_ha,
+             color=lab_colors[inst])
+    for j in range(int(offset), int(offset + rec_per_lab[inst])):
+        plt.gca().get_xticklabels()[j].set_color(lab_colors[inst])
+    offset += rec_per_lab[inst]
+
 plt.tight_layout()
 plt.savefig(join(FIG_PATH, 'figure3_regions_yield-per-channel'))
 
@@ -102,15 +108,21 @@ ax1.set(xlabel='', ylabel='', xticklabels=metrics_plot.columns.values)
 ax1.set_yticklabels(REGIONS, va='center')
 if NICKNAMES:
     ax1.set_xticklabels(metrics_plot.columns.values, rotation=30, fontsize=12, ha='left')
+    lab_title_y = -2.5
+    lab_title_ha = 'left'
 else:
-    rec_per_lab = metrics.groupby('institution').size() / len(REGIONS)
-    offset = 0
-    for i, inst in enumerate(rec_per_lab.index.values):
-        ax1.text((rec_per_lab[inst] / 2) + offset, -0.8, inst, ha='center', color=lab_colors[inst])
-        for j in range(int(offset), int(offset + rec_per_lab[inst])):
-            plt.gca().get_xticklabels()[j].set_color(lab_colors[inst])
-        offset += rec_per_lab[inst]
     ax1.set(xticklabels=n_rec)
+    lab_title_y = -0.8
+    lab_title_ha = 'center'
+rec_per_lab = metrics.groupby('institution').size() / len(REGIONS)
+offset = 0
+for i, inst in enumerate(rec_per_lab.index.values):
+    ax1.text((rec_per_lab[inst] / 2) + offset, lab_title_y, inst, ha=lab_title_ha,
+             color=lab_colors[inst])
+    for j in range(int(offset), int(offset + rec_per_lab[inst])):
+        plt.gca().get_xticklabels()[j].set_color(lab_colors[inst])
+    offset += rec_per_lab[inst]
+
 plt.tight_layout()
 plt.savefig(join(FIG_PATH, 'figure3_regions_firing-rate'))
 
@@ -131,15 +143,21 @@ ax1.set(xlabel='', ylabel='', xticklabels=metrics_plot.columns.values)
 ax1.set_yticklabels(REGIONS, va='center')
 if NICKNAMES:
     ax1.set_xticklabels(metrics_plot.columns.values, rotation=30, fontsize=12, ha='left')
+    lab_title_y = -2.5
+    lab_title_ha = 'left'
 else:
-    rec_per_lab = metrics.groupby('institution').size() / len(REGIONS)
-    offset = 0
-    for i, inst in enumerate(rec_per_lab.index.values):
-        ax1.text((rec_per_lab[inst] / 2) + offset, -0.8, inst, ha='center', color=lab_colors[inst])
-        for j in range(int(offset), int(offset + rec_per_lab[inst])):
-            plt.gca().get_xticklabels()[j].set_color(lab_colors[inst])
-        offset += rec_per_lab[inst]
     ax1.set(xticklabels=n_rec)
+    lab_title_y = -0.8
+    lab_title_ha = 'center'
+rec_per_lab = metrics.groupby('institution').size() / len(REGIONS)
+offset = 0
+for i, inst in enumerate(rec_per_lab.index.values):
+    ax1.text((rec_per_lab[inst] / 2) + offset, lab_title_y, inst, ha=lab_title_ha,
+             color=lab_colors[inst])
+    for j in range(int(offset), int(offset + rec_per_lab[inst])):
+        plt.gca().get_xticklabels()[j].set_color(lab_colors[inst])
+    offset += rec_per_lab[inst]
+
 plt.tight_layout()
 plt.savefig(join(FIG_PATH, 'figure3_regions_spike-amplitude'))
 
@@ -160,15 +178,21 @@ ax1.set(xlabel='', ylabel='', xticklabels=metrics_plot.columns.values)
 ax1.set_yticklabels(REGIONS, va='center')
 if NICKNAMES:
     ax1.set_xticklabels(metrics_plot.columns.values, rotation=30, fontsize=12, ha='left')
+    lab_title_y = -2.5
+    lab_title_ha = 'left'
 else:
-    rec_per_lab = metrics.groupby('institution').size() / len(REGIONS)
-    offset = 0
-    for i, inst in enumerate(rec_per_lab.index.values):
-        ax1.text((rec_per_lab[inst] / 2) + offset, -0.8, inst, ha='center', color=lab_colors[inst])
-        for j in range(int(offset), int(offset + rec_per_lab[inst])):
-            plt.gca().get_xticklabels()[j].set_color(lab_colors[inst])
-        offset += rec_per_lab[inst]
     ax1.set(xticklabels=n_rec)
+    lab_title_y = -0.8
+    lab_title_ha = 'center'
+rec_per_lab = metrics.groupby('institution').size() / len(REGIONS)
+offset = 0
+for i, inst in enumerate(rec_per_lab.index.values):
+    ax1.text((rec_per_lab[inst] / 2) + offset, lab_title_y, inst, ha=lab_title_ha,
+             color=lab_colors[inst])
+    for j in range(int(offset), int(offset + rec_per_lab[inst])):
+        plt.gca().get_xticklabels()[j].set_color(lab_colors[inst])
+    offset += rec_per_lab[inst]
+
 plt.tight_layout()
 plt.savefig(join(FIG_PATH, 'figure3_regions_pt-ratio'))
 
@@ -189,15 +213,21 @@ ax1.set(xlabel='', ylabel='', xticklabels=metrics_plot.columns.values)
 ax1.set_yticklabels(REGIONS, va='center')
 if NICKNAMES:
     ax1.set_xticklabels(metrics_plot.columns.values, rotation=30, fontsize=12, ha='left')
+    lab_title_y = -2.5
+    lab_title_ha = 'left'
 else:
-    rec_per_lab = metrics.groupby('institution').size() / len(REGIONS)
-    offset = 0
-    for i, inst in enumerate(rec_per_lab.index.values):
-        ax1.text((rec_per_lab[inst] / 2) + offset, -0.8, inst, ha='center', color=lab_colors[inst])
-        for j in range(int(offset), int(offset + rec_per_lab[inst])):
-            plt.gca().get_xticklabels()[j].set_color(lab_colors[inst])
-        offset += rec_per_lab[inst]
     ax1.set(xticklabels=n_rec)
+    lab_title_y = -0.8
+    lab_title_ha = 'center'
+rec_per_lab = metrics.groupby('institution').size() / len(REGIONS)
+offset = 0
+for i, inst in enumerate(rec_per_lab.index.values):
+    ax1.text((rec_per_lab[inst] / 2) + offset, lab_title_y, inst, ha=lab_title_ha,
+             color=lab_colors[inst])
+    for j in range(int(offset), int(offset + rec_per_lab[inst])):
+        plt.gca().get_xticklabels()[j].set_color(lab_colors[inst])
+    offset += rec_per_lab[inst]
+
 plt.tight_layout()
 plt.savefig(join(FIG_PATH, 'figure3_regions_rp-slope'))
 
@@ -218,15 +248,21 @@ ax1.set(xlabel='', ylabel='', xticklabels=metrics_plot.columns.values)
 ax1.set_yticklabels(REGIONS, va='center')
 if NICKNAMES:
     ax1.set_xticklabels(metrics_plot.columns.values, rotation=30, fontsize=12, ha='left')
+    lab_title_y = -2.5
+    lab_title_ha = 'left'
 else:
-    rec_per_lab = metrics.groupby('institution').size() / len(REGIONS)
-    offset = 0
-    for i, inst in enumerate(rec_per_lab.index.values):
-        ax1.text((rec_per_lab[inst] / 2) + offset, -0.8, inst, ha='center', color=lab_colors[inst])
-        for j in range(int(offset), int(offset + rec_per_lab[inst])):
-            plt.gca().get_xticklabels()[j].set_color(lab_colors[inst])
-        offset += rec_per_lab[inst]
     ax1.set(xticklabels=n_rec)
+    lab_title_y = -0.8
+    lab_title_ha = 'center'
+rec_per_lab = metrics.groupby('institution').size() / len(REGIONS)
+offset = 0
+for i, inst in enumerate(rec_per_lab.index.values):
+    ax1.text((rec_per_lab[inst] / 2) + offset, lab_title_y, inst, ha=lab_title_ha,
+             color=lab_colors[inst])
+    for j in range(int(offset), int(offset + rec_per_lab[inst])):
+        plt.gca().get_xticklabels()[j].set_color(lab_colors[inst])
+    offset += rec_per_lab[inst]
+
 plt.tight_layout()
 plt.savefig(join(FIG_PATH, 'figure3_regions_lfp-power'))
 
@@ -247,15 +283,21 @@ ax1.set(xlabel='', ylabel='', xticklabels=metrics_plot.columns.values)
 ax1.set_yticklabels(REGIONS, va='center')
 if NICKNAMES:
     ax1.set_xticklabels(metrics_plot.columns.values, rotation=30, fontsize=12, ha='left')
+    lab_title_y = -2.5
+    lab_title_ha = 'left'
 else:
-    rec_per_lab = metrics.groupby('institution').size() / len(REGIONS)
-    offset = 0
-    for i, inst in enumerate(rec_per_lab.index.values):
-        ax1.text((rec_per_lab[inst] / 2) + offset, -0.8, inst, ha='center', color=lab_colors[inst])
-        for j in range(int(offset), int(offset + rec_per_lab[inst])):
-            plt.gca().get_xticklabels()[j].set_color(lab_colors[inst])
-        offset += rec_per_lab[inst]
     ax1.set(xticklabels=n_rec)
+    lab_title_y = -0.8
+    lab_title_ha = 'center'
+rec_per_lab = metrics.groupby('institution').size() / len(REGIONS)
+offset = 0
+for i, inst in enumerate(rec_per_lab.index.values):
+    ax1.text((rec_per_lab[inst] / 2) + offset, lab_title_y, inst, ha=lab_title_ha,
+             color=lab_colors[inst])
+    for j in range(int(offset), int(offset + rec_per_lab[inst])):
+        plt.gca().get_xticklabels()[j].set_color(lab_colors[inst])
+    offset += rec_per_lab[inst]
+
 plt.tight_layout()
 plt.savefig(join(FIG_PATH, 'figure3_regions_rms-ap'))
 
@@ -277,15 +319,21 @@ ax1.set(xlabel='', ylabel='', xticklabels=metrics_plot.columns.values)
 ax1.set_yticklabels(REGIONS, va='center')
 if NICKNAMES:
     ax1.set_xticklabels(metrics_plot.columns.values, rotation=30, fontsize=12, ha='left')
+    lab_title_y = -2.5
+    lab_title_ha = 'left'
 else:
-    rec_per_lab = metrics.groupby('institution').size() / len(REGIONS)
-    offset = 0
-    for i, inst in enumerate(rec_per_lab.index.values):
-        ax1.text((rec_per_lab[inst] / 2) + offset, -0.8, inst, ha='center', color=lab_colors[inst])
-        for j in range(int(offset), int(offset + rec_per_lab[inst])):
-            plt.gca().get_xticklabels()[j].set_color(lab_colors[inst])
-        offset += rec_per_lab[inst]
     ax1.set(xticklabels=n_rec)
+    lab_title_y = -0.8
+    lab_title_ha = 'center'
+rec_per_lab = metrics.groupby('institution').size() / len(REGIONS)
+offset = 0
+for i, inst in enumerate(rec_per_lab.index.values):
+    ax1.text((rec_per_lab[inst] / 2) + offset, lab_title_y, inst, ha=lab_title_ha,
+             color=lab_colors[inst])
+    for j in range(int(offset), int(offset + rec_per_lab[inst])):
+        plt.gca().get_xticklabels()[j].set_color(lab_colors[inst])
+    offset += rec_per_lab[inst]
+
 plt.tight_layout()
 plt.savefig(join(FIG_PATH, 'figure3_regions_neuron-count'))
 

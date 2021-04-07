@@ -6,9 +6,10 @@ Created on Thu Nov 12 14:22:17 2020
 @author: guido
 """
 
+from os import mkdir
 import numpy as np
 import pandas as pd
-from os.path import join
+from os.path import join, isdir
 from pathlib import Path
 import glob
 import brainbox.io.one as bbone
@@ -74,5 +75,7 @@ for i in range(len(traj)):
                      signal[np.random.choice(region_chan), :] + REGION_PLOT[k], label=region, lw=2)
     ax1.set(title='%s' % nickname, xlabel='Time (s)')
     ax1.legend()
-    plt.savefig(join(FIG_PATH, 'lfp-traces_%s' % nickname))
+    if not isdir(join(FIG_PATH, 'lfp-traces')):
+        mkdir(join(FIG_PATH, 'lfp-traces'))
+    plt.savefig(join(FIG_PATH, 'lfp-traces', 'lfp-traces_%s' % nickname))
     plt.close(f)
