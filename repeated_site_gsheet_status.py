@@ -118,7 +118,7 @@ def update_rep_site():
     q = one.alyx.rest('trajectories', 'list', provenance='Planned',
                       django='probe_insertion__session__project__name__'
                              'icontains,ibl_neuropixel_brainwide_01,'
-                             'probe_insertion__session__qc__lt,50,'
+                             'probe_insertion__session__qc__lt,50,'  # TODO add insertion not CRITICAL
                              'probe_insertion__session__extended_qc__behavior,1,'
                              'probe_insertion__json__extended_qc__tracing_exists,True,'
                              '~probe_insertion__session__extended_qc___task_stimOn_goCue_delays__lt,0.9,'
