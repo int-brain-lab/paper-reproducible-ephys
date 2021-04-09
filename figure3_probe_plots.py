@@ -21,11 +21,13 @@ one = ONE()
 
 # Plot settings
 BOUNDARY = 'DG-TH'
-PLOTS = ['fr', 'psd', 'rms_ap', 'rms_lf', 'fr_alt', 'amp', 'fr_line', 'amp_line']
+PLOTS = ['fr', 'psd', 'rms_ap', 'rms_lf', 'fr_alt', 'amp', 'fr_line', 'amp_line', 'regions_line',
+         'distance_line', 'scatter_line']
 LABELS = ['Firing rate (spks/s)', 'Power spectral density', 'AP band RMS', 'LFP band RMS',
-          'Firing rate (spks/s)', 'Spike amplitude', '', '']
-#PLOTS = ['rms_ap']
-#LABELS = ['AP band RMS']
+          'Firing rate (spks/s)', 'Spike amplitude', '', '', 'Histology Regions',
+          'Distance from Repeated Site', 'Spike time vs Spike depth vs Spike amp']
+# PLOTS = ['regions_line']
+# LABELS = ['AP band RMS']
 NICKNAMES = True
 
 # Load in recordings

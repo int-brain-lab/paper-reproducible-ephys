@@ -1,6 +1,7 @@
 # import modules
 from oneibl.one import ONE
 import matplotlib.pyplot as plt
+from matplotlib import cm
 import alf.io
 import numpy as np
 from ibllib.ephys.neuropixel import SITES_COORDINATES
@@ -132,6 +133,13 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
             im.set_data(np.array([0]), y, data)
             ax.images.append(im)
 
+        elif plot_type == 'scatter_line':
+            x, y, c, s = spike_amp_data(alf_path, eid, one)
+            y = ephysalign.get_channel_locations(feature, track, y / 1e6)[:, 2] * 1e6
+            if boundary_align is not None:
+                y = y - z_subtract
+            ax.scatter(x, y, c=c, s=s)
+
         elif plot_type == 'fr_line':
             y, data = fr_data(alf_path, one, eid, depths)
             y = ephysalign.get_channel_locations(feature, track, y / 1e6)[:, 2] * 1e6
@@ -148,6 +156,38 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
             ax.plot(data, y, 'k', linewidth=2)
             ax.set_xlim(0, 200)
 
+        elif plot_type == 'regions_line':
+            region, region_lab, region_col = region_data(xyz_channels, z, brain_atlas)
+            for reg, co, lab in zip(region, region_col, region_lab):
+                height = np.abs(reg[1] - reg[0])
+                color = co / 255
+                ax.bar(x=0.5, height=height, width=1, color=color, bottom=reg[0],
+                       edgecolor='w')
+                ax.text(x=0.2, y=reg[0] + height/2, s=lab[1], fontdict=None, fontsize=5)
+
+            ax.get_xaxis().set_visible(False)
+            ax.spines['right'].set_visible(False)
+            ax.spines['top'].set_visible(False)
+            ax.spines['bottom'].set_visible(False)
+
+        elif plot_type == 'distance':
+            rep_site = {
+                'x': -2243,
+                'y': -2000,
+                'z': 0.0,
+                'phi': 180.0,
+                'theta': 15.0,
+                'depth': 4000
+            }
+            traj_repeated = atlas.Insertion.from_dict(rep_site).trajectory
+            dist = traj_repeated.mindist(xyz_channels) * 1e6
+            dist = dist[:, np.newaxis]
+            im = NonUniformImage(ax, interpolation='nearest', cmap='Purples_r')
+            levels = [0, 1000]
+            im.set_clim(levels[0], levels[1])
+            im.set_data(np.array([0]), z, dist)
+            ax.images.append(im)
+
         ax.set_title(subj + '\n' + status, fontsize=8, color=col)
         for bound, col in zip(boundaries, colours):
             ax.hlines(bound, *ax.get_xlim(), linestyles='dashed', linewidth=3, colors=col/255)
@@ -161,7 +201,10 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
         axin = inset_axes(axs[-1], width="25%", height="80%", loc='lower right', borderpad=0,
                          bbox_to_anchor=(0.5, 0.1, 1, 1), bbox_transform=axs[-1].transAxes)
         cbar = fig.colorbar(im, cax=axin, ticks=im.get_clim())
-        cbar.ax.set_yticklabels(['10th\nperc.', '90th\nperc'])
+        if plot_type == 'distance':
+            cbar.ax.set_yticklabels([f'{levels[0]} um', f'{levels[1]} um'])
+        else:
+            cbar.ax.set_yticklabels(['10th\nperc.', '90th\nperc'])
 
     plt.show()
     return fig, axs
@@ -298,9 +341,55 @@ def amp_data(alf_path, one, eid, depths):
 
     return depths, mean_amp
 
+def spike_amp_data(alf_path, one, eid):
+    try:
+        spikes = alf.io.load_object(alf_path, 'spikes')
+    except Exception:
+        dtypes = [
+            'spikes.depths',
+            'spikes.amps',
+            'spikes.times'
+        ]
+        _ = one.load(eid, dataset_types=dtypes, download_only=True)
+        spikes = alf.io.load_object(alf_path, 'spikes')
+
+    subsample_factor = 5000
+    n_amp_bins = 10
+    cmap = 'BuPu'
+    amp_range = np.quantile(spikes.amps, [0, 0.9])
+    amp_bins = np.linspace(amp_range[0], amp_range[1], n_amp_bins)
+    color_bin = np.linspace(0.0, 1.0, n_amp_bins + 1)
+    colors = (cm.get_cmap(cmap)(color_bin)[np.newaxis, :, :3][0])
+
+    spike_amps = spikes.amps[0:-1:subsample_factor]
+    spike_colors = np.zeros((spike_amps.size, 3))
+    spike_size = np.zeros(spike_amps.size)
+    for iA in range(amp_bins.size):
+        if iA == (amp_bins.size - 1):
+            idx = np.where(spike_amps > amp_bins[iA])[0]
+            # Make saturated spikes the darkest colour
+            spike_colors[idx] = colors[-1]
+        else:
+            idx = np.where((spike_amps > amp_bins[iA]) & (spike_amps <= amp_bins[iA + 1]))[0]
+            spike_colors[idx] = [*colors[iA]]
+
+        spike_size[idx] = iA / (n_amp_bins / 2)
+
+    return spikes.times[0:-1:subsample_factor], spikes.depths[0:-1:subsample_factor], spike_colors, \
+           spike_size
 
 def neuron_yield(alf_path):
     return
+
+
+def region_data(xyz_channels, depths, brain_atlas):
+    (region, region_label,
+     region_colour, region_id) = EphysAlignment.get_histology_regions(xyz_channels,
+                                                                      depths,
+                                                                      brain_atlas=brain_atlas)
+    return region, region_label, region_colour
+
+
 
 
 def get_brain_boundaries(brain_regions, z, r=None):
