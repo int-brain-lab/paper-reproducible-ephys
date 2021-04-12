@@ -13,6 +13,7 @@ import pandas as pd
 import seaborn as sns
 from scipy import stats
 import statsmodels.api as sm
+from permutation_test import permut_test, example_metric
 from statsmodels.formula.api import ols
 import matplotlib.pyplot as plt
 from reproducible_ephys_functions import data_path, labs, exclude_recordings
@@ -76,6 +77,19 @@ for metric in METRICS:
         results.loc[(results['metric'] == metric) & (results['region'] == region), 'h_value_kw'] = h
         results.loc[(results['metric'] == metric) & (results['region'] == region), 'p_value_kw'] = p
 
+
+# %% Run permutation test
+
+
+for metric in METRICS:
+    for region in REGIONS:
+        this_data = data.loc[data['region'] == region, metric].values
+        p = permut_test(
+                this_data[~np.isnan(this_data)],
+                metric=example_metric,
+                labels1=data.loc[data['region'] == region, 'lab'].values[~np.isnan(this_data)],
+                labels2=data.loc[data['region'] == region, 'subject'].values[~np.isnan(this_data)])
+        results.loc[(results['metric'] == metric) & (results['region'] == region), 'p_value_permut'] = p
 
 # %% Plot results
 for i, region in enumerate(REGIONS):
