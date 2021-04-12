@@ -85,7 +85,7 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
             boundaries = []
 
         if boundary_align is not None:
-            z_subtract = boundaries[np.where(np.array(regions) == boundary_align)[0][0]]
+            z_subtract = boundaries[np.where(np.array(regions) == boundary_align)[0][0] + 1]
             z = z - z_subtract
             boundaries, colours, regions = get_brain_boundaries(brain_regions, z, r)
 
@@ -182,7 +182,7 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
             traj_repeated = atlas.Insertion.from_dict(rep_site).trajectory
             dist = traj_repeated.mindist(xyz_channels) * 1e6
             dist = dist[:, np.newaxis]
-            im = NonUniformImage(ax, interpolation='nearest', cmap='Purples_r')
+            im = NonUniformImage(ax, interpolation='nearest', cmap='Purples')
             levels = [0, 1000]
             im.set_clim(levels[0], levels[1])
             im.set_data(np.array([0]), z, dist)
@@ -330,10 +330,10 @@ def amp_data(alf_path, one, eid, depths):
     D_BIN = 20
 
     nspikes, _, _ = bincount2D(spikes['times'][kp_idx], spikes['depths'][kp_idx], T_BIN,
-                                D_BIN, ylim=[np.min(depths), np.max(depths)])
-    amp, times, depths = bincount2D(spikes['times'][kp_idx], spikes['depths'][kp_idx],
-                                    T_BIN, D_BIN, ylim=[np.min(depths), np.max(depths)],
-                                    weights=spikes['amps'][kp_idx])
+                               D_BIN, ylim=[np.min(depths), np.max(depths)])
+    amp, _, depths = bincount2D(spikes['times'][kp_idx], spikes['depths'][kp_idx],
+                                T_BIN, D_BIN, ylim=[np.min(depths), np.max(depths)],
+                                weights=spikes['amps'][kp_idx])
 
     mean_amp = np.divide(amp[:, 0], nspikes[:, 0]) * 1e6
     mean_amp[np.isnan(mean_amp)] = 0

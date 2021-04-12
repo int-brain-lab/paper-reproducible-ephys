@@ -1,3 +1,5 @@
+#%%
+
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
@@ -20,7 +22,7 @@ REGIONS = ['VISa', 'CA1', 'DG', 'LP', 'PO']
 NICKNAMES = True  # Whether to plot the animal nicknames instead of numbers
 MIN_CHANNELS = 5
 
-# Load in data
+# Load in data>
 metrics = pd.read_csv(join(data_path(), 'figure3_brain_regions.csv'))
 
 # Get lab info
@@ -37,7 +39,7 @@ metrics['institution'] = metrics.lab.map(institution_map)
 for i, region in enumerate(REGIONS):
     metrics.loc[metrics['region'] == region, 'region_number'] = i
 metrics = metrics.sort_values(['institution', 'subject', 'region_number']).reset_index(drop=True)
-n_rec = np.concatenate([np.arange(i) + 1 for i in (metrics.groupby('institution').size()
+n_rec = np.concatenate([np.arange(i) + 1 for i in (metrics.groupby('institution').size() 
                                                    / len(REGIONS))]).astype(int)
 metrics['yield_per_channel'] = metrics['neuron_yield'] / metrics['n_channels']
 for i, eid in enumerate(metrics['eid'].unique()):

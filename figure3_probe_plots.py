@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+# %% !/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Created on Tue Dec 15 09:43:50 2020
@@ -21,13 +21,12 @@ one = ONE()
 
 # Plot settings
 BOUNDARY = 'DG-TH'
+
 PLOTS = ['fr', 'psd', 'rms_ap', 'rms_lf', 'fr_alt', 'amp', 'fr_line', 'amp_line', 'regions_line',
-         'distance_line', 'scatter_line']
+         'distance', 'scatter_line']
 LABELS = ['Firing rate (spks/s)', 'Power spectral density', 'AP band RMS', 'LFP band RMS',
           'Firing rate (spks/s)', 'Spike amplitude', '', '', 'Histology Regions',
           'Distance from Repeated Site', 'Spike time vs Spike depth vs Spike amp']
-# PLOTS = ['regions_line']
-# LABELS = ['AP band RMS']
 NICKNAMES = True
 
 # Load in recordings
@@ -62,15 +61,15 @@ f, axs = plot_2D_features(data.loc[data['subjects'] == test_subject, 'subjects']
 for p, plot_name in enumerate(PLOTS):
     print('Generating %s plot' % plot_name)
     f, axs = plot_2D_features(data['subject'], data['date'], data['probe'], one=one,
-                              brain_atlas=brain_atlas, plot_type=plot_name,
-                              boundary_align=BOUNDARY)
+                                brain_atlas=brain_atlas, plot_type=plot_name,
+                                boundary_align=BOUNDARY)
     for i, subject in enumerate(data['subject']):
         if NICKNAMES:
             axs[i].set_title(subject, rotation=30, ha='left',
-                             color=lab_colors[data.loc[i, 'institution']], fontsize=16)
+                                color=lab_colors[data.loc[i, 'institution']], fontsize=16)
         else:
             axs[i].set_title(data.loc[i, 'recording'] + 1,
-                         color=lab_colors[data.loc[i, 'institution']], fontsize=20)
+                            color=lab_colors[data.loc[i, 'institution']], fontsize=20)
 
         if i == 0:
             axs[i].tick_params(axis='y', labelsize=16)
@@ -78,7 +77,7 @@ for p, plot_name in enumerate(PLOTS):
             axs[i].spines["bottom"].set_visible(False)
             axs[i].spines["top"].set_visible(False)
             axs[i].set_ylabel('Depth relative to DG-Thalamus boundary (\u03BCm)',
-                              fontsize=20)
+                                fontsize=20)
         else:
             axs[i].set_axis_off()
         axs[i].set(xticks=[], ylim=[-2500, 2500])
