@@ -160,7 +160,7 @@ for i in range(len(traj)):
                                                     'date': date,
                                                     'n_channels': region_chan.shape[0],
                                                     'neuron_yield': neuron_count,
-                                                    'firing_rate': neuron_fr.mean(),
+                                                    'firing_rate': np.median(neuron_fr),
                                                     'spike_amp_mean': np.nanmean(spike_amp),
                                                     'spike_amp_90': spike_amp_90,
                                                     'pt_ratio': np.nanmean(pt_ratio),

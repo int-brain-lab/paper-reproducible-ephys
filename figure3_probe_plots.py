@@ -89,7 +89,7 @@ for p, plot_name in enumerate(PLOTS):
 
     for i, inst in enumerate(plot_titles.index.values):
         if NICKNAMES:
-            plt.figtext(plot_titles.loc[inst, 'lab_position'], 0.975, inst, color=lab_colors[inst],
+            plt.figtext(plot_titles.loc[inst, 'lab_position'], 0.978, inst, color=lab_colors[inst],
                             fontsize=20, ha='center')
         else:
             plt.figtext(plot_titles.loc[inst, 'lab_position'], 0.94, inst, color=lab_colors[inst],
