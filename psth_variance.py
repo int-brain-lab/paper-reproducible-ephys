@@ -15,7 +15,6 @@ regions = ['CA1', 'VISa', 'DG', 'LP', 'PO']
 one = ONE()
 
 event = 'Stim'
-regions = regions
 left_region_activities = {x: [] for x in regions}
 right_region_activities = {x: [] for x in regions}
 zero_region_activities = {x: [] for x in regions}
@@ -26,7 +25,7 @@ traj = query(behavior=True)
 names = []
 
 kernel_len = 10
-kernel = np.exp(-np.arange(kernel_len) * 0.75)
+kernel = np.exp(-np.arange(kernel_len) * 0.45)
 
 # for count, t in enumerate(traj):
 #     eid = t['session']['id']

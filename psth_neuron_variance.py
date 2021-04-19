@@ -11,14 +11,10 @@ import pandas as pd
 
 
 regions = ['LP', 'CA1', 'VISa', 'DG', 'PO']
-print('WARNING')
-regions = ['LP'
-]
 
 one = ONE()
 
 event = 'Stim'
-regions = regions
 left_region_activities = {x: [] for x in regions}
 right_region_activities = {x: [] for x in regions}
 zero_region_activities = {x: [] for x in regions}
