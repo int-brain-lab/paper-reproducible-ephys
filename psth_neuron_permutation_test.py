@@ -1,6 +1,7 @@
 from oneibl.one import ONE
 import numpy as np
 from brainbox.io.one import load_spike_sorting_with_channel
+from permutation_test import permut_test
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pickle
@@ -10,15 +11,19 @@ from reproducible_ephys_functions import query
 import pandas as pd
 
 
-regions = ['LP', 'CA1', 'VISa', 'DG', 'PO']
-print('WARNING')
-regions = ['LP'
-]
+def labs_dist(data, labs, mice):
+    lab_means = []
+    for lab in np.unique(labs):
+        lab_means.append(np.mean(data[labs == lab]))
+    lab_means = np.array(lab_means)
+    return np.sum(np.abs(lab_means - np.mean(lab_means)))
+
+
+regions = ['CA1', 'VISa', 'DG', 'LP', 'PO']
 
 one = ONE()
 
 event = 'Stim'
-regions = regions
 left_region_activities = {x: [] for x in regions}
 right_region_activities = {x: [] for x in regions}
 zero_region_activities = {x: [] for x in regions}
@@ -31,7 +36,7 @@ names = []
 
 kernel_len = 10
 kernel = np.exp(-np.arange(kernel_len) * 0.45)
-
+#
 # for count, t in enumerate(traj):
 #     eid = t['session']['id']
 #     probe = t['probe_name']
@@ -53,6 +58,8 @@ kernel = np.exp(-np.arange(kernel_len) * 0.45)
 #         base_line_times = one.load(eid, dataset_types=['trials.stimOn_times'])[0]
 #         base_line_times = base_line_times[~np.isnan(base_line_times)]
 #         contrast_L, contrast_R = one.load(eid, dataset_types=['trials.contrastLeft', 'trials.contrastRight'])
+#         contrast_L, contrast_R = contrast_L[~np.isnan(times)], contrast_R[~np.isnan(times)]
+#         times = times[~np.isnan(times)]
 #         event_times_left = times[contrast_L > 0]
 #         event_times_right = times[contrast_R > 0]
 #         event_times_0 = times[np.logical_or(contrast_R == 0, contrast_L == 0)]
@@ -77,17 +84,29 @@ kernel = np.exp(-np.arange(kernel_len) * 0.45)
 #         event_times_left = times[choice == -1]
 #         event_times_right = times[choice == 1]
 #         pre_time, post_time = 0.4, 0.2
-#     # TODO: check for nans
+#
+#     assert np.sum(np.isnan(event_times_left)) == 0
+#     assert np.sum(np.isnan(event_times_right)) == 0
+#     assert np.sum(np.isnan(base_line_times)) == 0
 #     cluster_regions = channels.acronym[clusters.channels]
+#
+#     if t['session']['subject'] == "SWC_043":
+#         print('A')
 #
 #     for br in regions:
 #         try:
 #             mask = np.logical_and(np.chararray.startswith(cluster_regions.astype('U9'), br), clusters['metrics']['label'] == 1)
 #         except KeyError:
 #             continue
+#
+#         if t['session']['subject'] == "SWC_043":
+#             print('B' + br)
 #         # TODO: 0.1 spikes/s criterion, mikroV threshold
 #         if mask.sum() < 4:
 #             continue
+#
+#         if t['session']['subject'] == "SWC_043":
+#             print('C' + br)
 #
 #         if t['session']['subject'] not in names:
 #             names.append(t['session']['subject'])
@@ -117,10 +136,18 @@ kernel = np.exp(-np.arange(kernel_len) * 0.45)
 #         else:
 #             lab_indices[br][t['session']['lab']].append(region_counts[br])
 #             lab_names[br][t['session']['lab']].append(t['session']['subject'])
+#         if t['session']['subject'] == "SWC_043":
+#             print('D' + br)
 #
 # pickle.dump((left_region_activities, right_region_activities, zero_region_activities, lab_indices, lab_names, activity_left), (open("../data/info {}.p".format(event), "wb")))
 left_region_activities, right_region_activities, zero_region_activities, lab_indices, lab_names, activity_left = pickle.load(open("../data/info {}.p".format(event), "rb"))
+plt.figure(figsize=(16, 9))
 
+# TEMP!!:
+print('warning')
+regions = ['CA1', 'VISa', 'LP']
+regions = ['LP']
+region2color = dict(zip(regions, ['b', 'orange', 'green']))
 
 for br in regions:
     labs = list(lab_indices[br].keys())
@@ -165,52 +192,40 @@ for br in regions:
     dist = 0.25
     fs = 22
 
+    p_vals_left = np.zeros(n_times)
+    p_vals_right = np.zeros(n_times)
     for index in range(n_times):
         df = pd.DataFrame(np.array([all_left_act[:, index], lev_one, lev_two]).T, columns=['fr', 'lab', 'mouse'])
         df_other = pd.DataFrame(np.array([all_right_act[:, index], lev_one, lev_two]).T, columns=['fr', 'lab', 'mouse'])
         # df.to_csv("../neural_test_{}.csv".format(j))
 
-        emp_mice_means = []
-        emp_lab_means = []
-        mouse_counter = 0
-        plt.figure(figsize=(16, 9))
+        emp_mice_means_left = []
+        emp_mice_means_right = []
+        lab_array = []
+        mouse_array = []
         for i, l in enumerate(labs):
-            emp_mice_means.append([])
             for j, (m, n) in enumerate(zip(mouse[i], names[i])):
-                emp_mice_means[i].append(np.mean(df[df['mouse'] == m]['fr']))
-                emp_mice_mean = np.mean(df[df['mouse'] == m]['fr'])
-                label = "Neurons" if j == 0 and i == 0 else None
-                # plt.scatter(np.linspace(0, 1, (df_other['mouse'] == m).sum()) * 2 * dist - dist + mouse_counter, np.clip(df_other[df_other['mouse'] == m]['fr'], -2, 8), color='gray', s=45)
-                # pos = df[df['mouse'] == m]['fr'] > 8
-                # if np.sum(pos) > 0:
-                #     plt.scatter(np.linspace(0, 1, (df['mouse'] == m).sum())[pos] * 2 * dist - dist + mouse_counter, np.clip(df[df['mouse'] == m]['fr'], -2, 8)[pos], color='r', s=70)
-                # plt.scatter(np.linspace(0, 1, (df['mouse'] == m).sum()) * 2 * dist - dist + mouse_counter, np.clip(df[df['mouse'] == m]['fr'], -2, 8), color='k', label=label)
-                plt.scatter(np.linspace(0, 1, (df['mouse'] == m).sum()) * 2 * dist - dist + mouse_counter, df[df['mouse'] == m]['fr'], color='k', label=label)
-                label = "Mice means" if j == 0 and i == 0 else None
+                emp_mice_means_left.append(np.mean(df[df['mouse'] == m]['fr']))
+                emp_mice_means_right.append(np.mean(df_other[df_other['mouse'] == m]['fr']))
+                lab_array.append(l)
+                mouse_array.append(m)
+        p_vals_left[index] = permut_test(data=np.array(emp_mice_means_left), metric=labs_dist, labels1=np.array(lab_array), labels2=np.array(mouse_array))
+        p_vals_right[index] = permut_test(data=np.array(emp_mice_means_right), metric=labs_dist, labels1=np.array(lab_array), labels2=np.array(mouse_array))
 
-                plt.plot([mouse_counter - dist, mouse_counter + dist], [emp_mice_mean, emp_mice_mean], 'b', label=label)
-                plt.annotate(n, (mouse_counter - 0.3, -1.8), fontsize=fs-7)
-                mouse_counter += 1
-            label = "Lab means" if i == 0 else None
-            emp_lab_means.append(np.mean(emp_mice_means[i]))
-            plt.plot([mouse_counter - len(mouse[i]), mouse_counter - 1], [emp_lab_means[-1], emp_lab_means[-1]], c='r', label=label)
-        emp_intercept = np.mean(emp_lab_means)
-        plt.axhline(emp_intercept, c='k', label="Mean", zorder=-1)
+    plt.plot(activity_left.tscale[kernel_len-1:], p_vals_left, label="{} stim left".format(br), c=region2color[br])
+    # plt.plot(activity_left.tscale[kernel_len-1:], p_vals_right, label="{} stim right".format(br), c=region2color[br], ls='--')
 
-        plt.legend(fontsize=fs, frameon=False)
-        plt.title("{}, {:.3f} seconds after {} left onset".format(br, activity_left.tscale[kernel_len-1+index], event), size=fs)
-        plt.xlabel("Neurons, Mice, Labs", size=fs)
-        plt.xticks([])
-        plt.ylabel("Smoothed normalised firing rate", size=fs)
+#plt.legend(fontsize=fs, frameon=False)
+#plt.axhline(0.05, color='r')
+plt.axvline(0.235, color='r')
+#plt.title("Permutation p values, {} left onset".format(event), size=fs+3)
+plt.xlabel("Time in s", size=fs+3)
+plt.ylabel("p value", size=fs+3)
+plt.yticks(fontsize=fs)
+plt.xticks(fontsize=fs)
+plt.ylim(bottom=0, top=1)
 
-        # labels = [item.get_text() for item in plt.gca().get_yticklabels()]
-        # labels[1] = 'Testing'
-        # plt.gca().set_yticklabels([-2, 0, 2, 4, 6, '>=8'])
-
-        plt.yticks(fontsize=fs-2)
-        plt.ylim(bottom=-2)
-
-        sns.despine()
-        plt.tight_layout()
-        plt.savefig(FIG_PATH + "{}, {:.3f} seconds after {} left onset.png".format(br, activity_left.tscale[kernel_len-1+index], event))
-        plt.close()
+sns.despine()
+plt.tight_layout()
+plt.savefig(FIG_PATH + "Permutation p values, {} left onset.png".format(event))
+plt.show()

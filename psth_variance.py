@@ -8,6 +8,7 @@ import brainbox as bb
 from reproducible_ephys_paths import FIG_PATH
 from reproducible_ephys_functions import query
 
+
 regions = ['CA1', 'VISa', 'DG', 'LP', 'PO']
 
 
@@ -136,8 +137,6 @@ for i, br in enumerate(regions):
     var_within_left = np.mean(list(lab_vars_left.values()), axis=0)
     var_within_right = np.mean(list(lab_vars_right.values()), axis=0)
 
-    # if br == 'PO':
-    #     quit()
 
     plt.figure(figsize=(11, 8))
     plt.plot(activity_left.tscale[kernel_len-1:], var_across_left / var_within_left, label='Left')
