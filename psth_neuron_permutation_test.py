@@ -18,6 +18,7 @@ def labs_dist(data, labs, mice):
     lab_means = np.array(lab_means)
     return np.sum(np.abs(lab_means - np.mean(lab_means)))
 
+
 def process_peths(spikes, clusters, event_times, mask, pre_time, post_time):
     activities = []
     for etime in event_times:
@@ -25,6 +26,7 @@ def process_peths(spikes, clusters, event_times, mask, pre_time, post_time):
                                              etime, pre_time=pre_time, post_time=post_time, smoothing=0, bin_size=0.01)
         activities.append(a)
     return activities
+
 
 def normalise_neurons(activities, spikes, clusters, mask, base_line_times):
     activity_pre, _ = bb.singlecell.calculate_peths(spikes.times, spikes.clusters,
@@ -37,6 +39,7 @@ def normalise_neurons(activities, spikes, clusters, mask, base_line_times):
         normed_activities.append(((a.means.T - baseline) / (1 + baseline)).T)
 
     return normed_activities
+
 
 regions = ['CA1', 'VISa', 'DG', 'LP', 'PO']
 
@@ -125,10 +128,10 @@ for count, t in enumerate(traj):
         activities = process_peths(spikes, clusters, event_times, mask, pre_time, post_time)
         normed_activities = normalise_neurons(activities, spikes, clusters, mask, base_line_times)
 
-        left_region_activities[br].append(np.apply_along_axis(lambda m: np.convolve(m, kernel), axis=1, arr=activities[0])[:, kernel_len-1:-kernel_len+1])
-        right_region_activities[br].append(np.apply_along_axis(lambda m: np.convolve(m, kernel), axis=1, arr=activities[1])[:, kernel_len-1:-kernel_len+1])
+        left_region_activities[br].append(np.apply_along_axis(lambda m: np.convolve(m, kernel), axis=1, arr=normed_activities[0])[:, kernel_len-1:-kernel_len+1])
+        right_region_activities[br].append(np.apply_along_axis(lambda m: np.convolve(m, kernel), axis=1, arr=normed_activities[1])[:, kernel_len-1:-kernel_len+1])
         if event == 'Stim':
-            zero_region_activities[br].append(np.apply_along_axis(lambda m: np.convolve(m, kernel), axis=1, arr=activities[2])[:, kernel_len-1:-kernel_len+1])
+            zero_region_activities[br].append(np.apply_along_axis(lambda m: np.convolve(m, kernel), axis=1, arr=normed_activities[2])[:, kernel_len-1:-kernel_len+1])
 
         region_names[br].append(t['session']['subject'])
         if t['session']['subject'] not in names:
@@ -141,8 +144,8 @@ for count, t in enumerate(traj):
             lab_indices[br][t['session']['lab']].append(region_counts[br])
             lab_names[br][t['session']['lab']].append(t['session']['subject'])
 
-pickle.dump((left_region_activities, right_region_activities, zero_region_activities, lab_indices, lab_names, activity_left), (open("../data/info {}.p".format(event), "wb")))
-left_region_activities, right_region_activities, zero_region_activities, lab_indices, lab_names, activity_left = pickle.load(open("../data/info {}.p".format(event), "rb"))
+pickle.dump((left_region_activities, right_region_activities, zero_region_activities, lab_indices, lab_names, activities[0].tscale), (open("../data/info {}.p".format(event), "wb")))
+left_region_activities, right_region_activities, zero_region_activities, lab_indices, lab_names, tscale = pickle.load(open("../data/info {}.p".format(event), "rb"))
 plt.figure(figsize=(16, 9))
 
 # TEMP!!:
@@ -198,7 +201,6 @@ for br in regions:
     for index in range(n_times):
         df = pd.DataFrame(np.array([all_left_act[:, index], lev_one, lev_two]).T, columns=['fr', 'lab', 'mouse'])
         df_other = pd.DataFrame(np.array([all_right_act[:, index], lev_one, lev_two]).T, columns=['fr', 'lab', 'mouse'])
-        # df.to_csv("../neural_test_{}.csv".format(j))
 
         emp_mice_means_left = []
         emp_mice_means_right = []
@@ -213,7 +215,7 @@ for br in regions:
         p_vals_left[index] = permut_test(data=np.array(emp_mice_means_left), metric=labs_dist, labels1=np.array(lab_array), labels2=np.array(mouse_array))
         p_vals_right[index] = permut_test(data=np.array(emp_mice_means_right), metric=labs_dist, labels1=np.array(lab_array), labels2=np.array(mouse_array))
 
-    plt.plot(activity_left.tscale[kernel_len-1:], p_vals_left, label="{} stim left".format(br), c=region2color[br])
+    plt.plot(tscale[kernel_len-1:], p_vals_left, label="{} stim left".format(br), c=region2color[br])
     # plt.plot(activity_left.tscale[kernel_len-1:], p_vals_right, label="{} stim right".format(br), c=region2color[br], ls='--')
 
 #plt.legend(fontsize=fs, frameon=False)
@@ -228,5 +230,5 @@ plt.ylim(bottom=0, top=1)
 
 sns.despine()
 plt.tight_layout()
-plt.savefig(FIG_PATH + "Permutation p values, {} left onset.png".format(event))
+plt.savefig(FIG_PATH + "newer Permutation p values, {} left onset.png".format(event))
 plt.show()
