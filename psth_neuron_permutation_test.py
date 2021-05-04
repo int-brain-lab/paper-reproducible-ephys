@@ -1,11 +1,11 @@
 from oneibl.one import ONE
 import numpy as np
 from brainbox.io.one import load_spike_sorting_with_channel
-from brainbox.singlecell import calculate_peths
 from permutation_test import permut_test
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pickle
+import brainbox as bb
 from reproducible_ephys_paths import FIG_PATH
 from reproducible_ephys_functions import query
 import pandas as pd
@@ -22,16 +22,16 @@ def labs_dist(data, labs, mice):
 def process_peths(spikes, clusters, event_times, mask, pre_time, post_time):
     activities = []
     for etime in event_times:
-        a, _ = calculate_peths(spikes.times, spikes.clusters, np.arange(len(clusters.metrics))[mask],
-                               etime, pre_time=pre_time, post_time=post_time, smoothing=0, bin_size=0.01)
+        a, _ = bb.singlecell.calculate_peths(spikes.times, spikes.clusters, np.arange(len(clusters.metrics))[mask],
+                                             etime, pre_time=pre_time, post_time=post_time, smoothing=0, bin_size=0.01)
         activities.append(a)
     return activities
 
 
 def normalise_neurons(activities, spikes, clusters, mask, base_line_times):
-    activity_pre, _ = calculate_peths(spikes.times, spikes.clusters,
-                                      np.arange(len(clusters.metrics))[mask], base_line_times,
-                                      pre_time=0.4, post_time=-0.2, smoothing=0, bin_size=0.01)
+    activity_pre, _ = bb.singlecell.calculate_peths(spikes.times, spikes.clusters,
+                                                    np.arange(len(clusters.metrics))[mask], base_line_times,
+                                                    pre_time=0.4, post_time=-0.2, smoothing=0, bin_size=0.01)
     baseline = np.mean(activity_pre.means, axis=1)
 
     normed_activities = []
@@ -42,9 +42,6 @@ def normalise_neurons(activities, spikes, clusters, mask, base_line_times):
 
 
 regions = ['CA1', 'VISa', 'DG', 'LP', 'PO']
-apply_baseline = False
-kernel_len = 10
-kernel = np.exp(-np.arange(kernel_len) * 0.45)
 
 one = ONE()
 
@@ -59,11 +56,12 @@ lab_names = {x: {} for x in regions}
 traj = query(behavior=True)
 names = []
 
+kernel_len = 10
+kernel = np.exp(-np.arange(kernel_len) * 0.45)
 
 for count, t in enumerate(traj):
     eid = t['session']['id']
     probe = t['probe_name']
-    print(eid)
 
     # load data
     try:
@@ -128,10 +126,7 @@ for count, t in enumerate(traj):
             continue
 
         activities = process_peths(spikes, clusters, event_times, mask, pre_time, post_time)
-        if apply_baseline:
-            normed_activities = normalise_neurons(activities, spikes, clusters, mask, base_line_times)
-        else:
-            normed_activities = [a.means for a in activities]
+        normed_activities = normalise_neurons(activities, spikes, clusters, mask, base_line_times)
 
         left_region_activities[br].append(np.apply_along_axis(lambda m: np.convolve(m, kernel), axis=1, arr=normed_activities[0])[:, kernel_len-1:-kernel_len+1])
         right_region_activities[br].append(np.apply_along_axis(lambda m: np.convolve(m, kernel), axis=1, arr=normed_activities[1])[:, kernel_len-1:-kernel_len+1])
@@ -149,9 +144,14 @@ for count, t in enumerate(traj):
             lab_indices[br][t['session']['lab']].append(region_counts[br])
             lab_names[br][t['session']['lab']].append(t['session']['subject'])
 
-pickle.dump((left_region_activities, right_region_activities, zero_region_activities, lab_indices, lab_names, activities[0].tscale), (open("../data/info {}_baseline_{}.p".format(event, apply_baseline), "wb")))
-left_region_activities, right_region_activities, zero_region_activities, lab_indices, lab_names, tscale = pickle.load(open("../data/info {}_baseline_{}.p".format(event, apply_baseline), "rb"))
+pickle.dump((left_region_activities, right_region_activities, zero_region_activities, lab_indices, lab_names, activities[0].tscale), (open("../data/info {}.p".format(event), "wb")))
+left_region_activities, right_region_activities, zero_region_activities, lab_indices, lab_names, tscale = pickle.load(open("../data/info {}.p".format(event), "rb"))
+plt.figure(figsize=(16, 9))
 
+# TEMP!!:
+print('warning')
+regions = ['CA1', 'VISa', 'LP']
+region2color = dict(zip(regions, ['b', 'orange', 'green']))
 
 for br in regions:
     labs = list(lab_indices[br].keys())
@@ -196,52 +196,39 @@ for br in regions:
     dist = 0.25
     fs = 22
 
+    p_vals_left = np.zeros(n_times)
+    p_vals_right = np.zeros(n_times)
     for index in range(n_times):
         df = pd.DataFrame(np.array([all_left_act[:, index], lev_one, lev_two]).T, columns=['fr', 'lab', 'mouse'])
         df_other = pd.DataFrame(np.array([all_right_act[:, index], lev_one, lev_two]).T, columns=['fr', 'lab', 'mouse'])
-        # df.to_csv("../neural_test_{}.csv".format(j))
 
-        emp_mice_means = []
-        emp_lab_means = []
-        mouse_counter = 0
-        plt.figure(figsize=(16, 9))
+        emp_mice_means_left = []
+        emp_mice_means_right = []
+        lab_array = []
+        mouse_array = []
         for i, l in enumerate(labs):
-            emp_mice_means.append([])
             for j, (m, n) in enumerate(zip(mouse[i], names[i])):
-                emp_mice_means[i].append(np.mean(df[df['mouse'] == m]['fr']))
-                emp_mice_mean = np.mean(df[df['mouse'] == m]['fr'])
-                label = "Neurons" if j == 0 and i == 0 else None
-                # plt.scatter(np.linspace(0, 1, (df_other['mouse'] == m).sum()) * 2 * dist - dist + mouse_counter, np.clip(df_other[df_other['mouse'] == m]['fr'], -2, 8), color='gray', s=45)
-                # pos = df[df['mouse'] == m]['fr'] > 8
-                # if np.sum(pos) > 0:
-                #     plt.scatter(np.linspace(0, 1, (df['mouse'] == m).sum())[pos] * 2 * dist - dist + mouse_counter, np.clip(df[df['mouse'] == m]['fr'], -2, 8)[pos], color='r', s=70)
-                # plt.scatter(np.linspace(0, 1, (df['mouse'] == m).sum()) * 2 * dist - dist + mouse_counter, np.clip(df[df['mouse'] == m]['fr'], -2, 8), color='k', label=label)
-                plt.scatter(np.linspace(0, 1, (df['mouse'] == m).sum()) * 2 * dist - dist + mouse_counter, df[df['mouse'] == m]['fr'], color='k', label=label)
-                label = "Mice means" if j == 0 and i == 0 else None
+                emp_mice_means_left.append(np.mean(df[df['mouse'] == m]['fr']))
+                emp_mice_means_right.append(np.mean(df_other[df_other['mouse'] == m]['fr']))
+                lab_array.append(l)
+                mouse_array.append(m)
+        p_vals_left[index] = permut_test(data=np.array(emp_mice_means_left), metric=labs_dist, labels1=np.array(lab_array), labels2=np.array(mouse_array))
+        p_vals_right[index] = permut_test(data=np.array(emp_mice_means_right), metric=labs_dist, labels1=np.array(lab_array), labels2=np.array(mouse_array))
 
-                plt.plot([mouse_counter - dist, mouse_counter + dist], [emp_mice_mean, emp_mice_mean], 'b', label=label)
-                plt.annotate(n, (mouse_counter - 0.3, -1.8), fontsize=fs-7)
-                mouse_counter += 1
-            label = "Lab means" if i == 0 else None
-            emp_lab_means.append(np.mean(emp_mice_means[i]))
-            plt.plot([mouse_counter - len(mouse[i]), mouse_counter - 1], [emp_lab_means[-1], emp_lab_means[-1]], c='r', label=label)
-        emp_intercept = np.mean(emp_lab_means)
-        plt.axhline(emp_intercept, c='k', label="Mean", zorder=-1)
+    plt.plot(tscale[kernel_len-1:], p_vals_left, label="{} stim left".format(br), c=region2color[br])
+    # plt.plot(activity_left.tscale[kernel_len-1:], p_vals_right, label="{} stim right".format(br), c=region2color[br], ls='--')
 
-        plt.legend(fontsize=fs, frameon=False)
-        plt.title("{}, {:.3f} seconds after {} left onset".format(br, tscale[kernel_len-1+index], event), size=fs)
-        plt.xlabel("Neurons, Mice, Labs", size=fs)
-        plt.xticks([])
-        plt.ylabel("Smoothed normalised firing rate", size=fs)
+#plt.legend(fontsize=fs, frameon=False)
+#plt.axhline(0.05, color='r')
+plt.axvline(0.235, color='r')
+#plt.title("Permutation p values, {} left onset".format(event), size=fs+3)
+plt.xlabel("Time in s", size=fs+3)
+plt.ylabel("p value", size=fs+3)
+plt.yticks(fontsize=fs)
+plt.xticks(fontsize=fs)
+plt.ylim(bottom=0, top=1)
 
-        # labels = [item.get_text() for item in plt.gca().get_yticklabels()]
-        # labels[1] = 'Testing'
-        # plt.gca().set_yticklabels([-2, 0, 2, 4, 6, '>=8'])
-
-        plt.yticks(fontsize=fs-2)
-        plt.ylim(bottom=-2)
-
-        sns.despine()
-        plt.tight_layout()
-        plt.savefig(FIG_PATH + "{}, {:.3f} seconds after {} left onset_baseline_{}.png".format(br, tscale[kernel_len-1+index], event, apply_baseline))
-        plt.close()
+sns.despine()
+plt.tight_layout()
+plt.savefig(FIG_PATH + "newer Permutation p values, {} left onset.png".format(event))
+plt.show()
