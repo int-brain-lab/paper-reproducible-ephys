@@ -19,7 +19,7 @@ one = ONE()
 # Settings
 NEURON_QC = True
 DOWNLOAD_DATA = False
-REGIONS = ['VISa', 'CA1', 'DG', 'LP', 'PO']
+REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
 LFP_BAND_HIGH = [20, 80]
 LFP_BAND_LOW = [2, 15]
 DATA_DIR = data_path()

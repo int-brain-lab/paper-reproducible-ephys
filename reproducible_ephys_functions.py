@@ -106,6 +106,7 @@ def figure_style():
 def combine_regions(regions):
     """
     Combine all layers of cortex and the dentate gyrus molecular and granular layer
+    Combine VISa and VISam into PPC
     """
     remove = ['1', '2', '3', '4', '5', '6a', '6b', '/']
     for i, region in enumerate(regions):
@@ -115,6 +116,8 @@ def combine_regions(regions):
             regions[i] = 'DG'
         for j, char in enumerate(remove):
             regions[i] = regions[i].replace(char, '')
+        if (regions[i] == 'VISa') | (regions[i] == 'VISam'):
+            regions[i] = 'PPC'
     return regions
 
 

@@ -223,7 +223,7 @@ plt.plot(np.arange(data_example['institute'].unique().shape[0]),
          [data_example[EXAMPLE_METRIC].mean()] * data_example['institute'].unique().shape[0],
          color='k', lw=2)
 ax1.set_xticklabels(data_example['institute'].unique(), rotation=30, fontsize=14, ha='right')
-ax1.set(ylabel='Firing rate (spks/s)', xlabel='')
+ax1.set(ylabel=f'Firing rate in {EXAMPLE_REGION} (spks/s)', xlabel='')
 
 sns.despine(trim=True)
 plt.tight_layout()

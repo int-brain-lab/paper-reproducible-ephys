@@ -18,7 +18,7 @@ from reproducible_ephys_functions import data_path, labs, exclude_recordings
 from reproducible_ephys_paths import FIG_PATH
 
 # Settings
-REGIONS = ['VISa', 'CA1', 'DG', 'LP', 'PO']
+REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
 NICKNAMES = True  # Whether to plot the animal nicknames instead of numbers
 MIN_CHANNELS = 5
 ANNOTATE = False
@@ -67,7 +67,7 @@ sns.heatmap(metrics_plot, square=True, cmap='twilight_shifted', center=0,
             annot_kws={"size": 12}, linewidths=.5, fmt='.2f')
 ax1.xaxis.tick_top()
 ax1.set(xlabel='', ylabel='', xticklabels=metrics_plot.columns.values)
-ax1.set_yticklabels(REGIONS, va='center')
+ax1.set_yticklabels(REGIONS, va='center', rotation=0)
 if NICKNAMES:
     ax1.set_xticklabels(metrics_plot.columns.values, rotation=30, fontsize=11, ha='left')
     lab_title_y = -1.6
@@ -102,7 +102,7 @@ sns.heatmap(metrics_plot, square=True, cmap='twilight_shifted', center=0,
             annot_kws={"size": 12}, linewidths=.5)
 ax1.xaxis.tick_top()
 ax1.set(xlabel='', ylabel='', xticklabels=metrics_plot.columns.values)
-ax1.set_yticklabels(REGIONS, va='center')
+ax1.set_yticklabels(REGIONS, va='center', rotation=0)
 if NICKNAMES:
     ax1.set_xticklabels(metrics_plot.columns.values, rotation=30, fontsize=11, ha='left')
     lab_title_y = -1.6
@@ -136,7 +136,7 @@ sns.heatmap(metrics_plot, square=True, cmap='twilight_shifted', center=0, fmt='.
             annot_kws={"size": 12}, linewidths=.5)
 ax1.xaxis.tick_top()
 ax1.set(xlabel='', ylabel='', xticklabels=metrics_plot.columns.values)
-ax1.set_yticklabels(REGIONS, va='center')
+ax1.set_yticklabels(REGIONS, va='center', rotation=0)
 if NICKNAMES:
     ax1.set_xticklabels(metrics_plot.columns.values, rotation=30, fontsize=11, ha='left')
     lab_title_y = -1.6
@@ -170,7 +170,7 @@ sns.heatmap(metrics_plot, square=True, cmap='twilight_shifted', center=0, fmt='.
             annot_kws={"size": 12}, linewidths=.5)
 ax1.xaxis.tick_top()
 ax1.set(xlabel='', ylabel='', xticklabels=metrics_plot.columns.values)
-ax1.set_yticklabels(REGIONS, va='center')
+ax1.set_yticklabels(REGIONS, va='center', rotation=0)
 if NICKNAMES:
     ax1.set_xticklabels(metrics_plot.columns.values, rotation=30, fontsize=11, ha='left')
     lab_title_y = -1.6
@@ -204,7 +204,7 @@ sns.heatmap(metrics_plot, square=True, cmap='twilight_shifted', center=0, fmt='.
             annot_kws={"size": 12}, linewidths=.5)
 ax1.xaxis.tick_top()
 ax1.set(xlabel='', ylabel='', xticklabels=metrics_plot.columns.values)
-ax1.set_yticklabels(REGIONS, va='center')
+ax1.set_yticklabels(REGIONS, va='center', rotation=0)
 if NICKNAMES:
     ax1.set_xticklabels(metrics_plot.columns.values, rotation=30, fontsize=11, ha='left')
     lab_title_y = -1.6
@@ -238,7 +238,7 @@ sns.heatmap(metrics_plot, square=True, cmap='twilight_shifted', center=metrics['
             annot_kws={"size": 12}, linewidths=.5, fmt='.0f')
 ax1.xaxis.tick_top()
 ax1.set(xlabel='', ylabel='', xticklabels=metrics_plot.columns.values)
-ax1.set_yticklabels(REGIONS, va='center')
+ax1.set_yticklabels(REGIONS, va='center', rotation=0)
 if NICKNAMES:
     ax1.set_xticklabels(metrics_plot.columns.values, rotation=30, fontsize=11, ha='left')
     lab_title_y = -1.6
@@ -272,7 +272,7 @@ sns.heatmap(metrics_plot, square=True, cmap='twilight_shifted', center=0, fmt='.
             annot_kws={"size": 12}, linewidths=.5)
 ax1.xaxis.tick_top()
 ax1.set(xlabel='', ylabel='', xticklabels=metrics_plot.columns.values)
-ax1.set_yticklabels(REGIONS, va='center')
+ax1.set_yticklabels(REGIONS, va='center', rotation=0)
 if NICKNAMES:
     ax1.set_xticklabels(metrics_plot.columns.values, rotation=30, fontsize=11, ha='left')
     lab_title_y = -1.6
@@ -307,7 +307,7 @@ sns.heatmap(metrics_plot, square=True, cmap='twilight_shifted', center=0, fmt='.
             annot_kws={"size": 12}, linewidths=.5)
 ax1.xaxis.tick_top()
 ax1.set(xlabel='', ylabel='', xticklabels=metrics_plot.columns.values)
-ax1.set_yticklabels(REGIONS, va='center')
+ax1.set_yticklabels(REGIONS, va='center', rotation=0)
 if NICKNAMES:
     ax1.set_xticklabels(metrics_plot.columns.values, rotation=30, fontsize=11, ha='left')
     lab_title_y = -1.6
