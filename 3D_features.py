@@ -24,10 +24,11 @@ data_type = 'LFP Spectrum'
 # Gather all the data together
 is_aligned = []
 for ip, p in enumerate(probe_insertion):
-    insertion = one.alyx.rest('insertions', 'list', id='/' + p)
+    insertion = one.alyx.rest('insertions', 'list', id=p)[0]
     if insertion.get('json'):
         xyz_picks = np.array(insertion['json']['xyz_picks']) / 1e6
     else:
+        print('no xyz')
         continue
 
     traj = one.alyx.rest('trajectories', 'list', provenance='Ephys aligned histology track',
@@ -89,7 +90,8 @@ for ip, p in enumerate(probe_insertion):
             mlapdv_all = np.dstack([mlapdv_all, mlapdv])
             data_all = np.vstack([data_all, avg_data])
             is_aligned.append(aligned)
-    except:
+    except Exception as err:
+        print(err)
         continue
 
 
@@ -146,49 +148,37 @@ cb.scalar_bar.position2 = np.array([0.05,  0.7])
 
 
 def load_spike_data(eid, alf_path):
-    try:
-        spikes = alf.io.load_object(alf_path, 'spikes')
-    except AttributeError:
-        dtypes = [
-            'spikes.depths',
-            'spikes.amps',
-            'spikes.times'
-        ]
-        _ = one.load(eid, dataset_types=dtypes, download_only=True)
-        spikes = alf.io.load_object(alf_path, 'spikes')
+    dtypes = [
+        'spikes.depths',
+        'spikes.amps',
+        'spikes.times'
+    ]
+
+    _ = one.load(eid, dataset_types=dtypes, download_only=True)
+    spikes = alf.io.load_object(alf_path, 'spikes')
     return spikes
 
 
 def load_lfp_data(eid, ephys_path):
-    try:
-        lfp_spectrum = alf.io.load_object(ephys_path, 'ephysSpectralDensityLF', namespace='iblqc')
-        lfp_freq = lfp_spectrum.get('freqs')
-        lfp_power = lfp_spectrum.get('power')
-    except AttributeError:
-        dtypes = [
-            '_iblqc_ephysSpectralDensity.freqs',
-            '_iblqc_ephysSpectralDensity.power'
-        ]
-        _ = one.load(eid, dataset_types=dtypes, download_only=True)
-        lfp_spectrum = alf.io.load_object(ephys_path, 'ephysSpectralDensityLF', namespace='iblqc')
-        lfp_freq = lfp_spectrum.get('freqs')
-        lfp_power = lfp_spectrum.get('power')
+    dtypes = [
+        '_iblqc_ephysSpectralDensity.freqs',
+        '_iblqc_ephysSpectralDensity.power'
+    ]
+    _ = one.load(eid, dataset_types=dtypes, download_only=True)
+    lfp_spectrum = alf.io.load_object(ephys_path, 'ephysSpectralDensityLF', namespace='iblqc')
+    lfp_freq = lfp_spectrum.get('freqs')
+    lfp_power = lfp_spectrum.get('power')
 
     return lfp_power, lfp_freq
 
 
 def load_rms_data(eid, ephys_path, format):
-    try:
-        rms_amps = alf.io.load_file_content(Path(ephys_path, '_iblqc_ephysTimeRms' +
-                                                 format + '.rms.npy'))
-    except AttributeError:
-        dtypes = [
-            '_iblqc_ephysTimeRms.rms',
-        ]
-        _ = one.load(eid, dataset_types=dtypes, download_only=True)
-        rms_amps = alf.io.load_file_content(Path(ephys_path, '_iblqc_ephysTimeRms' +
-                                                 format + '.rms.npy'))
-
+    dtypes = [
+        '_iblqc_ephysTimeRms.rms',
+    ]
+    _ = one.load(eid, dataset_types=dtypes, download_only=True)
+    rms_amps = alf.io.load_file_content(Path(ephys_path, '_iblqc_ephysTimeRms' +
+                                             format + '.rms.npy'))
     return rms_amps
 
 
