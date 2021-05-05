@@ -27,7 +27,7 @@ PLOTS = ['fr', 'psd', 'rms_ap', 'rms_lf', 'fr_alt', 'amp', 'fr_line', 'amp_line'
 LABELS = ['Firing rate (spks/s)', 'Power spectral density', 'AP band RMS', 'LFP band RMS',
           'Firing rate (spks/s)', 'Spike amplitude', '', '', 'Histology Regions',
           'Distance from Repeated Site', 'Spike time vs Spike depth vs Spike amp']
-NICKNAMES = True
+NICKNAMES = False
 
 # Load in recordings
 data = pd.read_csv(join(data_path(), 'figure3_brain_regions.csv'))
@@ -91,9 +91,12 @@ for p, plot_name in enumerate(PLOTS):
         if NICKNAMES:
             plt.figtext(plot_titles.loc[inst, 'lab_position'], 0.978, inst, color=lab_colors[inst],
                             fontsize=20, ha='center')
+        elif ((inst == 'CSHL (Z)') | (inst == 'NYU') | (inst == 'Princeton')):
+            plt.figtext((plot_titles.loc[inst, 'lab_position'] - 0.06) * 1.05, 0.925, inst,
+                        color=lab_colors[inst], fontsize=20, rotation=30, ha='left')
         else:
-            plt.figtext(plot_titles.loc[inst, 'lab_position'], 0.94, inst, color=lab_colors[inst],
-                            fontsize=20)
+            plt.figtext((plot_titles.loc[inst, 'lab_position'] - 0.06) * 1.05, 0.925, inst,
+                        color=lab_colors[inst], fontsize=20, ha='left')
     if not isdir(join(FIG_PATH, 'probe_plots')):
         mkdir(join(FIG_PATH, 'probe_plots'))
 
