@@ -2,7 +2,6 @@ from oneibl.one import ONE
 import numpy as np
 from brainbox.io.one import load_spike_sorting_with_channel
 from brainbox.singlecell import calculate_peths
-from permutation_test import permut_test
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pickle
@@ -11,15 +10,8 @@ from reproducible_ephys_functions import query
 import pandas as pd
 
 
-def labs_dist(data, labs, mice):
-    lab_means = []
-    for lab in np.unique(labs):
-        lab_means.append(np.mean(data[labs == lab]))
-    lab_means = np.array(lab_means)
-    return np.sum(np.abs(lab_means - np.mean(lab_means)))
-
-
 def process_peths(spikes, clusters, event_times, mask, pre_time, post_time):
+    """Get spikecounts for specified times, put into right format."""
     activities = []
     for etime in event_times:
         a, _ = calculate_peths(spikes.times, spikes.clusters, np.arange(len(clusters.metrics))[mask],
@@ -29,6 +21,7 @@ def process_peths(spikes, clusters, event_times, mask, pre_time, post_time):
 
 
 def normalise_neurons(activities, spikes, clusters, mask, base_line_times):
+    """Normalise neurons by computing baseline from specific time, then norm_fr = (fr - bs) / (1 + bs)."""
     activity_pre, _ = calculate_peths(spikes.times, spikes.clusters,
                                       np.arange(len(clusters.metrics))[mask], base_line_times,
                                       pre_time=0.4, post_time=-0.2, smoothing=0, bin_size=0.01)
@@ -42,13 +35,14 @@ def normalise_neurons(activities, spikes, clusters, mask, base_line_times):
 
 
 regions = ['CA1', 'VISa', 'DG', 'LP', 'PO']
-apply_baseline = False
+apply_baseline = True
+event = 'Move'
+
 kernel_len = 10
 kernel = np.exp(-np.arange(kernel_len) * 0.45)
-
+kernel_area = np.sum(kernel)
 one = ONE()
 
-event = 'Stim'
 left_region_activities = {x: [] for x in regions}
 right_region_activities = {x: [] for x in regions}
 zero_region_activities = {x: [] for x in regions}
@@ -133,10 +127,10 @@ for count, t in enumerate(traj):
         else:
             normed_activities = [a.means for a in activities]
 
-        left_region_activities[br].append(np.apply_along_axis(lambda m: np.convolve(m, kernel), axis=1, arr=normed_activities[0])[:, kernel_len-1:-kernel_len+1])
-        right_region_activities[br].append(np.apply_along_axis(lambda m: np.convolve(m, kernel), axis=1, arr=normed_activities[1])[:, kernel_len-1:-kernel_len+1])
+        left_region_activities[br].append(np.apply_along_axis(lambda m: np.convolve(m, kernel), axis=1, arr=normed_activities[0])[:, kernel_len-1:-kernel_len+1] / kernel_area)
+        right_region_activities[br].append(np.apply_along_axis(lambda m: np.convolve(m, kernel), axis=1, arr=normed_activities[1])[:, kernel_len-1:-kernel_len+1] / kernel_area)
         if event == 'Stim':
-            zero_region_activities[br].append(np.apply_along_axis(lambda m: np.convolve(m, kernel), axis=1, arr=normed_activities[2])[:, kernel_len-1:-kernel_len+1])
+            zero_region_activities[br].append(np.apply_along_axis(lambda m: np.convolve(m, kernel), axis=1, arr=normed_activities[2])[:, kernel_len-1:-kernel_len+1] / kernel_area)
 
         region_names[br].append(t['session']['subject'])
         if t['session']['subject'] not in names:
@@ -149,8 +143,8 @@ for count, t in enumerate(traj):
             lab_indices[br][t['session']['lab']].append(region_counts[br])
             lab_names[br][t['session']['lab']].append(t['session']['subject'])
 
-pickle.dump((left_region_activities, right_region_activities, zero_region_activities, lab_indices, lab_names, activities[0].tscale), (open("../data/info {}_baseline_{}.p".format(event, apply_baseline), "wb")))
-left_region_activities, right_region_activities, zero_region_activities, lab_indices, lab_names, tscale = pickle.load(open("../data/info {}_baseline_{}.p".format(event, apply_baseline), "rb"))
+pickle.dump((left_region_activities, right_region_activities, zero_region_activities, lab_indices, lab_names, activities[0].tscale, names), (open("../data/info {}_baseline_{}.p".format(event, apply_baseline), "wb")))
+left_region_activities, right_region_activities, zero_region_activities, lab_indices, lab_names, tscale, names = pickle.load(open("../data/info {}_baseline_{}.p".format(event, apply_baseline), "rb"))
 
 
 for br in regions:
@@ -176,8 +170,8 @@ for br in regions:
     right_f_lev_one = np.zeros(n_times)
     right_f_lev_two = np.zeros(n_times)
 
-    lev_one = np.zeros(all_left_act.shape[0], dtype=np.int) - 1
-    lev_two = np.zeros(all_left_act.shape[0], dtype=np.int) - 1
+    lev_one = np.zeros(all_left_act.shape[0], dtype=np.int32) - 1
+    lev_two = np.zeros(all_left_act.shape[0], dtype=np.int32) - 1
 
     neur_sum = 0
     for j in range(n_sess):
@@ -199,7 +193,6 @@ for br in regions:
     for index in range(n_times):
         df = pd.DataFrame(np.array([all_left_act[:, index], lev_one, lev_two]).T, columns=['fr', 'lab', 'mouse'])
         df_other = pd.DataFrame(np.array([all_right_act[:, index], lev_one, lev_two]).T, columns=['fr', 'lab', 'mouse'])
-        # df.to_csv("../neural_test_{}.csv".format(j))
 
         emp_mice_means = []
         emp_lab_means = []
@@ -234,8 +227,6 @@ for br in regions:
         plt.xticks([])
         plt.ylabel("Smoothed normalised firing rate", size=fs)
 
-        # labels = [item.get_text() for item in plt.gca().get_yticklabels()]
-        # labels[1] = 'Testing'
         # plt.gca().set_yticklabels([-2, 0, 2, 4, 6, '>=8'])
 
         plt.yticks(fontsize=fs-2)
