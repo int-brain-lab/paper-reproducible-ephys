@@ -18,8 +18,8 @@ from reproducible_ephys_functions import data_path, labs, exclude_recordings
 from reproducible_ephys_paths import FIG_PATH
 
 # Settings
-REGIONS = ['VISa', 'CA1', 'DG', 'LP', 'PO']
-NICKNAMES = True  # Whether to plot the animal nicknames instead of numbers
+REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
+NICKNAMES = False  # Whether to plot the animal nicknames instead of numbers
 MIN_CHANNELS = 5
 ANNOTATE = False
 MIN_NEURONS = 2  # For firing rate inclusion
@@ -67,20 +67,29 @@ sns.heatmap(metrics_plot, square=True, cmap='twilight_shifted', center=0,
             annot_kws={"size": 12}, linewidths=.5, fmt='.2f')
 ax1.xaxis.tick_top()
 ax1.set(xlabel='', ylabel='', xticklabels=metrics_plot.columns.values)
-ax1.set_yticklabels(REGIONS, va='center')
+ax1.set_yticklabels(REGIONS, va='center', rotation=0)
 if NICKNAMES:
     ax1.set_xticklabels(metrics_plot.columns.values, rotation=30, fontsize=11, ha='left')
     lab_title_y = -1.6
     lab_title_ha = 'right'
+    offset = 0
 else:
     ax1.set(xticklabels=n_rec)
-    lab_title_y = -0.8
-    lab_title_ha = 'center'
+    lab_title_y = -0.9
+    lab_title_ha = 'left'
+    offset = 0
 rec_per_lab = metrics.groupby('institution').size() / len(REGIONS)
-offset = 0
+
 for i, inst in enumerate(rec_per_lab.index.values):
-    ax1.text((rec_per_lab[inst] / 2) + offset + 1, lab_title_y, inst, ha=lab_title_ha,
-             color=lab_colors[inst])
+    if (NICKNAMES == False) & ((inst == 'NYU') | (inst == 'Princeton') | (inst == 'CSHL (Z)')):
+        ax1.text((rec_per_lab[inst] / 2) + offset - 0.5, lab_title_y, inst, ha=lab_title_ha,
+                 color=lab_colors[inst], rotation=35)
+    elif not NICKNAMES:
+        ax1.text((rec_per_lab[inst] / 2) + offset - 0.5, lab_title_y, inst, ha=lab_title_ha,
+                 color=lab_colors[inst])
+    else:
+        ax1.text((rec_per_lab[inst] / 2) + offset + 1, lab_title_y, inst, ha=lab_title_ha,
+                 color=lab_colors[inst])
     for j in range(int(offset), int(offset + rec_per_lab[inst])):
         plt.gca().get_xticklabels()[j].set_color(lab_colors[inst])
     offset += rec_per_lab[inst]
@@ -102,20 +111,27 @@ sns.heatmap(metrics_plot, square=True, cmap='twilight_shifted', center=0,
             annot_kws={"size": 12}, linewidths=.5)
 ax1.xaxis.tick_top()
 ax1.set(xlabel='', ylabel='', xticklabels=metrics_plot.columns.values)
-ax1.set_yticklabels(REGIONS, va='center')
+ax1.set_yticklabels(REGIONS, va='center', rotation=0)
 if NICKNAMES:
     ax1.set_xticklabels(metrics_plot.columns.values, rotation=30, fontsize=11, ha='left')
     lab_title_y = -1.6
     lab_title_ha = 'right'
 else:
     ax1.set(xticklabels=n_rec)
-    lab_title_y = -0.8
-    lab_title_ha = 'center'
+    lab_title_y = -0.9
+    lab_title_ha = 'left'
 rec_per_lab = metrics.groupby('institution').size() / len(REGIONS)
 offset = 0
 for i, inst in enumerate(rec_per_lab.index.values):
-    ax1.text((rec_per_lab[inst] / 2) + offset + 1, lab_title_y, inst, ha=lab_title_ha,
-             color=lab_colors[inst])
+    if (NICKNAMES == False) & ((inst == 'NYU') | (inst == 'Princeton') | (inst == 'CSHL (Z)')):
+        ax1.text((rec_per_lab[inst] / 2) + offset - 0.5, lab_title_y, inst, ha=lab_title_ha,
+                 color=lab_colors[inst], rotation=35)
+    elif not NICKNAMES:
+        ax1.text((rec_per_lab[inst] / 2) + offset - 0.5, lab_title_y, inst, ha=lab_title_ha,
+                 color=lab_colors[inst])
+    else:
+        ax1.text((rec_per_lab[inst] / 2) + offset + 1, lab_title_y, inst, ha=lab_title_ha,
+                 color=lab_colors[inst])
     for j in range(int(offset), int(offset + rec_per_lab[inst])):
         plt.gca().get_xticklabels()[j].set_color(lab_colors[inst])
     offset += rec_per_lab[inst]
@@ -136,20 +152,27 @@ sns.heatmap(metrics_plot, square=True, cmap='twilight_shifted', center=0, fmt='.
             annot_kws={"size": 12}, linewidths=.5)
 ax1.xaxis.tick_top()
 ax1.set(xlabel='', ylabel='', xticklabels=metrics_plot.columns.values)
-ax1.set_yticklabels(REGIONS, va='center')
+ax1.set_yticklabels(REGIONS, va='center', rotation=0)
 if NICKNAMES:
     ax1.set_xticklabels(metrics_plot.columns.values, rotation=30, fontsize=11, ha='left')
     lab_title_y = -1.6
     lab_title_ha = 'right'
 else:
     ax1.set(xticklabels=n_rec)
-    lab_title_y = -0.8
-    lab_title_ha = 'center'
+    lab_title_y = -0.9
+    lab_title_ha = 'left'
 rec_per_lab = metrics.groupby('institution').size() / len(REGIONS)
 offset = 0
 for i, inst in enumerate(rec_per_lab.index.values):
-    ax1.text((rec_per_lab[inst] / 2) + offset + 1, lab_title_y, inst, ha=lab_title_ha,
-             color=lab_colors[inst])
+    if (NICKNAMES == False) & ((inst == 'NYU') | (inst == 'Princeton') | (inst == 'CSHL (Z)')):
+        ax1.text((rec_per_lab[inst] / 2) + offset - 0.5, lab_title_y, inst, ha=lab_title_ha,
+                 color=lab_colors[inst], rotation=35)
+    elif not NICKNAMES:
+        ax1.text((rec_per_lab[inst] / 2) + offset - 0.5, lab_title_y, inst, ha=lab_title_ha,
+                 color=lab_colors[inst])
+    else:
+        ax1.text((rec_per_lab[inst] / 2) + offset + 1, lab_title_y, inst, ha=lab_title_ha,
+                 color=lab_colors[inst])
     for j in range(int(offset), int(offset + rec_per_lab[inst])):
         plt.gca().get_xticklabels()[j].set_color(lab_colors[inst])
     offset += rec_per_lab[inst]
@@ -170,20 +193,27 @@ sns.heatmap(metrics_plot, square=True, cmap='twilight_shifted', center=0, fmt='.
             annot_kws={"size": 12}, linewidths=.5)
 ax1.xaxis.tick_top()
 ax1.set(xlabel='', ylabel='', xticklabels=metrics_plot.columns.values)
-ax1.set_yticklabels(REGIONS, va='center')
+ax1.set_yticklabels(REGIONS, va='center', rotation=0)
 if NICKNAMES:
     ax1.set_xticklabels(metrics_plot.columns.values, rotation=30, fontsize=11, ha='left')
     lab_title_y = -1.6
     lab_title_ha = 'right'
 else:
     ax1.set(xticklabels=n_rec)
-    lab_title_y = -0.8
-    lab_title_ha = 'center'
+    lab_title_y = -0.9
+    lab_title_ha = 'left'
 rec_per_lab = metrics.groupby('institution').size() / len(REGIONS)
 offset = 0
 for i, inst in enumerate(rec_per_lab.index.values):
-    ax1.text((rec_per_lab[inst] / 2) + offset + 1, lab_title_y, inst, ha=lab_title_ha,
-             color=lab_colors[inst])
+    if (NICKNAMES == False) & ((inst == 'NYU') | (inst == 'Princeton') | (inst == 'CSHL (Z)')):
+        ax1.text((rec_per_lab[inst] / 2) + offset - 0.5, lab_title_y, inst, ha=lab_title_ha,
+                 color=lab_colors[inst], rotation=35)
+    elif not NICKNAMES:
+        ax1.text((rec_per_lab[inst] / 2) + offset - 0.5, lab_title_y, inst, ha=lab_title_ha,
+                 color=lab_colors[inst])
+    else:
+        ax1.text((rec_per_lab[inst] / 2) + offset + 1, lab_title_y, inst, ha=lab_title_ha,
+                 color=lab_colors[inst])
     for j in range(int(offset), int(offset + rec_per_lab[inst])):
         plt.gca().get_xticklabels()[j].set_color(lab_colors[inst])
     offset += rec_per_lab[inst]
@@ -204,20 +234,27 @@ sns.heatmap(metrics_plot, square=True, cmap='twilight_shifted', center=0, fmt='.
             annot_kws={"size": 12}, linewidths=.5)
 ax1.xaxis.tick_top()
 ax1.set(xlabel='', ylabel='', xticklabels=metrics_plot.columns.values)
-ax1.set_yticklabels(REGIONS, va='center')
+ax1.set_yticklabels(REGIONS, va='center', rotation=0)
 if NICKNAMES:
     ax1.set_xticklabels(metrics_plot.columns.values, rotation=30, fontsize=11, ha='left')
     lab_title_y = -1.6
     lab_title_ha = 'right'
 else:
     ax1.set(xticklabels=n_rec)
-    lab_title_y = -0.8
-    lab_title_ha = 'center'
+    lab_title_y = -0.9
+    lab_title_ha = 'left'
 rec_per_lab = metrics.groupby('institution').size() / len(REGIONS)
 offset = 0
 for i, inst in enumerate(rec_per_lab.index.values):
-    ax1.text((rec_per_lab[inst] / 2) + offset + 1, lab_title_y, inst, ha=lab_title_ha,
-             color=lab_colors[inst])
+    if (NICKNAMES == False) & ((inst == 'NYU') | (inst == 'Princeton') | (inst == 'CSHL (Z)')):
+        ax1.text((rec_per_lab[inst] / 2) + offset - 0.5, lab_title_y, inst, ha=lab_title_ha,
+                 color=lab_colors[inst], rotation=35)
+    elif not NICKNAMES:
+        ax1.text((rec_per_lab[inst] / 2) + offset - 0.5, lab_title_y, inst, ha=lab_title_ha,
+                 color=lab_colors[inst])
+    else:
+        ax1.text((rec_per_lab[inst] / 2) + offset + 1, lab_title_y, inst, ha=lab_title_ha,
+                 color=lab_colors[inst])
     for j in range(int(offset), int(offset + rec_per_lab[inst])):
         plt.gca().get_xticklabels()[j].set_color(lab_colors[inst])
     offset += rec_per_lab[inst]
@@ -238,20 +275,27 @@ sns.heatmap(metrics_plot, square=True, cmap='twilight_shifted', center=metrics['
             annot_kws={"size": 12}, linewidths=.5, fmt='.0f')
 ax1.xaxis.tick_top()
 ax1.set(xlabel='', ylabel='', xticklabels=metrics_plot.columns.values)
-ax1.set_yticklabels(REGIONS, va='center')
+ax1.set_yticklabels(REGIONS, va='center', rotation=0)
 if NICKNAMES:
     ax1.set_xticklabels(metrics_plot.columns.values, rotation=30, fontsize=11, ha='left')
     lab_title_y = -1.6
     lab_title_ha = 'right'
 else:
     ax1.set(xticklabels=n_rec)
-    lab_title_y = -0.8
-    lab_title_ha = 'center'
+    lab_title_y = -0.9
+    lab_title_ha = 'left'
 rec_per_lab = metrics.groupby('institution').size() / len(REGIONS)
 offset = 0
 for i, inst in enumerate(rec_per_lab.index.values):
-    ax1.text((rec_per_lab[inst] / 2) + offset + 1, lab_title_y, inst, ha=lab_title_ha,
-             color=lab_colors[inst])
+    if (NICKNAMES == False) & ((inst == 'NYU') | (inst == 'Princeton') | (inst == 'CSHL (Z)')):
+        ax1.text((rec_per_lab[inst] / 2) + offset - 0.5, lab_title_y, inst, ha=lab_title_ha,
+                 color=lab_colors[inst], rotation=35)
+    elif not NICKNAMES:
+        ax1.text((rec_per_lab[inst] / 2) + offset - 0.5, lab_title_y, inst, ha=lab_title_ha,
+                 color=lab_colors[inst])
+    else:
+        ax1.text((rec_per_lab[inst] / 2) + offset + 1, lab_title_y, inst, ha=lab_title_ha,
+                 color=lab_colors[inst])
     for j in range(int(offset), int(offset + rec_per_lab[inst])):
         plt.gca().get_xticklabels()[j].set_color(lab_colors[inst])
     offset += rec_per_lab[inst]
@@ -272,20 +316,27 @@ sns.heatmap(metrics_plot, square=True, cmap='twilight_shifted', center=0, fmt='.
             annot_kws={"size": 12}, linewidths=.5)
 ax1.xaxis.tick_top()
 ax1.set(xlabel='', ylabel='', xticklabels=metrics_plot.columns.values)
-ax1.set_yticklabels(REGIONS, va='center')
+ax1.set_yticklabels(REGIONS, va='center', rotation=0)
 if NICKNAMES:
     ax1.set_xticklabels(metrics_plot.columns.values, rotation=30, fontsize=11, ha='left')
     lab_title_y = -1.6
     lab_title_ha = 'right'
 else:
     ax1.set(xticklabels=n_rec)
-    lab_title_y = -0.8
-    lab_title_ha = 'center'
+    lab_title_y = -0.9
+    lab_title_ha = 'left'
 rec_per_lab = metrics.groupby('institution').size() / len(REGIONS)
 offset = 0
 for i, inst in enumerate(rec_per_lab.index.values):
-    ax1.text((rec_per_lab[inst] / 2) + offset + 1, lab_title_y, inst, ha=lab_title_ha,
-             color=lab_colors[inst])
+    if (NICKNAMES == False) & ((inst == 'NYU') | (inst == 'Princeton') | (inst == 'CSHL (Z)')):
+        ax1.text((rec_per_lab[inst] / 2) + offset - 0.5, lab_title_y, inst, ha=lab_title_ha,
+                 color=lab_colors[inst], rotation=35)
+    elif not NICKNAMES:
+        ax1.text((rec_per_lab[inst] / 2) + offset - 0.5, lab_title_y, inst, ha=lab_title_ha,
+                 color=lab_colors[inst])
+    else:
+        ax1.text((rec_per_lab[inst] / 2) + offset + 1, lab_title_y, inst, ha=lab_title_ha,
+                 color=lab_colors[inst])
     for j in range(int(offset), int(offset + rec_per_lab[inst])):
         plt.gca().get_xticklabels()[j].set_color(lab_colors[inst])
     offset += rec_per_lab[inst]
@@ -307,20 +358,27 @@ sns.heatmap(metrics_plot, square=True, cmap='twilight_shifted', center=0, fmt='.
             annot_kws={"size": 12}, linewidths=.5)
 ax1.xaxis.tick_top()
 ax1.set(xlabel='', ylabel='', xticklabels=metrics_plot.columns.values)
-ax1.set_yticklabels(REGIONS, va='center')
+ax1.set_yticklabels(REGIONS, va='center', rotation=0)
 if NICKNAMES:
     ax1.set_xticklabels(metrics_plot.columns.values, rotation=30, fontsize=11, ha='left')
     lab_title_y = -1.6
     lab_title_ha = 'right'
 else:
     ax1.set(xticklabels=n_rec)
-    lab_title_y = -0.8
-    lab_title_ha = 'center'
+    lab_title_y = -0.9
+    lab_title_ha = 'left'
 rec_per_lab = metrics.groupby('institution').size() / len(REGIONS)
 offset = 0
 for i, inst in enumerate(rec_per_lab.index.values):
-    ax1.text((rec_per_lab[inst] / 2) + offset + 1, lab_title_y, inst, ha=lab_title_ha,
-             color=lab_colors[inst])
+    if (NICKNAMES == False) & ((inst == 'NYU') | (inst == 'Princeton') | (inst == 'CSHL (Z)')):
+        ax1.text((rec_per_lab[inst] / 2) + offset - 0.5, lab_title_y, inst, ha=lab_title_ha,
+                 color=lab_colors[inst], rotation=35)
+    elif not NICKNAMES:
+        ax1.text((rec_per_lab[inst] / 2) + offset - 0.5, lab_title_y, inst, ha=lab_title_ha,
+                 color=lab_colors[inst])
+    else:
+        ax1.text((rec_per_lab[inst] / 2) + offset + 1, lab_title_y, inst, ha=lab_title_ha,
+                 color=lab_colors[inst])
     for j in range(int(offset), int(offset + rec_per_lab[inst])):
         plt.gca().get_xticklabels()[j].set_color(lab_colors[inst])
     offset += rec_per_lab[inst]
