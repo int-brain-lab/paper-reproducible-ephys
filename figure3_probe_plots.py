@@ -100,4 +100,5 @@ for p, plot_name in enumerate(PLOTS):
     if not isdir(join(FIG_PATH, 'probe_plots')):
         mkdir(join(FIG_PATH, 'probe_plots'))
 
-    plt.savefig(join(FIG_PATH, 'probe_plots', 'figure3_probe_%s' % plot_name))
+    plt.savefig(join(FIG_PATH, 'probe_plots', 'figure3_probe_%s.png' % plot_name))
+    plt.savefig(join(FIG_PATH, 'probe_plots', 'figure3_probe_%s.pdf' % plot_name))

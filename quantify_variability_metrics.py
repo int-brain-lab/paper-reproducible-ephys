@@ -30,7 +30,7 @@ ANNOTATE = False
 COLORBAR = True
 EXAMPLE_METRIC = 'firing_rate'
 EXAMPLE_REGION = 'CA1'
-REGIONS = ['VISa', 'CA1', 'DG', 'LP', 'PO']
+REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
 METRICS = ['neuron_yield', 'firing_rate', 'lfp_power_low', 'rms_ap']
 LABELS = ['Neuron yield', 'Firing rate', 'LFP power', 'AP band RMS']
 lab_number_map, institution_map, lab_colors = labs()
@@ -120,7 +120,7 @@ cbar.ax.tick_params(labelsize=14)
 ax1.figure.axes[-1].yaxis.label.set_size(12)
 ax1.set(xlabel='', ylabel='', title='ANOVA F-values')
 ax1.set_yticklabels(REGIONS, va='center', fontsize=12, rotation=0)
-ax1.set_xticklabels(LABELS, rotation=30, fontsize=10, ha='right')
+ax1.set_xticklabels(LABELS, rotation=30, fontsize=12, ha='right')
 
 results_plot = results.pivot(index='region_number', columns='metric', values='p_value_av')
 hax = sns.heatmap(results_plot, cmap='twilight_shifted_r', center=1, square=True, cbar=COLORBAR,
@@ -131,7 +131,7 @@ cbar.ax.tick_params(labelsize=14)
 ax2.figure.axes[-1].yaxis.label.set_size(12)
 ax2.set(xlabel='', ylabel='', title='ANOVA p-values')
 ax2.set_yticklabels(REGIONS, va='center', fontsize=12, rotation=0)
-ax2.set_xticklabels(LABELS, rotation=30, fontsize=10, ha='right')
+ax2.set_xticklabels(LABELS, rotation=30, fontsize=12, ha='right')
 
 # Get number of recordings
 n_recordings = data.groupby(['institute', 'region']).sum()['in_recording']
@@ -170,7 +170,7 @@ cbar.ax.tick_params(labelsize=14)
 ax2.figure.axes[-1].yaxis.label.set_size(12)
 ax2.set(xlabel='', ylabel='', title='Kruskal-Wallis p-values')
 ax2.set_yticklabels(REGIONS, va='center', fontsize=12, rotation=0)
-ax2.set_xticklabels(LABELS, rotation=30, fontsize=10, ha='right')
+ax2.set_xticklabels(LABELS, rotation=30, fontsize=12, ha='right')
 
 # Get number of recordings
 n_recordings = data_kw.groupby(['institute', 'region']).sum()['in_recording']
@@ -198,10 +198,11 @@ cbar.ax.tick_params(labelsize=14)
 ax1.figure.axes[-1].yaxis.label.set_size(12)
 ax1.set(xlabel='', ylabel='', title='Permutation p-values')
 ax1.set_yticklabels(REGIONS, va='center', fontsize=12, rotation=0)
-ax1.set_xticklabels(LABELS, rotation=30, fontsize=10, ha='right')
+ax1.set_xticklabels(LABELS, rotation=30, fontsize=12, ha='right')
 
 plt.tight_layout()
-plt.savefig(join(FIG_PATH, 'permutation_results'))
+plt.savefig(join(FIG_PATH, 'permutation_results.png'))
+plt.savefig(join(FIG_PATH, 'permutation_results.pdf'))
 
 #%%
 data_example = pd.DataFrame(data={
