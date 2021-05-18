@@ -5,6 +5,7 @@ import numpy as np
 from pathlib import Path
 from mayavi import mlab
 from atlaselectrophysiology import rendering
+from ibllib.plots import color_cycle
 import matplotlib.pyplot as plt
 from ibllib.ephys.neuropixel import SITES_COORDINATES
 
@@ -141,7 +142,7 @@ for iR in is_repeated:
     ins = atlas.Insertion.from_dict(temp_traj)
     mlapdv = ba.xyz2ccf(ins.xyz)
     # display the trajectories
-    color = rendering.color_cycle(1)
+    color = color_cycle(1)
     mlab.plot3d(mlapdv[:, 1], mlapdv[:, 2], mlapdv[:, 0],
                 line_width=1, tube_radius=20, color=color)
 
@@ -151,7 +152,7 @@ for idx in is_not_repeated:
     ins = atlas.Insertion.from_dict(temp_traj)
     mlapdv = ba.xyz2ccf(ins.xyz)
     # display the trajectories
-    color = rendering.color_cycle(2)
+    color = color_cycle(2)
     mlab.plot3d(mlapdv[:, 1], mlapdv[:, 2], mlapdv[:, 0],
                 line_width=1, tube_radius=20, color=color)
 
