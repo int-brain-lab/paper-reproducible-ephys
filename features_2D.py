@@ -56,7 +56,7 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
                 z = xyz_channels[:, 2] * 1e6
                 brain_regions = ephysalign.get_brain_locations(xyz_channels)
 
-                boundaries, colours, regions = get_brain_boundaries(brain_regions, z, r)
+                boundaries, colours, regions = get_brain_boundaries_interest(brain_regions, z, r)
 
                 if resolved:
                     status = 'resolved'
@@ -141,6 +141,8 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
                     y = y - z_subtract
                 levels = [0, 50]
                 im = ax.scatter(x, y, c=c, s=4, cmap='hot', vmin=levels[0], vmax=levels[1])
+
+
                 ax.images.append(im)
                 ax.set_xlim(1, 3)
 
@@ -383,6 +385,85 @@ def region_data(xyz_channels, depths, brain_atlas):
                                                                       depths,
                                                                       brain_atlas=brain_atlas)
     return region, region_label, region_colour
+
+
+
+def get_brain_boundaries_interest(brain_regions, z, r=None):
+    r = r or BrainRegions()
+    all_levels = {}
+    _brain_id = r.get(ids=brain_regions['id'])
+    level = 10
+    while level > 0:
+        brain_regions = r.get(ids=_brain_id['id'])
+        level = np.nanmax(brain_regions.level).astype(int)
+        all_levels[f'level_{level}'] = brain_regions['acronym']
+        idx = np.where(brain_regions['level'] == level)[0]
+        _brain_id = brain_regions
+        _brain_id['id'][idx] = _brain_id['parent'][idx]
+
+    boundaries = []
+    colours = []
+    regions = []
+
+    visa = np.where(all_levels['level_7'] == 'VISa')[0]
+    if len(visa) > 2:
+        boundaries.append(z[visa[0]])
+        boundaries.append(z[visa[-1]])
+        idx = np.where(r.acronym == 'VISa')[0]
+        rgb = r.rgb[idx[0]]
+        colours.append(rgb)
+        colours.append(rgb)
+        regions.append('VISa')
+        regions.append('VISa')
+
+    dg = np.where(all_levels['level_7'] == 'DG')[0]
+    if len(dg) > 2:
+        boundaries.append(z[dg[0]])
+        boundaries.append(z[dg[-1]])
+        idx = np.where(r.acronym == 'DG')[0]
+        rgb = r.rgb[idx[0]]
+        colours.append(rgb)
+        colours.append(rgb)
+        regions.append('DG')
+        regions.append('DG')
+
+    ca1 = np.where(all_levels['level_8'] == 'CA1')[0]
+    if len(ca1) > 2:
+        boundaries.append(z[ca1[0]])
+        boundaries.append(z[ca1[-1]])
+        idx = np.where(r.acronym == 'CA1')[0]
+        rgb = r.rgb[idx[0]]
+        colours.append(rgb)
+        colours.append(rgb)
+        regions.append('CA1')
+        regions.append('CA1')
+
+    po = np.where(all_levels['level_7'] == 'PO')[0]
+    if len(po) > 2:
+        boundaries.append(z[po[0]])
+        boundaries.append(z[po[-1]])
+        idx = np.where(r.acronym == 'PO')[0]
+        rgb = r.rgb[idx[0]]
+        colours.append(rgb)
+        colours.append(rgb)
+        regions.append('PO')
+        regions.append('PO')
+
+    lp = np.where(all_levels['level_7'] == 'LP')[0]
+    if len(lp) > 2:
+        boundaries.append(z[lp[0]])
+        boundaries.append(z[lp[-1]])
+        idx = np.where(r.acronym == 'LP')[0]
+        rgb = r.rgb[idx[0]]
+        colours.append(rgb)
+        colours.append(rgb)
+        regions.append('LP')
+        regions.append('LP')
+
+    return boundaries, colours, regions
+
+
+
 
 
 
