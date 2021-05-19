@@ -22,11 +22,12 @@ one = ONE()
 # Plot settings
 BOUNDARY = 'DG-TH'
 
-PLOTS = ['fr', 'psd', 'rms_ap', 'rms_lf', 'fr_alt', 'amp', 'fr_line', 'amp_line', 'regions_line',
-         'distance', 'amp_scatter']
-LABELS = ['Firing rate (spks/s)', 'Power spectral density', 'AP band RMS', 'LFP band RMS',
-          'Firing rate (spks/s)', 'Spike amplitude', '', '', 'Histology Regions',
-          'Distance from Repeated Site', 'Firing rate (spks/s)']
+PLOTS = ['amp_scatter']
+#PLOTS = ['fr', 'psd', 'rms_ap', 'rms_lf', 'fr_alt', 'amp', 'fr_line', 'amp_line', 'regions_line',
+#         'distance', 'amp_scatter']
+#LABELS = ['Firing rate (spks/s)', 'Power spectral density', 'AP band RMS', 'LFP band RMS',
+#          'Firing rate (spks/s)', 'Spike amplitude', '', '', 'Histology Regions',
+#          'Distance from Repeated Site', 'Firing rate (spks/s)']
 NICKNAMES = True
 
 # Load in recordings
@@ -43,7 +44,7 @@ data = data.sort_values(by=['institution', 'subject']).reset_index(drop=True)
 
 # Get lab info
 rec_per_lab = data.groupby('institution').size()
-data['recording'] =  np.concatenate([np.arange(i) for i in rec_per_lab.values])
+data['recording'] = np.concatenate([np.arange(i) for i in rec_per_lab.values])
 data['lab_position'] = np.linspace(0.18, 0.9, data.shape[0])
 plot_titles = data.groupby('institution').mean()
 
@@ -60,9 +61,15 @@ f, axs = plot_2D_features(data.loc[data['subjects'] == test_subject, 'subjects']
 # %% Plotting
 for p, plot_name in enumerate(PLOTS):
     print('Generating %s plot' % plot_name)
-    f, axs = plot_2D_features(data['subject'], data['date'], data['probe'], one=one,
-                                brain_atlas=brain_atlas, plot_type=plot_name,
-                                boundary_align=BOUNDARY)
+    if plot_name == 'amp_scatter':
+        f, axs = plot_2D_features(data['subject'], data['date'], data['probe'], one=one,
+                                  brain_atlas=brain_atlas, plot_type=plot_name,
+                                  boundary_align=BOUNDARY, show_regions=True)
+    else:
+        f, axs = plot_2D_features(data['subject'], data['date'], data['probe'], one=one,
+                                  brain_atlas=brain_atlas, plot_type=plot_name,
+                                  boundary_align=BOUNDARY)
+
     for i, subject in enumerate(data['subject']):
         if NICKNAMES:
             axs[i].set_title(subject, rotation=30, ha='left',
@@ -102,3 +109,5 @@ for p, plot_name in enumerate(PLOTS):
 
     plt.savefig(join(FIG_PATH, 'probe_plots', 'figure3_probe_%s.png' % plot_name))
     plt.savefig(join(FIG_PATH, 'probe_plots', 'figure3_probe_%s.pdf' % plot_name))
+
+

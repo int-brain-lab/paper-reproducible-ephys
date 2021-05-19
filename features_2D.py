@@ -14,7 +14,7 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 
 def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_range=[2, 15],
-                     plot_type='fr', boundary_align=None):
+                     plot_type='fr', boundary_align=None, show_regions=False):
 
     one = one or ONE()
     brain_atlas = brain_atlas or atlas.AllenAtlas(25)
@@ -56,7 +56,10 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
                 z = xyz_channels[:, 2] * 1e6
                 brain_regions = ephysalign.get_brain_locations(xyz_channels)
 
-                boundaries, colours, regions = get_brain_boundaries_interest(brain_regions, z, r)
+                boundaries, colours, regions = get_brain_boundaries(brain_regions, z, r)
+                if show_regions:
+                    bound_reg, col_reg, reg_name = get_brain_boundaries_interest(brain_regions,
+                                                                                 z, r)
 
                 if resolved:
                     status = 'resolved'
@@ -75,6 +78,9 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
                 brain_regions = ephysalign.get_brain_locations(xyz_channels)
 
                 boundaries, colours, regions = get_brain_boundaries(brain_regions, z, r)
+                if show_regions:
+                    bound_reg, col_reg, reg_name = get_brain_boundaries_interest(brain_regions,
+                                                                                 z, r)
 
                 status = 'histology'
                 col = 'r'
@@ -89,12 +95,15 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
                 z_subtract = boundaries[np.where(np.array(regions) == boundary_align)[0][0] + 1]
                 z = z - z_subtract
                 boundaries, colours, regions = get_brain_boundaries(brain_regions, z, r)
+                if show_regions:
+                    bound_reg, col_reg, reg_name = get_brain_boundaries_interest(brain_regions,
+                                                                                 z, r)
 
-                z_min = np.min(z)
-                z_extent.append(z_min)
-                z_max = np.max(z)
-                z_extent.append(z_max)
-                ax = axs[iR]
+            z_min = np.min(z)
+            z_extent.append(z_min)
+            z_max = np.max(z)
+            z_extent.append(z_max)
+            ax = axs[iR]
 
             if plot_type == 'psd':
                 data = psd_data(ephys_path, one, eid, chn_inds, freq_range)
@@ -139,12 +148,10 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
                 y = ephysalign.get_channel_locations(feature, track, y / 1e6)[:, 2] * 1e6
                 if boundary_align is not None:
                     y = y - z_subtract
-                levels = [0, 50]
+                levels = [0, 30]
                 im = ax.scatter(x, y, c=c, s=4, cmap='hot', vmin=levels[0], vmax=levels[1])
-
-
                 ax.images.append(im)
-                ax.set_xlim(1, 3)
+                ax.set_xlim(1.3, 3)
 
             elif plot_type == 'fr_line':
                 y, data = fr_data(alf_path, one, eid, depths)
@@ -195,8 +202,20 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
                 ax.images.append(im)
 
             ax.set_title(subj + '\n' + status, fontsize=8, color=col)
-            for bound, col in zip(boundaries, colours):
-                ax.hlines(bound, *ax.get_xlim(), linestyles='dashed', linewidth=3, colors=col/255)
+
+            if show_regions:
+                for reg, co, lab in zip(bound_reg, col_reg, reg_name):
+                    height = np.abs(reg[1] - reg[0])
+                    color = co / 255
+                    width = ax.get_xlim()[1]
+                    ax.bar(x=width/2, height=height, width=width, color=color, bottom=reg[0],
+                           edgecolor='k', linewidth=2, alpha=0.5)
+                    ax.text(x=width/2, y=reg[0] + height / 2, s=lab, fontdict=None, fontsize=10,
+                            color='w', fontweight='bold')
+            else:
+                for bound, col in zip(boundaries, colours):
+                    ax.hlines(bound, *ax.get_xlim(), linestyles='dashed', linewidth=3,
+                              colors=col/255)
 
         except Exception as err:
             print(err)
@@ -405,68 +424,18 @@ def get_brain_boundaries_interest(brain_regions, z, r=None):
     colours = []
     regions = []
 
-    visa = np.where(all_levels['level_7'] == 'VISa')[0]
-    if len(visa) > 2:
-        boundaries.append(z[visa[0]])
-        boundaries.append(z[visa[-1]])
-        idx = np.where(r.acronym == 'VISa')[0]
-        rgb = r.rgb[idx[0]]
-        colours.append(rgb)
-        colours.append(rgb)
-        regions.append('VISa')
-        regions.append('VISa')
-
-    dg = np.where(all_levels['level_7'] == 'DG')[0]
-    if len(dg) > 2:
-        boundaries.append(z[dg[0]])
-        boundaries.append(z[dg[-1]])
-        idx = np.where(r.acronym == 'DG')[0]
-        rgb = r.rgb[idx[0]]
-        colours.append(rgb)
-        colours.append(rgb)
-        regions.append('DG')
-        regions.append('DG')
-
-    ca1 = np.where(all_levels['level_8'] == 'CA1')[0]
-    if len(ca1) > 2:
-        boundaries.append(z[ca1[0]])
-        boundaries.append(z[ca1[-1]])
-        idx = np.where(r.acronym == 'CA1')[0]
-        rgb = r.rgb[idx[0]]
-        colours.append(rgb)
-        colours.append(rgb)
-        regions.append('CA1')
-        regions.append('CA1')
-
-    po = np.where(all_levels['level_7'] == 'PO')[0]
-    if len(po) > 2:
-        boundaries.append(z[po[0]])
-        boundaries.append(z[po[-1]])
-        idx = np.where(r.acronym == 'PO')[0]
-        rgb = r.rgb[idx[0]]
-        colours.append(rgb)
-        colours.append(rgb)
-        regions.append('PO')
-        regions.append('PO')
-
-    lp = np.where(all_levels['level_7'] == 'LP')[0]
-    if len(lp) > 2:
-        boundaries.append(z[lp[0]])
-        boundaries.append(z[lp[-1]])
-        idx = np.where(r.acronym == 'LP')[0]
-        rgb = r.rgb[idx[0]]
-        colours.append(rgb)
-        colours.append(rgb)
-        regions.append('LP')
-        regions.append('LP')
+    br_acro = ['VISa', 'DG', 'CA1', 'LP', 'PO']
+    br_level = [7, 7, 8, 7, 7]
+    for acro, lev in zip(br_acro, br_level):
+        acr = np.where(all_levels[f'level_{lev}'] == acro)[0]
+        if len(acr) > 2:
+            boundaries.append([z[acr[0]], z[acr[-1]]])
+            idx = np.where(r.acronym == acro)[0]
+            rgb = r.rgb[idx[0]]
+            colours.append(rgb)
+            regions.append(acro)
 
     return boundaries, colours, regions
-
-
-
-
-
-
 
 def get_brain_boundaries(brain_regions, z, r=None):
 
