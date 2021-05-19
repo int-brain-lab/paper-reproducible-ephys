@@ -22,12 +22,11 @@ one = ONE()
 # Plot settings
 BOUNDARY = 'DG-TH'
 
-PLOTS = ['amp_scatter']
-#PLOTS = ['fr', 'psd', 'rms_ap', 'rms_lf', 'fr_alt', 'amp', 'fr_line', 'amp_line', 'regions_line',
-#         'distance', 'amp_scatter']
-#LABELS = ['Firing rate (spks/s)', 'Power spectral density', 'AP band RMS', 'LFP band RMS',
-#          'Firing rate (spks/s)', 'Spike amplitude', '', '', 'Histology Regions',
-#          'Distance from Repeated Site', 'Firing rate (spks/s)']
+PLOTS = ['fr', 'psd', 'rms_ap', 'rms_lf', 'fr_alt', 'amp', 'fr_line', 'amp_line', 'regions_line',
+         'distance', 'amp_scatter']
+LABELS = ['Firing rate (spks/s)', 'Power spectral density', 'AP band RMS', 'LFP band RMS',
+          'Firing rate (spks/s)', 'Spike amplitude', '', '', 'Histology Regions',
+          'Distance from Repeated Site', 'Firing rate (spks/s)']
 NICKNAMES = True
 
 # Load in recordings
