@@ -27,7 +27,7 @@ PLOTS = ['fr', 'psd', 'rms_ap', 'rms_lf', 'fr_alt', 'amp', 'fr_line', 'amp_line'
 LABELS = ['Firing rate (spks/s)', 'Power spectral density', 'AP band RMS', 'LFP band RMS',
           'Firing rate (spks/s)', 'Spike amplitude', '', '', 'Histology Regions',
           'Distance from Repeated Site', 'Firing rate (spks/s)']
-NICKNAMES = True
+NICKNAMES = False
 
 # Load in recordings
 data = pd.read_csv(join(data_path(), 'figure3_brain_regions.csv'))
@@ -50,11 +50,11 @@ plot_titles = data.groupby('institution').mean()
 """
 # testing
 test_subject = 'ZFM-01592'
-f, axs = plot_2D_features(data.loc[data['subjects'] == test_subject, 'subjects'],
-                          data.loc[data['subjects'] == test_subject, 'dates'],
-                          data.loc[data['subjects'] == test_subject, 'probes'], one=one,
-                          brain_atlas=brain_atlas, plot_type='fr',
-                          boundary_align='VIS-HPF')
+f, axs = plot_2D_features(data.loc[data['subject'] == test_subject, 'subject'],
+                          data.loc[data['subject'] == test_subject, 'date'],
+                          data.loc[data['subject'] == test_subject, 'probe'], one=one,
+                          brain_atlas=brain_atlas, plot_type='amp_scatter', show_regions=True,
+                          boundary_align='DG-TH')
 """
 
 # %% Plotting

@@ -33,11 +33,15 @@ lab_number_map, institution_map, lab_colors = labs()
 # Exclude recordings
 metrics = exclude_recordings(metrics)
 
+# Save list of eids
+np.save('repeated_site_eids.npy', np.array(metrics['eid'].unique(), dtype=str))
+
 # Reformat data
 metrics.loc[metrics['n_channels'] < MIN_CHANNELS, 'neuron_yield'] = np.nan
 metrics.loc[metrics['lfp_power_low'] < -100000, 'lfp_power_low'] = np.nan
 metrics.loc[metrics['lfp_power_high'] < -100000, 'lfp_power_high'] = np.nan
-metrics.loc[metrics['neuron_yield'] < MIN_NEURONS, 'firing_rate'] = np.nan
+metrics.loc[metrics['neuron_yield'] < MIN_NEURONS, 'mean_firing_rate'] = 0
+metrics.loc[metrics['neuron_yield'] < MIN_NEURONS, 'median_firing_rate'] = 0
 metrics['institution'] = metrics.lab.map(institution_map)
 for i, region in enumerate(REGIONS):
     metrics.loc[metrics['region'] == region, 'region_number'] = i
@@ -102,7 +106,7 @@ plt.savefig(join(FIG_PATH, 'figure3_regions_yield-per-channel'))
 sns.set(style='ticks', context='paper', font_scale=1.8)
 f, ax1 = plt.subplots(1, 1, figsize=(15, 5), dpi=150)
 metrics_plot = metrics.pivot(index='region_number', columns='recording_number',
-                             values='firing_rate').sort_values('region_number')
+                             values='mean_firing_rate').sort_values('region_number')
 if NICKNAMES:
     metrics_plot = metrics_plot.rename(columns=dict(zip(metrics_plot.columns.values,
                                                         metrics['subject'].unique())))

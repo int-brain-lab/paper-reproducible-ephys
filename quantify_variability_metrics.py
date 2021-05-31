@@ -192,7 +192,7 @@ results_plot = results.pivot(index='region_number', columns='metric', values='p_
 f, ax1 = plt.subplots(1, 1, figsize=(4, 4), dpi=150)
 sns.heatmap(results_plot, cmap='twilight_shifted_r', center=1, square=True,
             cbar=COLORBAR, annot=ANNOTATE, annot_kws={"size": 12},
-            linewidths=.5, fmt='.2f', ax=ax1)
+            linewidths=.5, fmt='.2f', vmin=0, vmax=1, ax=ax1)
 cbar = ax1.collections[0].colorbar
 cbar.ax.tick_params(labelsize=14)
 ax1.figure.axes[-1].yaxis.label.set_size(12)
