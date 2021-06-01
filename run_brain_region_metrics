@@ -12,13 +12,13 @@ from os.path import join
 import alf
 from pathlib import Path
 import brainbox.io.one as bbone
-from reproducible_ephys_functions import query, data_path, combine_regions
+from reproducible_ephys_functions import query, data_path, combine_regions, exclude_recordings
 from oneibl.one import ONE
 one = ONE()
 
 # Settings
 NEURON_QC = True
-DOWNLOAD_DATA = False
+DOWNLOAD_DATA = True
 REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
 LFP_BAND_HIGH = [20, 80]
 LFP_BAND_LOW = [2, 15]
@@ -174,3 +174,7 @@ for i in range(len(traj)):
 
 # Save result
 metrics.to_csv(join(DATA_DIR, 'figure3_brain_regions.csv'))
+
+# Apply additional selection criteria and save list of eids
+metrics_excl = exclude_recordings(metrics)
+np.save('repeated_site_eids.npy', np.array(metrics_excl['eid'].unique(), dtype=str))

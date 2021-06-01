@@ -33,9 +33,6 @@ lab_number_map, institution_map, lab_colors = labs()
 # Exclude recordings
 metrics = exclude_recordings(metrics)
 
-# Save list of eids
-np.save('repeated_site_eids.npy', np.array(metrics['eid'].unique(), dtype=str))
-
 # Reformat data
 metrics.loc[metrics['n_channels'] < MIN_CHANNELS, 'neuron_yield'] = np.nan
 metrics.loc[metrics['lfp_power_low'] < -100000, 'lfp_power_low'] = np.nan
