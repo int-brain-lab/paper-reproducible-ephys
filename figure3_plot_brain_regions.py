@@ -25,7 +25,7 @@ ANNOTATE = False
 MIN_NEURONS = 2  # For firing rate inclusion
 
 # Load in data>
-metrics = pd.read_csv(join(data_path(), 'metrics_session.csv'))
+metrics = pd.read_csv(join(data_path(), 'metrics_region.csv'))
 
 # Get lab info
 lab_number_map, institution_map, lab_colors = labs()
