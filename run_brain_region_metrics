@@ -18,7 +18,7 @@ one = ONE()
 
 # Settings
 NEURON_QC = True
-DOWNLOAD_DATA = True
+DOWNLOAD_DATA = False
 REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
 LFP_BAND_HIGH = [20, 80]
 LFP_BAND_LOW = [2, 15]

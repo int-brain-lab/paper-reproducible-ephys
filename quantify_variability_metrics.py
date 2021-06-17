@@ -21,6 +21,7 @@ from reproducible_ephys_functions import data_path, labs, exclude_recordings
 from reproducible_ephys_paths import FIG_PATH
 
 # Settings
+MIN_REC_LAB = 4
 MIN_REC_ANOVA = 0
 MIN_REC_KW = 0
 MAX_AP_RMS = 50  # max ap band rms to be included
@@ -28,10 +29,10 @@ MIN_REGIONS = 3  # min amount of regions to be included
 MIN_CHANNELS = 10  # min amount of channels in a region to say it was targeted
 ANNOTATE = False
 COLORBAR = True
-EXAMPLE_METRIC = 'firing_rate'
+EXAMPLE_METRIC = 'mean_firing_rate'
 EXAMPLE_REGION = 'CA1'
 REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
-METRICS = ['neuron_yield', 'firing_rate', 'lfp_power_low', 'rms_ap']
+METRICS = ['neuron_yield', 'mean_firing_rate', 'lfp_power_low', 'rms_ap']
 LABELS = ['Neuron yield', 'Firing rate', 'LFP power', 'AP band RMS']
 lab_number_map, institution_map, lab_colors = labs()
 
@@ -41,6 +42,10 @@ data['institute'] = data['lab'].map(institution_map)
 
 # Exclude recordings
 data = exclude_recordings(data)
+
+# Exclude labs with too few recordings
+rec_p_lab = data.groupby(['institute', 'eid']).size().reset_index()['institute'].value_counts()
+data = data[data['institute'].isin(rec_p_lab[rec_p_lab >= MIN_REC_LAB].index)]
 
 # Do some cleanup
 data.loc[data['lfp_power_low'] < -100000, 'lfp_power_low'] = np.nan

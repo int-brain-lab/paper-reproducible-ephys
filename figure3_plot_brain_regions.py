@@ -19,13 +19,13 @@ from reproducible_ephys_paths import FIG_PATH
 
 # Settings
 REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
-NICKNAMES = False  # Whether to plot the animal nicknames instead of numbers
+NICKNAMES = True  # Whether to plot the animal nicknames instead of numbers
 MIN_CHANNELS = 5
 ANNOTATE = False
 MIN_NEURONS = 2  # For firing rate inclusion
 
 # Load in data>
-metrics = pd.read_csv(join(data_path(), 'figure3_brain_regions.csv'))
+metrics = pd.read_csv(join(data_path(), 'metrics_session.csv'))
 
 # Get lab info
 lab_number_map, institution_map, lab_colors = labs()
@@ -37,8 +37,7 @@ metrics = exclude_recordings(metrics)
 metrics.loc[metrics['n_channels'] < MIN_CHANNELS, 'neuron_yield'] = np.nan
 metrics.loc[metrics['lfp_power_low'] < -100000, 'lfp_power_low'] = np.nan
 metrics.loc[metrics['lfp_power_high'] < -100000, 'lfp_power_high'] = np.nan
-metrics.loc[metrics['neuron_yield'] < MIN_NEURONS, 'mean_firing_rate'] = 0
-metrics.loc[metrics['neuron_yield'] < MIN_NEURONS, 'median_firing_rate'] = 0
+metrics.loc[metrics['neuron_yield'] < MIN_NEURONS, 'firing_rate'] = 0
 metrics['institution'] = metrics.lab.map(institution_map)
 for i, region in enumerate(REGIONS):
     metrics.loc[metrics['region'] == region, 'region_number'] = i

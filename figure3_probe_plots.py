@@ -20,7 +20,8 @@ brain_atlas = atlas.AllenAtlas(25)
 one = ONE()
 
 # Plot settings
-BOUNDARY = 'DG-TH'
+# BOUNDARY = 'DG-TH'
+BOUNDARY = 'VIS-HPF'
 
 PLOTS = ['fr', 'psd', 'rms_ap', 'rms_lf', 'fr_alt', 'amp', 'fr_line', 'amp_line', 'regions_line',
          'distance', 'amp_scatter']
@@ -28,6 +29,7 @@ LABELS = ['Firing rate (spks/s)', 'Power spectral density', 'AP band RMS', 'LFP 
           'Firing rate (spks/s)', 'Spike amplitude', '', '', 'Histology Regions',
           'Distance from Repeated Site', 'Firing rate (spks/s)']
 NICKNAMES = False
+YLIM = [-4000, 1000]
 
 # Load in recordings
 data = pd.read_csv(join(data_path(), 'figure3_brain_regions.csv'))
@@ -86,7 +88,7 @@ for p, plot_name in enumerate(PLOTS):
                                 fontsize=20)
         else:
             axs[i].set_axis_off()
-        axs[i].set(xticks=[], ylim=[-2500, 2500])
+        axs[i].set(xticks=[], ylim=YLIM)
 
     if plot_name[-4:] != 'line':
         cbar = axs[-1].images[-1].colorbar
