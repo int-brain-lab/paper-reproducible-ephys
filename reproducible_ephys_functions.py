@@ -81,12 +81,12 @@ def data_path():
     return data_dir
 
 
-def figure_style():
+def figure_style(return_colors=False):
     """
     Set seaborn style for plotting figures
     """
     sns.set(style="ticks", context="paper",
-            font="Helvetica",
+            font="Arial",
             rc={"font.size": 9,
                 "axes.titlesize": 9,
                 "axes.labelsize": 9,
@@ -101,6 +101,12 @@ def figure_style():
                 })
     matplotlib.rcParams['pdf.fonttype'] = 42
     matplotlib.rcParams['ps.fonttype'] = 42
+    if return_colors:
+        return {'PPC': sns.color_palette('colorblind')[0],
+                'CA1': sns.color_palette('colorblind')[2],
+                'DG': sns.color_palette('muted')[2],
+                'LP': sns.color_palette('colorblind')[4],
+                'PO': sns.color_palette('colorblind')[6]}
 
 
 def combine_regions(regions):
