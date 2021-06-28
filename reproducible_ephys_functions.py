@@ -13,7 +13,7 @@ STR_QUERY = 'probe_insertion__session__project__name__icontains,ibl_neuropixel_b
             '~probe_insertion__json__qc,CRITICAL,' \
             'probe_insertion__session__n_trials__gte,400'
 
-BRAIN_REGIONS = ['VISa', 'CA1', 'DG', 'LP', 'PO']
+BRAIN_REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
 
 def labs():
     lab_number_map = {'cortexlab': 'Lab 1', 'mainenlab': 'Lab 2', 'zadorlab': 'Lab 3',
