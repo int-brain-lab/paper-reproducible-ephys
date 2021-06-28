@@ -161,7 +161,7 @@ def exclude_recordings(df, max_ap_rms=50, min_regions=3, min_channels_region=5,
 
 def eid_list():
     """
-    Static list of eids to include for repeated site analysis
+    Static list of eids which pass the ADVANCED criterium to include for repeated site analysis
     """
     eids = np.load('repeated_site_eids.npy')
     return eids
