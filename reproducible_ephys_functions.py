@@ -13,7 +13,7 @@ STR_QUERY = 'probe_insertion__session__project__name__icontains,ibl_neuropixel_b
             '~probe_insertion__json__qc,CRITICAL,' \
             'probe_insertion__session__n_trials__gte,400'
 
-REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
+BRAIN_REGIONS = ['VISa', 'CA1', 'DG', 'LP', 'PO']
 
 def labs():
     lab_number_map = {'cortexlab': 'Lab 1', 'mainenlab': 'Lab 2', 'zadorlab': 'Lab 3',
@@ -50,7 +50,7 @@ def query(resolved=True, behavior=False, min_regions=2, as_dataframe=False, str_
 
     # Query how many of the target regions were hit per recording
     region_traj = []
-    for i, region in enumerate(['VISa', 'CA1', 'DG', 'LP', 'PO']):
+    for i, region in enumerate(BRAIN_REGIONS):
         region_query = one.alyx.rest(
                     'trajectories', 'list', provenance='Ephys aligned histology track',
                     django=(str_query + ',channels__brain_region__acronym__icontains,%s' % region))
