@@ -24,7 +24,7 @@ MIN_CHANNELS = 5
 ANNOTATE = False
 MIN_NEURONS = 2  # For firing rate inclusion
 
-# Load in data>
+# Load in data
 metrics = pd.read_csv(join(data_path(), 'metrics_region.csv'))
 
 # Get lab info
