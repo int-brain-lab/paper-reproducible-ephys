@@ -184,13 +184,34 @@ def update_rep_site():
             status['origin_lab'] = data_sheet_align.loc[data_sheet_align['ins_id'] == ins_id, 'origin_lab'].iloc[0]
             status['assign_lab'] = data_sheet_align.loc[data_sheet_align['ins_id'] == ins_id, 'assign_lab'].iloc[0]
 
+        # User note - requires trajectory
+        trajs = one.alyx.rest('trajectories', 'list', provenance='Ephys aligned histology track',
+                              subject=subj, date=date, probe=probe)
+        status['usernote'] = ''
+        if len(trajs) > 0:
+            traj = trajs[0]
+            json_field = traj['json']
+            if json_field is not None:
+                key_json = list(json_field.keys())
+
+                if len(key_json) > 0:
+                    str_note_all = ''
+                    for key_i in key_json:
+                        str_note = json_field[key_i][-1]
+                        if type(str_note) == str:
+                            str_note_all = str_note_all + key_i + ': ' + str_note + ' ; '
+                            # print(str_note_all)
+                            status['usernote'] = str_note_all
+
+        # append to DF
         df = df.append(status, ignore_index=True)
 
     df = df.reindex(columns=['ins_id', 'Subject', 'Date', 'Probe',
                              'is_potential', 'is_coordcorrect',  'is_used_analysis', 'is_passl1',
                              'ks2', 'raw_ephys_qc', 'trials', 'wheel',
                              'dlc', 'passive', 'histology', 'insertion', 'planned', 'micro',
-                             'tracing', 'aligned', 'resolved', 'user_note', 'origin_lab', 'assign_lab'])
+                             'tracing', 'aligned', 'resolved', 'user_note', 'origin_lab', 'assign_lab',
+                             'usernote'])
 
     df = df.sort_values(by=['Subject', 'Date'], ascending=True)
 
