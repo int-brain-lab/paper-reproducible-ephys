@@ -19,19 +19,20 @@ from reproducible_ephys_paths import FIG_PATH
 
 # Settings
 REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
-NICKNAMES = True  # Whether to plot the animal nicknames instead of numbers
+NICKNAMES = False  # Whether to plot the animal nicknames instead of numbers
 MIN_CHANNELS = 5
 ANNOTATE = False
 MIN_NEURONS = 2  # For firing rate inclusion
+MIN_REC_PER_LAB = 4
 
 # Load in data
 metrics = pd.read_csv(join(data_path(), 'metrics_region.csv'))
 
-# Get lab info
-lab_number_map, institution_map, lab_colors = labs()
-
 # Exclude recordings
 metrics = exclude_recordings(metrics)
+
+# Get lab info
+lab_number_map, institution_map, lab_colors = labs()
 
 # Reformat data
 metrics.loc[metrics['n_channels'] < MIN_CHANNELS, 'neuron_yield'] = np.nan
@@ -39,6 +40,12 @@ metrics.loc[metrics['lfp_power_low'] < -100000, 'lfp_power_low'] = np.nan
 metrics.loc[metrics['lfp_power_high'] < -100000, 'lfp_power_high'] = np.nan
 metrics.loc[metrics['neuron_yield'] < MIN_NEURONS, 'firing_rate'] = 0
 metrics['institution'] = metrics.lab.map(institution_map)
+
+# Exclude labs with too few recordings done
+metrics = metrics.groupby('institution').filter(
+    lambda s : s['eid'].unique().shape[0] >= MIN_REC_PER_LAB)
+
+# Add some columns for plotting
 for i, region in enumerate(REGIONS):
     metrics.loc[metrics['region'] == region, 'region_number'] = i
 metrics = metrics.sort_values(['institution', 'subject', 'region_number']).reset_index(drop=True)
@@ -47,6 +54,7 @@ n_rec = np.concatenate([np.arange(i) + 1 for i in (metrics.groupby('institution'
 metrics['yield_per_channel'] = metrics['neuron_yield'] / metrics['n_channels']
 for i, eid in enumerate(metrics['eid'].unique()):
     metrics.loc[metrics['eid'] == eid, 'recording_number'] = i
+
 
 # Set figure path
 if not isdir(join(FIG_PATH, 'brain_regions')):
