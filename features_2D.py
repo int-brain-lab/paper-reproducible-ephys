@@ -14,7 +14,7 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 
 def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_range=[2, 15],
-                     plot_type='fr', boundary_align=None, show_regions=False):
+                     plot_type='fr', boundary_align=None, show_regions=False, figsize=(20, 10)):
 
     one = one or ONE()
     brain_atlas = brain_atlas or atlas.AllenAtlas(25)
@@ -23,10 +23,10 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
 
     if len(subjects) == 1:
         fig, axs = plt.subplots(1, len(subjects) + 1, constrained_layout=False, sharey=True,
-                                figsize=(20, 10), dpi=150)
+                                figsize=figsize, dpi=150)
     else:
         fig, axs = plt.subplots(1, len(subjects), constrained_layout=False, sharey=True,
-                                figsize=(20, 10), dpi=150)
+                                figsize=figsize, dpi=150)
     z_extent = []
 
     for iR, (subj, date, probe_label) in enumerate(zip(subjects, dates, probes)):

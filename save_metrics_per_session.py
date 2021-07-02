@@ -58,7 +58,7 @@ for i in range(len(traj)):
                                          'channels.rawInd'], download_only=True)
     try:
         spikes, clusters, channels = bbone.load_spike_sorting_with_channel(
-            eid, aligned=True, dataset_types=['spikes.amps'], one=one)
+            eid, aligned=True, one=one)
         ses_path = one.path_from_eid(eid)
         alf_path = one.path_from_eid(eid).joinpath('alf', probe)
         chn_inds = np.load(Path(join(alf_path, 'channels.rawInd.npy')))

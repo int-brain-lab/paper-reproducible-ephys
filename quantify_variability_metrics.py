@@ -37,7 +37,7 @@ LABELS = ['Neuron yield', 'Firing rate', 'LFP power', 'AP band RMS']
 lab_number_map, institution_map, lab_colors = labs()
 
 # Load in data
-data = pd.read_csv(join(data_path(), 'figure3_brain_regions.csv'))
+data = pd.read_csv(join(data_path(), 'metrics_region.csv'))
 data['institute'] = data['lab'].map(institution_map)
 
 # Exclude recordings
@@ -199,7 +199,7 @@ sns.heatmap(results_plot, cmap='twilight_shifted_r', center=1, square=True,
             cbar=COLORBAR, annot=ANNOTATE, annot_kws={"size": 12},
             linewidths=.5, fmt='.2f', vmin=0, vmax=1, ax=ax1)
 cbar = ax1.collections[0].colorbar
-cbar.ax.tick_params(labelsize=14)
+cbar.ax.tick_params(labelsize=12)
 ax1.figure.axes[-1].yaxis.label.set_size(12)
 ax1.set(xlabel='', ylabel='', title='Permutation p-values')
 ax1.set_yticklabels(REGIONS, va='center', fontsize=12, rotation=0)
@@ -218,8 +218,8 @@ cmap = []
 for i, inst in enumerate(data_example['institute'].unique()):
     cmap.append(lab_colors[inst])
 
-sns.set(style='ticks', context='paper', font_scale=1.8)
-f, ax1 = plt.subplots(1, 1, figsize=(4, 4), dpi=150)
+#sns.set(style='ticks', context='paper', font_scale=1.5)
+f, ax1 = plt.subplots(1, 1, figsize=(3, 3.5), dpi=150)
 sns.stripplot(data=data_example, x='institute', y=EXAMPLE_METRIC, palette=sns.color_palette('Paired'), ax=ax1)
 ax_lines = sns.pointplot(x='institute', y=EXAMPLE_METRIC, data=data_example,
                          ci=0, join=False, estimator=np.mean, color='k',
@@ -227,9 +227,10 @@ ax_lines = sns.pointplot(x='institute', y=EXAMPLE_METRIC, data=data_example,
 #plt.setp(ax_lines.collections, zorder=100, label="")
 plt.plot(np.arange(data_example['institute'].unique().shape[0]),
          [data_example[EXAMPLE_METRIC].mean()] * data_example['institute'].unique().shape[0],
-         color='k', lw=2)
-ax1.set_xticklabels(data_example['institute'].unique(), rotation=30, fontsize=14, ha='right')
-ax1.set(ylabel=f'Firing rate in {EXAMPLE_REGION} (spks/s)', xlabel='')
+         color='r', lw=2)
+ax1.set(ylabel=f'Firing rate in {EXAMPLE_REGION} (spks/s)', xlabel='', ylim=[0, 15], xlim=[-.5, 3.5])
+ax1.set_xticklabels(data_example['institute'].unique(), rotation=30, fontsize=12, ha='right')
+ax1.figure.axes[-1].yaxis.label.set_size(12)
 
 sns.despine(trim=True)
 plt.tight_layout()
