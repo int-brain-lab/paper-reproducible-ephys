@@ -55,12 +55,12 @@ for i in range(len(traj)):
                                              '_iblqc_ephysTimeRmsAP.rms.npy',
                                              '_iblqc_ephysSpectralDensityLF.freqs.npy',
                                              '_iblqc_ephysSpectralDensityLF.power.npy',
-                                             '_iblqc_ephysTimeRmsLF.rms.npy'],
-                              collection=f'raw_ephys_data/{probe}', download_only=True)
-        _ = one.load_datasets(eid, datasets=['_phy_spikes_subset.waveforms.npy',
+                                             '_iblqc_ephysTimeRmsLF.rms.npy',
+                                             '_phy_spikes_subset.waveforms.npy',
                                              '_phy_spikes_subset.spikes.npy',
                                              'channels.rawInd.npy'],
-                              collection=f'alf/{probe}', download_only=True)
+                              collections=[f'raw_ephys_data/{probe}'] * 6 + [f'alf/{probe}'] * 3,
+                              download_only=True)
     try:
         spikes, clusters, channels = bbone.load_spike_sorting_with_channel(
             eid, aligned=True, one=one)
@@ -68,11 +68,14 @@ for i in range(len(traj)):
         alf_path = one.eid2path(eid).joinpath('alf', probe)
         chn_inds = np.load(Path(join(alf_path, 'channels.rawInd.npy')))
         ephys_path = one.eid2path(eid).joinpath('raw_ephys_data', probe)
-        lfp_spectrum = one.load_object(ephys_path, 'ephysSpectralDensityLF',
-                                       namespace='iblqc')
-        stim_on = one.load(eid, dataset_types=['trials.stimOn_times'])[0]
+        lfp_spectrum = dict()
+        lfp_spectrum['freqs'] = np.load(Path(join(ephys_path,
+                                                  '_iblqc_ephysSpectralDensityLF.freqs.npy')))
+        lfp_spectrum['power'] = np.load(Path(join(ephys_path,
+                                                  '_iblqc_ephysSpectralDensityLF.power.npy')))
+        stim_on = one.load_dataset(eid, dataset='_ibl_trials.stimOn_times.npy')
         stim_on = stim_on[~np.isnan(stim_on)]
-        block_prob = one.load(eid, dataset_types=['trials.probabilityLeft'])
+        block_prob = one.load_dataset(eid, dataset='_ibl_trials.probabilityLeft')
         times_left = stim_on[block_prob[0] == 0.8]
         times_right = stim_on[block_prob[0] == 0.2]
     except Exception as error_message:
@@ -93,7 +96,7 @@ for i in range(len(traj)):
         wf_spikes = []
 
     # Get ap band rms
-    rms_ap = one.load_object(ephys_path, 'ephysTimeRmsAP', namespace='iblqc')
+    rms_ap = np.load(Path(join(ephys_path, '_iblqc_ephysTimeRmsAP.rms.npy')))
     rms_ap_data = rms_ap['rms'] * 1e6  # convert to uV
     median = np.mean(np.apply_along_axis(lambda x: np.median(x), 1, rms_ap_data))
     rms_ap_data_median = (np.apply_along_axis(lambda x: x - np.median(x), 1, rms_ap_data)
