@@ -220,7 +220,7 @@ for i, inst in enumerate(data_example['institute'].unique()):
 
 #sns.set(style='ticks', context='paper', font_scale=1.5)
 f, ax1 = plt.subplots(1, 1, figsize=(3, 3.5), dpi=150)
-sns.stripplot(data=data_example, x='institute', y=EXAMPLE_METRIC, palette=sns.color_palette('Paired'), ax=ax1)
+sns.stripplot(data=data_example, x='institute', y=EXAMPLE_METRIC, palette=cmap, ax=ax1)
 ax_lines = sns.pointplot(x='institute', y=EXAMPLE_METRIC, data=data_example,
                          ci=0, join=False, estimator=np.mean, color='k',
                          markers="_", scale=2, ax=ax1)
