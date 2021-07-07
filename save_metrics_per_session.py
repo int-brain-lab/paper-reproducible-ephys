@@ -14,7 +14,7 @@ import alf
 from pathlib import Path
 import brainbox.io.one as bbone
 from reproducible_ephys_functions import query, data_path, combine_regions
-from oneibl.one import ONE
+from one.api import ONE
 import brainbox as bb
 import scipy.stats as stats
 one = ONE()
@@ -24,7 +24,7 @@ MIN_SPIKE_AMP = 50
 MIN_FR = 0.1
 MAX_AP_RMS = 10000
 NEURON_QC = True
-DOWNLOAD_DATA = False
+DOWNLOAD_DATA = True
 #REGIONS = ['VISa', 'CA1', 'DG', 'LP', 'PO']
 LFP_BAND_HIGH = [20, 80]
 LFP_BAND_LOW = [2, 15]
@@ -50,21 +50,26 @@ for i in range(len(traj)):
     nickname = traj[i]['session']['subject']
 
     if DOWNLOAD_DATA:
-        _ = one.load(eid, dataset_types=['_iblqc_ephysSpectralDensity.freqs',
-                                         '_iblqc_ephysSpectralDensity.power',
-                                         '_iblqc_ephysTimeRms.rms',
-                                         '_phy_spikes_subset.waveforms',
-                                         '_phy_spikes_subset.spikes',
-                                         'channels.rawInd'], download_only=True)
+        _ = one.load_datasets(eid, datasets=['_iblqc_ephysSpectralDensityAP.freqs.npy',
+                                             '_iblqc_ephysSpectralDensityAP.power.npy',
+                                             '_iblqc_ephysTimeRmsAP.rms.npy',
+                                             '_iblqc_ephysSpectralDensityLF.freqs.npy',
+                                             '_iblqc_ephysSpectralDensityLF.power.npy',
+                                             '_iblqc_ephysTimeRmsLF.rms.npy'],
+                              collection=f'raw_ephys_data/{probe}', download_only=True)
+        _ = one.load_datasets(eid, datasets=['_phy_spikes_subset.waveforms.npy',
+                                             '_phy_spikes_subset.spikes.npy',
+                                             'channels.rawInd.npy'],
+                              collection=f'alf/{probe}', download_only=True)
     try:
         spikes, clusters, channels = bbone.load_spike_sorting_with_channel(
             eid, aligned=True, one=one)
-        ses_path = one.path_from_eid(eid)
-        alf_path = one.path_from_eid(eid).joinpath('alf', probe)
+        ses_path = one.eid2path(eid)
+        alf_path = one.eid2path(eid).joinpath('alf', probe)
         chn_inds = np.load(Path(join(alf_path, 'channels.rawInd.npy')))
-        ephys_path = one.path_from_eid(eid).joinpath('raw_ephys_data', probe)
-        lfp_spectrum = alf.io.load_object(ephys_path, 'ephysSpectralDensityLF',
-                                          namespace='iblqc')
+        ephys_path = one.eid2path(eid).joinpath('raw_ephys_data', probe)
+        lfp_spectrum = one.load_object(ephys_path, 'ephysSpectralDensityLF',
+                                       namespace='iblqc')
         stim_on = one.load(eid, dataset_types=['trials.stimOn_times'])[0]
         stim_on = stim_on[~np.isnan(stim_on)]
         block_prob = one.load(eid, dataset_types=['trials.probabilityLeft'])
@@ -88,7 +93,7 @@ for i in range(len(traj)):
         wf_spikes = []
 
     # Get ap band rms
-    rms_ap = alf.io.load_object(ephys_path, 'ephysTimeRmsAP', namespace='iblqc')
+    rms_ap = one.load_object(ephys_path, 'ephysTimeRmsAP', namespace='iblqc')
     rms_ap_data = rms_ap['rms'] * 1e6  # convert to uV
     median = np.mean(np.apply_along_axis(lambda x: np.median(x), 1, rms_ap_data))
     rms_ap_data_median = (np.apply_along_axis(lambda x: x - np.median(x), 1, rms_ap_data)
