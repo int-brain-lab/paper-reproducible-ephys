@@ -77,7 +77,6 @@ def get_traj(ListOfEIDs):
 traj=get_traj(ListOfEIDs)
 
 for i in range(len(traj)):
-    i=2
     print('Processing repeated site recording %d of %d' % (i+1, len(traj)))
     fr, FF, LabNumArray = [], [], []
     xvals, yvals, zvals =[], [], []
