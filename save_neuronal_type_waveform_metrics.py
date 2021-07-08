@@ -124,6 +124,10 @@ for i in range(len(traj)):
                              - channels[probe].axial_um[these_channels[0]]) <= 100
         use_channels = lat_channels & ax_channels
 
+        # If there are not enough channels (neurons at the top and bottom of probe), abort
+        if np.sum(use_channels) < 11:
+            continue
+
         # Get distance to soma and sort channels accordingly
         dist_soma = np.sort(channels[probe].axial_um[these_channels[use_channels]]
                             - channels[probe].axial_um[these_channels[use_channels][0]])
@@ -133,6 +137,12 @@ for i in range(len(traj)):
         wf_ch_sort = mean_wf_ch[:, use_channels]
         wf_ch_sort = wf_ch_sort[:, sort_ch]
         wf_ch_sort = wf_ch_sort.T  # put time on the second dimension
+
+        # Interpolate
+        x_origin = channels[probe].x - np.min(channels[probe].x)
+        z_origin = channels[probe].z
+        x_new = (x_origin * np.cos(np.radians(360))) - (z_origin * np.sin(np.radians(360)))
+        z_new = (x_origin * np.cos(np.radians(360))) + (z_origin * np.sin(np.radians(360)))
 
         # Get normalized amplitude per channel and time of waveform trough
         norm_amp = np.empty(wf_ch_sort.shape[0])
