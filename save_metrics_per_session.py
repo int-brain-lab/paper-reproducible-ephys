@@ -2,8 +2,10 @@
 """
 Created on Mon Feb 15 19:01:57 2021
 
-@author: Noam Roth & Guido Meijer
+@author: Noam Roth
 """
+
+
 
 import numpy as np
 import pandas as pd
