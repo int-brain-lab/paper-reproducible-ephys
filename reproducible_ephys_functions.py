@@ -120,7 +120,7 @@ def combine_regions(regions):
     for i, region in enumerate(regions):
         if region[:2] == 'CA':
             continue
-        if (region == 'DG-mo') or (region == 'DG-sg'):
+        if (region == 'DG-mo') or (region == 'DG-sg') or (region == 'DG-po'):
             regions[i] = 'DG'
         for j, char in enumerate(remove):
             regions[i] = regions[i].replace(char, '')
