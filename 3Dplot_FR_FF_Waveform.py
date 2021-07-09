@@ -33,6 +33,7 @@ ListOfEIDs = eid_list()
 
 # Initialize dataframe
 ClusterFeatures = pd.DataFrame() #['eID', 'Lab ID','clusterID', 'AvgFR', 'AvgFF', 'amps', 'peak-trough', 'Xloc', 'Yloc', 'Zloc']
+PeriEventFRandFF = pd.DataFrame() #['FR stimOn', 'FR '] FR and FF averaged over entire session
 
 PeriEventMeanFR_all0, FFPeriEvent0 = [], []
 PeriEventMeanFR_all1, FFPeriEvent1 = [], []
@@ -42,9 +43,7 @@ PeriEventMeanFR_all4, FFPeriEvent4 = [], []
 PeriEventMeanFR_all5, FFPeriEvent5 = [], []
 PeriEventMeanFR_all6, FFPeriEvent6 = [], []
 
-#REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
-regions = 'LP' #[PPC', 'CA1', 'DG', 'LP', 'PO']
-
+regions = 'DG' #[PPC', 'CA1', 'DG', 'LP', 'PO']
 
 # %% Functions (modified from others' codes)
 # used if firing rates are normalized
@@ -90,11 +89,16 @@ for i in range(len(traj)):
     PeriEventMeanFRperClust6, FFPeriEvent6_all = [], []
     #PeriEventMeanFRperClust = [0 for _ in eventTypes] #{x: [] for x in eventTypes}
     
-    
     # Load in data
     eid = traj[i]['session']['id']
+    probe = traj[i]['probe_name']
+
     try:
-        spikes, clusters, channels = bbone.load_spike_sorting_with_channel(eid, one=one)
+        #spikes, clusters, channels = bbone.load_spike_sorting_with_channel(eid, one=one)
+        spikes = one.load_object(eid, 'spikes', collection='alf/{}'.format(probe), revision='')
+        clusters = one.load_object(eid, 'clusters', collection='alf/{}'.format(probe), revision='')
+        channels = bbone.load_channel_locations(eid, one=one, probe=probe, aligned=True)
+        clusters = bbone.merge_clusters_channels(dic_clus={probe: clusters}, channels=channels)[probe]
     except:
         continue
 
@@ -107,31 +111,38 @@ for i in range(len(traj)):
         continue
 
 
-    # find probe name and lab name, and associate the lab name with a number:
-    probe = traj[i]['probe_name']
+    # Find lab name, and associate the lab name with a number:
     LabName = traj[i]['session']['lab']
     lab_number_map, _, _ = labs() #lab_number_map, institution_map, lab_colors = labs()
     LabNum = int(lab_number_map.get(LabName)[-1])
     
     #Find all the relevant brain regions by first combining the regions (e.g. cortical layers):
-    BrainRegionsInProbe = combine_regions(clusters[probe]['acronym'])
+    BrainRegionsInProbe = combine_regions(clusters['acronym'])
                                           
   
     # Get relevant cluster ids
-    clusterIDs  = clusters[probe]['metrics']['cluster_id'][BrainRegionsInProbe == regions][clusters[probe]['metrics']['label'] == 1]
-   
-        
+    clusterIDs  = clusters['metrics']['cluster_id'][BrainRegionsInProbe == regions][clusters['metrics']['label'] == 1]
+   # mask = np.logical_and(clusters['acronym'] == 'LP', clusters['metrics']['label'] == 1)
+    if len(clusterIDs)==0: # when no good clusters are found in the brain region
+        continue
+    
     #Find cluster waveform (spike amp & width):
-    amps1 = one.load_dataset(eid, 'clusters.amps.npy', collection='alf/{}'.format(probe))
-    ptt1 = one.load_dataset(eid, 'clusters.peakToTrough.npy', collection='alf/{}'.format(probe))
+    amps1 = clusters['amps']
+    ptt1 = clusters['peakToTrough']
 
 
     #Find specific task Event times:
+    # Some relevant results for one.list_datasets(eid):
+    # _ibl_trials.choice.npy, _ibl_trials.contrastLeft.npy, _ibl_trials.contrastRight.npy, _ibl_trials.feedbackType.npy
+    # _ibl_trials.firstMovement_times.npy, _ibl_trials.probabilityLeft.npy, _ibl_trials.stimOn_times.npy, _ibl_trials.stimOff_times.npy
+    
     #event == 'Stim' 
-    timesStimOn = one.load(eid, dataset_types=['trials.stimOn_times'])[0]
-    base_line_times = one.load(eid, dataset_types=['trials.stimOn_times'])[0]
+    timesStimOn = one.load_dataset(eid, '_ibl_trials.stimOn_times.npy') #one.load(eid, dataset_types=['trials.stimOn_times'])[0]
+    base_line_times = one.load_dataset(eid, '_ibl_trials.stimOn_times.npy')[0] #one.load(eid, dataset_types=['trials.stimOn_times'])[0]
     base_line_times = base_line_times[~np.isnan(base_line_times)]
-    contrast_L, contrast_R = one.load(eid, dataset_types=['trials.contrastLeft', 'trials.contrastRight'])
+    contrast_L =  one.load_dataset(eid, '_ibl_trials.contrastLeft.npy')
+    contrast_R = one.load_dataset(eid, '_ibl_trials.contrastRight.npy')
+    #contrast_L, contrast_R = one.load(eid, dataset_types=['trials.contrastLeft', 'trials.contrastRight'])
     contrast_L, contrast_R = contrast_L[~np.isnan(timesStimOn)], contrast_R[~np.isnan(timesStimOn)]
     timesStimOn = timesStimOn[~np.isnan(timesStimOn)]
     event_times_left = timesStimOn[contrast_L > 0]
@@ -140,8 +151,8 @@ for i in range(len(traj)):
     event_times_left100 = timesStimOn[contrast_L == 1]
     event_times_right100 = timesStimOn[contrast_R == 1]
     #event == 'Move'
-    times1stMove = one.load(eid, dataset_types=['trials.firstMovement_times'])[0]
-    choice = one.load(eid, dataset_types=['trials.choice'])[0]
+    times1stMove = one.load_dataset(eid, '_ibl_trials.firstMovement_times.npy') #one.load(eid, dataset_types=['trials.firstMovement_times'])[0]
+    choice = one.load_dataset(eid, '_ibl_trials.choice.npy') #one.load(eid, dataset_types=['trials.choice'])[0]
     if (~np.isnan(times1stMove)).sum() < 300:
         continue
     choice = choice[~np.isnan(times1stMove)]
@@ -171,23 +182,23 @@ for i in range(len(traj)):
             pre_time, post_time = 0.2, 0.4
         elif count<7:
             pre_time, post_time = 0.4, 0.2
-        a, b = calculate_peths(spikes[probe]['times'], spikes[probe]['clusters'], np.array(clusterIDs),
+        a, b = calculate_peths(spikes['times'], spikes['clusters'], np.array(clusterIDs),
                                etime, pre_time=pre_time, post_time=post_time, smoothing=0, bin_size=0.01)
         activities.append(a)
         BinnedSpikes.append(b)
-        count += 1
-        
+        count += 1        
     # activities_NotNorm = [a.means for a in activities]
     # activities_Normalized = normalise_act(activities,  spikes, probe, clusterIDs, base_line_times)
     #activities = activities_Normalized
     #After the part above, activities[0].means will be equivalent to activities_Normalized[0] or activities_NotNorm[0]
+
     
     for k, cluster in enumerate(clusterIDs):
-        fr.append(spikes[probe]['times'][spikes[probe]['clusters'] == cluster].shape[0]/ spikes[probe]['times'][-1])
+        fr.append(spikes['times'][spikes['clusters'] == cluster].shape[0]/ spikes['times'][-1])
         
         #This part calculates the f.r. in bins of 50 ms, then calculates the variance and Fano Factor:
-        SpikesOfCluster = spikes[probe]['times'][spikes[probe]['clusters'] == cluster]
-        time_bins = arange(0, spikes[probe]['times'][-1], 0.05)
+        SpikesOfCluster = spikes['times'][spikes['clusters'] == cluster]
+        time_bins = arange(0, spikes['times'][-1], 0.05)
         SpkIncrements50ms, _ = histogram(SpikesOfCluster, time_bins) #vector containing the # of spikes/counts in each 50 ms increment.
 
         FF50ms = SpkIncrements50ms.var()/SpkIncrements50ms.mean()
@@ -195,9 +206,9 @@ for i in range(len(traj)):
            
         LabNumArray.append(LabNum)
     
-        xvals.append(clusters[probe]['x'][clusters[probe]['metrics']['cluster_id'] == cluster])
-        yvals.append(clusters[probe]['y'][clusters[probe]['metrics']['cluster_id'] == cluster])
-        zvals.append(clusters[probe]['z'][clusters[probe]['metrics']['cluster_id'] == cluster])
+        xvals.append(clusters['x'][clusters['metrics']['cluster_id'] == cluster])
+        yvals.append(clusters['y'][clusters['metrics']['cluster_id'] == cluster])
+        zvals.append(clusters['z'][clusters['metrics']['cluster_id'] == cluster])
         
         #Now find the average firing rate around the event only, for each cluster:
         PeriEventMeanFRperClust0.append(mean(activities[0].means[activities[0].cscale == cluster]))
@@ -213,12 +224,18 @@ for i in range(len(traj)):
         
     
     #Save all the data:
-    data1 = np.array([np.repeat(eid, len(clusterIDs)), LabNumArray, np.array(clusterIDs), np.array(fr), np.array(FF),
-                      amps1[clusterIDs], ptt1[clusterIDs], np.squeeze(xvals), np.squeeze(yvals), np.squeeze(zvals)])
-    data1 = np.transpose(data1); #data1.reshape(len(clusterIDs),4)
-    df = pd.DataFrame(data1, columns=['eID', 'Lab ID','clusterID', 'AvgFR', 'AvgFF', 'amps', 'peak-trough', 'Xloc', 'Yloc', 'Zloc'],
+    columns=['eID', 'Lab ID','clusterID', 'AvgFR', 'AvgFF', 'amps', 'peak-trough', 'Xloc', 'Yloc', 'Zloc']
+    if len(clusterIDs)>1:
+        data1 = np.array([np.repeat(eid, len(clusterIDs)), LabNumArray, np.array(clusterIDs), np.array(fr), np.array(FF),
+                          amps1[clusterIDs], ptt1[clusterIDs], np.squeeze(xvals), np.squeeze(yvals), np.squeeze(zvals)])
+        data1 = np.transpose(data1); #data1.reshape(len(clusterIDs),len(columns))
+    elif len(clusterIDs)==1:
+        data1 = np.array([eid, np.squeeze(LabNumArray), np.squeeze(np.array(clusterIDs)), np.squeeze(np.array(fr)), np.squeeze(np.array(FF)),
+                          np.squeeze(amps1[clusterIDs]), np.squeeze(ptt1[clusterIDs]), np.squeeze(xvals), np.squeeze(yvals), np.squeeze(zvals)])
+        data1 = data1.reshape(len(clusterIDs),10)
+
+    df = pd.DataFrame(data1, columns=columns,
                       index=np.arange(len(ClusterFeatures), len(ClusterFeatures)+len(clusterIDs))) #index=np.arange(0,len(clusterIDs)))
-    
     ClusterFeatures = ClusterFeatures.append(df) 
     
     
@@ -230,7 +247,6 @@ for i in range(len(traj)):
     FFPeriEvent4_all.append(np.array(FFPeriEvent4))
     FFPeriEvent5_all.append(np.array(FFPeriEvent5))
     FFPeriEvent6_all.append(np.array(FFPeriEvent6))
-
 
 PeriEventFR_stacked0 = np.reshape(np.hstack(PeriEventMeanFR_all0), (len(np.hstack(PeriEventMeanFR_all0)),1))
 PeriEventFF_stacked0 = np.reshape(np.hstack(FFPeriEvent0_all), (len(np.hstack(FFPeriEvent0_all)),1))
@@ -244,7 +260,8 @@ PeriEventFF_stacked6 = np.reshape(np.hstack(FFPeriEvent6_all), (len(np.hstack(FF
 PeriEventFF_stackedAll = np.concatenate((PeriEventFF_stacked0, PeriEventFF_stacked1, PeriEventFF_stacked2,
                                          PeriEventFF_stacked3, PeriEventFF_stacked4, PeriEventFF_stacked5, 
                                          PeriEventFF_stacked6), axis=1)
-# %% Find the center of mass of target brain regions and substract from xyz (modified from Mayo's code)
+
+# %% Find the center of mass of target brain regions and substract from xyz
 
 #Find the planned repeated site trajectories
 rep_traj = one.alyx.rest('trajectories', 'list', provenance='Planned', x=-2243, y=-2000, theta=15)
@@ -268,21 +285,21 @@ DeltaY = (np.array(ClusterFeatures['Yloc'], dtype = np.float64) - centre_of_mass
 DeltaZ = (np.array(ClusterFeatures['Zloc'], dtype = np.float64) - centre_of_mass_reg[2])*1e6
 
 
-# %% Save DataFrame and 3D Plots
-ClusterFeatures.to_pickle("ClusterFeatures_DF.pkl")
-# output = pd.read_pickle("ClusterFeatures_DF.pkl")
-# print(output)
+# %% Save data and make plots
 
+## If needed, use codes below to save DataFrame and save as .mat file for Matlab
+# ClusterFeatures.to_pickle(FIG_PATH+'/'+regions+'/'+regions +"_ClusterFeatures_DF.pkl")
+# # output = pd.read_pickle("ClusterFeatures_DF.pkl")
+# # print(output)
+# sio.savemat(FIG_PATH+'/'+regions+'/'+regions +'_ClusterFeatMat.mat', {name: col.values for name, col in ClusterFeatures.items()})
 
 regionTitle = regions
-
 cm = plt.get_cmap("viridis")  #viridis, vlag, Accent, cool
 
 fig = plt.figure()
 fig.suptitle(regions + ': Lab ID')
 ax = fig.add_subplot(111, projection='3d') 
 p = ax.scatter(DeltaX, DeltaY, DeltaZ, c=np.array(ClusterFeatures['Lab ID'], dtype = np.float64),cmap=cm, depthshade=False, s=4)
-#p = ax.scatter(DeltaX, DeltaY, DeltaZ, c=PeriEventFR_stacked0,cmap=cm, depthshade=False, s=4)
 ax.set_xlabel('dX') #delta x (distance from center of mass of brain region)
 ax.set_ylabel('dY')
 ax.set_zlabel('dZ')  
@@ -305,11 +322,21 @@ plt.savefig(join(FIG_PATH, regions, '3D plots of cluster peri-event FR'))
 
 
 fig = plt.figure()
+fig.suptitle(regions + ': log Avg FR')
+ax = fig.add_subplot(111, projection='3d') 
+p = ax.scatter(DeltaX, DeltaY, DeltaZ, c=np.log(np.array(ClusterFeatures['AvgFR'], dtype = np.float64)),cmap=cm, depthshade=False, s=4)
+ax.set_xlabel('dX') 
+ax.set_ylabel('dY')
+ax.set_zlabel('dZ')  
+cbar = plt.colorbar(p)
+plt.savefig(join(FIG_PATH, regions, '3D plots of cluster log avg FR'))
+
+
+fig = plt.figure()
 fig.suptitle(regions + ': WF amp')
 ax = fig.add_subplot(111, projection='3d') 
 p = ax.scatter(DeltaX, DeltaY, DeltaZ, c=np.array(ClusterFeatures['amps'], dtype = np.float64), cmap=cm, depthshade=False, s=4)
-#p = ax.scatter(DeltaX, DeltaY, DeltaZ, c=PeriEventFR_stacked0,cmap=cm, depthshade=False, s=4)
-ax.set_xlabel('dX') #delta x (distance from center of mass of brain region)
+ax.set_xlabel('dX') 
 ax.set_ylabel('dY')
 ax.set_zlabel('dZ')  
 cbar = plt.colorbar(p)
@@ -320,8 +347,7 @@ fig = plt.figure()
 fig.suptitle(regions + ': WF peak-trough')
 ax = fig.add_subplot(111, projection='3d') 
 p = ax.scatter(DeltaX, DeltaY, DeltaZ, c=np.array(ClusterFeatures['peak-trough'], dtype = np.float64),cmap=cm, depthshade=False, s=4)
-#p = ax.scatter(DeltaX, DeltaY, DeltaZ, c=ptt_stacked,cmap=cm, depthshade=False, s=4)
-ax.set_xlabel('dX') #delta x (distance from center of mass of brain region)
+ax.set_xlabel('dX') 
 ax.set_ylabel('dY')
 ax.set_zlabel('dZ')  
 cbar = plt.colorbar(p)
