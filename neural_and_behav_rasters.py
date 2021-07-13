@@ -35,7 +35,7 @@ def plot_psth_raster(axs, t, psth, raster, title=None, ylabel=None, xlabel='Time
 
 
 def plot_neural_behav_raster(eid, probe, camera='left', clust_id=0, align_event='goCue_times',
-                             order='trial num', sort='choice', one=None):
+                             order='trial num', sort='choice', one=None, revision=''):
     """
 
     :param eid: session id
@@ -50,11 +50,13 @@ def plot_neural_behav_raster(eid, probe, camera='left', clust_id=0, align_event=
     """
     one = one or ONE()
 
-    dlc = one.load_object(eid, f'{camera}Camera', collection='alf', attribute='dlc|times')
+    dlc = one.load_object(eid, f'{camera}Camera', collection='alf', attribute='dlc|times',
+                          revision=revision)
     dlc_all = get_dlc_everything(dlc, camera)
-    wheel = one.load_object(eid, 'wheel', collection='alf')
-    trials = one.load_object(eid, 'trials')
-    spikes = one.load_object(eid, 'spikes', collection=f'alf/{probe}', attribute='times|clusters')
+    wheel = one.load_object(eid, 'wheel', collection='alf', revision=revision)
+    trials = one.load_object(eid, 'trials', revision=revision)
+    spikes = one.load_object(eid, 'spikes', collection=f'alf/{probe}', attribute='times|clusters',
+                             revision=revision)
 
     fig, axs = plt.subplots(2, 6, figsize=(18, 8), constrained_layout=True)
     # Spike
@@ -70,14 +72,14 @@ def plot_neural_behav_raster(eid, probe, camera='left', clust_id=0, align_event=
     # Wheel
     wheel_velocity = wh.velocity(wheel.timestamps, wheel.position)
     wheel_raster, t = get_event_aligned_raster(wheel.timestamps, trials[align_event],
-                                                      values=wheel_velocity)
+                                                      values=wheel_velocity, tbin=tbin)
     wheel_raster_sorted, wheel_psth = filter_trials(trials, wheel_raster, align_event, order, sort)
     plot_psth_raster([axs[0, 1], axs[1, 1]], t, wheel_psth, wheel_raster_sorted,
                      title='wheel velocity', ylabel='rad/s', cmap='viridis')
 
     # Right paw
     paw_r_raster, t = get_event_aligned_raster(dlc_all.times, trials[align_event],
-                                                      values=dlc_all.dlc.paw_r_speed)
+                                                values=dlc_all.dlc.paw_r_speed, tbin=tbin)
     paw_r_raster_sorted, paw_r_psth = filter_trials(trials, paw_r_raster, align_event, order, sort)
     plot_psth_raster([axs[0, 2], axs[1, 2]], t, paw_r_psth, paw_r_raster_sorted,
                      title='right paw speed', ylabel='px/s', cmap='viridis',
@@ -85,7 +87,7 @@ def plot_neural_behav_raster(eid, probe, camera='left', clust_id=0, align_event=
 
     # Left paw
     paw_l_raster, t = get_event_aligned_raster(dlc_all.times, trials[align_event],
-                                                      values=dlc_all.dlc.paw_l_speed)
+                                                values=dlc_all.dlc.paw_l_speed, tbin=tbin)
     paw_l_raster_sorted, paw_l_psth = filter_trials(trials, paw_l_raster, align_event, order, sort)
     plot_psth_raster([axs[0, 3], axs[1, 3]], t, paw_l_psth, paw_l_raster_sorted,
                      title='left paw speed', ylabel='px/s', cmap='viridis',
@@ -94,14 +96,14 @@ def plot_neural_behav_raster(eid, probe, camera='left', clust_id=0, align_event=
 
     # Nose top
     nose_raster, t = get_event_aligned_raster(dlc_all.times, trials[align_event],
-                                                      values=dlc_all.dlc.nose_tip_speed)
+                                              values=dlc_all.dlc.nose_tip_speed, tbin=tbin)
     nose_raster_sorted, nose_psth = filter_trials(trials, nose_raster, align_event, order, sort)
     plot_psth_raster([axs[0, 4], axs[1, 4]], t, nose_psth, nose_raster_sorted,
                      title='nose tip speed', ylabel='px/s', cmap='viridis',
                      clevels=np.nanquantile(nose_raster_sorted['vals'], [0, 0.9]))
 
     # Licks
-    lick_raster, t = get_event_aligned_raster(dlc_all.licks, trials[align_event])
+    lick_raster, t = get_event_aligned_raster(dlc_all.licks, trials[align_event], tbin=tbin)
     lick_raster_sorted, lick_psth = filter_trials(trials, lick_raster, align_event, order, sort)
     plot_psth_raster([axs[0, 5], axs[1, 5]], t, lick_psth, lick_raster_sorted,
                      title='licks', ylabel='px/s', cmap='binary')
@@ -116,14 +118,14 @@ def plot_neural_behav_raster(eid, probe, camera='left', clust_id=0, align_event=
 
 if __name__ == '__main__':
 
-
     eid = '746d1902-fa59-4cab-b0aa-013be36060d5'
     probe = 'probe00'
 
     # Example 1: left dlc camera, aligned to feedback_times, sorted by choice (correct incorrect),
-    # cluster no. 378
+    # cluster no. 378, using non default revision
     fig = plot_neural_behav_raster(eid, probe, clust_id=378, camera='left',
-                                   align_event='feedback_times', sort='choice')
+                                   align_event='feedback_times', sort='choice',
+                                   revision='ks2_preproc_test')
 
     # Example 2: left dlc camera, aligned to goCue_times, sorted by choice and side (left right and
     # correct incorrect), order by reaction time
