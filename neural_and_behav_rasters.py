@@ -35,7 +35,7 @@ def plot_psth_raster(axs, t, psth, raster, title=None, ylabel=None, xlabel='Time
 
 
 def plot_neural_behav_raster(eid, probe, camera='left', clust_id=0, align_event='goCue_times',
-                             order='trial num', sort='choice', one=None, revision=''):
+                             order='trial num', sort='choice', one=None, revision=None):
     """
 
     :param eid: session id
