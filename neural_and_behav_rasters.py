@@ -35,7 +35,7 @@ def plot_psth_raster(axs, t, psth, raster, title=None, ylabel=None, xlabel='Time
 
 
 def plot_neural_behav_raster(eid, probe, camera='left', clust_id=0, align_event='goCue_times',
-                             order='trial num', sort='choice', one=None, revision=None):
+                             order='trial num', sort='choice', one=None, revision=''):
     """
 
     :param eid: session id
@@ -50,11 +50,10 @@ def plot_neural_behav_raster(eid, probe, camera='left', clust_id=0, align_event=
     """
     one = one or ONE()
 
-    dlc = one.load_object(eid, f'{camera}Camera', collection='alf', attribute='dlc|times',
-                          revision=revision)
+    dlc = one.load_object(eid, f'{camera}Camera', collection='alf', attribute='dlc|times')
     dlc_all = get_dlc_everything(dlc, camera)
-    wheel = one.load_object(eid, 'wheel', collection='alf', revision=revision)
-    trials = one.load_object(eid, 'trials', revision=revision)
+    wheel = one.load_object(eid, 'wheel', collection='alf',)
+    trials = one.load_object(eid, 'trials')
     spikes = one.load_object(eid, 'spikes', collection=f'alf/{probe}', attribute='times|clusters',
                              revision=revision)
 
