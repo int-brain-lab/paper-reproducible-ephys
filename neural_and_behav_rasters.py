@@ -35,7 +35,7 @@ def plot_psth_raster(axs, t, psth, raster, title=None, ylabel=None, xlabel='Time
 
 
 def plot_neural_behav_raster(eid, probe, camera='left', clust_id=0, align_event='goCue_times',
-                             order='trial num', sort='choice', one=None, revision=''):
+                             order='trial num', sort='choice', one=None, spike_collection=None):
     """
 
     :param eid: session id
@@ -54,8 +54,13 @@ def plot_neural_behav_raster(eid, probe, camera='left', clust_id=0, align_event=
     dlc_all = get_dlc_everything(dlc, camera)
     wheel = one.load_object(eid, 'wheel', collection='alf',)
     trials = one.load_object(eid, 'trials')
-    spikes = one.load_object(eid, 'spikes', collection=f'alf/{probe}', attribute='times|clusters',
-                             revision=revision)
+
+    if spike_collection:
+        collection = f'alf/{probe}/{spike_collection}'
+    else:
+        collection = f'alf/{probe}'
+
+    spikes = one.load_object(eid, 'spikes', collection=collection, attribute='times|clusters')
 
     fig, axs = plt.subplots(2, 6, figsize=(18, 8), constrained_layout=True)
     # Spike
@@ -117,14 +122,14 @@ def plot_neural_behav_raster(eid, probe, camera='left', clust_id=0, align_event=
 
 if __name__ == '__main__':
 
-    eid = '746d1902-fa59-4cab-b0aa-013be36060d5'
-    probe = 'probe00'
+    eid = '56b57c38-2699-4091-90a8-aba35103155e'
+    probe = 'probe01'
 
     # Example 1: left dlc camera, aligned to feedback_times, sorted by choice (correct incorrect),
     # cluster no. 378, using non default revision
     fig = plot_neural_behav_raster(eid, probe, clust_id=378, camera='left',
                                    align_event='feedback_times', sort='choice',
-                                   revision='ks2_preproc_test')
+                                   spike_collection='ks2_preproc_tests')
 
     # Example 2: left dlc camera, aligned to goCue_times, sorted by choice and side (left right and
     # correct incorrect), order by reaction time
