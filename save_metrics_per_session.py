@@ -14,7 +14,7 @@ import alf
 from pathlib import Path
 import brainbox.io.one as bbone
 from reproducible_ephys_functions import query, data_path, combine_regions
-from oneibl.one import ONE
+from one.api import ONE
 import brainbox as bb
 import scipy.stats as stats
 one = ONE()
@@ -24,7 +24,7 @@ MIN_SPIKE_AMP = 50
 MIN_FR = 0.1
 MAX_AP_RMS = 10000
 NEURON_QC = True
-DOWNLOAD_DATA = False
+DOWNLOAD_DATA = True
 #REGIONS = ['VISa', 'CA1', 'DG', 'LP', 'PO']
 LFP_BAND_HIGH = [20, 80]
 LFP_BAND_LOW = [2, 15]
@@ -50,24 +50,32 @@ for i in range(len(traj)):
     nickname = traj[i]['session']['subject']
 
     if DOWNLOAD_DATA:
-        _ = one.load(eid, dataset_types=['_iblqc_ephysSpectralDensity.freqs',
-                                         '_iblqc_ephysSpectralDensity.power',
-                                         '_iblqc_ephysTimeRms.rms',
-                                         '_phy_spikes_subset.waveforms',
-                                         '_phy_spikes_subset.spikes',
-                                         'channels.rawInd'], download_only=True)
+        _ = one.load_datasets(eid, datasets=['_iblqc_ephysSpectralDensityAP.freqs.npy',
+                                             '_iblqc_ephysSpectralDensityAP.power.npy',
+                                             '_iblqc_ephysTimeRmsAP.rms.npy',
+                                             '_iblqc_ephysSpectralDensityLF.freqs.npy',
+                                             '_iblqc_ephysSpectralDensityLF.power.npy',
+                                             '_iblqc_ephysTimeRmsLF.rms.npy',
+                                             '_phy_spikes_subset.waveforms.npy',
+                                             '_phy_spikes_subset.spikes.npy',
+                                             'channels.rawInd.npy'],
+                              collections=[f'raw_ephys_data/{probe}'] * 6 + [f'alf/{probe}'] * 3,
+                              download_only=True)
     try:
         spikes, clusters, channels = bbone.load_spike_sorting_with_channel(
             eid, aligned=True, one=one)
-        ses_path = one.path_from_eid(eid)
-        alf_path = one.path_from_eid(eid).joinpath('alf', probe)
+        ses_path = one.eid2path(eid)
+        alf_path = one.eid2path(eid).joinpath('alf', probe)
         chn_inds = np.load(Path(join(alf_path, 'channels.rawInd.npy')))
-        ephys_path = one.path_from_eid(eid).joinpath('raw_ephys_data', probe)
-        lfp_spectrum = alf.io.load_object(ephys_path, 'ephysSpectralDensityLF',
-                                          namespace='iblqc')
-        stim_on = one.load(eid, dataset_types=['trials.stimOn_times'])[0]
+        ephys_path = one.eid2path(eid).joinpath('raw_ephys_data', probe)
+        lfp_spectrum = dict()
+        lfp_spectrum['freqs'] = np.load(Path(join(ephys_path,
+                                                  '_iblqc_ephysSpectralDensityLF.freqs.npy')))
+        lfp_spectrum['power'] = np.load(Path(join(ephys_path,
+                                                  '_iblqc_ephysSpectralDensityLF.power.npy')))
+        stim_on = one.load_dataset(eid, dataset='_ibl_trials.stimOn_times.npy')
         stim_on = stim_on[~np.isnan(stim_on)]
-        block_prob = one.load(eid, dataset_types=['trials.probabilityLeft'])
+        block_prob = one.load_dataset(eid, dataset='_ibl_trials.probabilityLeft')
         times_left = stim_on[block_prob[0] == 0.8]
         times_right = stim_on[block_prob[0] == 0.2]
     except Exception as error_message:
@@ -88,7 +96,7 @@ for i in range(len(traj)):
         wf_spikes = []
 
     # Get ap band rms
-    rms_ap = alf.io.load_object(ephys_path, 'ephysTimeRmsAP', namespace='iblqc')
+    rms_ap = np.load(Path(join(ephys_path, '_iblqc_ephysTimeRmsAP.rms.npy')))
     rms_ap_data = rms_ap['rms'] * 1e6  # convert to uV
     median = np.mean(np.apply_along_axis(lambda x: np.median(x), 1, rms_ap_data))
     rms_ap_data_median = (np.apply_along_axis(lambda x: x - np.median(x), 1, rms_ap_data)
