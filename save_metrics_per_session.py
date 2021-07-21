@@ -50,17 +50,20 @@ for i in range(len(traj)):
     nickname = traj[i]['session']['subject']
 
     if DOWNLOAD_DATA:
-        _ = one.load_datasets(eid, datasets=['_iblqc_ephysSpectralDensityAP.freqs.npy',
-                                             '_iblqc_ephysSpectralDensityAP.power.npy',
-                                             '_iblqc_ephysTimeRmsAP.rms.npy',
-                                             '_iblqc_ephysSpectralDensityLF.freqs.npy',
-                                             '_iblqc_ephysSpectralDensityLF.power.npy',
-                                             '_iblqc_ephysTimeRmsLF.rms.npy',
-                                             '_phy_spikes_subset.waveforms.npy',
-                                             '_phy_spikes_subset.spikes.npy',
-                                             'channels.rawInd.npy'],
-                              collections=[f'raw_ephys_data/{probe}'] * 6 + [f'alf/{probe}'] * 3,
-                              download_only=True)
+        try:
+            _ = one.load_datasets(eid, datasets=['_iblqc_ephysSpectralDensityAP.freqs.npy',
+                                                 '_iblqc_ephysSpectralDensityAP.power.npy',
+                                                 '_iblqc_ephysTimeRmsAP.rms.npy',
+                                                 '_iblqc_ephysSpectralDensityLF.freqs.npy',
+                                                 '_iblqc_ephysSpectralDensityLF.power.npy',
+                                                 '_iblqc_ephysTimeRmsLF.rms.npy',
+                                                 '_phy_spikes_subset.waveforms.npy',
+                                                 '_phy_spikes_subset.spikes.npy',
+                                                 'channels.rawInd.npy'],
+                                  collections=[f'raw_ephys_data/{probe}']*6 + [f'alf/{probe}']*3,
+                                  download_only=True)
+        except:
+            pass
     try:
         spikes, clusters, channels = bbone.load_spike_sorting_with_channel(
             eid, aligned=True, one=one)
@@ -75,9 +78,9 @@ for i in range(len(traj)):
                                                   '_iblqc_ephysSpectralDensityLF.power.npy')))
         stim_on = one.load_dataset(eid, dataset='_ibl_trials.stimOn_times.npy')
         stim_on = stim_on[~np.isnan(stim_on)]
-        block_prob = one.load_dataset(eid, dataset='_ibl_trials.probabilityLeft')
-        times_left = stim_on[block_prob[0] == 0.8]
-        times_right = stim_on[block_prob[0] == 0.2]
+        block_prob = one.load_dataset(eid, dataset='_ibl_trials.probabilityLeft.npy')
+        times_left = stim_on[block_prob == 0.8]
+        times_right = stim_on[block_prob == 0.2]
     except Exception as error_message:
         print(error_message)
         continue
@@ -97,7 +100,7 @@ for i in range(len(traj)):
 
     # Get ap band rms
     rms_ap = np.load(Path(join(ephys_path, '_iblqc_ephysTimeRmsAP.rms.npy')))
-    rms_ap_data = rms_ap['rms'] * 1e6  # convert to uV
+    rms_ap_data = rms_ap * 1e6  # convert to uV
     median = np.mean(np.apply_along_axis(lambda x: np.median(x), 1, rms_ap_data))
     rms_ap_data_median = (np.apply_along_axis(lambda x: x - np.median(x), 1, rms_ap_data)
                           + median)
@@ -179,7 +182,7 @@ for i in range(len(traj)):
     if len(spike_amp) == 0:
         spike_amp_90 = np.nan
     else:
-        spike_amp_90 = np.percentile(spike_amp, 95)
+        spike_amp_90 = np.percentile(spike_amp[~np.isnan(spike_amp)], 95)
 
     # Get LFP power on high frequencies
     chan = chn_inds[[x for x,y in enumerate(combine_regions(channels[probe]['acronym']))]]
