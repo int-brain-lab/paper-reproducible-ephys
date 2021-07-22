@@ -2,15 +2,12 @@
 """
 Created on Mon Feb 15 19:01:57 2021
 
-@author: Noam Roth
+@author: Noam Roth & Guido Meijer
 """
-
-
 
 import numpy as np
 import pandas as pd
 from os.path import join
-import alf
 from pathlib import Path
 import brainbox.io.one as bbone
 from reproducible_ephys_functions import query, data_path, combine_regions
@@ -20,11 +17,12 @@ import scipy.stats as stats
 one = ONE()
 
 # Settings
+SPIKE_SORTING = 'ks2_preproc_tests'  # None for default
 MIN_SPIKE_AMP = 50
 MIN_FR = 0.1
 MAX_AP_RMS = 10000
 NEURON_QC = True
-DOWNLOAD_DATA = True
+DOWNLOAD_DATA = False
 #REGIONS = ['VISa', 'CA1', 'DG', 'LP', 'PO']
 LFP_BAND_HIGH = [20, 80]
 LFP_BAND_LOW = [2, 15]
@@ -66,7 +64,7 @@ for i in range(len(traj)):
             pass
     try:
         spikes, clusters, channels = bbone.load_spike_sorting_with_channel(
-            eid, aligned=True, one=one)
+            eid, aligned=True, one=one, spike_sorter=SPIKE_SORTING)
         ses_path = one.eid2path(eid)
         alf_path = one.eid2path(eid).joinpath('alf', probe)
         chn_inds = np.load(Path(join(alf_path, 'channels.rawInd.npy')))
@@ -77,12 +75,17 @@ for i in range(len(traj)):
         lfp_spectrum['power'] = np.load(Path(join(ephys_path,
                                                   '_iblqc_ephysSpectralDensityLF.power.npy')))
         stim_on = one.load_dataset(eid, dataset='_ibl_trials.stimOn_times.npy')
-        stim_on = stim_on[~np.isnan(stim_on)]
         block_prob = one.load_dataset(eid, dataset='_ibl_trials.probabilityLeft.npy')
         times_left = stim_on[block_prob == 0.8]
         times_right = stim_on[block_prob == 0.2]
+        times_left = times_left[~np.isnan(times_left)]
+        times_right = times_right[~np.isnan(times_right)]
     except Exception as error_message:
         print(error_message)
+        continue
+
+    if spikes[probe] is None:
+        print('Could not load spikes')
         continue
 
     if (('acronym' not in clusters[probe].keys()) | ('metrics' not in clusters[probe].keys())
@@ -220,4 +223,7 @@ for i in range(len(traj)):
                                                 'rms_ap': rms_ap_region}))
 
 # Save result
-metrics.to_csv(join(DATA_DIR, 'metrics_session.csv'))
+if SPIKE_SORTING is None:
+    metrics.to_csv(join(DATA_DIR, 'metrics_session.csv'))
+else:
+    metrics.to_csv(join(DATA_DIR, 'metrics_session_spikesorting_%s.csv' % SPIKE_SORTING))
