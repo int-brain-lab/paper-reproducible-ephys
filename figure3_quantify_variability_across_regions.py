@@ -29,8 +29,8 @@ COLORBAR = True
 EXAMPLE_METRIC = 'neuron_yield'
 EXAMPLE_REGION = 'CA1'
 REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
-METRICS = ['neuron_yield', 'median_firing_rate', 'lfp_power_low', 'rms_ap']
-LABELS = ['Neuron yield', 'Firing rate', 'LFP power', 'AP band RMS']
+METRICS = ['neuron_yield', 'median_firing_rate', 'lfp_power_low', 'rms_ap', 'spike_amp_mean']
+LABELS = ['Neuron yield', 'Firing rate', 'LFP power', 'AP band RMS', 'Spike amplitude']
 lab_number_map, institution_map, lab_colors = labs()
 
 # Load in data

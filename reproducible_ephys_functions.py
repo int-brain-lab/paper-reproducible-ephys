@@ -52,7 +52,9 @@ def query(resolved=True, behavior=False, min_regions=2, as_dataframe=False, str_
 
     # Query how many of the target regions were hit per recording
     region_traj = []
-    for i, region in enumerate(BRAIN_REGIONS):
+    query_regions = BRAIN_REGIONS.copy()
+    query_regions[query_regions.index('PPC')] = 'VIS'
+    for i, region in enumerate(query_regions):
         region_query = one.alyx.rest(
                     'trajectories', 'list', provenance='Ephys aligned histology track',
                     django=(str_query + ',channels__brain_region__acronym__icontains,%s' % region))

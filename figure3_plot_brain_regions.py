@@ -19,13 +19,14 @@ from reproducible_ephys_paths import FIG_PATH
 
 # Settings
 REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
-NICKNAMES = True  # Whether to plot the animal nicknames instead of numbers
+NICKNAMES = False  # Whether to plot the animal nicknames instead of numbers
 MIN_CHANNELS = 5
-SPIKE_SORTING = 'ks2_preproc_tests'
+#SPIKE_SORTING = 'ks2_preproc_tests'
+SPIKE_SORTING = None
 ANNOTATE = False
-LAB_NAMES = False
+LAB_NAMES = True
 MIN_NEURONS = 2  # For firing rate inclusion
-MIN_REC_PER_LAB = 1
+MIN_REC_PER_LAB = 4
 
 # Load in data
 if SPIKE_SORTING is None:
@@ -34,7 +35,7 @@ else:
     metrics = pd.read_csv(join(data_path(), 'metrics_region_spikesorting_%s.csv' % SPIKE_SORTING))
 
 # Exclude recordings
-#metrics = exclude_recordings(metrics)
+metrics = exclude_recordings(metrics)
 
 # Get lab info
 lab_number_map, institution_map, lab_colors = labs()
@@ -62,9 +63,10 @@ for i, eid in enumerate(metrics['eid'].unique()):
 
 
 # Set figure path
-if not isdir(join(FIG_PATH, 'brain_regions')):
-    mkdir(join(FIG_PATH, 'brain_regions'))
-FIG_PATH = join(FIG_PATH, 'brain_regions')
+if SPIKE_SORTING is None:
+    FIG_PATH = join(FIG_PATH, 'brain_regions')
+else:
+    FIG_PATH = join(FIG_PATH, 'brain_regions', 'new_spike_sorting')
 
 # %% Plot yield per channel
 
