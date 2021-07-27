@@ -170,7 +170,12 @@ def eid_list():
     eids = np.load('repeated_site_eids.npy')
     return eids
 
-
+def eid_list_all():
+    """
+    Static list of all repeated site eids
+    """
+    eids = np.load('all_repeated_site_eids.npy')
+    return eids
 
 
 
