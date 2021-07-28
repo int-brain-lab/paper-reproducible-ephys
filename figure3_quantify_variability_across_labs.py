@@ -32,7 +32,7 @@ EXAMPLE_METRIC = 'median_firing_rate'
 #EXAMPLE_METRIC = 'lfp_power_high'
 EXAMPLE_REGION = 'CA1'
 REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
-METRICS = ['neuron_yield', 'median_firing_rate', 'lfp_power_low', 'rms_ap', 'spike_amp_mean']
+METRICS = ['yield_per_channel', 'median_firing_rate', 'lfp_power_high', 'rms_ap', 'spike_amp_mean']
 LABELS = ['Neuron yield', 'Firing rate', 'LFP power', 'AP band RMS', 'Spike amp.']
 lab_number_map, institution_map, lab_colors = labs()
 
@@ -46,6 +46,9 @@ data = exclude_recordings(data)
 # Exclude labs with too few recordings
 rec_p_lab = data.groupby(['institute', 'eid']).size().reset_index()['institute'].value_counts()
 data = data[data['institute'].isin(rec_p_lab[rec_p_lab >= MIN_REC_LAB].index)]
+
+# Get yield per channel
+data['yield_per_channel'] = data['neuron_yield'] / data['n_channels']
 
 # Do some cleanup
 data.loc[data['lfp_power_low'] < -100000, 'lfp_power_low'] = np.nan
@@ -69,7 +72,7 @@ for metric in METRICS:
         p = permut_test(
                 this_data[~np.isnan(this_data)],
                 metric=permut_dist,
-                labels1=data.loc[data['region'] == region, 'lab'].values[~np.isnan(this_data)],
+                labels1=data.loc[data['region'] == region, 'institute'].values[~np.isnan(this_data)],
                 labels2=data.loc[data['region'] == region, 'subject'].values[~np.isnan(this_data)])
         results = results.append(pd.DataFrame(index=[results.shape[0]+1], data={
             'metric': metric, 'region': region, 'p_value_permut': p}))

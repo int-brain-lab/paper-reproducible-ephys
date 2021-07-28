@@ -96,14 +96,20 @@ def figure_style(return_colors=False):
             rc={"font.size": 7,
                 "axes.titlesize": 8,
                 "axes.labelsize": 7,
+                "axes.linewidth": 0.5,
                 "lines.linewidth": 1,
+                "lines.markersize": 4,
                 "xtick.labelsize": 7,
                 "ytick.labelsize": 7,
                 "savefig.transparent": True,
                 "xtick.major.size": 2.5,
                 "ytick.major.size": 2.5,
+                "xtick.major.width": 0.5,
+                "ytick.major.width": 0.5,
                 "xtick.minor.size": 2,
                 "ytick.minor.size": 2,
+                "xtick.minor.width": 0.5,
+                "ytick.minor.width": 0.5
                 })
     matplotlib.rcParams['pdf.fonttype'] = 42
     matplotlib.rcParams['ps.fonttype'] = 42
