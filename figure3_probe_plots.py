@@ -79,6 +79,7 @@ for p, plot_name in enumerate(PLOTS):
     else:
         f, axs = plot_2D_features(data['subject'], data['date'], data['probe'], one=one,
                                   brain_atlas=brain_atlas, plot_type=plot_name,
+                                  freq_range=[20, 80],
                                   boundary_align=BOUNDARY, figsize=FIG_SIZE)
 
     for i, subject in enumerate(data['subject']):

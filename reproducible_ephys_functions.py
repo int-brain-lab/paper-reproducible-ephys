@@ -93,7 +93,7 @@ def figure_style(return_colors=False):
     """
     sns.set(style="ticks", context="paper",
             font="Arial",
-            rc={"font.size": 9,
+            rc={"font.size": 7,
                 "axes.titlesize": 8,
                 "axes.labelsize": 7,
                 "lines.linewidth": 1,
