@@ -97,7 +97,7 @@ rec_per_lab = metrics.groupby('institution').size() / len(REGIONS)
 
 for i, inst in enumerate(rec_per_lab.index.values):
     if LAB_NAMES:
-        if (NICKNAMES == False) & ((inst == 'NYU') | (inst == 'Princeton') | (inst == 'CSHL (Z)')):
+        if (NICKNAMES == False) & ((inst == 'Princeton') | (inst == 'CSHL (Z)')):
             ax1.text((rec_per_lab[inst] / 2) + offset - 0.5, lab_title_y, inst, ha=lab_title_ha,
                      color=lab_colors[inst], rotation=35)
         elif not NICKNAMES:

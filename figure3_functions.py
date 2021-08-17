@@ -147,7 +147,7 @@ def panel_b(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-2000, 2000]
             color = co / 255
             width = ax[iR].get_xlim()[1]
             ax[iR].bar(x=width/2, height=height, width=width, color=color, bottom=reg[0],
-                       edgecolor='k', linewidth=2, alpha=0.5)
+                       edgecolor='k', linewidth=1, alpha=0.5)
 
         ax[iR].set_title(data.loc[iR, 'recording'] + 1,
                          color=lab_colors[data.loc[iR, 'institute']])
@@ -190,13 +190,13 @@ def panel_c(ax, n_rec_per_lab=4, example_region='CA1', example_metric='median_fi
     ax.plot(np.arange(data_example['institute'].unique().shape[0]),
              [data_example[example_metric].mean()] * data_example['institute'].unique().shape[0],
              color='r', lw=1)
-    ax.set(ylabel=f'Neurons per channel in {example_region}', xlabel='',
-            xlim=[-.5, 4.5], ylim=[-0.1, 2.51])
+    ax.set(ylabel=f'LFP power in {example_region} (dB)', xlabel='',
+            xlim=[-.5, 4.5])
     ax.set_xticklabels(data_example['institute'].unique(), rotation=30, ha='right')
     sns.despine(trim=True)
 
 
-def panel_d(ax, metrics, regions, labels, n_rec_per_lab=4):
+def panel_d(ax, metrics, regions, labels, n_permut=10000, n_rec_per_lab=4):
     data, lab_colors = plots_data(n_rec_per_lab)
     results = pd.DataFrame()
     for metric in metrics:
@@ -207,7 +207,7 @@ def panel_d(ax, metrics, regions, labels, n_rec_per_lab=4):
                     metric=permut_dist,
                     labels1=data.loc[data['region'] == region, 'institute'].values[~np.isnan(this_data)],
                     labels2=data.loc[data['region'] == region, 'subject'].values[~np.isnan(this_data)],
-                    n_permut=10000)
+                    n_permut=n_permut)
             results = results.append(pd.DataFrame(index=[results.shape[0]+1], data={
                 'metric': metric, 'region': region, 'p_value_permut': p}))
 
@@ -218,6 +218,7 @@ def panel_d(ax, metrics, regions, labels, n_rec_per_lab=4):
     _, results['p_value_permut'], _, _ = multipletests(results['p_value_permut'], 0.05, method='fdr_bh')
 
     results_plot = results.pivot(index='region_number', columns='metric', values='p_value_permut')
+    results_plot = results_plot.reindex(columns=metrics)
     axin = inset_axes(ax, width="5%", height="80%", loc='lower right', borderpad=0,
                       bbox_to_anchor=(0.1, 0.1, 1, 1), bbox_transform=ax.transAxes)
     cmap = sns.color_palette('viridis_r', n_colors=20)
@@ -242,6 +243,7 @@ def plots_data(n_rec_per_lab=4):
     data['lab_position'] = np.linspace(0.18, 0.9, data.shape[0])
     data['in_recording'] = data['neuron_yield'].isnull() == False
     data['yield_per_channel'] = data['neuron_yield'] / data['n_channels']
+    data.loc[data['lfp_power_high'] < -100000, 'lfp_power_high'] = np.nan
     return data, lab_colors
 
 

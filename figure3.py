@@ -17,11 +17,12 @@ one = ONE()
 # Settings
 MIN_REC_PER_LAB = 4
 BOUNDARY = 'DG-TH'
-EXAMPLE_REGION = 'LP'
-EXAMPLE_METRIC = 'yield_per_channel'
+EXAMPLE_REGION = 'CA1'
+EXAMPLE_METRIC = 'lfp_power_high'
 REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
 METRICS = ['yield_per_channel', 'median_firing_rate', 'lfp_power_high', 'rms_ap', 'spike_amp_mean']
 LABELS = ['Neuron yield', 'Firing rate', 'LFP power', 'AP band RMS', 'Spike amp.']
+N_PERMUT = 1000000  # Amount of shuffles for permutation testing
 DPI = 400  # if the figure is too big on your screen, lower this number
 
 # Get amount of probe plots
@@ -43,7 +44,7 @@ panel_a(fig, ax['panel_A'], n_rec_per_lab=MIN_REC_PER_LAB, boundary_align=BOUNDA
 panel_b(fig, ax['panel_B'], n_rec_per_lab=MIN_REC_PER_LAB, boundary_align=BOUNDARY, one=one)
 panel_c(ax['panel_C'], n_rec_per_lab=MIN_REC_PER_LAB, example_region=EXAMPLE_REGION,
         example_metric=EXAMPLE_METRIC)
-panel_d(ax['panel_D'], METRICS, REGIONS, LABELS, n_rec_per_lab=MIN_REC_PER_LAB)
+panel_d(ax['panel_D'], METRICS, REGIONS, LABELS, n_permut=N_PERMUT, n_rec_per_lab=MIN_REC_PER_LAB)
 
 # Add subplot labels
 labels = [{'label_text':'a', 'xpos':0, 'ypos':0, 'fontsize':10, 'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
