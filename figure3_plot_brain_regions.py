@@ -21,12 +21,18 @@ from reproducible_ephys_paths import FIG_PATH
 REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
 NICKNAMES = False  # Whether to plot the animal nicknames instead of numbers
 MIN_CHANNELS = 5
+#SPIKE_SORTING = 'ks2_preproc_tests'
+SPIKE_SORTING = None
 ANNOTATE = False
+LAB_NAMES = True
 MIN_NEURONS = 2  # For firing rate inclusion
 MIN_REC_PER_LAB = 4
 
 # Load in data
-metrics = pd.read_csv(join(data_path(), 'metrics_region.csv'))
+if SPIKE_SORTING is None:
+    metrics = pd.read_csv(join(data_path(), 'metrics_region.csv'))
+else:
+    metrics = pd.read_csv(join(data_path(), 'metrics_region_spikesorting_%s.csv' % SPIKE_SORTING))
 
 # Exclude recordings
 metrics = exclude_recordings(metrics)
@@ -57,9 +63,10 @@ for i, eid in enumerate(metrics['eid'].unique()):
 
 
 # Set figure path
-if not isdir(join(FIG_PATH, 'brain_regions')):
-    mkdir(join(FIG_PATH, 'brain_regions'))
-FIG_PATH = join(FIG_PATH, 'brain_regions')
+if SPIKE_SORTING is None:
+    FIG_PATH = join(FIG_PATH, 'brain_regions')
+else:
+    FIG_PATH = join(FIG_PATH, 'brain_regions', 'new_spike_sorting')
 
 # %% Plot yield per channel
 
@@ -89,15 +96,16 @@ else:
 rec_per_lab = metrics.groupby('institution').size() / len(REGIONS)
 
 for i, inst in enumerate(rec_per_lab.index.values):
-    if (NICKNAMES == False) & ((inst == 'NYU') | (inst == 'Princeton') | (inst == 'CSHL (Z)')):
-        ax1.text((rec_per_lab[inst] / 2) + offset - 0.5, lab_title_y, inst, ha=lab_title_ha,
-                 color=lab_colors[inst], rotation=35)
-    elif not NICKNAMES:
-        ax1.text((rec_per_lab[inst] / 2) + offset - 0.5, lab_title_y, inst, ha=lab_title_ha,
-                 color=lab_colors[inst])
-    else:
-        ax1.text((rec_per_lab[inst] / 2) + offset + 1, lab_title_y, inst, ha=lab_title_ha,
-                 color=lab_colors[inst])
+    if LAB_NAMES:
+        if (NICKNAMES == False) & ((inst == 'Princeton') | (inst == 'CSHL (Z)')):
+            ax1.text((rec_per_lab[inst] / 2) + offset - 0.5, lab_title_y, inst, ha=lab_title_ha,
+                     color=lab_colors[inst], rotation=35)
+        elif not NICKNAMES:
+            ax1.text((rec_per_lab[inst] / 2) + offset - 0.5, lab_title_y, inst, ha=lab_title_ha,
+                     color=lab_colors[inst])
+        else:
+            ax1.text((rec_per_lab[inst] / 2) + offset + 1, lab_title_y, inst, ha=lab_title_ha,
+                     color=lab_colors[inst])
     for j in range(int(offset), int(offset + rec_per_lab[inst])):
         plt.gca().get_xticklabels()[j].set_color(lab_colors[inst])
     offset += rec_per_lab[inst]
@@ -131,15 +139,16 @@ else:
 rec_per_lab = metrics.groupby('institution').size() / len(REGIONS)
 offset = 0
 for i, inst in enumerate(rec_per_lab.index.values):
-    if (NICKNAMES == False) & ((inst == 'NYU') | (inst == 'Princeton') | (inst == 'CSHL (Z)')):
-        ax1.text((rec_per_lab[inst] / 2) + offset - 0.5, lab_title_y, inst, ha=lab_title_ha,
-                 color=lab_colors[inst], rotation=35)
-    elif not NICKNAMES:
-        ax1.text((rec_per_lab[inst] / 2) + offset - 0.5, lab_title_y, inst, ha=lab_title_ha,
-                 color=lab_colors[inst])
-    else:
-        ax1.text((rec_per_lab[inst] / 2) + offset + 1, lab_title_y, inst, ha=lab_title_ha,
-                 color=lab_colors[inst])
+    if LAB_NAMES:
+        if (NICKNAMES == False) & ((inst == 'NYU') | (inst == 'Princeton') | (inst == 'CSHL (Z)')):
+            ax1.text((rec_per_lab[inst] / 2) + offset - 0.5, lab_title_y, inst, ha=lab_title_ha,
+                     color=lab_colors[inst], rotation=35)
+        elif not NICKNAMES:
+            ax1.text((rec_per_lab[inst] / 2) + offset - 0.5, lab_title_y, inst, ha=lab_title_ha,
+                     color=lab_colors[inst])
+        else:
+            ax1.text((rec_per_lab[inst] / 2) + offset + 1, lab_title_y, inst, ha=lab_title_ha,
+                     color=lab_colors[inst])
     for j in range(int(offset), int(offset + rec_per_lab[inst])):
         plt.gca().get_xticklabels()[j].set_color(lab_colors[inst])
     offset += rec_per_lab[inst]
@@ -172,15 +181,16 @@ else:
 rec_per_lab = metrics.groupby('institution').size() / len(REGIONS)
 offset = 0
 for i, inst in enumerate(rec_per_lab.index.values):
-    if (NICKNAMES == False) & ((inst == 'NYU') | (inst == 'Princeton') | (inst == 'CSHL (Z)')):
-        ax1.text((rec_per_lab[inst] / 2) + offset - 0.5, lab_title_y, inst, ha=lab_title_ha,
-                 color=lab_colors[inst], rotation=35)
-    elif not NICKNAMES:
-        ax1.text((rec_per_lab[inst] / 2) + offset - 0.5, lab_title_y, inst, ha=lab_title_ha,
-                 color=lab_colors[inst])
-    else:
-        ax1.text((rec_per_lab[inst] / 2) + offset + 1, lab_title_y, inst, ha=lab_title_ha,
-                 color=lab_colors[inst])
+    if LAB_NAMES:
+        if (NICKNAMES == False) & ((inst == 'NYU') | (inst == 'Princeton') | (inst == 'CSHL (Z)')):
+            ax1.text((rec_per_lab[inst] / 2) + offset - 0.5, lab_title_y, inst, ha=lab_title_ha,
+                     color=lab_colors[inst], rotation=35)
+        elif not NICKNAMES:
+            ax1.text((rec_per_lab[inst] / 2) + offset - 0.5, lab_title_y, inst, ha=lab_title_ha,
+                     color=lab_colors[inst])
+        else:
+            ax1.text((rec_per_lab[inst] / 2) + offset + 1, lab_title_y, inst, ha=lab_title_ha,
+                     color=lab_colors[inst])
     for j in range(int(offset), int(offset + rec_per_lab[inst])):
         plt.gca().get_xticklabels()[j].set_color(lab_colors[inst])
     offset += rec_per_lab[inst]
@@ -213,15 +223,16 @@ else:
 rec_per_lab = metrics.groupby('institution').size() / len(REGIONS)
 offset = 0
 for i, inst in enumerate(rec_per_lab.index.values):
-    if (NICKNAMES == False) & ((inst == 'NYU') | (inst == 'Princeton') | (inst == 'CSHL (Z)')):
-        ax1.text((rec_per_lab[inst] / 2) + offset - 0.5, lab_title_y, inst, ha=lab_title_ha,
-                 color=lab_colors[inst], rotation=35)
-    elif not NICKNAMES:
-        ax1.text((rec_per_lab[inst] / 2) + offset - 0.5, lab_title_y, inst, ha=lab_title_ha,
-                 color=lab_colors[inst])
-    else:
-        ax1.text((rec_per_lab[inst] / 2) + offset + 1, lab_title_y, inst, ha=lab_title_ha,
-                 color=lab_colors[inst])
+    if LAB_NAMES:
+        if (NICKNAMES == False) & ((inst == 'NYU') | (inst == 'Princeton') | (inst == 'CSHL (Z)')):
+            ax1.text((rec_per_lab[inst] / 2) + offset - 0.5, lab_title_y, inst, ha=lab_title_ha,
+                     color=lab_colors[inst], rotation=35)
+        elif not NICKNAMES:
+            ax1.text((rec_per_lab[inst] / 2) + offset - 0.5, lab_title_y, inst, ha=lab_title_ha,
+                     color=lab_colors[inst])
+        else:
+            ax1.text((rec_per_lab[inst] / 2) + offset + 1, lab_title_y, inst, ha=lab_title_ha,
+                     color=lab_colors[inst])
     for j in range(int(offset), int(offset + rec_per_lab[inst])):
         plt.gca().get_xticklabels()[j].set_color(lab_colors[inst])
     offset += rec_per_lab[inst]
@@ -254,15 +265,16 @@ else:
 rec_per_lab = metrics.groupby('institution').size() / len(REGIONS)
 offset = 0
 for i, inst in enumerate(rec_per_lab.index.values):
-    if (NICKNAMES == False) & ((inst == 'NYU') | (inst == 'Princeton') | (inst == 'CSHL (Z)')):
-        ax1.text((rec_per_lab[inst] / 2) + offset - 0.5, lab_title_y, inst, ha=lab_title_ha,
-                 color=lab_colors[inst], rotation=35)
-    elif not NICKNAMES:
-        ax1.text((rec_per_lab[inst] / 2) + offset - 0.5, lab_title_y, inst, ha=lab_title_ha,
-                 color=lab_colors[inst])
-    else:
-        ax1.text((rec_per_lab[inst] / 2) + offset + 1, lab_title_y, inst, ha=lab_title_ha,
-                 color=lab_colors[inst])
+    if LAB_NAMES:
+        if (NICKNAMES == False) & ((inst == 'NYU') | (inst == 'Princeton') | (inst == 'CSHL (Z)')):
+            ax1.text((rec_per_lab[inst] / 2) + offset - 0.5, lab_title_y, inst, ha=lab_title_ha,
+                     color=lab_colors[inst], rotation=35)
+        elif not NICKNAMES:
+            ax1.text((rec_per_lab[inst] / 2) + offset - 0.5, lab_title_y, inst, ha=lab_title_ha,
+                     color=lab_colors[inst])
+        else:
+            ax1.text((rec_per_lab[inst] / 2) + offset + 1, lab_title_y, inst, ha=lab_title_ha,
+                     color=lab_colors[inst])
     for j in range(int(offset), int(offset + rec_per_lab[inst])):
         plt.gca().get_xticklabels()[j].set_color(lab_colors[inst])
     offset += rec_per_lab[inst]
@@ -295,15 +307,16 @@ else:
 rec_per_lab = metrics.groupby('institution').size() / len(REGIONS)
 offset = 0
 for i, inst in enumerate(rec_per_lab.index.values):
-    if (NICKNAMES == False) & ((inst == 'NYU') | (inst == 'Princeton') | (inst == 'CSHL (Z)')):
-        ax1.text((rec_per_lab[inst] / 2) + offset - 0.5, lab_title_y, inst, ha=lab_title_ha,
-                 color=lab_colors[inst], rotation=35)
-    elif not NICKNAMES:
-        ax1.text((rec_per_lab[inst] / 2) + offset - 0.5, lab_title_y, inst, ha=lab_title_ha,
-                 color=lab_colors[inst])
-    else:
-        ax1.text((rec_per_lab[inst] / 2) + offset + 1, lab_title_y, inst, ha=lab_title_ha,
-                 color=lab_colors[inst])
+    if LAB_NAMES:
+        if (NICKNAMES == False) & ((inst == 'NYU') | (inst == 'Princeton') | (inst == 'CSHL (Z)')):
+            ax1.text((rec_per_lab[inst] / 2) + offset - 0.5, lab_title_y, inst, ha=lab_title_ha,
+                     color=lab_colors[inst], rotation=35)
+        elif not NICKNAMES:
+            ax1.text((rec_per_lab[inst] / 2) + offset - 0.5, lab_title_y, inst, ha=lab_title_ha,
+                     color=lab_colors[inst])
+        else:
+            ax1.text((rec_per_lab[inst] / 2) + offset + 1, lab_title_y, inst, ha=lab_title_ha,
+                     color=lab_colors[inst])
     for j in range(int(offset), int(offset + rec_per_lab[inst])):
         plt.gca().get_xticklabels()[j].set_color(lab_colors[inst])
     offset += rec_per_lab[inst]
@@ -336,15 +349,16 @@ else:
 rec_per_lab = metrics.groupby('institution').size() / len(REGIONS)
 offset = 0
 for i, inst in enumerate(rec_per_lab.index.values):
-    if (NICKNAMES == False) & ((inst == 'NYU') | (inst == 'Princeton') | (inst == 'CSHL (Z)')):
-        ax1.text((rec_per_lab[inst] / 2) + offset - 0.5, lab_title_y, inst, ha=lab_title_ha,
-                 color=lab_colors[inst], rotation=35)
-    elif not NICKNAMES:
-        ax1.text((rec_per_lab[inst] / 2) + offset - 0.5, lab_title_y, inst, ha=lab_title_ha,
-                 color=lab_colors[inst])
-    else:
-        ax1.text((rec_per_lab[inst] / 2) + offset + 1, lab_title_y, inst, ha=lab_title_ha,
-                 color=lab_colors[inst])
+    if LAB_NAMES:
+        if (NICKNAMES == False) & ((inst == 'NYU') | (inst == 'Princeton') | (inst == 'CSHL (Z)')):
+            ax1.text((rec_per_lab[inst] / 2) + offset - 0.5, lab_title_y, inst, ha=lab_title_ha,
+                     color=lab_colors[inst], rotation=35)
+        elif not NICKNAMES:
+            ax1.text((rec_per_lab[inst] / 2) + offset - 0.5, lab_title_y, inst, ha=lab_title_ha,
+                     color=lab_colors[inst])
+        else:
+            ax1.text((rec_per_lab[inst] / 2) + offset + 1, lab_title_y, inst, ha=lab_title_ha,
+                     color=lab_colors[inst])
     for j in range(int(offset), int(offset + rec_per_lab[inst])):
         plt.gca().get_xticklabels()[j].set_color(lab_colors[inst])
     offset += rec_per_lab[inst]
@@ -378,15 +392,16 @@ else:
 rec_per_lab = metrics.groupby('institution').size() / len(REGIONS)
 offset = 0
 for i, inst in enumerate(rec_per_lab.index.values):
-    if (NICKNAMES == False) & ((inst == 'NYU') | (inst == 'Princeton') | (inst == 'CSHL (Z)')):
-        ax1.text((rec_per_lab[inst] / 2) + offset - 0.5, lab_title_y, inst, ha=lab_title_ha,
-                 color=lab_colors[inst], rotation=35)
-    elif not NICKNAMES:
-        ax1.text((rec_per_lab[inst] / 2) + offset - 0.5, lab_title_y, inst, ha=lab_title_ha,
-                 color=lab_colors[inst])
-    else:
-        ax1.text((rec_per_lab[inst] / 2) + offset + 1, lab_title_y, inst, ha=lab_title_ha,
-                 color=lab_colors[inst])
+    if LAB_NAMES:
+        if (NICKNAMES == False) & ((inst == 'NYU') | (inst == 'Princeton') | (inst == 'CSHL (Z)')):
+            ax1.text((rec_per_lab[inst] / 2) + offset - 0.5, lab_title_y, inst, ha=lab_title_ha,
+                     color=lab_colors[inst], rotation=35)
+        elif not NICKNAMES:
+            ax1.text((rec_per_lab[inst] / 2) + offset - 0.5, lab_title_y, inst, ha=lab_title_ha,
+                     color=lab_colors[inst])
+        else:
+            ax1.text((rec_per_lab[inst] / 2) + offset + 1, lab_title_y, inst, ha=lab_title_ha,
+                     color=lab_colors[inst])
     for j in range(int(offset), int(offset + rec_per_lab[inst])):
         plt.gca().get_xticklabels()[j].set_color(lab_colors[inst])
     offset += rec_per_lab[inst]

@@ -7,6 +7,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib
 import numpy as np
+from one.api import ONE
 
 STR_QUERY = 'probe_insertion__session__project__name__icontains,ibl_neuropixel_brainwide_01,' \
             'probe_insertion__session__qc__lt,50,' \
@@ -34,9 +35,10 @@ def labs():
     return lab_number_map, institution_map, institution_colors
 
 
-def query(resolved=True, behavior=False, min_regions=2, as_dataframe=False, str_query=STR_QUERY):
-    from oneibl.one import ONE
-    one = ONE()
+def query(resolved=True, behavior=False, min_regions=2, as_dataframe=False, str_query=STR_QUERY,
+          one=None):
+    if one is None:
+        one = ONE()
 
     # Query repeated site recordings
     if resolved:
@@ -50,7 +52,9 @@ def query(resolved=True, behavior=False, min_regions=2, as_dataframe=False, str_
 
     # Query how many of the target regions were hit per recording
     region_traj = []
-    for i, region in enumerate(BRAIN_REGIONS):
+    query_regions = BRAIN_REGIONS.copy()
+    query_regions[query_regions.index('PPC')] = 'VIS'
+    for i, region in enumerate(query_regions):
         region_query = one.alyx.rest(
                     'trajectories', 'list', provenance='Ephys aligned histology track',
                     django=(str_query + ',channels__brain_region__acronym__icontains,%s' % region))
@@ -89,17 +93,23 @@ def figure_style(return_colors=False):
     """
     sns.set(style="ticks", context="paper",
             font="Arial",
-            rc={"font.size": 9,
-                "axes.titlesize": 9,
-                "axes.labelsize": 9,
+            rc={"font.size": 7,
+                "axes.titlesize": 8,
+                "axes.labelsize": 7,
+                "axes.linewidth": 0.5,
                 "lines.linewidth": 1,
+                "lines.markersize": 4,
                 "xtick.labelsize": 7,
                 "ytick.labelsize": 7,
                 "savefig.transparent": True,
                 "xtick.major.size": 2.5,
                 "ytick.major.size": 2.5,
+                "xtick.major.width": 0.5,
+                "ytick.major.width": 0.5,
                 "xtick.minor.size": 2,
                 "ytick.minor.size": 2,
+                "xtick.minor.width": 0.5,
+                "ytick.minor.width": 0.5
                 })
     matplotlib.rcParams['pdf.fonttype'] = 42
     matplotlib.rcParams['ps.fonttype'] = 42
@@ -120,7 +130,7 @@ def combine_regions(regions):
     for i, region in enumerate(regions):
         if region[:2] == 'CA':
             continue
-        if (region == 'DG-mo') or (region == 'DG-sg'):
+        if (region == 'DG-mo') or (region == 'DG-sg') or (region == 'DG-po'):
             regions[i] = 'DG'
         for j, char in enumerate(remove):
             regions[i] = regions[i].replace(char, '')
@@ -166,7 +176,12 @@ def eid_list():
     eids = np.load('repeated_site_eids.npy')
     return eids
 
-
+def eid_list_all():
+    """
+    Static list of all repeated site eids
+    """
+    eids = np.load('all_repeated_site_eids.npy')
+    return eids
 
 
 

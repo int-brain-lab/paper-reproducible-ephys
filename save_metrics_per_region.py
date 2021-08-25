@@ -3,22 +3,23 @@
 """
 Created on Thu Nov 12 14:22:17 2020
 
-@author: guido
+@author: Guido Meijer
 """
 
 import numpy as np
 import pandas as pd
 from os.path import join
-import alf
 from pathlib import Path
 import brainbox.io.one as bbone
 from reproducible_ephys_functions import query, data_path, combine_regions, exclude_recordings
-from oneibl.one import ONE
+from one.api import ONE
 one = ONE()
 
 # Settings
+#SPIKE_SORTING = 'ks2_preproc_tests'
+SPIKE_SORTING = None
 NEURON_QC = True
-DOWNLOAD_DATA = False
+DOWNLOAD_DATA = True
 REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
 LFP_BAND_HIGH = [20, 80]
 LFP_BAND_LOW = [2, 15]
@@ -43,29 +44,42 @@ for i in range(len(traj)):
     date = traj[i]['session']['start_time'][:10]
 
     if DOWNLOAD_DATA:
-        _ = one.load(eid, dataset_types=['_iblqc_ephysSpectralDensity.freqs',
-                                         '_iblqc_ephysSpectralDensity.power',
-                                         '_iblqc_ephysTimeRms.rms',
-                                         '_phy_spikes_subset.waveforms',
-                                         '_phy_spikes_subset.spikes',
-                                         'channels.rawInd'], download_only=True)
+        try:
+            _ = one.load_datasets(eid, datasets=['_iblqc_ephysSpectralDensityAP.freqs.npy',
+                                                 '_iblqc_ephysSpectralDensityAP.power.npy',
+                                                 '_iblqc_ephysTimeRmsAP.rms.npy',
+                                                 '_iblqc_ephysSpectralDensityLF.freqs.npy',
+                                                 '_iblqc_ephysSpectralDensityLF.power.npy',
+                                                 '_iblqc_ephysTimeRmsLF.rms.npy',
+                                                 '_phy_spikes_subset.waveforms.npy',
+                                                 '_phy_spikes_subset.spikes.npy',
+                                                 'channels.rawInd.npy'],
+                                  collections=[f'raw_ephys_data/{probe}']*6 + [f'alf/{probe}']*3,
+                                  download_only=True)
+        except:
+            pass
     try:
         spikes, clusters, channels = bbone.load_spike_sorting_with_channel(
-            eid, aligned=True, dataset_types=['spikes.amps'], one=one)
-        ses_path = one.path_from_eid(eid)
-        alf_path = one.path_from_eid(eid).joinpath('alf', probe)
+            eid, aligned=True, one=one, spike_sorter=SPIKE_SORTING)
+        ses_path = one.eid2path(eid)
+        alf_path = one.eid2path(eid).joinpath('alf', probe)
         chn_inds = np.load(Path(join(alf_path, 'channels.rawInd.npy')))
-        ephys_path = one.path_from_eid(eid).joinpath('raw_ephys_data', probe)
-        lfp_spectrum = alf.io.load_object(ephys_path, 'ephysSpectralDensityLF',
-                                          namespace='iblqc')
+        ephys_path = one.eid2path(eid).joinpath('raw_ephys_data', probe)
+        lfp_spectrum = dict()
+        lfp_spectrum['freqs'] = np.load(Path(join(ephys_path,
+                                                  '_iblqc_ephysSpectralDensityLF.freqs.npy')))
+        lfp_spectrum['power'] = np.load(Path(join(ephys_path,
+                                                  '_iblqc_ephysSpectralDensityLF.power.npy')))
     except Exception as error_message:
         print(error_message)
         continue
 
-    if (('acronym' not in clusters[probe].keys()) | ('metrics' not in clusters[probe].keys())
-            | (len(clusters) == 0)):
-        print('Missing data, skipping session')
+    if (spikes[probe] is None) | (len(clusters) == 0):
+        print('Could not load spikes')
         continue
+
+    if (('acronym' not in clusters[probe].keys())):
+        print('No histology, skipping session')
 
     try:
         waveforms = np.load(Path(join(alf_path, '_phy_spikes_subset.waveforms.npy')))
@@ -75,14 +89,18 @@ for i in range(len(traj)):
         wf_spikes = []
 
     # Get ap band rms
-    rms_ap = alf.io.load_object(ephys_path, 'ephysTimeRmsAP', namespace='iblqc')
-    rms_ap_data = rms_ap['rms'] * 1e6  # convert to uV
+    rms_ap = np.load(Path(join(ephys_path, '_iblqc_ephysTimeRmsAP.rms.npy')))
+    rms_ap_data = rms_ap * 1e6  # convert to uV
     median = np.mean(np.apply_along_axis(lambda x: np.median(x), 1, rms_ap_data))
     rms_ap_data_median = (np.apply_along_axis(lambda x: x - np.median(x), 1, rms_ap_data)
                           + median)
 
     # Get neurons that pass QC
-    clusters_pass = np.where(clusters[probe]['metrics']['label'] == 1)[0]
+    if 'metrics' not in clusters[probe].keys():
+        print('No neuron QC, using all clusters')
+        clusters_pass = np.unique(spikes[probe]['clusters'])  # Use all clusters
+    else:
+        clusters_pass = np.where(clusters[probe]['metrics']['label'] == 1)[0]
 
     # Loop over regions of interest
     for k, region in enumerate(REGIONS):
@@ -99,7 +117,7 @@ for i in range(len(traj)):
             neuron_fr[n] = (np.sum(spikes[probe]['clusters'] == neuron_id)
                             / np.max(spikes[probe]['times']))
 
-            if len(wf_spikes) > 0:
+            try:
                 # Get mean waveform of channel with max amplitude
                 mean_wf_ch = np.mean(waveforms[spikes[probe].clusters[wf_spikes] == neuron_id],
                                      axis=0)
@@ -118,7 +136,7 @@ for i in range(len(traj)):
                 else:
                     rp_slope[n] = np.max(np.gradient(mean_wf[
                                             np.argmin(mean_wf):np.argmax(mean_wf)]))
-            else:
+            except:
                 spike_amp[n] = np.nan
                 pt_ratio[n] = np.nan
                 rp_slope[n] = np.nan
@@ -173,8 +191,11 @@ for i in range(len(traj)):
                                                     'rms_ap': rms_ap_region}))
 
 # Save result
-metrics.to_csv(join(DATA_DIR, 'metrics_region.csv'))
+if SPIKE_SORTING is None:
+    metrics.to_csv(join(DATA_DIR, 'metrics_region.csv'))
 
-# Apply additional selection criteria and save list of eids
-metrics_excl = exclude_recordings(metrics)
-np.save('repeated_site_eids.npy', np.array(metrics_excl['eid'].unique(), dtype=str))
+    # Apply additional selection criteria and save list of eids
+    metrics_excl = exclude_recordings(metrics)
+    np.save('repeated_site_eids.npy', np.array(metrics_excl['eid'].unique(), dtype=str))
+else:
+    metrics.to_csv(join(DATA_DIR, 'metrics_region_spikesorting_%s.csv' % SPIKE_SORTING))

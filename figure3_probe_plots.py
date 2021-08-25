@@ -9,7 +9,7 @@ Created on Tue Dec 15 09:43:50 2020
 import pandas as pd
 from reproducible_ephys_functions import labs, data_path, exclude_recordings
 from features_2D import plot_2D_features
-from oneibl.one import ONE
+from one.api import ONE
 import numpy as np
 from os.path import join, isdir
 from os import mkdir
@@ -30,6 +30,7 @@ LABELS = ['Firing rate (spks/s)', 'Power spectral density', 'AP band RMS', 'LFP 
           'Firing rate (spks/s)', 'Spike amplitude', '', '', 'Histology Regions',
           'Distance from Repeated Site', 'Firing rate (spks/s)']
 """
+
 PLOTS = ['psd', 'rms_ap', 'amp_scatter']
 LABELS = ['Power spectral density', 'AP band RMS', 'Firing rate (spks/s)']
 NICKNAMES = False
@@ -78,6 +79,7 @@ for p, plot_name in enumerate(PLOTS):
     else:
         f, axs = plot_2D_features(data['subject'], data['date'], data['probe'], one=one,
                                   brain_atlas=brain_atlas, plot_type=plot_name,
+                                  freq_range=[20, 80],
                                   boundary_align=BOUNDARY, figsize=FIG_SIZE)
 
     for i, subject in enumerate(data['subject']):
@@ -108,7 +110,7 @@ for p, plot_name in enumerate(PLOTS):
         if NICKNAMES:
             plt.figtext(plot_titles.loc[inst, 'lab_position'], 0.978, inst, color=lab_colors[inst],
                             fontsize=20, ha='center')
-        elif ((inst == 'CSHL (Z)') | (inst == 'NYU') | (inst == 'Princeton')):
+        elif ((inst == 'CSHL (Z)') | (inst == 'Princeton')):
             plt.figtext((plot_titles.loc[inst, 'lab_position'] - 0.06) * 1.05, 0.925, inst,
                         color=lab_colors[inst], fontsize=12, rotation=30, ha='left')
         else:
