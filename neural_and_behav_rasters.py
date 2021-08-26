@@ -50,7 +50,7 @@ def plot_neural_behav_raster(eid, probe, camera='left', clust_id=0, align_event=
     """
     one = one or ONE()
 
-    dlc = one.load_object(eid, f'{camera}Camera', collection='alf', attribute='dlc|times')
+    dlc = one.load_object(eid, f'{camera}Camera', collection='alf', attribute=['dlc', 'times'])
     dlc_all = get_dlc_everything(dlc, camera)
     wheel = one.load_object(eid, 'wheel', collection='alf',)
     trials = one.load_object(eid, 'trials')
@@ -60,7 +60,7 @@ def plot_neural_behav_raster(eid, probe, camera='left', clust_id=0, align_event=
     else:
         collection = f'alf/{probe}'
 
-    spikes = one.load_object(eid, 'spikes', collection=collection, attribute='times|clusters')
+    spikes = one.load_object(eid, 'spikes', collection=collection, attribute=['times','clusters'])
 
     fig, axs = plt.subplots(2, 6, figsize=(18, 8), constrained_layout=True)
     # Spike
