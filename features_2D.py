@@ -1,5 +1,5 @@
 # import modules
-from oneibl.one import ONE
+from one.api import ONE
 import matplotlib.pyplot as plt
 from matplotlib import cm
 import alf.io
@@ -34,10 +34,11 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
             # Download the data and get paths to downloaded data
             eid = one.search(subject=subj, date=date)[0]
             if iR == 0:
-                chn_inds = one.load(eid, dataset_types=['channels.rawInd'])[0]
+                chn_inds = one.load_dataset(eid, dataset=['channels.rawInd.npy'],
+                                            collection=f'alf/{probe_label}')
 
-            ephys_path = one.path_from_eid(eid).joinpath('raw_ephys_data', probe_label)
-            alf_path = one.path_from_eid(eid).joinpath('alf', probe_label)
+            ephys_path = one.eid2path(eid).joinpath('raw_ephys_data', probe_label)
+            alf_path = one.eid2path(eid).joinpath('alf', probe_label)
 
             insertion = one.alyx.rest('insertions', 'list', session=eid, name=probe_label)
             xyz_picks = np.array(insertion[0].get('json').get('xyz_picks', 0)) / 1e6
@@ -260,19 +261,19 @@ def plot_probe(data, z, ax, cmap=None):
 
 def psd_data(ephys_path, one, eid, chn_inds, freq_range=[2, 15]):
     try:
-        lfp_spectrum = alf.io.load_object(ephys_path, 'ephysSpectralDensityLF',
-                                          namespace='iblqc')
+        lfp_freq = np.load(ephys_path.joinpath('_iblqc_ephysSpectralDensityLF.freqs.npy'))
+        lfp_power = np.load(ephys_path.joinpath('_iblqc_ephysSpectralDensityLF.power.npy'))
     except Exception:
-        # Specify the dataset types of interest
+        # Download data
         dtypes = ['_iblqc_ephysSpectralDensity.freqs',
                   '_iblqc_ephysSpectralDensity.power']
 
-        _ = one.load(eid, dataset_types=dtypes, download_only=True)
-        lfp_spectrum = alf.io.load_object(ephys_path, 'ephysSpectralDensityLF',
-                                          namespace='iblqc')
+        one.load_datasets(eid, datasets=dtypes, collections=[f'alf/{ephys_path.parts[-1]}'] * 2,
+                          download_only=True)
+        lfp_freq = np.load(ephys_path.joinpath('_iblqc_ephysSpectralDensityLF.freqs.npy'))
+        lfp_power = np.load(ephys_path.joinpath('_iblqc_ephysSpectralDensityLF.power.npy'))
 
-    lfp_freq = lfp_spectrum['freqs']
-    lfp_power = lfp_spectrum['power'][:, chn_inds]
+    lfp_power = lfp_power[:, chn_inds]
 
     # Define a frequency range of interest
     freq_idx = np.where((lfp_freq >= freq_range[0]) &
@@ -286,17 +287,13 @@ def psd_data(ephys_path, one, eid, chn_inds, freq_range=[2, 15]):
     return lfp_mean
 
 
-def rms_data(ephys_path, one, eid, chn_inds, format):
+def rms_data(ephys_path, one, eid, chn_inds, rms_format):
     try:
-        rms_amps = alf.io.load_file_content(Path(ephys_path, '_iblqc_ephysTimeRms' +
-                                                 format + '.rms.npy'))
+        rms_amps = np.load(ephys_path.joinpath('_iblqc_ephysTimeRms' + rms_format + '.rms.npy'))
     except Exception:
-        dtypes = [
-            '_iblqc_ephysTimeRms.rms',
-        ]
-        _ = one.load(eid, dataset_types=dtypes, download_only=True)
-        rms_amps = alf.io.load_file_content(Path(ephys_path, '_iblqc_ephysTimeRms' +
-                                                 format + '.rms.npy'))
+        one.load_dataset(eid, dataset='_iblqc_ephysTimeRms' + rms_format + '.rms.npy',
+                         collection=f'alf/{ephys_path.parts[-1]}', download_only=True)
+        rms_amps = np.load(ephys_path.joinpath('_iblqc_ephysTimeRms' + rms_format + '.rms.npy'))
 
     rms_avg = (np.mean(rms_amps, axis=0)[chn_inds]) * 1e6
 
@@ -305,16 +302,12 @@ def rms_data(ephys_path, one, eid, chn_inds, format):
 
 def fr_data(alf_path, one, eid, depths):
     try:
-        spikes = alf.io.load_object(alf_path, 'spikes')
-        spikes['depths']
+        spikes = one.load_object(alf_path, 'spikes', attribute=['depths', 'amps', 'times'])
     except Exception:
-        dtypes = [
-            'spikes.depths',
-            'spikes.amps',
-            'spikes.times'
-        ]
-        _ = one.load(eid, dataset_types=dtypes, download_only=True)
-        spikes = alf.io.load_object(alf_path, 'spikes')
+        dtypes = ['spikes.depths.npy', 'spikes.amps.npy', 'spikes.times.npy']
+        one.load_datasets(eid, datasets=dtypes, collections=[f'alf/{alf_path.parts[-1]}'] * 3,
+                         download_only=True)
+        spikes = alf.io.load_object(alf_path, 'spikes', attribute=['depths', 'amps', 'times'])
 
     kp_idx = np.where(~np.isnan(spikes['depths']))[0]
     T_BIN = np.max(spikes['times'])
@@ -329,17 +322,14 @@ def fr_data(alf_path, one, eid, depths):
 
 def fr_data_alt(alf_path, one, eid, depths):
     try:
-        spikes = alf.io.load_object(alf_path, 'spikes')
-        clusters = alf.io.load_object(alf_path, 'clusters')
+        spikes = one.load_object(alf_path, 'spikes', attribute=['times', 'clusters'])
+        clusters = one.load_object(alf_path, 'clusters', attribute=['channels'])
     except Exception:
-        dtypes = [
-            'spikes.times',
-            'spikes.clusters',
-            'clusters.channels'
-        ]
-        _ = one.load(eid, dataset_types=dtypes, download_only=True)
-        spikes = alf.io.load_object(alf_path, 'spikes')
-        clusters = alf.io.load_object(alf_path, 'clusters')
+        dtypes = ['spikes.times.npy', 'spikes.clusters.npy', 'clusters.channels.npy']
+        one.load_datasets(eid, datasets=dtypes, collections=[f'alf/{alf_path.parts[-1]}'] * 3,
+                         download_only=True)
+        spikes = one.load_object(alf_path, 'spikes', attribute=['times', 'clusters'])
+        clusters = one.load_object(alf_path, 'clusters', attribute=['channels'])
     spk_chn = clusters.channels[spikes.clusters]
     chn_idx, count = np.unique(spk_chn, return_counts=True)
 
@@ -351,15 +341,12 @@ def fr_data_alt(alf_path, one, eid, depths):
 
 def amp_data(alf_path, one, eid, depths):
     try:
-        spikes = alf.io.load_object(alf_path, 'spikes')
+        spikes = one.load_object(alf_path, 'spikes', attribute=['depths', 'amps', 'times'])
     except Exception:
-        dtypes = [
-            'spikes.depths',
-            'spikes.amps',
-            'spikes.times'
-        ]
-        _ = one.load(eid, dataset_types=dtypes, download_only=True)
-        spikes = alf.io.load_object(alf_path, 'spikes')
+        dtypes = ['spikes.depths.npy', 'spikes.amps.npy', 'spikes.times.npy']
+        one.load_datasets(eid, datasets=dtypes, collections=[f'alf/{alf_path.parts[-1]}'] * 3,
+                         download_only=True)
+        spikes = alf.io.load_object(alf_path, 'spikes', attribute=['depths', 'amps', 'times'])
 
     kp_idx = np.where(~np.isnan(spikes['depths']))[0]
     T_BIN = np.max(spikes['times'])
@@ -378,18 +365,15 @@ def amp_data(alf_path, one, eid, depths):
     return depths, mean_amp
 
 def spike_amp_data(alf_path, one, eid):
-    #try:
-    #    spikes = alf.io.load_object(alf_path, 'spikes')
-    #except Exception:
-    dtypes = [
-        'spikes.depths',
-        'spikes.amps',
-        'spikes.times',
-        'spikes.clusters'
-    ]
-    _ = one.load(eid, dataset_types=dtypes, download_only=True)
-    spikes = alf.io.load_object(alf_path, 'spikes')
-
+    try:
+        spikes = one.load_object(alf_path, 'spikes', collection=f'alf/{alf_path.parts[-1]}',
+                                 attribute=['depths', 'amps', 'times', 'clusters'])
+    except Exception:
+        dtypes = ['spikes.depths.npy', 'spikes.amps.npy', 'spikes.times.npy', 'spikes.clusters.npy']
+        one.load_datasets(eid, datasets=dtypes, collections=[f'alf/{alf_path.parts[-1]}'] * 4,
+                         download_only=True)
+        spikes = one.load_object(alf_path, 'spikes', collection=f'alf/{alf_path.parts[-1]}',
+                                 attribute=['depths', 'amps', 'times', 'clusters'])
 
     # compute mean values
     cluster, cluster_depth, n_cluster = compute_cluster_average(spikes.clusters, spikes.depths)

@@ -17,7 +17,7 @@ import scipy.stats as stats
 one = ONE()
 
 # Settings
-SPIKE_SORTING = 'ks2_preproc_tests'  # None for default
+SPIKE_SORTING = None  # None for default
 MIN_SPIKE_AMP = 50
 MIN_FR = 0.1
 MAX_AP_RMS = 10000

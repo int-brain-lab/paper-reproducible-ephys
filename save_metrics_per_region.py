@@ -9,7 +9,6 @@ Created on Thu Nov 12 14:22:17 2020
 import numpy as np
 import pandas as pd
 from os.path import join
-import alf
 from pathlib import Path
 import brainbox.io.one as bbone
 from reproducible_ephys_functions import query, data_path, combine_regions, exclude_recordings
@@ -17,10 +16,10 @@ from one.api import ONE
 one = ONE()
 
 # Settings
-SPIKE_SORTING = 'ks2_preproc_tests'
-# SPIKE_SORTING = None
+#SPIKE_SORTING = 'ks2_preproc_tests'
+SPIKE_SORTING = None
 NEURON_QC = True
-DOWNLOAD_DATA = False
+DOWNLOAD_DATA = True
 REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
 LFP_BAND_HIGH = [20, 80]
 LFP_BAND_LOW = [2, 15]
@@ -75,14 +74,12 @@ for i in range(len(traj)):
         print(error_message)
         continue
 
-    if spikes[probe] is None:
+    if (spikes[probe] is None) | (len(clusters) == 0):
         print('Could not load spikes')
         continue
 
-    if (('acronym' not in clusters[probe].keys()) | ('metrics' not in clusters[probe].keys())
-            | (len(clusters) == 0)):
-        print('Missing data, skipping session')
-        continue
+    if (('acronym' not in clusters[probe].keys())):
+        print('No histology, skipping session')
 
     try:
         waveforms = np.load(Path(join(alf_path, '_phy_spikes_subset.waveforms.npy')))
@@ -99,7 +96,11 @@ for i in range(len(traj)):
                           + median)
 
     # Get neurons that pass QC
-    clusters_pass = np.where(clusters[probe]['metrics']['label'] == 1)[0]
+    if 'metrics' not in clusters[probe].keys():
+        print('No neuron QC, using all clusters')
+        clusters_pass = np.unique(spikes[probe]['clusters'])  # Use all clusters
+    else:
+        clusters_pass = np.where(clusters[probe]['metrics']['label'] == 1)[0]
 
     # Loop over regions of interest
     for k, region in enumerate(REGIONS):
@@ -116,7 +117,7 @@ for i in range(len(traj)):
             neuron_fr[n] = (np.sum(spikes[probe]['clusters'] == neuron_id)
                             / np.max(spikes[probe]['times']))
 
-            if len(wf_spikes) > 0:
+            try:
                 # Get mean waveform of channel with max amplitude
                 mean_wf_ch = np.mean(waveforms[spikes[probe].clusters[wf_spikes] == neuron_id],
                                      axis=0)
@@ -135,7 +136,7 @@ for i in range(len(traj)):
                 else:
                     rp_slope[n] = np.max(np.gradient(mean_wf[
                                             np.argmin(mean_wf):np.argmax(mean_wf)]))
-            else:
+            except:
                 spike_amp[n] = np.nan
                 pt_ratio[n] = np.nan
                 rp_slope[n] = np.nan
@@ -192,9 +193,9 @@ for i in range(len(traj)):
 # Save result
 if SPIKE_SORTING is None:
     metrics.to_csv(join(DATA_DIR, 'metrics_region.csv'))
+
+    # Apply additional selection criteria and save list of eids
+    metrics_excl = exclude_recordings(metrics)
+    np.save('repeated_site_eids.npy', np.array(metrics_excl['eid'].unique(), dtype=str))
 else:
     metrics.to_csv(join(DATA_DIR, 'metrics_region_spikesorting_%s.csv' % SPIKE_SORTING))
-
-# Apply additional selection criteria and save list of eids
-metrics_excl = exclude_recordings(metrics)
-np.save('repeated_site_eids.npy', np.array(metrics_excl['eid'].unique(), dtype=str))

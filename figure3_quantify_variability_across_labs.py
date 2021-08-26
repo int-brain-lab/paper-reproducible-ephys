@@ -29,10 +29,11 @@ MIN_CHANNELS = 10  # min amount of channels in a region to say it was targeted
 ANNOTATE = False
 COLORBAR = True
 EXAMPLE_METRIC = 'median_firing_rate'
+#EXAMPLE_METRIC = 'lfp_power_high'
 EXAMPLE_REGION = 'CA1'
 REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
-METRICS = ['neuron_yield', 'median_firing_rate', 'lfp_power_low', 'rms_ap']
-LABELS = ['Neuron yield', 'Firing rate', 'LFP power', 'AP band RMS']
+METRICS = ['yield_per_channel', 'median_firing_rate', 'lfp_power_high', 'rms_ap', 'spike_amp_mean']
+LABELS = ['Neuron yield', 'Firing rate', 'LFP power', 'AP band RMS', 'Spike amp.']
 lab_number_map, institution_map, lab_colors = labs()
 
 # Load in data
@@ -45,6 +46,9 @@ data = exclude_recordings(data)
 # Exclude labs with too few recordings
 rec_p_lab = data.groupby(['institute', 'eid']).size().reset_index()['institute'].value_counts()
 data = data[data['institute'].isin(rec_p_lab[rec_p_lab >= MIN_REC_LAB].index)]
+
+# Get yield per channel
+data['yield_per_channel'] = data['neuron_yield'] / data['n_channels']
 
 # Do some cleanup
 data.loc[data['lfp_power_low'] < -100000, 'lfp_power_low'] = np.nan
@@ -68,7 +72,7 @@ for metric in METRICS:
         p = permut_test(
                 this_data[~np.isnan(this_data)],
                 metric=permut_dist,
-                labels1=data.loc[data['region'] == region, 'lab'].values[~np.isnan(this_data)],
+                labels1=data.loc[data['region'] == region, 'institute'].values[~np.isnan(this_data)],
                 labels2=data.loc[data['region'] == region, 'subject'].values[~np.isnan(this_data)])
         results = results.append(pd.DataFrame(index=[results.shape[0]+1], data={
             'metric': metric, 'region': region, 'p_value_permut': p}))
@@ -84,7 +88,7 @@ for i, region in enumerate(REGIONS):
     results.loc[results['region'] == region, 'region_number'] = i
 
 results_plot = results.pivot(index='region_number', columns='metric', values='p_value_permut')
-f, ax1 = plt.subplots(1, 1, figsize=(2, 2), dpi=300)
+f, ax1 = plt.subplots(1, 1, figsize=(2.5, 2), dpi=300)
 sns.heatmap(results_plot, cmap='gist_stern', center=1, square=True,
             cbar=COLORBAR, annot=ANNOTATE, annot_kws={"size": 12},
             linewidths=.5, fmt='.2f', vmin=0, vmax=1, ax=ax1)
@@ -108,7 +112,7 @@ cmap = []
 for i, inst in enumerate(data_example['institute'].unique()):
     cmap.append(lab_colors[inst])
 
-f, ax1 = plt.subplots(1, 1, figsize=(1.5, 2), dpi=300)
+f, ax1 = plt.subplots(1, 1, figsize=(1.75, 2), dpi=300)
 sns.stripplot(data=data_example, x='institute', y=EXAMPLE_METRIC, palette=cmap, s=3, ax=ax1)
 ax_lines = sns.pointplot(x='institute', y=EXAMPLE_METRIC, data=data_example,
                          ci=0, join=False, estimator=np.mean, color='k',
@@ -118,7 +122,7 @@ plt.plot(np.arange(data_example['institute'].unique().shape[0]),
          [data_example[EXAMPLE_METRIC].mean()] * data_example['institute'].unique().shape[0],
          color='r', lw=1)
 ax1.set(ylabel=f'Median firing rate in {EXAMPLE_REGION} (spks/s)', xlabel='',
-        xlim=[-.5, 3.5])
+        xlim=[-.5, 4.5])
 ax1.set_xticklabels(data_example['institute'].unique(), rotation=30, ha='right')
 #ax1.figure.axes[-1].yaxis.label.set_size(12)
 
