@@ -1,4 +1,4 @@
-from oneibl.one import ONE
+from one.api import ONE
 import ibllib.atlas as atlas
 from ibllib.pipes import histology
 import numpy as np
@@ -15,7 +15,7 @@ ba = atlas.AllenAtlas(25)
 chn_coords = SITES_COORDINATES
 depths = chn_coords[:, 1]
 MAX_DIST_UM = 500
-ACTIVE_LENGTH_UM = np.max(depths).astype(np.int)
+ACTIVE_LENGTH_UM = np.max(depths).astype(int)
 TIP_SIZE_UM = 200
 
 
@@ -50,14 +50,15 @@ ishank = np.round(np.array(
     [np.linspace(tbi[0, i], tbi[1, i], nz) for i in np.arange(3)]).T).astype(np.int32)
 
 # Find all indices in column around repeated site recording area
-nx = int(np.floor(MAX_DIST_UM / 1e6 / np.abs(ba.bc.dxyz[0])))
-ny = int(np.floor(MAX_DIST_UM / 1e6 / np.abs(ba.bc.dxyz[1])))
+nx = int(
+    np.floor(MAX_DIST_UM / 1e6 / np.abs(ba.bc.dxyz[0]) * np.sqrt(2) / 2)) * 2 + 1
+ny = int(
+    np.floor(MAX_DIST_UM / 1e6 / np.abs(ba.bc.dxyz[1]) * np.sqrt(2) / 2)) * 2 + 1
 ixyz = np.stack([v.flatten() for v in np.meshgrid(
     np.arange(-nx, nx + 1), np.arange(-ny, ny + 1), np.arange(nz))]).T
 ixyz[:, 0] = ishank[ixyz[:, 2], 0] + ixyz[:, 0]
 ixyz[:, 1] = ishank[ixyz[:, 2], 1] + ixyz[:, 1]
 ixyz[:, 2] = ishank[ixyz[:, 2], 2]
-
 
 # Now find the idx of the probes
 traj_histology = one.alyx.rest('trajectories', 'list', provenance='Histology track',
@@ -176,5 +177,3 @@ mlab.plot3d(mlapdv[:, 1], mlapdv[:, 2], mlapdv[:, 0],
 
 mlab.plot3d(mlapdv[:, 1], mlapdv[:, 2], mlapdv[:, 0],
             line_width=1, tube_radius=250, color=color)
-
-
