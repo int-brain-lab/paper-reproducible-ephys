@@ -19,7 +19,7 @@ one = ONE()
 #SPIKE_SORTING = 'ks2_preproc_tests'
 SPIKE_SORTING = None
 NEURON_QC = True
-DOWNLOAD_DATA = True
+DOWNLOAD_DATA = False
 REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
 LFP_BAND_HIGH = [20, 80]
 LFP_BAND_LOW = [2, 15]
@@ -190,7 +190,7 @@ for i in range(len(traj)):
                                                     'lfp_band_high': [LFP_BAND_HIGH],
                                                     'rms_ap': rms_ap_region}))
 
-"""
+
 # Save result
 if SPIKE_SORTING is None:
     metrics.to_csv(join(DATA_DIR, 'metrics_region.csv'))
@@ -200,4 +200,4 @@ if SPIKE_SORTING is None:
     np.save('repeated_site_eids.npy', np.array(metrics_excl['eid'].unique(), dtype=str))
 else:
     metrics.to_csv(join(DATA_DIR, 'metrics_region_spikesorting_%s.csv' % SPIKE_SORTING))
-"""
+
