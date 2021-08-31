@@ -16,6 +16,7 @@ STR_QUERY = 'probe_insertion__session__project__name__icontains,ibl_neuropixel_b
 
 BRAIN_REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
 
+
 def labs():
     lab_number_map = {'cortexlab': 'Lab 1', 'mainenlab': 'Lab 2', 'zadorlab': 'Lab 3',
                       'churchlandlab': 'Lab 4', 'angelakilab': 'Lab 5', 'wittenlab': 'Lab 6',
@@ -168,18 +169,14 @@ def exclude_recordings(df, max_ap_rms=50, min_regions=3, min_channels_region=5,
     """
 
     # Get dataframe with excluded recordings and reason for exclusion
-    df_noise = df.groupby('subject').filter(lambda s : s['rms_ap'].mean() >= max_ap_rms)
-    df_noise['noise_cutoff'] = True
-    df_yield = df.groupby('subject').filter(
-        lambda s : (s['neuron_yield'].sum() / s['n_channels'].sum()) <= min_neurons_per_channel)
-    df_yield['yield_cutoff'] = True
+    df_excluded = pd.DataFrame()
+    df_excluded['high_noise'] = df.groupby('subject')['rms_ap'].mean() >= max_ap_rms
+    df_excluded['low_yield'] = (
+                    df.groupby('subject')['neuron_yield'].sum()
+                    / df.groupby('subject')['n_channels'].sum()) <= min_neurons_per_channel
     df['region_hit'] = df['n_channels'] > min_channels_region
-    df_target = df.groupby('subject').filter(lambda s : s['region_hit'].sum() <= min_regions)
-    df_target['missed_target'] = True
-    df_excluded = pd.concat((df_noise, df_yield, df_target))
-    df_excluded.loc[df_excluded['noise_cutoff'].isnull(), 'noise_cutoff'] = False
-    df_excluded.loc[df_excluded['yield_cutoff'].isnull(), 'yield_cutoff'] = False
-    df_excluded.loc[df_excluded['missed_target'].isnull(), 'missed_target'] = False
+    df_excluded['missed_target'] = df.groupby('subject')['region_hit'].sum() <= min_regions
+    df_excluded = df_excluded.reset_index()
 
     # Get dataframe with recordings to include
     df = df.groupby('subject').filter(lambda s : s['rms_ap'].mean() <= max_ap_rms)

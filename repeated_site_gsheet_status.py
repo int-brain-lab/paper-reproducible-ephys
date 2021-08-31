@@ -10,13 +10,13 @@ def update_rep_site():
     from googleapiclient.discovery import build
     from httplib2 import Http
     from oauth2client import client, file, tools
+    from os.path import join
     import pandas as pd
     import numpy as np
     from oneibl.one import ONE
     from repeated_site_data_status import get_repeated_site_status
     # import brainbox.behavior.training as training
-    from reproducible_ephys_functions import query
-    from reproducible_ephys_functions import STR_QUERY
+    from reproducible_ephys_functions import query, STR_QUERY, exclude_recordings, data_path
 
     one = ONE()
 
@@ -135,6 +135,10 @@ def update_rep_site():
                              '~probe_insertion__session__extended_qc___task_audio_pre_trial__lt,0.9')
     q_ins_passl1 = [item['probe_insertion'] for item in q]
 
+    # Get reason for exclusion by additional criteria
+    metrics = pd.read_csv(join(data_path(), 'metrics_region.csv'))
+    _, excl_rec = exclude_recordings(metrics, return_excluded=True)
+
     for subj, date, probe in zip(subjects, dates, probes):
         print(f'====== {subj}, {date}, {probe} ======')  # todo remove, for debugging
         status = get_repeated_site_status(subj, date, probe, one=one)
@@ -174,6 +178,11 @@ def update_rep_site():
         status['is_passl1'] = is_passl1
         status['ins_id'] = ins_id
 
+        # Get excluded reasons
+        status['high_noise'] = excl_rec.loc[excl_rec['subject'] == subj, 'high_noise']
+        status['low_yield'] = excl_rec.loc[excl_rec['subject'] == subj, 'low_yield']
+        status['missed_target'] = excl_rec.loc[excl_rec['subject'] == subj, 'missed_target']
+
         # Use ins_id to find who is assigned to do alignment
         if data_sheet_align.loc[data_sheet_align['ins_id'] == ins_id].empty or \
            data_sheet_align.loc[data_sheet_align['ins_id'] == ins_id].empty:
@@ -206,11 +215,14 @@ def update_rep_site():
         # append to DF
         df = df.append(status, ignore_index=True)
 
+
+
     df = df.reindex(columns=['ins_id', 'Subject', 'Date', 'Probe',
                              'is_potential', 'is_coordcorrect',  'is_used_analysis', 'is_passl1',
                              'ks2', 'raw_ephys_qc', 'trials', 'wheel',
                              'dlc', 'passive', 'histology', 'insertion', 'planned', 'micro',
-                             'tracing', 'aligned', 'resolved', 'user_note', 'origin_lab', 'assign_lab',
+                             'tracing', 'aligned', 'resolved', 'high_noise', 'low_yield',
+                             'missed_target', 'user_note', 'origin_lab', 'assign_lab',
                              'usernote'])
 
     df = df.sort_values(by=['Subject', 'Date'], ascending=True)
