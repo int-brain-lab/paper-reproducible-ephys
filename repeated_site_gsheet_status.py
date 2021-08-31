@@ -179,9 +179,9 @@ def update_rep_site():
         status['ins_id'] = ins_id
 
         # Get excluded reasons
-        status['high_noise'] = excl_rec.loc[excl_rec['subject'] == subj, 'high_noise']
-        status['low_yield'] = excl_rec.loc[excl_rec['subject'] == subj, 'low_yield']
-        status['missed_target'] = excl_rec.loc[excl_rec['subject'] == subj, 'missed_target']
+        status['high_noise'] = excl_rec.loc[excl_rec['subject'] == subj, 'high_noise'].values
+        status['low_yield'] = excl_rec.loc[excl_rec['subject'] == subj, 'low_yield'].values
+        status['missed_target'] = excl_rec.loc[excl_rec['subject'] == subj, 'missed_target'].values
 
         # Use ins_id to find who is assigned to do alignment
         if data_sheet_align.loc[data_sheet_align['ins_id'] == ins_id].empty or \
