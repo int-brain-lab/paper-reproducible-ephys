@@ -20,15 +20,14 @@ def labs():
     lab_number_map = {'cortexlab': 'Lab 1', 'mainenlab': 'Lab 2', 'zadorlab': 'Lab 3',
                       'churchlandlab': 'Lab 4', 'angelakilab': 'Lab 5', 'wittenlab': 'Lab 6',
                       'hoferlab': 'Lab 7', 'mrsicflogellab': 'Lab 7', 'danlab': 'Lab 8',
-                      'steinmetzlab': 'Lab 9'}
+                      'steinmetzlab': 'Lab 9', 'churchlandlab_ucla': 'Lab 10'}
     institution_map = {'cortexlab': 'UCL', 'mainenlab': 'CCU', 'zadorlab': 'CSHL (Z)',
                        'churchlandlab': 'CSHL (C)', 'angelakilab': 'NYU',
                        'wittenlab': 'Princeton', 'hoferlab': 'SWC', 'mrsicflogellab': 'SWC',
-                       'danlab': 'Berkeley',
-                       'steinmetzlab': 'UW'}
-    colors = sns.color_palette("Dark2", 10)[1:]
+                       'danlab': 'Berkeley', 'steinmetzlab': 'UW', 'churchlandlab_ucla': 'UCLA'}
+    colors = sns.color_palette("Dark2", 11)[1:]
     institutions = ['UCL', 'CCU', 'CSHL (Z)', 'CSHL (C)', 'NYU', 'Princeton', 'SWC', 'Berkeley',
-                    'UW']
+                    'UW', 'UCLA']
     institution_colors = {}
     for i, inst in enumerate(institutions):
         institution_colors[inst] = colors[i]
