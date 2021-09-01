@@ -179,11 +179,26 @@ def update_rep_site():
         status['ins_id'] = ins_id
 
         # Get excluded reasons
-        if subj in excl_rec['subject']:
-            status['high_noise'] = excl_rec.loc[excl_rec['subject'] == subj, 'high_noise'].values[0]
-            status['low_yield'] = excl_rec.loc[excl_rec['subject'] == subj, 'low_yield'].values[0]
-            status['missed_target'] = excl_rec.loc[excl_rec['subject'] == subj, 'missed_target'].values[0]
+        atest = excl_rec.loc[excl_rec['subject'] == subj, 'high_noise'].values
+        if bool(atest) is True:
+            status['high_noise'] = True
+        else:
+            status['high_noise'] = False
+        del atest
 
+        atest = excl_rec.loc[excl_rec['subject'] == subj, 'low_yield'].values
+        if bool(atest) is True:
+            status['low_yield'] = True
+        else:
+            status['low_yield'] = False
+        del atest
+
+        atest = excl_rec.loc[excl_rec['subject'] == subj, 'missed_target'].values
+        if bool(atest) is True:
+            status['missed_target'] = True
+        else:
+            status['missed_target'] = False
+        del atest
         # Use ins_id to find who is assigned to do alignment
         if data_sheet_align.loc[data_sheet_align['ins_id'] == ins_id].empty or \
            data_sheet_align.loc[data_sheet_align['ins_id'] == ins_id].empty:
