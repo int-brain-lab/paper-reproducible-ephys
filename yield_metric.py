@@ -1,16 +1,34 @@
 from one.api import ONE
 import numpy as np
 from brainbox.io.one import load_spike_sorting_with_channel
-from brainbox.singlecell import calculate_peths
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pickle
 from reproducible_ephys_paths import FIG_PATH
 from reproducible_ephys_functions import query
-import pandas as pd
+from ibllib.atlas import BrainRegions
 
 
-regions = ['LP', 'CA1', 'VISa', 'DG', 'PO']
+regions = ["CTX", "CNU", "TH", "HY", "MB", "HB", "CB"]
+ids = [688, 623, 549, 1097, 313, 1065, 512]
+br = BrainRegions()
+region2top_level = {}
+for r, id in zip(regions, ids):
+    children = br.descendants(id).acronym
+    for c in children:
+        region2top_level[c] = r
+
+
+def default_dict(x, d):
+    if x in d:
+        return d[x]
+        return None
+
+
+def vec_translate(a, d):
+    return np.vectorize(default_dict)(a, d)
+
+
 spike_sorting = "1"
 
 one = ONE()
@@ -19,6 +37,9 @@ traj = query(behavior=True)
 names = []
 
 probe_mins = []
+region_mins = {}
+for br in regions:
+    region_mins[br] = []
 missing_stuff = []
 for count, t in enumerate(traj):
     eid = t['session']['id']
@@ -49,18 +70,21 @@ for count, t in enumerate(traj):
             print(eid)
             continue
 
-    cluster_regions = clusters.acronym  # == channels.acronym[clusters.channels]
+    cluster_regions = vec_translate(clusters.acronym, region2top_level)  # == channels.acronym[clusters.channels]
+    channel_regions = vec_translate(channels.acronym, region2top_level)
 
     for br in regions:
         if spike_sorting == '1':
-            mask = np.logical_and(np.chararray.startswith(cluster_regions.astype('U9'), br), clusters['metrics']['label'] == 1)
+
+            mask = np.logical_and(cluster_regions == br, clusters['metrics']['label'] == 1)
         elif spike_sorting == '2':
             print("Not implemented")
             quit()
         neurons_in_region = np.sum(mask)
-        channels_in_region = np.sum(np.chararray.startswith(channels.acronym.astype('U9'), br))
-        if channels_in_region != 0:
+        channels_in_region = np.sum(channel_regions == br)
+        if channels_in_region >= 10:
             probe_mins[-1] = min(probe_mins[-1], neurons_in_region / channels_in_region)
+            region_mins[br].append(neurons_in_region / channels_in_region)
             print("{} neurons/channel ({}, {}) in {}".format(neurons_in_region / channels_in_region, neurons_in_region, channels_in_region, br))
     print()
 
@@ -79,7 +103,10 @@ def cumulative_and_position(l):
 print(probe_mins)
 pos, vals = cumulative_and_position(probe_mins)
 
-plt.step(pos, vals)
+plt.step(pos, vals, where='post', label='Probe')
+for br in regions:
+    pos, vals = cumulative_and_position(region_mins[br])
+    plt.step(pos, vals, where='post', label=br)
 plt.ylim(bottom=0)
 plt.ylabel("Recordings lost to criterion", size=18)
 plt.xlabel("Minimum yield per channel criterion", size=18)
