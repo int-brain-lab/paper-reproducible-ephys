@@ -25,8 +25,8 @@ MIN_CHANNELS = 5
 SPIKE_SORTING = None
 ANNOTATE = False
 LAB_NAMES = True
-MIN_NEURONS = 2  # For firing rate inclusion
-MIN_REC_PER_LAB = 4
+MIN_NEURONS = 4  # For firing rate inclusion
+MIN_REC_PER_LAB = 1
 
 # Load in data
 if SPIKE_SORTING is None:
@@ -35,7 +35,7 @@ else:
     metrics = pd.read_csv(join(data_path(), 'metrics_region_spikesorting_%s.csv' % SPIKE_SORTING))
 
 # Exclude recordings
-metrics = exclude_recordings(metrics)
+#metrics = exclude_recordings(metrics)
 
 # Get lab info
 lab_number_map, institution_map, lab_colors = labs()

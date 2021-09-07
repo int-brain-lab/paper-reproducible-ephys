@@ -219,14 +219,19 @@ def panel_d(ax, metrics, regions, labels, n_permut=10000, n_rec_per_lab=4):
 
     results_plot = results.pivot(index='region_number', columns='metric', values='p_value_permut')
     results_plot = results_plot.reindex(columns=metrics)
+    results_plot = np.log10(results_plot)
+
     axin = inset_axes(ax, width="5%", height="80%", loc='lower right', borderpad=0,
                       bbox_to_anchor=(0.1, 0.1, 1, 1), bbox_transform=ax.transAxes)
-    cmap = sns.color_palette('viridis_r', n_colors=20)
-    cmap[0] = [1, 0, 0]
-    sns.heatmap(results_plot, cmap=cmap, square=True,
-                cbar=True, cbar_ax=axin, annot=False, annot_kws={"size": 5},
-                linewidths=.5, fmt='.2f', vmin=0, vmax=1, ax=ax)
-
+    #cmap = sns.color_palette('viridis_r', n_colors=20)
+    #cmap[0] = [1, 0, 0]
+    sns.heatmap(results_plot, cmap='viridis_r', square=True,
+                cbar=True, cbar_ax=axin,
+                annot=False, annot_kws={"size": 5},
+                linewidths=.5, fmt='.2f', vmin=-1.5, vmax=0, ax=ax)
+    cbar = ax.collections[0].colorbar
+    cbar.set_ticks(np.log10([0.05, 0.5, 1]))
+    cbar.set_ticklabels([0.05, 0.5, 1])
     ax.set(xlabel='', ylabel='', title='Permutation p-values')
     ax.set_yticklabels(regions, va='center', rotation=0)
     ax.set_xticklabels(labels, rotation=30, ha='right')

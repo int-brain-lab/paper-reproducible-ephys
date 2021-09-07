@@ -28,9 +28,9 @@ MIN_REGIONS = 3  # min amount of regions to be included
 MIN_CHANNELS = 10  # min amount of channels in a region to say it was targeted
 ANNOTATE = False
 COLORBAR = True
-EXAMPLE_METRIC = 'median_firing_rate'
+EXAMPLE_METRIC = 'spike_amp_mean'
 #EXAMPLE_METRIC = 'lfp_power_high'
-EXAMPLE_REGION = 'CA1'
+EXAMPLE_REGION = 'LP'
 REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
 METRICS = ['yield_per_channel', 'median_firing_rate', 'lfp_power_high', 'rms_ap', 'spike_amp_mean']
 LABELS = ['Neuron yield', 'Firing rate', 'LFP power', 'AP band RMS', 'Spike amp.']
@@ -121,7 +121,7 @@ ax_lines = sns.pointplot(x='institute', y=EXAMPLE_METRIC, data=data_example,
 plt.plot(np.arange(data_example['institute'].unique().shape[0]),
          [data_example[EXAMPLE_METRIC].mean()] * data_example['institute'].unique().shape[0],
          color='r', lw=1)
-ax1.set(ylabel=f'Median firing rate in {EXAMPLE_REGION} (spks/s)', xlabel='',
+ax1.set(ylabel=u'Spike amplitude in LP (${\mu}m$V)', xlabel='',
         xlim=[-.5, 4.5])
 ax1.set_xticklabels(data_example['institute'].unique(), rotation=30, ha='right')
 #ax1.figure.axes[-1].yaxis.label.set_size(12)

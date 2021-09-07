@@ -190,6 +190,7 @@ for i in range(len(traj)):
                                                     'lfp_band_high': [LFP_BAND_HIGH],
                                                     'rms_ap': rms_ap_region}))
 
+
 # Save result
 if SPIKE_SORTING is None:
     metrics.to_csv(join(DATA_DIR, 'metrics_region.csv'))
@@ -199,3 +200,4 @@ if SPIKE_SORTING is None:
     np.save('repeated_site_eids.npy', np.array(metrics_excl['eid'].unique(), dtype=str))
 else:
     metrics.to_csv(join(DATA_DIR, 'metrics_region_spikesorting_%s.csv' % SPIKE_SORTING))
+
