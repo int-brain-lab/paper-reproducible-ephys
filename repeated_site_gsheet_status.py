@@ -102,9 +102,9 @@ def update_rep_site():
     del q
 
     # get insertions potentially good
-    q = one.alyx.rest('trajectories', 'list', django=STR_QUERY)
-    q_ins_potential = [item['probe_insertion'] for item in q]
-    del q
+    q1 = one.alyx.rest('trajectories', 'list', django=STR_QUERY)
+    q_ins_potential = [item['probe_insertion'] for item in q1]
+    del q1
 
     # get insertions that are potentially good but do not match traj coord
     q = one.alyx.rest('trajectories', 'list', provenance='Planned',
