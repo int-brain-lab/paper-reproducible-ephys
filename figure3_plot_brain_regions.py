@@ -19,12 +19,12 @@ from reproducible_ephys_paths import FIG_PATH
 
 # Settings
 REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
-NICKNAMES = False  # Whether to plot the animal nicknames instead of numbers
+NICKNAMES = True  # Whether to plot the animal nicknames instead of numbers
 MIN_CHANNELS = 5
 #SPIKE_SORTING = 'ks2_preproc_tests'
 SPIKE_SORTING = None
 ANNOTATE = False
-LAB_NAMES = True
+LAB_NAMES = False
 MIN_NEURONS = 4  # For firing rate inclusion
 MIN_REC_PER_LAB = 1
 
@@ -35,7 +35,7 @@ else:
     metrics = pd.read_csv(join(data_path(), 'metrics_region_spikesorting_%s.csv' % SPIKE_SORTING))
 
 # Exclude recordings
-#metrics = exclude_recordings(metrics)
+metrics = exclude_recordings(metrics)
 
 # Get lab info
 lab_number_map, institution_map, lab_colors = labs()
@@ -81,7 +81,7 @@ sns.heatmap(metrics_plot, square=True, cmap='twilight_shifted', center=0,
             cbar_kws={'label': 'Neurons per channel', 'shrink': 0.7}, annot=ANNOTATE,
             annot_kws={"size": 12}, linewidths=.5, fmt='.2f')
 ax1.xaxis.tick_top()
-ax1.set(xlabel='', ylabel='', xticklabels=metrics_plot.columns.values)
+ax1.set(xlabel='', ylabel='', xticks=np.arange(len(n_rec))+0.5, xticklabels=metrics_plot.columns.values)
 ax1.set_yticklabels(REGIONS, va='center', rotation=0)
 if NICKNAMES:
     ax1.set_xticklabels(metrics_plot.columns.values, rotation=30, fontsize=11, ha='left')
@@ -126,7 +126,7 @@ sns.heatmap(metrics_plot, square=True, cmap='twilight_shifted', center=0,
             cbar_kws={'label': 'Mean firing rate (spks/s)', 'shrink': 0.7}, annot=ANNOTATE,
             annot_kws={"size": 12}, linewidths=.5)
 ax1.xaxis.tick_top()
-ax1.set(xlabel='', ylabel='', xticklabels=metrics_plot.columns.values)
+ax1.set(xlabel='', ylabel='', xticks=np.arange(len(n_rec))+0.5, xticklabels=metrics_plot.columns.values)
 ax1.set_yticklabels(REGIONS, va='center', rotation=0)
 if NICKNAMES:
     ax1.set_xticklabels(metrics_plot.columns.values, rotation=30, fontsize=11, ha='left')
@@ -168,7 +168,7 @@ sns.heatmap(metrics_plot, square=True, cmap='twilight_shifted', center=0, fmt='.
             cbar_kws={'label': 'Spike amplitude (mV)', 'shrink': 0.7}, annot=ANNOTATE,
             annot_kws={"size": 12}, linewidths=.5)
 ax1.xaxis.tick_top()
-ax1.set(xlabel='', ylabel='', xticklabels=metrics_plot.columns.values)
+ax1.set(xlabel='', ylabel='', xticks=np.arange(len(n_rec))+0.5, xticklabels=metrics_plot.columns.values)
 ax1.set_yticklabels(REGIONS, va='center', rotation=0)
 if NICKNAMES:
     ax1.set_xticklabels(metrics_plot.columns.values, rotation=30, fontsize=11, ha='left')
@@ -210,7 +210,7 @@ sns.heatmap(metrics_plot, square=True, cmap='twilight_shifted', center=0, fmt='.
             cbar_kws={'label': 'Peak-to-trough ratio', 'shrink': 0.7}, annot=ANNOTATE,
             annot_kws={"size": 12}, linewidths=.5)
 ax1.xaxis.tick_top()
-ax1.set(xlabel='', ylabel='', xticklabels=metrics_plot.columns.values)
+ax1.set(xlabel='', ylabel='', xticks=np.arange(len(n_rec))+0.5, xticklabels=metrics_plot.columns.values)
 ax1.set_yticklabels(REGIONS, va='center', rotation=0)
 if NICKNAMES:
     ax1.set_xticklabels(metrics_plot.columns.values, rotation=30, fontsize=11, ha='left')
@@ -252,7 +252,7 @@ sns.heatmap(metrics_plot, square=True, cmap='twilight_shifted', center=0, fmt='.
             cbar_kws={'label': 'Repolarization slope', 'shrink': 0.7}, annot=ANNOTATE,
             annot_kws={"size": 12}, linewidths=.5)
 ax1.xaxis.tick_top()
-ax1.set(xlabel='', ylabel='', xticklabels=metrics_plot.columns.values)
+ax1.set(xlabel='', ylabel='', xticks=np.arange(len(n_rec))+0.5, xticklabels=metrics_plot.columns.values)
 ax1.set_yticklabels(REGIONS, va='center', rotation=0)
 if NICKNAMES:
     ax1.set_xticklabels(metrics_plot.columns.values, rotation=30, fontsize=11, ha='left')
@@ -294,7 +294,7 @@ sns.heatmap(metrics_plot, square=True, cmap='twilight_shifted', center=metrics['
             cbar_kws={'label': 'LFP power (dB)', 'shrink': 0.7}, annot=ANNOTATE,
             annot_kws={"size": 12}, linewidths=.5, fmt='.0f')
 ax1.xaxis.tick_top()
-ax1.set(xlabel='', ylabel='', xticklabels=metrics_plot.columns.values)
+ax1.set(xlabel='', ylabel='', xticks=np.arange(len(n_rec))+0.5, xticklabels=metrics_plot.columns.values)
 ax1.set_yticklabels(REGIONS, va='center', rotation=0)
 if NICKNAMES:
     ax1.set_xticklabels(metrics_plot.columns.values, rotation=30, fontsize=11, ha='left')
@@ -336,7 +336,7 @@ sns.heatmap(metrics_plot, square=True, cmap='twilight_shifted', center=0, fmt='.
             cbar_kws={'label': 'AP band (rms)', 'shrink': 0.7}, annot=ANNOTATE,
             annot_kws={"size": 12}, linewidths=.5)
 ax1.xaxis.tick_top()
-ax1.set(xlabel='', ylabel='', xticklabels=metrics_plot.columns.values)
+ax1.set(xlabel='', ylabel='', xticks=np.arange(len(n_rec))+0.5, xticklabels=metrics_plot.columns.values)
 ax1.set_yticklabels(REGIONS, va='center', rotation=0)
 if NICKNAMES:
     ax1.set_xticklabels(metrics_plot.columns.values, rotation=30, fontsize=11, ha='left')
@@ -379,7 +379,7 @@ sns.heatmap(metrics_plot, square=True, cmap='twilight_shifted', center=0, fmt='.
             cbar_kws={'label': 'Neuron count', 'shrink': 0.7}, annot=ANNOTATE,
             annot_kws={"size": 12}, linewidths=.5)
 ax1.xaxis.tick_top()
-ax1.set(xlabel='', ylabel='', xticklabels=metrics_plot.columns.values)
+ax1.set(xlabel='', ylabel='', xticks=np.arange(len(n_rec))+0.5, xticklabels=metrics_plot.columns.values)
 ax1.set_yticklabels(REGIONS, va='center', rotation=0)
 if NICKNAMES:
     ax1.set_xticklabels(metrics_plot.columns.values, rotation=30, fontsize=11, ha='left')

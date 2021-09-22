@@ -11,6 +11,7 @@ import pandas as pd
 from os.path import join
 from pathlib import Path
 import brainbox.io.one as bbone
+from brainbox.metrics.single_units import spike_sorting_metrics
 from reproducible_ephys_functions import query, data_path, combine_regions, exclude_recordings
 from one.api import ONE
 one = ONE()
@@ -95,10 +96,19 @@ for i in range(len(traj)):
     rms_ap_data_median = (np.apply_along_axis(lambda x: x - np.median(x), 1, rms_ap_data)
                           + median)
 
+
     # Get neurons that pass QC
     if 'metrics' not in clusters[probe].keys():
-        print('No neuron QC, using all clusters')
-        clusters_pass = np.unique(spikes[probe]['clusters'])  # Use all clusters
+        print('No neuron QC found, calculating locally..')
+        # Load in spike amplitude and depths
+        spikes, clusters, channels = bbone.load_spike_sorting_with_channel(
+            eid, aligned=True, one=one, spike_sorter=SPIKE_SORTING,
+            dataset_types=['spikes.amps', 'spikes.depths'])
+        # Calculate metrics
+        metrics, _ = spike_sorting_metrics(spikes[probe].times, spikes[probe].clusters,
+                                     spikes[probe].amps, spikes[probe].depths,
+                                     cluster_ids=np.arange(clusters[probe].channels.size))
+        clusters_pass = np.where(metrics['label'] == 1)[0]
     else:
         clusters_pass = np.where(clusters[probe]['metrics']['label'] == 1)[0]
 

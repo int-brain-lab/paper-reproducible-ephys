@@ -22,7 +22,7 @@ one = ONE()
 # Plot settings
 BOUNDARY = 'DG-TH'
 # BOUNDARY = 'VIS-HPF'
-MIN_REC_PER_LAB = 4
+MIN_REC_PER_LAB = 1
 """
 PLOTS = ['fr', 'psd', 'rms_ap', 'rms_lf', 'fr_alt', 'amp', 'fr_line', 'amp_line', 'regions_line',
          'distance', 'amp_scatter']
@@ -31,9 +31,9 @@ LABELS = ['Firing rate (spks/s)', 'Power spectral density', 'AP band RMS', 'LFP 
           'Distance from Repeated Site', 'Firing rate (spks/s)']
 """
 
-PLOTS = ['psd', 'rms_ap', 'amp_scatter']
-LABELS = ['Power spectral density', 'AP band RMS', 'Firing rate (spks/s)']
-NICKNAMES = False
+PLOTS = ['rms_ap']
+LABELS = ['AP band RMS']
+NICKNAMES = True
 YLIM = [-2000, 2000]
 FIG_SIZE = (10, 5)
 
@@ -41,7 +41,7 @@ FIG_SIZE = (10, 5)
 data = pd.read_csv(join(data_path(), 'metrics_region.csv'))
 
 # Exclude recordings
-data = exclude_recordings(data)
+#data = exclude_recordings(data)
 
 # Reformat dataframe
 lab_number_map, institution_map, lab_colors = labs()

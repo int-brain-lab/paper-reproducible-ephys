@@ -2,7 +2,6 @@
 from one.api import ONE
 import matplotlib.pyplot as plt
 from matplotlib import cm
-import alf.io
 import numpy as np
 from ibllib.ephys.neuropixel import SITES_COORDINATES
 from ibllib.pipes.ephys_alignment import EphysAlignment
@@ -13,8 +12,9 @@ from pathlib import Path
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 
-def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_range=[2, 15],
-                     plot_type='fr', boundary_align=None, show_regions=False, figsize=(20, 10)):
+def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_range=[20, 80],
+                     plot_type='fr', boundary_align=None, show_regions=False, show_boundaries=True,
+                     show_colorbar=True, figsize=(20, 10)):
 
     one = one or ONE()
     brain_atlas = brain_atlas or atlas.AllenAtlas(25)
@@ -219,7 +219,7 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
                     ax.text(x=width/2, y=reg[0] + height / 2, s=lab, fontdict=None, fontsize=10,
                             color='w', fontweight='bold')
                     """
-            else:
+            elif show_boundaries:
                 for bound, col in zip(boundaries, colours):
                     ax.hlines(bound, *ax.get_xlim(), linestyles='dashed', linewidth=3,
                               colors=col/255)
@@ -232,7 +232,7 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
         z_min = np.min(z_extent)
         ax.set_ylim(z_min, z_max)
 
-    if plot_type[-4:] != 'line':
+    if show_colorbar & (plot_type[-4:] != 'line'):
         axin = inset_axes(axs[-1], width="25%", height="80%", loc='lower right', borderpad=0,
                          bbox_to_anchor=(0.5, 0.1, 1, 1), bbox_transform=axs[-1].transAxes)
         cbar = fig.colorbar(im, cax=axin, ticks=im.get_clim())
@@ -307,7 +307,7 @@ def fr_data(alf_path, one, eid, depths):
         dtypes = ['spikes.depths.npy', 'spikes.amps.npy', 'spikes.times.npy']
         one.load_datasets(eid, datasets=dtypes, collections=[f'alf/{alf_path.parts[-1]}'] * 3,
                          download_only=True)
-        spikes = alf.io.load_object(alf_path, 'spikes', attribute=['depths', 'amps', 'times'])
+        spikes = one.load_object(alf_path, 'spikes', attribute=['depths', 'amps', 'times'])
 
     kp_idx = np.where(~np.isnan(spikes['depths']))[0]
     T_BIN = np.max(spikes['times'])
@@ -346,7 +346,7 @@ def amp_data(alf_path, one, eid, depths):
         dtypes = ['spikes.depths.npy', 'spikes.amps.npy', 'spikes.times.npy']
         one.load_datasets(eid, datasets=dtypes, collections=[f'alf/{alf_path.parts[-1]}'] * 3,
                          download_only=True)
-        spikes = alf.io.load_object(alf_path, 'spikes', attribute=['depths', 'amps', 'times'])
+        spikes = one.load_object(alf_path, 'spikes', attribute=['depths', 'amps', 'times'])
 
     kp_idx = np.where(~np.isnan(spikes['depths']))[0]
     T_BIN = np.max(spikes['times'])
