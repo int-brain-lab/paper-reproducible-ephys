@@ -5,6 +5,8 @@ from pathlib import Path
 def get_repeated_site_status(subj, date, probe, one=None):
 
     one = one or ONE()
+    eid = one.search(subject=subj, date=date)
+    print(len(eid))
 
     dtypes_ks2 = [
         'spikes.depths',
@@ -20,8 +22,15 @@ def get_repeated_site_status(subj, date, probe, one=None):
         'channels.rawInd'
     ]
 
-    data = one.alyx.rest('datasets', 'list', subject=subj, date=date,
-                         collection=f'alf/{probe}')
+    collections = one.list_collections(eid[0])
+    # look to see if pykilosort exists
+    if f'alf/{probe}/pykilosort' in collections:
+        data = one.alyx.rest('datasets', 'list', subject=subj, date=date,
+                             collection=f'alf/{probe}/pykilosort')
+    else:
+        data = one.alyx.rest('datasets', 'list', subject=subj, date=date,
+                             collection=f'alf/{probe}')
+
     ks2_data = [str(Path(dat['name']).stem) for dat in data]
 
     ks2_exists = all([da in ks2_data for da in dtypes_ks2])
@@ -49,8 +58,14 @@ def get_repeated_site_status(subj, date, probe, one=None):
     wheel_exists = len(wheel_data) == 4
     camera_data = [str(Path(dat['name']).stem) for dat in data if 'Camera' in dat['name']]
     dlc_exists = len(camera_data) == 6
+    passive_data_alf = [str(Path(dat['name']).stem) for dat in data if 'passive' in dat['name']]
+    passive_alf_exists = len(passive_data_alf) == 4
 
-    passive_exists = False
+    data = one.alyx.rest('datasets', 'list', subject=subj, date=date, collection='raw_passive_data')
+    passive_data_raw = [str(Path(dat['name']).stem) for dat in data if 'RFMapStim' in dat['name']]
+    passive_raw_exists = len(passive_data_raw) == 1
+
+    passive_exists = all([passive_alf_exists, passive_raw_exists])
 
     histology = one.alyx.rest('sessions', 'list', subject=subj,
                               task_protocol='SWC_Histology_Serial2P_v0.0.1')

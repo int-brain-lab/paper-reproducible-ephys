@@ -21,11 +21,10 @@ def update_rep_site():
     one = ONE()
 
     # Define paths to authentication details
-    '''
     # Mayo's
-    credentials_file_path = '/iblmayo/googleAPI/credentials/IBL/credentials.json'
-    clientsecret_file_path = '/iblmayo/googleAPI/credentials/IBL/client_secret_IBL.json'
-    '''
+    # credentials_file_path = r'C:\Users\Mayo\iblenv\iblmayo\googleAPI\credentials\IBL\credentials.json'
+    # clientsecret_file_path = r'C:\Users\Mayo\iblenv\iblmayo\googleAPI\credentials\IBL\client_secret_IBL.json'
+
     # Gaelle's
     credentials_file_path = '/Users/gaelle/Documents/Work/Google_IBL/credentials.json'
     clientsecret_file_path = '/Users/gaelle/Documents/Work/Google_IBL/client_secret.json'
