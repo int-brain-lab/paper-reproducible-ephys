@@ -1,4 +1,4 @@
-from oneibl.one import ONE
+from one.api import ONE
 from pathlib import Path
 
 

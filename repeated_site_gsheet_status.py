@@ -13,7 +13,7 @@ def update_rep_site():
     from os.path import join
     import pandas as pd
     import numpy as np
-    from oneibl.one import ONE
+    from one.api import ONE
     from repeated_site_data_status import get_repeated_site_status
     # import brainbox.behavior.training as training
     from reproducible_ephys_functions import query, STR_QUERY, exclude_recordings, data_path
