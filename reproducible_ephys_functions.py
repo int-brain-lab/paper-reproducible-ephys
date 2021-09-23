@@ -170,7 +170,7 @@ def exclude_recordings(df, max_ap_rms=50, min_regions=3, min_channels_region=5,
 
     # Get dataframe with excluded recordings and reason for exclusion
     df_excluded = pd.DataFrame()
-    df_excluded['high_noise'] = df.groupby('subject')['rms_ap'].mean() >= max_ap_rms
+    df_excluded['high_noise'] = df.groupby('subject')['rms_ap'].median() >= max_ap_rms
     df_excluded['low_yield'] = (
                     df.groupby('subject')['neuron_yield'].sum()
                     / df.groupby('subject')['n_channels'].sum()) <= min_neurons_per_channel
@@ -179,7 +179,7 @@ def exclude_recordings(df, max_ap_rms=50, min_regions=3, min_channels_region=5,
     df_excluded = df_excluded.reset_index()
 
     # Get dataframe with recordings to include
-    df = df.groupby('subject').filter(lambda s : s['rms_ap'].mean() <= max_ap_rms)
+    df = df.groupby('subject').filter(lambda s : s['rms_ap'].median() <= max_ap_rms)
     df = df.groupby('subject').filter(
         lambda s : (s['neuron_yield'].sum() / s['n_channels'].sum()) >= min_neurons_per_channel)
     df['region_hit'] = df['n_channels'] > min_channels_region
