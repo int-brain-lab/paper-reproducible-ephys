@@ -20,7 +20,7 @@ one = ONE()
 #SPIKE_SORTING = 'ks2_preproc_tests'
 SPIKE_SORTING = None
 NEURON_QC = True
-DOWNLOAD_DATA = True
+DOWNLOAD_DATA = False
 REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
 LFP_BAND_HIGH = [20, 80]
 LFP_BAND_LOW = [2, 15]
@@ -105,10 +105,10 @@ for i in range(len(traj)):
             eid, aligned=True, one=one, spike_sorter=SPIKE_SORTING,
             dataset_types=['spikes.amps', 'spikes.depths'])
         # Calculate metrics
-        metrics, _ = spike_sorting_metrics(spikes[probe].times, spikes[probe].clusters,
+        qc_metrics, _ = spike_sorting_metrics(spikes[probe].times, spikes[probe].clusters,
                                      spikes[probe].amps, spikes[probe].depths,
                                      cluster_ids=np.arange(clusters[probe].channels.size))
-        clusters_pass = np.where(metrics['label'] == 1)[0]
+        clusters_pass = np.where(qc_metrics['label'] == 1)[0]
     else:
         clusters_pass = np.where(clusters[probe]['metrics']['label'] == 1)[0]
 
@@ -202,6 +202,7 @@ for i in range(len(traj)):
 
 
 # Save result
+print('Saving result..')
 if SPIKE_SORTING is None:
     metrics.to_csv(join(DATA_DIR, 'metrics_region.csv'))
 
@@ -210,4 +211,4 @@ if SPIKE_SORTING is None:
     np.save('repeated_site_eids.npy', np.array(metrics_excl['eid'].unique(), dtype=str))
 else:
     metrics.to_csv(join(DATA_DIR, 'metrics_region_spikesorting_%s.csv' % SPIKE_SORTING))
-
+print('Done!')
