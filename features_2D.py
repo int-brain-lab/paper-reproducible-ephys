@@ -7,6 +7,7 @@ from ibllib.ephys.neuropixel import SITES_COORDINATES
 from ibllib.pipes.ephys_alignment import EphysAlignment
 from ibllib.atlas import atlas, BrainRegions
 from brainbox.processing import bincount2D, compute_cluster_average
+from brainbox.metrics.single_units import quick_unit_metrics
 from matplotlib.image import NonUniformImage
 from pathlib import Path
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
@@ -38,7 +39,15 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
                                             collection=f'alf/{probe_label}')
 
             ephys_path = one.eid2path(eid).joinpath('raw_ephys_data', probe_label)
-            alf_path = one.eid2path(eid).joinpath('alf', probe_label)
+            collections = one.list_collections(eid)
+            if f'alf/{probe_label}/pykilosort' in collections:
+                alf_path = one.eid2path(eid).joinpath('alf', probe_label, 'pykilosort')
+                collection = f'alf/{probe_label}/pykilosort'
+                print(collection)
+            else:
+                alf_path = one.eid2path(eid).joinpath('alf', probe_label)
+                collection = f'alf/{probe_label}'
+                print(collection)
 
             insertion = one.alyx.rest('insertions', 'list', session=eid, name=probe_label)
             xyz_picks = np.array(insertion[0].get('json').get('xyz_picks', 0)) / 1e6
@@ -123,11 +132,11 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
                 im = plot_probe(data, z, ax, cmap='magma')
 
             elif plot_type == 'fr_alt':
-                data = fr_data_alt(alf_path, one, eid, depths)
+                data = fr_data_alt(eid, collection, one, depths)
                 im = plot_probe(data, z, ax, cmap='magma')
 
             elif plot_type == 'fr':
-                y, data = fr_data(alf_path, one, eid, depths)
+                y, data = fr_data(eid, collection, one, depths)
                 y = ephysalign.get_channel_locations(feature, track, y / 1e6)[:, 2] * 1e6
                 if boundary_align is not None:
                     y = y - z_subtract
@@ -138,7 +147,7 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
                 ax.images.append(im)
 
             elif plot_type == 'amp':
-                y, data = amp_data(alf_path, one, eid, depths)
+                y, data = amp_data(eid, collection, one, depths)
                 y = ephysalign.get_channel_locations(feature, track, y / 1e6)[:, 2] * 1e6
                 if boundary_align is not None:
                     y = y - z_subtract
@@ -149,7 +158,7 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
                 ax.images.append(im)
 
             elif plot_type == 'amp_scatter':
-                x, y, c = spike_amp_data(alf_path, one, eid)
+                x, y, c = spike_amp_data(eid, collection, one)
                 y = ephysalign.get_channel_locations(feature, track, y / 1e6)[:, 2] * 1e6
                 if boundary_align is not None:
                     y = y - z_subtract
@@ -159,7 +168,7 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
                 ax.set_xlim(1.3, 3)
 
             elif plot_type == 'fr_line':
-                y, data = fr_data(alf_path, one, eid, depths)
+                y, data = fr_data(eid, collection, one, depths)
                 y = ephysalign.get_channel_locations(feature, track, y / 1e6)[:, 2] * 1e6
                 if boundary_align is not None:
                     y = y - z_subtract
@@ -167,7 +176,7 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
                 ax.set_xlim(0, 50)
 
             elif plot_type == 'amp_line':
-                y, data = amp_data(alf_path, one, eid, depths)
+                y, data = amp_data(eid, collection, one, depths)
                 y = ephysalign.get_channel_locations(feature, track, y / 1e6)[:, 2] * 1e6
                 if boundary_align is not None:
                     y = y - z_subtract
@@ -265,10 +274,11 @@ def psd_data(ephys_path, one, eid, chn_inds, freq_range=[2, 15]):
         lfp_power = np.load(ephys_path.joinpath('_iblqc_ephysSpectralDensityLF.power.npy'))
     except Exception:
         # Download data
-        dtypes = ['_iblqc_ephysSpectralDensity.freqs',
-                  '_iblqc_ephysSpectralDensity.power']
+        dtypes = ['_iblqc_ephysSpectralDensityLF.freqs.npy',
+                  '_iblqc_ephysSpectralDensityLF.power.npy']
 
-        one.load_datasets(eid, datasets=dtypes, collections=[f'alf/{ephys_path.parts[-1]}'] * 2,
+        one.load_datasets(eid, datasets=dtypes,
+                          collections=[f'raw_ephys_data/{ephys_path.parts[-1]}'] * 2,
                           download_only=True)
         lfp_freq = np.load(ephys_path.joinpath('_iblqc_ephysSpectralDensityLF.freqs.npy'))
         lfp_power = np.load(ephys_path.joinpath('_iblqc_ephysSpectralDensityLF.power.npy'))
@@ -292,7 +302,7 @@ def rms_data(ephys_path, one, eid, chn_inds, rms_format):
         rms_amps = np.load(ephys_path.joinpath('_iblqc_ephysTimeRms' + rms_format + '.rms.npy'))
     except Exception:
         one.load_dataset(eid, dataset='_iblqc_ephysTimeRms' + rms_format + '.rms.npy',
-                         collection=f'alf/{ephys_path.parts[-1]}', download_only=True)
+                         collection=f'raw_ephys_data/{ephys_path.parts[-1]}', download_only=True)
         rms_amps = np.load(ephys_path.joinpath('_iblqc_ephysTimeRms' + rms_format + '.rms.npy'))
 
     rms_avg = (np.mean(rms_amps, axis=0)[chn_inds]) * 1e6
@@ -300,14 +310,10 @@ def rms_data(ephys_path, one, eid, chn_inds, rms_format):
     return rms_avg
 
 
-def fr_data(alf_path, one, eid, depths):
-    try:
-        spikes = one.load_object(alf_path, 'spikes', attribute=['depths', 'amps', 'times'])
-    except Exception:
-        dtypes = ['spikes.depths.npy', 'spikes.amps.npy', 'spikes.times.npy']
-        one.load_datasets(eid, datasets=dtypes, collections=[f'alf/{alf_path.parts[-1]}'] * 3,
-                         download_only=True)
-        spikes = one.load_object(alf_path, 'spikes', attribute=['depths', 'amps', 'times'])
+def fr_data(eid, collection, one, depths):
+
+    spikes = one.load_object(eid, 'spikes', attribute=['depths', 'amps', 'times'],
+                             collection=collection)
 
     kp_idx = np.where(~np.isnan(spikes['depths']))[0]
     T_BIN = np.max(spikes['times'])
@@ -320,16 +326,11 @@ def fr_data(alf_path, one, eid, depths):
     return depths, mean_fr
 
 
-def fr_data_alt(alf_path, one, eid, depths):
-    try:
-        spikes = one.load_object(alf_path, 'spikes', attribute=['times', 'clusters'])
-        clusters = one.load_object(alf_path, 'clusters', attribute=['channels'])
-    except Exception:
-        dtypes = ['spikes.times.npy', 'spikes.clusters.npy', 'clusters.channels.npy']
-        one.load_datasets(eid, datasets=dtypes, collections=[f'alf/{alf_path.parts[-1]}'] * 3,
-                         download_only=True)
-        spikes = one.load_object(alf_path, 'spikes', attribute=['times', 'clusters'])
-        clusters = one.load_object(alf_path, 'clusters', attribute=['channels'])
+def fr_data_alt(eid, collection, one, depths):
+
+    spikes = one.load_object(eid, 'spikes', attribute=['times', 'clusters'], collection=collection)
+    clusters = one.load_object(eid, 'clusters', attribute=['channels'], collection=collection)
+
     spk_chn = clusters.channels[spikes.clusters]
     chn_idx, count = np.unique(spk_chn, return_counts=True)
 
@@ -339,14 +340,10 @@ def fr_data_alt(alf_path, one, eid, depths):
     return fr_chns
 
 
-def amp_data(alf_path, one, eid, depths):
-    try:
-        spikes = one.load_object(alf_path, 'spikes', attribute=['depths', 'amps', 'times'])
-    except Exception:
-        dtypes = ['spikes.depths.npy', 'spikes.amps.npy', 'spikes.times.npy']
-        one.load_datasets(eid, datasets=dtypes, collections=[f'alf/{alf_path.parts[-1]}'] * 3,
-                         download_only=True)
-        spikes = one.load_object(alf_path, 'spikes', attribute=['depths', 'amps', 'times'])
+def amp_data(eid, collection, one, depths):
+
+    spikes = one.load_object(eid, 'spikes', attribute=['depths', 'amps', 'times'],
+                             collection=collection)
 
     kp_idx = np.where(~np.isnan(spikes['depths']))[0]
     T_BIN = np.max(spikes['times'])
@@ -364,23 +361,27 @@ def amp_data(alf_path, one, eid, depths):
 
     return depths, mean_amp
 
-def spike_amp_data(alf_path, one, eid):
-    try:
-        spikes = one.load_object(alf_path, 'spikes', collection=f'alf/{alf_path.parts[-1]}',
-                                 attribute=['depths', 'amps', 'times', 'clusters'])
-    except Exception:
-        dtypes = ['spikes.depths.npy', 'spikes.amps.npy', 'spikes.times.npy', 'spikes.clusters.npy']
-        one.load_datasets(eid, datasets=dtypes, collections=[f'alf/{alf_path.parts[-1]}'] * 4,
-                         download_only=True)
-        spikes = one.load_object(alf_path, 'spikes', collection=f'alf/{alf_path.parts[-1]}',
-                                 attribute=['depths', 'amps', 'times', 'clusters'])
+def spike_amp_data(eid, collection, one):
+    spikes = one.load_object(eid, 'spikes', collection=collection,
+                             attribute=['depths', 'amps', 'times', 'clusters'])
+    clusters = one.load_object(eid, 'clusters', collection=collection,
+                               attribute=['metrics', 'channels'])
+    if 'metrics' in clusters.keys():
+        clust = np.where(clusters.metrics.label == 1)
+    else:
+        r = quick_unit_metrics(spikes.clusters, spikes.times, spikes.amps, spikes.depths,
+                               cluster_ids=np.arange(clusters.channels.size))
+        clust = np.where(r.label == 1)
+    spike_idx = np.where(np.isin(spikes['clusters'], clust))[0]
 
     # compute mean values
-    cluster, cluster_depth, n_cluster = compute_cluster_average(spikes.clusters, spikes.depths)
-    _, cluster_amp, _ = compute_cluster_average(spikes.clusters, spikes.amps)
+    cluster, cluster_depth, n_cluster = compute_cluster_average(spikes.clusters[spike_idx],
+                                                                spikes.depths[spike_idx])
+    _, cluster_amp, _ = compute_cluster_average(spikes.clusters[spike_idx],
+                                                spikes.amps[spike_idx])
     cluster_amp = cluster_amp * 1e6
     cluster_amp = np.log10(cluster_amp)
-    cluster_fr = n_cluster / (np.max(spikes.times) - np.min(spikes.times))
+    cluster_fr = n_cluster / (np.max(spikes.times[spike_idx]) - np.min(spikes.times[spike_idx]))
 
     return cluster_amp, cluster_depth, cluster_fr
 
