@@ -32,6 +32,9 @@ traj = query()
 # Initialize dataframe
 rep_site = pd.DataFrame()
 
+# Load in RMS data from Olivier
+rms_ap_destripe = pd.read_parquet(join(data_path(), 'rms_raw_traces_ap_band_olivier.pqt'))
+
 # %% Loop through repeated site recordings
 metrics = pd.DataFrame()
 for i in range(len(traj)):
@@ -95,7 +98,6 @@ for i in range(len(traj)):
     median = np.mean(np.apply_along_axis(lambda x: np.median(x), 1, rms_ap_data))
     rms_ap_data_median = (np.apply_along_axis(lambda x: x - np.median(x), 1, rms_ap_data)
                           + median)
-
 
     # Get neurons that pass QC
     if 'metrics' not in clusters[probe].keys():
@@ -173,7 +175,14 @@ for i in range(len(traj)):
         lfp_low_region = np.mean(10 * np.log(chan_power[freqs]))  # convert to dB
 
         # Get AP band rms
-        rms_ap_region = rms_ap_data_median[:, region_chan].mean()
+        if traj[i]['probe_insertion'] in rms_ap_destripe['pid'].values:
+            # Use Olivier's destriped RMS
+            rms_ap_region = rms_ap_destripe.loc[
+                (rms_ap_destripe['pid'] == traj[i]['probe_insertion'])
+                & (rms_ap_destripe['channel'].isin(region_chan)), 'rms_destripe'].median()
+        else:
+             print('No destriped RMS found, using regular RMS')
+             rms_ap_region = np.median(rms_ap_data_median[:, region_chan])
 
         # Get neuron count
         if len(region_chan) == 0:

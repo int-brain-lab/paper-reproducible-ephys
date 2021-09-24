@@ -35,7 +35,7 @@ else:
     metrics = pd.read_csv(join(data_path(), 'metrics_region_spikesorting_%s.csv' % SPIKE_SORTING))
 
 # Exclude recordings
-metrics = exclude_recordings(metrics)
+#metrics = exclude_recordings(metrics)
 
 # Get lab info
 lab_number_map, institution_map, lab_colors = labs()
