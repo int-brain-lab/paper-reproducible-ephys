@@ -56,8 +56,9 @@ def get_repeated_site_status(subj, date, probe, one=None):
     trials_exists = len(trials_data) > 10
     wheel_data = [str(Path(dat['name']).stem) for dat in data if '_ibl_wheel' in dat['name']]
     wheel_exists = len(wheel_data) == 4
-    camera_data = [str(Path(dat['name']).stem) for dat in data if 'Camera' in dat['name']]
-    dlc_exists = len(camera_data) == 6
+    dlc_data = [str(Path(dat['name']).stem) for dat in data if 'Camera.dlc' in dat['name']]
+    me_data = [str(Path(dat['name']).stem) for dat in data if 'ROIMotionEnergy' in dat['name']]
+    dlc_exists = (len(dlc_data) == 3 and len(me_data) == 6)
     passive_data_alf = [str(Path(dat['name']).stem) for dat in data if 'passive' in dat['name']]
     passive_alf_exists = len(passive_data_alf) == 4
 
