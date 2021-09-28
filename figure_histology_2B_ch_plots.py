@@ -11,11 +11,13 @@ from figure_histology import ch_disp_plots as ch_plots
 
 import os
 from pathlib import Path
-
 import matplotlib.pyplot as plt
+
+from one.api import ONE
 
 from reproducible_ephys_functions import labs as labs_fun
 
+one = ONE()
 
 # download repeated site data
 ch_data.download_ch_disp_data_rep_site()
@@ -87,8 +89,6 @@ for i in range(0, len(ids)):
 
 # NEXT - generate a large matplotlib canvas for all axes
 
- # get number and colour maps for labs
-lab_number_map, institution_map, institution_colors = labs()
 
 fig, axs = plt.subplots(2, 2)
 
@@ -98,6 +98,8 @@ for s in range(0, len(ids) ):
     l = one.alyx.rest('insertions', 'list', subject = ids[s])[0]['session_info']['lab']
     labs.append(l)
 
+ # get number and colour maps for labs
 lab_number_map, institution_map, institution_colors = labs_fun()
+
 
 
