@@ -50,7 +50,7 @@ def plot_scaling(region, scale, mapper, ax):
 brain_atlas = atlas.AllenAtlas(25)
 one = ONE()
 
-fig_path = Path('/Users/gaelle/Desktop/Alignment/')
+fig_path = Path('/home/sjwest/alignment_repeated_site/')
 
 # Find eid of interest
 traj = one.alyx.rest('trajectories', 'list', provenance='Planned',
