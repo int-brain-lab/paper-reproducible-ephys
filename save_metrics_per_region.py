@@ -14,13 +14,15 @@ import brainbox.io.one as bbone
 from brainbox.metrics.single_units import spike_sorting_metrics
 from reproducible_ephys_functions import query, data_path, combine_regions, exclude_recordings
 from one.api import ONE
+from ibllib.atlas import AllenAtlas
+ba = AllenAtlas()
 one = ONE()
 
+# CHECK OUT load_spikes_fix BRANCH ON ibllib repo!
+
 # Settings
-#SPIKE_SORTING = 'ks2_preproc_tests'
-SPIKE_SORTING = None
 NEURON_QC = True
-DOWNLOAD_DATA = False
+DOWNLOAD_DATA = True
 REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
 LFP_BAND_HIGH = [20, 80]
 LFP_BAND_LOW = [2, 15]
@@ -34,6 +36,7 @@ rep_site = pd.DataFrame()
 
 # Load in RMS data from Olivier
 rms_ap_destripe = pd.read_parquet(join(data_path(), 'rms_raw_traces_ap_band_olivier.pqt'))
+
 
 # %% Loop through repeated site recordings
 metrics = pd.DataFrame()
@@ -64,7 +67,8 @@ for i in range(len(traj)):
             pass
     try:
         spikes, clusters, channels = bbone.load_spike_sorting_with_channel(
-            eid, aligned=True, one=one, spike_sorter=SPIKE_SORTING)
+            eid, aligned=True, one=one, brain_atlas=ba)
+
         ses_path = one.eid2path(eid)
         alf_path = one.eid2path(eid).joinpath('alf', probe)
         chn_inds = np.load(Path(join(alf_path, 'channels.rawInd.npy')))
