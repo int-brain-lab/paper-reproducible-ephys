@@ -26,7 +26,7 @@ SPIKE_SORTING = None
 ANNOTATE = False
 LAB_NAMES = False
 MIN_NEURONS = 4  # For firing rate inclusion
-MIN_REC_PER_LAB = 1
+MIN_REC_PER_LAB = 4
 
 # Load in data
 if SPIKE_SORTING is None:

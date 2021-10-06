@@ -50,27 +50,45 @@ for i in range(len(traj)):
     nickname = traj[i]['session']['subject']
     date = traj[i]['session']['start_time'][:10]
 
+    # Get data collection
+    collections = one.list_collections(eid)
+    if f'alf/{probe}/pykilosort' in collections:
+        alf_path = one.eid2path(eid).joinpath('alf', probe, 'pykilosort')
+        collection = f'alf/{probe}/pykilosort'
+        print(collection)
+    else:
+        alf_path = one.eid2path(eid).joinpath('alf', probe)
+        collection = f'alf/{probe}'
+        print(collection)
+
+    # Download raw ephys data
     if DOWNLOAD_DATA:
         try:
-            _ = one.load_datasets(eid, datasets=['_iblqc_ephysSpectralDensityAP.freqs.npy',
-                                                 '_iblqc_ephysSpectralDensityAP.power.npy',
-                                                 '_iblqc_ephysTimeRmsAP.rms.npy',
-                                                 '_iblqc_ephysSpectralDensityLF.freqs.npy',
-                                                 '_iblqc_ephysSpectralDensityLF.power.npy',
-                                                 '_iblqc_ephysTimeRmsLF.rms.npy',
-                                                 '_phy_spikes_subset.waveforms.npy',
-                                                 '_phy_spikes_subset.spikes.npy',
-                                                 'channels.rawInd.npy'],
-                                  collections=[f'raw_ephys_data/{probe}']*6 + [f'alf/{probe}']*3,
-                                  download_only=True)
+            _ = one.load_datasets(eid, datasets=[
+                '_iblqc_ephysSpectralDensityAP.freqs.npy', '_iblqc_ephysSpectralDensityAP.power.npy',
+                '_iblqc_ephysTimeRmsAP.rms.npy', '_iblqc_ephysSpectralDensityLF.freqs.npy',
+                '_iblqc_ephysSpectralDensityLF.power.npy', '_iblqc_ephysTimeRmsLF.rms.npy'],
+                collections=[f'raw_ephys_data/{probe}']*6, download_only=True)
         except:
+            print('Could not download raw AP and LFP data')
+            pass
+        try:
+            _ = one.load_datasets(eid, datasets=['_phy_spikes_subset.waveforms.npy',
+                                                 '_phy_spikes_subset.spikes.npy'],
+                                  collections=[collection]*2, download_only=True)
+        except:
+            print('Could not download spike waveforms')
+            pass
+        try:
+            _ = one.load_dataset(eid, dataset='channels.rawInd.npy',
+                                 collection=collection, download_only=True)
+        except:
+            print('Could not download channel indices')
             pass
     try:
         spikes, clusters, channels = bbone.load_spike_sorting_with_channel(
             eid, aligned=True, one=one, brain_atlas=ba)
-
         ses_path = one.eid2path(eid)
-        alf_path = one.eid2path(eid).joinpath('alf', probe)
         chn_inds = np.load(Path(join(alf_path, 'channels.rawInd.npy')))
         ephys_path = one.eid2path(eid).joinpath('raw_ephys_data', probe)
         lfp_spectrum = dict()
@@ -108,7 +126,7 @@ for i in range(len(traj)):
         print('No neuron QC found, calculating locally..')
         # Load in spike amplitude and depths
         spikes, clusters, channels = bbone.load_spike_sorting_with_channel(
-            eid, aligned=True, one=one, spike_sorter=SPIKE_SORTING,
+            eid, aligned=True, one=one, brain_atlas=ba,
             dataset_types=['spikes.amps', 'spikes.depths'])
         # Calculate metrics
         qc_metrics, _ = spike_sorting_metrics(spikes[probe].times, spikes[probe].clusters,
@@ -164,8 +182,7 @@ for i in range(len(traj)):
             spike_amp_90 = np.percentile(spike_amp, 95)
 
         # Get LFP power on high frequencies
-        region_chan = chn_inds[[x for x, y
-                                in enumerate(combine_regions(channels[probe]['acronym']))
+        region_chan = chn_inds[[x for x, y in enumerate(combine_regions(channels[probe]['acronym']))
                                 if y == region]]
         freqs = ((lfp_spectrum['freqs'] > LFP_BAND_HIGH[0])
                  & (lfp_spectrum['freqs'] < LFP_BAND_HIGH[1]))
@@ -216,12 +233,9 @@ for i in range(len(traj)):
 
 # Save result
 print('Saving result..')
-if SPIKE_SORTING is None:
-    metrics.to_csv(join(DATA_DIR, 'metrics_region.csv'))
+metrics.to_csv(join(DATA_DIR, 'metrics_region.csv'))
 
-    # Apply additional selection criteria and save list of eids
-    metrics_excl = exclude_recordings(metrics)
-    np.save('repeated_site_eids.npy', np.array(metrics_excl['eid'].unique(), dtype=str))
-else:
-    metrics.to_csv(join(DATA_DIR, 'metrics_region_spikesorting_%s.csv' % SPIKE_SORTING))
+# Apply additional selection criteria and save list of eids
+metrics_excl = exclude_recordings(metrics)
+np.save('repeated_site_eids.npy', np.array(metrics_excl['eid'].unique(), dtype=str))
 print('Done!')

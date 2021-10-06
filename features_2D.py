@@ -251,9 +251,10 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
             cbar.ax.set_yticklabels([f'{levels[0]} Hz', f'{levels[1]} Hz'])
         else:
             cbar.ax.set_yticklabels(['10th\nperc.', '90th\nperc'])
+        return fig, axs, cbar
+    else:
+        return fig, axs
 
-    plt.show()
-    return fig, axs
 
 
 def plot_probe(data, z, ax, cmap=None):

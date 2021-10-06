@@ -24,16 +24,15 @@ BOUNDARY = 'DG-TH'
 # BOUNDARY = 'VIS-HPF'
 MIN_REC_PER_LAB = 1
 """
-PLOTS = ['fr', 'psd', 'rms_ap', 'rms_lf', 'fr_alt', 'amp', 'fr_line', 'amp_line', 'regions_line',
+PLOTS = ['fr', 'psd', 'rms_ap', 'rms_lf', 'fr_alt', 'amp', 'regions_line',
          'distance', 'amp_scatter']
 LABELS = ['Firing rate (spks/s)', 'Power spectral density', 'AP band RMS', 'LFP band RMS',
-          'Firing rate (spks/s)', 'Spike amplitude', '', '', 'Histology Regions',
+          '', '', 'Histology Regions',
           'Distance from Repeated Site', 'Firing rate (spks/s)']
 """
-
-PLOTS = ['rms_ap']
-LABELS = ['AP band RMS']
-NICKNAMES = True
+PLOTS = ['amp_scatter', 'pds', 'rms_ap']
+LABELS = ['Firing rate (spks/s)', 'Power spectral density', 'AP band RMS']
+NICKNAMES = False
 YLIM = [-2000, 2000]
 FIG_SIZE = (10, 5)
 
@@ -41,7 +40,7 @@ FIG_SIZE = (10, 5)
 data = pd.read_csv(join(data_path(), 'metrics_region.csv'))
 
 # Exclude recordings
-#data = exclude_recordings(data)
+data = exclude_recordings(data)
 
 # Reformat dataframe
 lab_number_map, institution_map, lab_colors = labs()
@@ -73,14 +72,14 @@ f, axs = plot_2D_features(data.loc[data['subject'] == test_subject, 'subject'],
 for p, plot_name in enumerate(PLOTS):
     print('Generating %s plot' % plot_name)
     if plot_name == 'amp_scatter':
-        f, axs = plot_2D_features(data['subject'], data['date'], data['probe'], one=one,
+        f, axs, cbar = plot_2D_features(data['subject'], data['date'], data['probe'], one=one,
                                   brain_atlas=brain_atlas, plot_type=plot_name,
                                   boundary_align=BOUNDARY, show_regions=True, figsize=FIG_SIZE)
     else:
-        f, axs = plot_2D_features(data['subject'], data['date'], data['probe'], one=one,
-                                  brain_atlas=brain_atlas, plot_type=plot_name,
-                                  freq_range=[20, 80],
-                                  boundary_align=BOUNDARY, figsize=FIG_SIZE)
+        f, axs, cbar = plot_2D_features(data['subject'], data['date'], data['probe'], one=one,
+                                        brain_atlas=brain_atlas, plot_type=plot_name,
+                                        freq_range=[20, 80],
+                                        boundary_align=BOUNDARY, figsize=FIG_SIZE)
 
     for i, subject in enumerate(data['subject']):
         if NICKNAMES:
@@ -102,7 +101,7 @@ for p, plot_name in enumerate(PLOTS):
         axs[i].set(xticks=[], ylim=YLIM)
 
     if plot_name[-4:] != 'line':
-        cbar = axs[-1].images[-1].colorbar
+        #cbar = axs[-1].images[-1].colorbar
         cbar.set_label(LABELS[p], rotation=270, labelpad=-8, fontsize=12)
         cbar.ax.tick_params(labelsize=12)
 
@@ -110,11 +109,8 @@ for p, plot_name in enumerate(PLOTS):
         if NICKNAMES:
             plt.figtext(plot_titles.loc[inst, 'lab_position'], 0.978, inst, color=lab_colors[inst],
                             fontsize=20, ha='center')
-        elif ((inst == 'CSHL (Z)') | (inst == 'Princeton')):
-            plt.figtext((plot_titles.loc[inst, 'lab_position'] - 0.06) * 1.05, 0.925, inst,
-                        color=lab_colors[inst], fontsize=12, rotation=30, ha='left')
         else:
-            plt.figtext((plot_titles.loc[inst, 'lab_position'] - 0.06) * 1.05, 0.925, inst,
+            plt.figtext((plot_titles.loc[inst, 'lab_position'] - 0.06) * 1.02, 0.925, inst,
                         color=lab_colors[inst], fontsize=12, ha='left')
     if not isdir(join(FIG_PATH, 'probe_plots')):
         mkdir(join(FIG_PATH, 'probe_plots'))

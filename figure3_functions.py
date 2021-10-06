@@ -106,7 +106,17 @@ def panel_b(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-2000, 2000]
 
         # Download the data and get paths to downloaded data
         eid = one.search(subject=subj, date=date)[0]
-        alf_path = one.eid2path(eid).joinpath('alf', probe_label)
+        print(f'Recording {iR+1} of {data.shape[0]}')
+        """
+        collections = one.list_collections(eid)
+        if f'alf/{probe_label}/pykilosort' in collections:
+            alf_path = one.eid2path(eid).joinpath('alf', probe_label, 'pykilosort')
+            collection = f'alf/{probe_label}/pykilosort'
+        else:
+            alf_path = one.eid2path(eid).joinpath('alf', probe_label)
+            collection = f'alf/{probe_label}'
+        """
+        collection = f'alf/{probe_label}'
 
         insertion = one.alyx.rest('insertions', 'list', session=eid, name=probe_label)
         xyz_picks = np.array(insertion[0].get('json').get('xyz_picks', 0)) / 1e6
@@ -134,7 +144,7 @@ def panel_b(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-2000, 2000]
         bound_reg, col_reg, reg_name = get_brain_boundaries_interest(brain_regions, z, r)
 
         # Get spike amp data
-        x, y, c = spike_amp_data(alf_path, one, eid)
+        x, y, c = spike_amp_data(eid, collection, one)
         y = ephysalign.get_channel_locations(feature, track, y / 1e6)[:, 2] * 1e6
         y = y - z_subtract
         levels = [0, 30]
