@@ -41,8 +41,12 @@ PeriEventFRandFF = pd.DataFrame() #['FR stimOn', 'FR '] FR and FF averaged over 
 
 regions = 'PPC' #[PPC', 'CA1', 'DG', 'LP', 'PO']
 binSzPeri = 0.1 #bin size for calculating perievent FR and FF
+pre_time, post_time = 0.4, 0.8 
 CapPostTime = 0.4 #The time point at which to cap the FR/FF post-event mean, so even though over time we have 0.8 s post-event, we can cap the analysis of mean post-event to 0.4 s 
+
 SaveFigs=0 # To choose whether to save the figures & .pkl & .mat files at the end; to save, set equal to 1
+SaveStr = '_Oct2021' #String to have at the end of the figure/file names to be saved, e.g., the date
+
 include_NonRS = 0 #Whether or not to include non-RS that pass the area; 0 for No, 1 for Yes.
 
 
@@ -91,7 +95,7 @@ else:
 PykiloYes, PykiloNo, NotWorking, NoGoodClustersInRegion = [],[],[],[]
 for i in range(len(traj)):
     print('Processing repeated site recording %d of %d' % (i+1, len(traj)))
-    fr, FFofFR, LabNumArray = [], [], []
+    fr, FFofFR, LabNumArray, SpikeSortMethod = [], [], [], []
     xvals, yvals, zvals =[], [], []
     FRpre_AllEv, FFpre_AllEv, FRpost_AllEv, FFpost_AllEv =[], [], [], []
     event_TitlesAll = []
@@ -136,6 +140,7 @@ for i in range(len(traj)):
 
         #? clusterIDs  = clusters['metrics']['cluster_id'][BrainRegionsInProbe == regions][clusters['metrics']['label'] == 1]
         PykiloYes.append(traj[i]['session']['subject'])
+        SpikeSorter = 'Pykilosort'
 
     except:
         try:
@@ -160,6 +165,7 @@ for i in range(len(traj)):
                 clusterIDs  = clusters['metrics']['cluster_id'][BrainRegionsInProbe == regions][clusters['metrics']['label'] == 1]
             
             PykiloNo.append(traj[i]['session']['subject'])
+            SpikeSorter = 'KS2'
 
         except:
             NotWorking.append(traj[i]['session']['subject'])
@@ -284,7 +290,6 @@ for i in range(len(traj)):
     BinnedSpikes = []
     #count = 0
     for etime in event_times:
-        pre_time, post_time = 0.4, 0.8 
         if len(etime)>0: # etime may be empty because some events don't occur in any trials        
             a, b = calculate_peths(spikes['times'], spikes['clusters'], np.array(clusterIDs),
                                    etime, pre_time=pre_time, post_time=post_time, smoothing=0, bin_size=binSzPeri)
@@ -312,7 +317,8 @@ for i in range(len(traj)):
         FFofFR.append(FF50ms)        
            
         LabNumArray.append(LabNum)
-    
+        SpikeSortMethod.append(SpikeSorter)
+
         xvals.append(clusters['x'][clusters['metrics']['cluster_id'] == cluster])
         yvals.append(clusters['y'][clusters['metrics']['cluster_id'] == cluster])
         zvals.append(clusters['z'][clusters['metrics']['cluster_id'] == cluster])
@@ -356,17 +362,18 @@ for i in range(len(traj)):
         
     #Save all the data:
     columns1=['eID', 'probeNum',  'dateInfo', 'Subject', 'LabID', 'clusterID',
-              'AvgFR', 'AvgFFofFR', 'amps', 'peak_trough', 'Xloc', 'Yloc', 'Zloc', 'RepeatedSite']
+              'AvgFR', 'AvgFFofFR', 'amps', 'peak_trough', 'Xloc', 'Yloc', 'Zloc',
+              'RepeatedSite', 'SpikeSortMethod']
     columnsPeri=['eID', 'probeNum', 'dateInfo', 'Subject', 'LabID','clusterID', 
                  'Ntrial', 'FR_PreEvent', 'FR_PostEvent', 'FF_PreEvent', 'FF_PostEvent',
                  'TimeVect', 'FRoverT', 'FFoverT', 'event_Titles',
-                 'RepeatedSite']
+                 'RepeatedSite', 'SpikeSortMethod']
     if len(clusterIDs)>1:
         data1 = np.array([np.repeat(eid, len(clusterIDs)), np.repeat(probe, len(clusterIDs)), 
                           np.repeat(DateInfo, len(clusterIDs)), np.repeat(subj, len(clusterIDs)),
                           LabNumArray, np.array(clusterIDs), np.array(fr), np.array(FFofFR),
                           amps1[clusterIDs], ptt1[clusterIDs], np.squeeze(xvals), np.squeeze(yvals), np.squeeze(zvals),
-                          np.repeat(RS_YorN, len(clusterIDs))])
+                          np.repeat(RS_YorN, len(clusterIDs)), SpikeSortMethod])
         data1 = np.transpose(data1); #data1.reshape(len(clusterIDs),len(columns))
         
         #data frame for peri-event calculations:
@@ -375,19 +382,19 @@ for i in range(len(traj)):
                              LabNumArray, np.array(clusterIDs), np.array(Ntrials),
                              FRpre_AllEv, FRpost_AllEv, FFpre_AllEv, FFpost_AllEv,
                              TimeVect, FRoverT_AllEv, FFoverT_AllEv, event_TitlesAll,
-                             np.repeat(RS_YorN, len(clusterIDs))]) #np.array(FRoverT_ev0).reshape(76,44) for 1st eid
+                             np.repeat(RS_YorN, len(clusterIDs)), SpikeSortMethod]) #np.array(FRoverT_ev0).reshape(76,44) for 1st eid
         dataPeri = np.transpose(dataPeri)
     elif len(clusterIDs)==1:
         data1 = np.array([eid, probe, DateInfo, subj, np.squeeze(LabNumArray), np.squeeze(np.array(clusterIDs)), np.squeeze(np.array(fr)), np.squeeze(np.array(FFofFR)),
                           np.squeeze(amps1[clusterIDs]), np.squeeze(ptt1[clusterIDs]), np.squeeze(xvals), np.squeeze(yvals), np.squeeze(zvals),
-                          RS_YorN])
+                          RS_YorN, np.squeeze(SpikeSortMethod)])
         data1 = data1.reshape(len(clusterIDs), len(columns1))
 
         #data frame for peri-event calculations:
         dataPeri = np.array([eid, probe, DateInfo, subj, np.squeeze(LabNumArray), np.squeeze(np.array(clusterIDs)), np.squeeze(np.array(Ntrials)),
                              np.squeeze(np.array(FRpre_AllEv)), np.squeeze(np.array(FRpost_AllEv)), np.squeeze(np.array(FFpre_AllEv)), np.squeeze(np.array(FFpost_AllEv)),
                              np.array(TimeVect), np.array(FRoverT_AllEv), np.array(FFoverT_AllEv),event_TitlesAll,
-                             RS_YorN])
+                             RS_YorN, np.squeeze(SpikeSortMethod)])
         dataPeri = dataPeri.reshape(len(clusterIDs), len(columnsPeri))
 
     #Data frame for session-averaged calculations:
@@ -430,12 +437,12 @@ DeltaZ = (np.array(ClusterFeatures['Zloc'], dtype = np.float64) - centre_of_mass
 ## If needed, use codes below to save DataFrame and save as .mat file for Matlab
 if SaveFigs==1:
     # If needed, use codes below to save DataFrame and save as .mat file for Matlab
-    ClusterFeatures.to_pickle(FIG_PATH+'/'+regions+'/'+regions +"_ClusterFeatures_DF_Oct21_pyk.pkl")
-    PeriEventFRandFF.to_pickle(FIG_PATH+'/'+regions+'/'+regions +"_PeriEventFRandFF_DF_Oct21_pyk.pkl")
+    ClusterFeatures.to_pickle(FIG_PATH+'/'+regions+'/'+regions +"_ClusterFeatures" + SaveStr + ".pkl")
+    PeriEventFRandFF.to_pickle(FIG_PATH+'/'+regions+'/'+regions +"_PeriEventFRandFF" + SaveStr + ".pkl")
     # output = pd.read_pickle("ClusterFeatures_DF.pkl")
     # print(output)
-    sio.savemat(FIG_PATH+'/'+regions+'/'+regions +'_ClusterFeatMat_Oct21_pyk.mat', {name: col.values for name, col in ClusterFeatures.items()})
-    sio.savemat(FIG_PATH+'/'+regions+'/'+regions +'_PeriEventFRandFF_Oct21_pyk.mat', {name: col.values for name, col in PeriEventFRandFF.items()})
+    sio.savemat(FIG_PATH+'/'+regions+'/'+regions +'_ClusterFeatMat' + SaveStr + ".mat", {name: col.values for name, col in ClusterFeatures.items()})
+    sio.savemat(FIG_PATH+'/'+regions+'/'+regions +'_PeriEventFRandFF' + SaveStr + ".mat", {name: col.values for name, col in PeriEventFRandFF.items()})
 
 regionTitle = regions
 cm = plt.get_cmap("turbo")  #viridis, vlag, Accent, cool, turbo
@@ -449,7 +456,7 @@ ax.set_ylabel('dY')
 ax.set_zlabel('dZ')  
 cbar = plt.colorbar(p)
 if SaveFigs==1:
-    plt.savefig(join(FIG_PATH, regions, 'cluster 3D plots Lab ID'))
+    plt.savefig(join(FIG_PATH, regions, 'cluster 3D plots Lab ID' + SaveStr))
 
 # #plot center of mass:
 # p = ax.scatter([0],[0],[0], c='r', cmap=cm, depthshade=False, s=10)
@@ -466,18 +473,19 @@ ax.set_ylabel('dY')
 ax.set_zlabel('dZ')  
 cbar = plt.colorbar(p)
 if SaveFigs==1:
-    plt.savefig(join(FIG_PATH, regions, 'cluster 3D plots post-event0 FR'))
+    plt.savefig(join(FIG_PATH, regions, 'cluster 3D plots post-event0 FR' + SaveStr))
 
 fig = plt.figure()
 fig.suptitle(regions + ': Perievent FF')
 ax = fig.add_subplot(111, projection='3d') 
-p = ax.scatter(DeltaX, DeltaY, DeltaZ, c=np.array(PeriEventFRandFF['FF_event0'], dtype = np.float64),cmap=cm, depthshade=False, s=4)
+FF_PostEvent0 = [PeriEventFRandFF['FF_PostEvent'][x][0] for x in range(0,len(PeriEventFRandFF))] #Get the FR of the 0th event for each cluster
+p = ax.scatter(DeltaX, DeltaY, DeltaZ, c=np.array(FF_PostEvent0, dtype = np.float64),cmap=cm, depthshade=False, s=4)
 ax.set_xlabel('dX') #delta x (distance from center of mass of brain region)
 ax.set_ylabel('dY')
 ax.set_zlabel('dZ')  
 cbar = plt.colorbar(p)
 if SaveFigs==1:
-    plt.savefig(join(FIG_PATH, regions, 'cluster 3D plots peri-event0 FF'))
+    plt.savefig(join(FIG_PATH, regions, 'cluster 3D plots peri-event0 FF' + SaveStr))
     
 
 fig = plt.figure()
@@ -489,7 +497,7 @@ ax.set_ylabel('dY')
 ax.set_zlabel('dZ')  
 cbar = plt.colorbar(p)
 if SaveFigs==1:
-    plt.savefig(join(FIG_PATH, regions, 'cluster 3D plots log avg FR'))
+    plt.savefig(join(FIG_PATH, regions, 'cluster 3D plots log avg FR' + SaveStr))
 
 
 fig = plt.figure()
@@ -501,7 +509,7 @@ ax.set_ylabel('dY')
 ax.set_zlabel('dZ')  
 cbar = plt.colorbar(p)
 if SaveFigs==1:
-    plt.savefig(join(FIG_PATH, regions, 'cluster 3D plots WF amp'))
+    plt.savefig(join(FIG_PATH, regions, 'cluster 3D plots WF amp' + SaveStr))
 
 
 fig = plt.figure()
@@ -513,7 +521,7 @@ ax.set_ylabel('dY')
 ax.set_zlabel('dZ')  
 cbar = plt.colorbar(p)
 if SaveFigs==1:
-    plt.savefig(join(FIG_PATH, regions, 'cluster 3D plots WF peak-trough'))
+    plt.savefig(join(FIG_PATH, regions, 'cluster 3D plots WF peak-trough' + SaveStr))
 
 
 #plot histogram of the probes x,y, and z distances from the target
@@ -528,6 +536,6 @@ axes[2].set_title('dZ (um)')
 sns.despine(trim=True)
 plt.tight_layout()
 if SaveFigs==1:
-    plt.savefig(join(FIG_PATH, regions, 'Histogram of cluster positions_'))
+    plt.savefig(join(FIG_PATH, regions, 'Histogram of cluster positions_' + SaveStr))
     print('Figures saved')
     
