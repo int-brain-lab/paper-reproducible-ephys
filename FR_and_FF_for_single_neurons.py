@@ -76,24 +76,25 @@ def cluster_peths_FR_FF_sliding(ts, align_times, pre_time=0.2, post_time=0.5,
 # %% Run code:
 
 # Identify the RS subject and neuron:
-ClusterID = 398 # 335 
-names = ['ZFM-01592']# ['DY_018']
+ClusterID = 398 #328 #180 #335 
+names = ['ZFM-01592']# ['ibl_witten_29']#['DY_018'] #['DY_018']
 BrainRegion = 'LP' # 'VIS'
 
 # Time course details for plotting:
 pre_time, post_time = 0.4, 0.8 #0.1, 0.35
 Side = 'Left Stim' #'Right Stim' or 'Left Stim'
 CorrChoice = 1 #Only include correct choices, incorrect ones, or all? 1 for Yes, 0 for including all choices, -1 for incorrect choices
-AlignTo = 'Movement' #Align the trials to which, 'Movement' or 'Stim'?
+AlignTo = 'Stim' #Align the trials to which, 'Movement' or 'Stim'?
+constrasts_all = [1, 0.25, 0] #The constrasts to examine. Full list: [1., 0.25, 0.125, 0.0625, 0.]
 
 # For using a sliding window:
-SlidingWind = 1
+SlidingWind = 1 # Use a sliding window for the plots? 1 for yes, 0 for no.
 SlideBinSize = 0.06
 SlideN = 3
 
 # For saving figures:
 NameStr = 'AlignTo' + AlignTo + '_Choice' + str(CorrChoice) + '_Slide' + str(SlidingWind) #Any string for the filename when saving the file
-saveFig = 1 #At the end, save figure or not? 1 for yes.
+saveFig = 0 #At the end, save figure or not? 1 for yes.
 
 one = ONE()
 traj = query(behavior=True)
@@ -196,7 +197,7 @@ for count, t in enumerate(traj):
         plt.subplot(3, 1, 1)
         counter = 0
         contrast_count_list = [0]
-        for c in [1., 0.25, 0.125, 0.0625, 0.]:
+        for c in constrasts_all:
             if Side=='Right Stim':
                 temp = right_contrasts == c
                 
@@ -213,14 +214,14 @@ for count, t in enumerate(traj):
             counter -= np.sum(temp)
             contrast_count_list.append(counter)
         ylabel_pos = []
-        for i, c in enumerate([1., 0.25, 0.125, 0.0625, 0.]):
+        for i, c in enumerate(constrasts_all):
             top = contrast_count_list[i]
             bottom = contrast_count_list[i + 1]
             plt.fill_between([-pre_time, -pre_time + boundary_width], [top, top], [bottom, bottom],
                              zorder=3, color=str(1 - (base_grey + c * (1 - base_grey))))
             ylabel_pos.append((top - bottom) / 2 + bottom)
 
-        plt.yticks(ylabel_pos, [1., 0.25, 0.125, 0.0625, 0.], size=fs)
+        plt.yticks(ylabel_pos, constrasts_all, size=fs)
         plt.axvline(0, color='k', ls='--')
         plt.xlim(left=-pre_time, right=post_time)
         plt.ylim(top=0, bottom=counter)
@@ -229,10 +230,10 @@ for count, t in enumerate(traj):
         plt.gca().spines['left'].set_visible(False)
         plt.gca().spines['bottom'].set_visible(False)
         plt.tick_params(left=False, right=False, labelbottom=False, bottom=False)
-        plt.title("Contrast: {}, Aligned to: {}".format(Side, AlignTo), loc='left', size=fs+3) 
+        plt.title("Contrast: {}, Choice Corr {}, Aligned to {}".format(Side, CorrChoice, AlignTo), loc='left', size=fs+2) 
 
         
-        for c in [1., 0.25, 0.125, 0.0625, 0.]:
+        for c in constrasts_all:
             if Side=='Right Stim':
                 mask = right_contrasts == c
             elif Side=='Left Stim':    
@@ -245,7 +246,7 @@ for count, t in enumerate(traj):
             
             if SlidingWind==0:
                 psths, BinnedSpikes = bb.singlecell.calculate_peths(spikes.times, spikes.clusters, neurons, event_times_Side[mask],
-                                                                    pre_time=pre_time, post_time=post_time, smoothing=0, bin_size=0.06)
+                                                                    pre_time=pre_time, post_time=post_time, smoothing=0, bin_size=0.04)
 
                 plt.subplot(3, 1, 2)
                 plt.plot(psths.tscale, psths.means[j], c=str(1 - (base_grey + c * (1 - base_grey))))
