@@ -215,7 +215,7 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
                 im.set_data(np.array([0]), z, dist)
                 ax.images.append(im)
 
-            ax.set_title(subj + '\n' + status, fontsize=8, color=col)
+            ax.set_title(subj + '\n' + status, color=col)
 
             if show_regions:
                 for reg, co, lab in zip(bound_reg, col_reg, reg_name):
@@ -223,14 +223,14 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
                     color = co / 255
                     width = ax.get_xlim()[1]
                     ax.bar(x=width/2, height=height, width=width, color=color, bottom=reg[0],
-                           edgecolor='k', linewidth=2, alpha=0.5)
+                           edgecolor='k', alpha=0.5)
                     """
                     ax.text(x=width/2, y=reg[0] + height / 2, s=lab, fontdict=None, fontsize=10,
                             color='w', fontweight='bold')
                     """
             elif show_boundaries:
                 for bound, col in zip(boundaries, colours):
-                    ax.hlines(bound, *ax.get_xlim(), linestyles='dashed', linewidth=3,
+                    ax.hlines(bound, *ax.get_xlim(), linestyles='dashed',
                               colors=col/255)
 
         except Exception as err:
