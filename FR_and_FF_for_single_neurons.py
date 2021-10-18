@@ -1,6 +1,7 @@
 """
 @author: Marsa Taheri, extended from Sebastian's code
 
+#NEED TO UPDATE TO DOWNLOAD PYKILOSORT VS KS2 DATA, DEPENDING ON RECORDING!
 """
 
 from one.api import ONE
@@ -76,16 +77,16 @@ def cluster_peths_FR_FF_sliding(ts, align_times, pre_time=0.2, post_time=0.5,
 # %% Run code:
 
 # Identify the RS subject and neuron:
-ClusterID = 398 #328 #180 #335 
-names = ['ZFM-01592']# ['ibl_witten_29']#['DY_018'] #['DY_018']
-BrainRegion = 'LP' # 'VIS'
+ClusterID = 335  #180 #398 #328 #
+names = ['DY_018'] #['ZFM-01592'] #['ibl_witten_29'] #['DY_018']
+BrainRegion = 'VIS' #'LP' # 
 
 # Time course details for plotting:
 pre_time, post_time = 0.4, 0.8 #0.1, 0.35
-Side = 'Left Stim' #'Right Stim' or 'Left Stim'
-CorrChoice = 1 #Only include correct choices, incorrect ones, or all? 1 for Yes, 0 for including all choices, -1 for incorrect choices
-AlignTo = 'Stim' #Align the trials to which, 'Movement' or 'Stim'?
-constrasts_all = [1, 0.25, 0] #The constrasts to examine. Full list: [1., 0.25, 0.125, 0.0625, 0.]
+Side = 'Right Stim' #'Right Stim' or 'Left Stim'
+CorrChoice = 'Correct' #Only include correct choices, incorrect ones, or all? Options: 'Correct', 'Incorr', 'All Choices'
+AlignTo = 'Movement' #Align the trials to which, 'Movement' or 'Stim'?
+constrasts_all = [1., 0.25, 0.125, 0.0625, 0.] #The constrasts to examine. Full list: [1., 0.25, 0.125, 0.0625, 0.]
 
 # For using a sliding window:
 SlidingWind = 1 # Use a sliding window for the plots? 1 for yes, 0 for no.
@@ -93,7 +94,7 @@ SlideBinSize = 0.06
 SlideN = 3
 
 # For saving figures:
-NameStr = 'AlignTo' + AlignTo + '_Choice' + str(CorrChoice) + '_Slide' + str(SlidingWind) #Any string for the filename when saving the file
+NameStr = 'AlignTo' + AlignTo + '_' +CorrChoice + '_Slide' + str(SlidingWind) #Any string for the filename when saving the file
 saveFig = 0 #At the end, save figure or not? 1 for yes.
 
 one = ONE()
@@ -136,7 +137,7 @@ for count, t in enumerate(traj):
         contrast_L, contrast_R = contrast_L[~np.isnan(times)], contrast_R[~np.isnan(times)]
         times = times[~np.isnan(times)]
     
-    if CorrChoice==1: #Also consider whether the choice was correct or not
+    if CorrChoice=='Correct': #Also consider whether the choice was correct or not
         choice = one.load_dataset(eid, '_ibl_trials.choice.npy') 
         if AlignTo == 'Movement':
             choice = choice[StimWithChoice] #Only keep those where there was both a stim and a choice
@@ -152,7 +153,7 @@ for count, t in enumerate(traj):
         right_contrasts[np.isnan(right_contrasts)] = 0.
 
 
-    elif CorrChoice==-1: #include only incorrect choices
+    elif CorrChoice=='Incorr': #include only incorrect choices
         choice = one.load_dataset(eid, '_ibl_trials.choice.npy') 
         if AlignTo == 'Movement':
             choice = choice[StimWithChoice] #Only keep those where there was both a stim and a choice
@@ -168,7 +169,7 @@ for count, t in enumerate(traj):
         right_contrasts[np.isnan(right_contrasts)] = 0.
 
         
-    elif CorrChoice==0: #include all choices
+    elif CorrChoice=='All Choices': #include all choices
         event_times_left = times[np.logical_or(contrast_L >= 0, contrast_R == 0.)]  # !!! I changed this to greater OR EQUAL;
         event_times_right = times[np.logical_or(contrast_R >= 0, contrast_L == 0.)]  
 
@@ -176,7 +177,6 @@ for count, t in enumerate(traj):
         left_contrasts[np.isnan(left_contrasts)] = 0.
         right_contrasts = contrast_R[np.logical_or(contrast_R >= 0, contrast_L == 0.)]
         right_contrasts[np.isnan(right_contrasts)] = 0. #MT: Can we distinguish between no stim. and 0 stim on one side??        
-
 
     
     if Side=='Right Stim':
@@ -230,7 +230,7 @@ for count, t in enumerate(traj):
         plt.gca().spines['left'].set_visible(False)
         plt.gca().spines['bottom'].set_visible(False)
         plt.tick_params(left=False, right=False, labelbottom=False, bottom=False)
-        plt.title("Contrast: {}, Choice Corr {}, Aligned to {}".format(Side, CorrChoice, AlignTo), loc='left', size=fs+2) 
+        plt.title("Contrast: {}, {}, Aligned to {}".format(Side, CorrChoice, AlignTo), loc='left', size=fs+2) 
 
         
         for c in constrasts_all:
