@@ -128,6 +128,12 @@ for i in range(len(traj)):
         spikes, clusters, channels = bbone.load_spike_sorting_with_channel(
             eid, aligned=True, one=one, brain_atlas=ba,
             dataset_types=['spikes.amps', 'spikes.depths'])
+
+        # Temporary fix: skip recordings with mismatch in sizes
+        if spikes[probe].clusters.shape != spikes[probe].amps.shape:
+            print('Shape mismatch between spike attributes, skipping recording!')
+            continue
+
         # Calculate metrics
         qc_metrics, _ = spike_sorting_metrics(spikes[probe].times, spikes[probe].clusters,
                                      spikes[probe].amps, spikes[probe].depths,
