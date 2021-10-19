@@ -33,7 +33,7 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
     for iR, (subj, date, probe_label) in enumerate(zip(subjects, dates, probes)):
         try:
             # Download the data and get paths to downloaded data
-            eid = one.search(subject=subj, date=date)[0]
+            eid = one.search(subject=subj, task_protocol='ephys', date=date)[0]
             if iR == 0:
                 chn_inds = one.load_dataset(eid, dataset=['channels.rawInd.npy'],
                                             collection=f'alf/{probe_label}')
@@ -41,11 +41,9 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
             ephys_path = one.eid2path(eid).joinpath('raw_ephys_data', probe_label)
             collections = one.list_collections(eid)
             if f'alf/{probe_label}/pykilosort' in collections:
-                alf_path = one.eid2path(eid).joinpath('alf', probe_label, 'pykilosort')
                 collection = f'alf/{probe_label}/pykilosort'
                 print(collection)
             else:
-                alf_path = one.eid2path(eid).joinpath('alf', probe_label)
                 collection = f'alf/{probe_label}'
                 print(collection)
 
