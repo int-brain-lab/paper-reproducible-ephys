@@ -3,9 +3,9 @@
 """
 @author: Marsa Taheri
 
-NOTE:
-#Here, we have the option of choosing a sliding window. Also the time resolution
-#for FF and FR over time should be differe, with or without sliding window!!
+Note:
+In this version of the code, we have the option of choosing a sliding window. 
+Also, the time resolution for FF and FR over time can be different.
 
 """
 import numpy as np
@@ -120,7 +120,7 @@ def cluster_peths_FR_FF_sliding(ts, align_times, pre_time=0.2, post_time=0.5,
                                                           (align_times + s*tshift), pre_time=abs(epoch[0]), 
                                                           post_time=(epoch[1]- s*tshift), bin_size=hist_win,
                                                           smoothing=0, return_fr=False) 
-        # To Do: The post_time=(epoch[1]- s*tshift) might need to become post_time=(epoch[1]- s*hist_win) or smth similar!
+        # To Do: The post_time=(epoch[1]- s*tshift) might need to become post_time=(epoch[1]- s*hist_win) or similar.
         
         CountPerBinPerShift = BinnedSpPerShift.reshape(BinnedSpPerShift.shape[0], BinnedSpPerShift.shape[2])
         #FR_PerTrialPerShift = CountPerBinPerShift/hist_win
@@ -144,7 +144,7 @@ def cluster_peths_FR_FF_sliding(ts, align_times, pre_time=0.2, post_time=0.5,
     return FR_sorted, FR_STD_sorted, FF_sorted, TimeVect_sorted
 
 
-# %% Loop through repeated site recordings and extract the data
+# %% Finds the trajectories to include in analysis (e.g., only RS ones, or also nearby probes):
 trajRS=get_traj(ListOfEIDs)
 N_RSprobes = len(trajRS) #the rest in 'traj' are probes that passed the region but were not repeated site probes
 
@@ -159,6 +159,7 @@ else:
     traj = trajRS
 
 
+# %% Loop through repeated site recordings and extract the data
 PykiloYes, PykiloNo, NotWorking, NoGoodClustersInRegion = [],[],[],[]
 for i in range(len(traj)):
     print('Processing repeated site recording %d of %d' % (i+1, len(traj)))
@@ -363,7 +364,7 @@ for i in range(len(traj)):
         SpkIncrements50ms, _ = histogram(SpikesOfCluster, time_bins) #vector containing the # of spikes/counts in each 50 ms increment.
 
         FF50ms = SpkIncrements50ms.var()/SpkIncrements50ms.mean()
-        FFofFR.append(FF50ms)        
+        FFofFR.append(FF50ms) #This is similar to the coefficient of variation; different from the FF calculations below.
            
         LabNumArray.append(LabNum)
         SpikeSortMethod.append(SpikeSorter)
@@ -546,7 +547,7 @@ fig.suptitle(regions + ': Perievent FF')
 ax = fig.add_subplot(111, projection='3d') 
 FF_PostEvent0 = [PeriEventFRandFF['FF_PostEvent'][x][0] for x in range(0,len(PeriEventFRandFF))] #Get the FR of the 0th event for each cluster
 p = ax.scatter(DeltaX, DeltaY, DeltaZ, c=np.array(FF_PostEvent0, dtype = np.float64),cmap=cm, depthshade=False, s=4)
-ax.set_xlabel('dX') #delta x (distance from center of mass of brain region)
+ax.set_xlabel('dX') 
 ax.set_ylabel('dY')
 ax.set_zlabel('dZ')  
 cbar = plt.colorbar(p)
