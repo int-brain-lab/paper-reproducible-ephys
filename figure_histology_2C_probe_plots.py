@@ -361,17 +361,78 @@ plt.show()
 ### Surface Insertion Coord Scatterplot:
     # MICROMANIPULATOR to PLANNED Distance against HISTOLOGY to MICROMANIPULATOR Distance
 
-# generate matplotlib pyplot figs/axes 
-sfig, sax = plt.subplots()
 
 # OMIT UCLA005 & UCLA011 as there is an error in micro coords for these
  # np.argwhere(distance_m_top_um > 3000) # returns indices 66,67,68,69
  # probe_data['subject'][66] # and 67,68,69 return UCLA005 UCLA011
   # OMIT the offending indices from both distance measures - i.e concat 1:65 AND 70:72
-distance_m_p_top_um_2 = np.concatenate( [ distance_m_top_um[1:65], distance_m_top_um[70:72] ] )
-distance_h_p_top_um_2 = np.concatenate( [ distance_h_top_um[1:65], distance_h_top_um[70:72] ] )
+#distance_m_p_top_um_2 = np.concatenate( [ distance_m_top_um[1:65], distance_m_top_um[70:72] ] )
+#distance_h_p_top_um_2 = np.concatenate( [ distance_h_top_um[1:65], distance_h_top_um[70:72] ] )
+#distance_h_m_top_um_2 = np.concatenate( [ distance_top_um[1:65], distance_top_um[70:72] ] )
+ # RESOLVED NOW - keeping above for future reference
 
-distance_h_m_top_um_2 = np.concatenate( [ distance_top_um[1:65], distance_top_um[70:72] ] )
+distance_m_p_top_um_2 = distance_m_top_um
+distance_h_p_top_um_2 = distance_h_top_um
+distance_h_m_top_um_2 = distance_top_um
+
+
+# definitions for the axes
+left, width = 0.1, 0.65
+bottom, height = 0.1, 0.65
+spacing = 0.005
+
+
+rect_scatter = [left, bottom, width, height]
+rect_histx = [left, bottom + height + spacing, width, 0.2]
+rect_histy = [left + width + spacing, bottom, 0.2, height]
+
+# start with a square Figure
+fig = plt.figure(figsize=(8, 8))
+
+ax = fig.add_axes(rect_scatter)
+ax_histx = fig.add_axes(rect_histx, sharex=ax)
+ax_histy = fig.add_axes(rect_histy, sharey=ax)
+
+
+# no labels
+ax_histx.tick_params(axis="x", labelbottom=False)
+ax_histy.tick_params(axis="y", labelleft=False)
+
+# the scatter plot:
+ax.scatter(distance_h_m_top_um_2, distance_m_p_top_um_2, c='k', marker ='.', s=1)
+
+# now determine nice limits by hand:
+binwidth = 25
+xymax = max(np.max(np.abs(distance_h_m_top_um_2)), np.max(np.abs(distance_m_p_top_um_2)))
+lim = (int(xymax/binwidth) + 1) * binwidth
+
+bins = np.arange(0, lim + binwidth, binwidth)
+ax_histx.hist(distance_h_m_top_um_2, bins=bins)
+ax_histy.hist(distance_m_p_top_um_2, bins=bins, orientation='horizontal')
+
+
+ax.set_xlabel('Micro-Manipulator to Histology distance (µm)', fontsize=7)
+ax.tick_params(axis='x', labelsize=7)
+ax.set_ylabel('Planned to Micro-Manipulator distance (µm)', fontsize=7)
+ax.tick_params(axis='y', labelsize=7)
+
+ax_histx.tick_params(axis='x', labelsize=7)
+ax_histx.tick_params(axis='y', labelsize=7)
+
+ax_histy.tick_params(axis='x', labelsize=7)
+ax_histy.tick_params(axis='y', labelsize=7)
+
+fig.tight_layout() # tighten layout around xlabel & ylabel
+
+fig.set_size_inches(3, 3)
+fig.savefig( str(Path('figure_histology', 'probe-plots','micro-planned_to_hist-micro_dist_scatter_hist.svg')), bbox_inches="tight" ) # tight ensures figure is in bounds of svg canvas!
+
+
+
+
+# generate matplotlib pyplot figs/axes 
+sfig, sax = plt.subplots()
+
 
 #sax.scatter(distance_h_top_um, distance_m_top_um, c='k', marker ='.', s=1)
 sax.scatter(distance_h_m_top_um_2, distance_m_p_top_um_2, c='k', marker ='.', s=1)
@@ -381,6 +442,11 @@ sax.set_xlabel('Micro-Manipulator to Histology distance (µm)', fontsize=7)
 sax.tick_params(axis='x', labelsize=7)
 sax.set_ylabel('Planned to Micro-Manipulator distance (µm)', fontsize=7)
 sax.tick_params(axis='y', labelsize=7)
+
+ax_histx = sfig.add_axes(rect_histx, sharex=sax)
+ax_histy = sfig.add_axes(rect_histy, sharey=sax)
+
+scatter_hist(x, y, ax, ax_histx, ax_histy)
 
 plt.tight_layout() # tighten layout around xlabel & ylabel
 

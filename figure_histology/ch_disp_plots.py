@@ -39,7 +39,8 @@ def plot_atlas_traj(x, y,
                     remove_primary_axis = False,
                     project='ibl_neuropixel_brainwide_01', 
                     altas_borders = False, 
-                    colour='y', linewidth=1):
+                    colour='y', linewidth=1,
+                    axc = None, axs = None ):
     """Plot atlas trajectory
     
     Generates coronal and sagittal plots of the atlas along trajectory at x,y.
@@ -82,6 +83,12 @@ def plot_atlas_traj(x, y,
         Boolean whether to add the atlas borders to the atlas image. False by 
         default.
     
+    axc : AxesSubplot, None
+        MUST pass an AxesSubplot object for plotting to!  For coronal plot.
+    
+    axs : AxesSubplot, None
+        MUST pass an AxesSubplot object for plotting to!  For sagittal plot.
+    
     Returns
     -------
     
@@ -121,8 +128,11 @@ def plot_atlas_traj(x, y,
     
     # generate pyplots of the brain:
     
-    fig1, ax1 = plt.subplots() # new figure and axes objects - CORONAL
-    fig2, ax2 = plt.subplots() # new figure and axes objects - SAGITTAL
+    #fig1, ax1 = plt.subplots() # new figure and axes objects - CORONAL
+    #fig2, ax2 = plt.subplots() # new figure and axes objects - SAGITTAL
+    
+    ax1 = axc
+    ax2 = axs
     
     axis_labels = np.array(['ml (µm)', 'dv (µm)', 'ap (µm)'])
     
@@ -317,14 +327,14 @@ def plot_atlas_traj(x, y,
             ax2.get_yaxis().set_visible(False)
         
     
-    plt.tight_layout() # tighten layout around xlabel & ylabel
+    #plt.tight_layout() # tighten layout around xlabel & ylabel
     
     # add a line of the Insertion object onto ax1 (cax - coronal)
      # plotting PLANNED insertion 
     #ax1.plot(ins.xyz[:, 0] * 1e6, ins.xyz[:, 2] * 1e6, colour, linewidth=linewidth)
     #ax2.plot(ins.xyz[:, 1] * 1e6, ins.xyz[:, 2] * 1e6, colour, linewidth=linewidth)
     
-    return  {'cax': fig1, 'sax': fig2, 'x': x, 'y': y, 
+    return  {'cax': ax1, 'sax': ax2, 'x': x, 'y': y, 
              'atlas_ID': atlas_ID, 'provenance': provenance, 
              'subject_id': subject_ID }
 
@@ -366,15 +376,15 @@ def plot_histology_traj(subject_ID, x, y,
                       colour='y', linewidth=1):
     
     # TESTING:
-    subject_ID = 'NYU-12'
-    x = -2243
-    y = -2000
-    provenance='Histology track'
-    project='ibl_neuropixel_brainwide_01'
-    atlas_type = 'sample-autofl'
-    altas_borders = False
-    colour='y'
-    linewidth=1
+    #subject_ID = 'NYU-12'
+    #x = -2243
+    #y = -2000
+    #provenance='Histology track'
+    #project='ibl_neuropixel_brainwide_01'
+    #atlas_type = 'sample-autofl'
+    #altas_borders = False
+    #colour='y'
+    #linewidth=1
     
     from one.api import ONE
     import ibllib.atlas as atlas
@@ -506,10 +516,10 @@ def plot_subj_channels(fig_dict, colour='y'):
         cagittal (sax).
 
     """
-    import ch_disp_data as ch_data
+    import matplotlib.pyplot as plt
     
     # get repeated site ch disp data    
-    data_frame = ch_data.load_ch_disp_data( str(fig_dict['x']) + "_" + str(fig_dict['y']) )
+    data_frame = load_ch_disp_data( str(fig_dict['x']) + "_" + str(fig_dict['y']) )
     subject_ID = fig_dict['subject_id']
     
     # subset the data_frame to subject
@@ -521,16 +531,18 @@ def plot_subj_channels(fig_dict, colour='y'):
     locZ = subj_frame['chan_loc_z'].values
     
     # get the axes:
-    cax = fig_dict['cax'].axes[0]
-    sax = fig_dict['sax'].axes[0]
+    cax = fig_dict['cax']
+    sax = fig_dict['sax']
+    
+    # create generic plt fig
+    fig, ax = plt.subplots()
     
     # plot channels as circles at hald the dpi
      # this gives channel coords that are just about separate in the figure!
-    cax.plot(locX * 1e6, locZ * 1e6,  marker='o',ms=(72./fig_dict['cax'].dpi)/2, mew=0, 
+    cax.plot(locX * 1e6, locZ * 1e6,  marker='o',ms=(72./fig.dpi)/2, mew=0, 
         color=colour, linestyle="", lw=0)
     
-    sax = fig_dict['sax'].axes[0]
-    sax.plot(locY * 1e6, locZ * 1e6, marker='o',ms=(72./fig_dict['sax'].dpi)/2, mew=0, 
+    sax.plot(locY * 1e6, locZ * 1e6, marker='o',ms=(72./fig.dpi)/2, mew=0, 
         color=colour, linestyle="", lw=0)
     
     return fig_dict
