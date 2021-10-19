@@ -22,7 +22,7 @@ one = ONE()
 
 # Settings
 NEURON_QC = True
-DOWNLOAD_DATA = True
+DOWNLOAD_DATA = False
 REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
 LFP_BAND_HIGH = [20, 80]
 LFP_BAND_LOW = [2, 15]
@@ -46,6 +46,7 @@ for i in range(len(traj)):
     # Load in data
     eid = traj[i]['session']['id']
     probe = traj[i]['probe_name']
+    pid = traj[i]['probe_insertion']
     lab = traj[i]['session']['lab']
     nickname = traj[i]['session']['subject']
     date = traj[i]['session']['start_time'][:10]
@@ -219,9 +220,9 @@ for i in range(len(traj)):
 
         # Add to dataframe
         metrics = metrics.append(pd.DataFrame(
-                index=[metrics.shape[0] + 1], data={'eid': eid, 'probe': probe, 'lab': lab,
-                                                    'subject': nickname, 'region': region,
-                                                    'date': date,
+                index=[metrics.shape[0] + 1], data={'pid': pid, 'eid': eid, 'probe': probe,
+                                                    'lab': lab, 'subject': nickname,
+                                                    'region': region, 'date': date,
                                                     'n_channels': region_chan.shape[0],
                                                     'neuron_yield': neuron_count,
                                                     'median_firing_rate': np.median(neuron_fr),
