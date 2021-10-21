@@ -26,7 +26,7 @@ def labs():
                        'churchlandlab': 'CSHL (C)', 'angelakilab': 'NYU',
                        'wittenlab': 'Princeton', 'hoferlab': 'SWC', 'mrsicflogellab': 'SWC',
                        'danlab': 'Berkeley', 'steinmetzlab': 'UW', 'churchlandlab_ucla': 'UCLA'}
-    colors = sns.color_palette("Dark2", 11)[1:]
+    colors = np.concatenate([sns.color_palette("Dark2"), sns.color_palette("Set1")[:2]])
     institutions = ['UCL', 'CCU', 'CSHL (Z)', 'CSHL (C)', 'NYU', 'Princeton', 'SWC', 'Berkeley',
                     'UW', 'UCLA']
     institution_colors = {}
@@ -182,7 +182,7 @@ def exclude_recordings(df, max_ap_rms=50, min_regions=3, min_channels_region=5,
     df = df.groupby('subject').filter(lambda s : s['rms_ap'].median() <= max_ap_rms)
     df = df.groupby('subject').filter(
         lambda s : (s['neuron_yield'].sum() / s['n_channels'].sum()) >= min_neurons_per_channel)
-    df['region_hit'] = df['n_channels'] > min_channels_region
+    df['region_hit'] = df['n_channels'] >= min_channels_region
     df = df.groupby('subject').filter(lambda s : s['region_hit'].sum() >= min_regions)
     if return_excluded == False:
         return df
