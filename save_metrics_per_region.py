@@ -18,11 +18,9 @@ from ibllib.atlas import AllenAtlas
 ba = AllenAtlas()
 one = ONE()
 
-# CHECK OUT load_spikes_fix BRANCH ON ibllib repo!
-
 # Settings
 NEURON_QC = True
-DOWNLOAD_DATA = False
+DOWNLOAD_WAVEFORMS = False  # Only set to true if you're doing spike waveform analyses
 REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
 LFP_BAND_HIGH = [20, 80]
 LFP_BAND_LOW = [2, 15]
@@ -33,10 +31,6 @@ traj = query()
 
 # Initialize dataframe
 rep_site = pd.DataFrame()
-
-# Load in RMS data from Olivier
-rms_ap_destripe = pd.read_parquet(join(data_path(), 'rms_raw_traces_ap_band_olivier.pqt'))
-
 
 # %% Loop through repeated site recordings
 metrics = pd.DataFrame()
@@ -63,28 +57,28 @@ for i in range(len(traj)):
         print(collection)
 
     # Download raw ephys data
-    if DOWNLOAD_DATA:
-        try:
-            _ = one.load_datasets(eid, datasets=[
-                '_iblqc_ephysSpectralDensityAP.freqs.npy', '_iblqc_ephysSpectralDensityAP.power.npy',
-                '_iblqc_ephysTimeRmsAP.rms.npy', '_iblqc_ephysSpectralDensityLF.freqs.npy',
-                '_iblqc_ephysSpectralDensityLF.power.npy', '_iblqc_ephysTimeRmsLF.rms.npy'],
-                collections=[f'raw_ephys_data/{probe}']*6, download_only=True)
-        except:
-            print('Could not download raw AP and LFP data')
-            pass
+    try:
+        _ = one.load_datasets(eid, datasets=[
+            '_iblqc_ephysSpectralDensityAP.freqs.npy', '_iblqc_ephysSpectralDensityAP.power.npy',
+            '_iblqc_ephysTimeRmsAP.rms.npy', '_iblqc_ephysSpectralDensityLF.freqs.npy',
+            '_iblqc_ephysSpectralDensityLF.power.npy', '_iblqc_ephysTimeRmsLF.rms.npy'],
+            collections=[f'raw_ephys_data/{probe}']*6, download_only=True)
+    except:
+        print('Could not download raw AP and LFP data')
+        pass
+    try:
+        _ = one.load_dataset(eid, dataset='channels.rawInd.npy',
+                             collection=collection, download_only=True)
+    except:
+        print('Could not download channel indices')
+        pass
+    if DOWNLOAD_WAVEFORMS:
         try:
             _ = one.load_datasets(eid, datasets=['_phy_spikes_subset.waveforms.npy',
                                                  '_phy_spikes_subset.spikes.npy'],
                                   collections=[collection]*2, download_only=True)
         except:
             print('Could not download spike waveforms')
-            pass
-        try:
-            _ = one.load_dataset(eid, dataset='channels.rawInd.npy',
-                                 collection=collection, download_only=True)
-        except:
-            print('Could not download channel indices')
             pass
     try:
         spikes, clusters, channels = bbone.load_spike_sorting_with_channel(
@@ -116,6 +110,11 @@ for i in range(len(traj)):
         wf_spikes = []
 
     # Get ap band rms
+    pid_qc = one.alyx.rest('insertions', 'list', id=pid)[0]['json']['extended_qc']
+    if 'apRms_p90_proc' in pid_qc.keys():
+        rms_ap_p90 = pid_qc['apRms_p90_proc'] * 1e6  # convert to uV
+    else:
+        rms_ap_p90 = np.nan
     rms_ap = np.load(Path(join(ephys_path, '_iblqc_ephysTimeRmsAP.rms.npy')))
     rms_ap_data = rms_ap * 1e6  # convert to uV
     median = np.mean(np.apply_along_axis(lambda x: np.median(x), 1, rms_ap_data))
@@ -203,14 +202,7 @@ for i in range(len(traj)):
         lfp_low_region = np.mean(10 * np.log(chan_power[freqs]))  # convert to dB
 
         # Get AP band rms
-        if traj[i]['probe_insertion'] in rms_ap_destripe['pid'].values:
-            # Use Olivier's destriped RMS
-            rms_ap_region = rms_ap_destripe.loc[
-                (rms_ap_destripe['pid'] == traj[i]['probe_insertion'])
-                & (rms_ap_destripe['channel'].isin(region_chan)), 'rms_destripe'].median()
-        else:
-             print('No destriped RMS found, using regular RMS')
-             rms_ap_region = np.median(rms_ap_data_median[:, region_chan])
+        rms_ap_region = np.median(rms_ap_data_median[:, region_chan])
 
         # Get neuron count
         if len(region_chan) == 0:
@@ -235,8 +227,8 @@ for i in range(len(traj)):
                                                     'lfp_power_high': lfp_high_region,
                                                     'lfp_band_low': [LFP_BAND_LOW],
                                                     'lfp_band_high': [LFP_BAND_HIGH],
-                                                    'rms_ap': rms_ap_region}))
-
+                                                    'rms_ap': rms_ap_region,
+                                                    'rms_ap_p90': rms_ap_p90}))
 
 # Save result
 print('Saving result..')
@@ -245,4 +237,5 @@ metrics.to_csv(join(DATA_DIR, 'metrics_region.csv'))
 # Apply additional selection criteria and save list of eids
 metrics_excl = exclude_recordings(metrics)
 np.save('repeated_site_eids.npy', np.array(metrics_excl['eid'].unique(), dtype=str))
+np.save('repeated_site_pids.npy', np.array(metrics_excl['pid'].unique(), dtype=str))
 print('Done!')
