@@ -112,7 +112,7 @@ for i in range(len(traj)):
     # Get ap band rms
     pid_qc = one.alyx.rest('insertions', 'list', id=pid)[0]['json']['extended_qc']
     if 'apRms_p90_proc' in pid_qc.keys():
-        rms_ap_p90 = pid_qc['apRms_p90_proc'] * 1e6  # convert to uV
+        rms_ap_p90 = float(pid_qc['apRms_p90_proc']) * 1e6  # convert to uV
     else:
         rms_ap_p90 = np.nan
     rms_ap = np.load(Path(join(ephys_path, '_iblqc_ephysTimeRmsAP.rms.npy')))
