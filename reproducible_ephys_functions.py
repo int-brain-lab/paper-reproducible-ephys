@@ -172,6 +172,9 @@ def exclude_recordings(df, max_ap_rms=40, min_regions=3, min_channels_region=5,
         Dataframe with the excluded recordings and reasons (only when return_excluded=True)
     """
 
+    # If destriped rms is missing, set to 0
+    df.loc[df['rms_ap_p90'].isnull(), 'rms_ap_p90'] = 0
+
     # Get dataframe with excluded recordings and reason for exclusion
     df_excluded = pd.DataFrame()
     if destriped_rms:
