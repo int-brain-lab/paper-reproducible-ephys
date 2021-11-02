@@ -14,17 +14,17 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-from reproducible_ephys_functions import data_path, labs, exclude_recordings
+from reproducible_ephys_functions import data_path, labs, exclude_recordings, figure_style
 from reproducible_ephys_paths import FIG_PATH
 
 # Settings
 REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
-NICKNAMES = True  # Whether to plot the animal nicknames instead of numbers
+NICKNAMES = False  # Whether to plot the animal nicknames instead of numbers
 MIN_CHANNELS = 5
 #SPIKE_SORTING = 'ks2_preproc_tests'
 SPIKE_SORTING = None
 ANNOTATE = False
-LAB_NAMES = False
+LAB_NAMES = True
 MIN_NEURONS = 4  # For firing rate inclusion
 MIN_REC_PER_LAB = 4
 
@@ -35,7 +35,7 @@ else:
     metrics = pd.read_csv(join(data_path(), 'metrics_region_spikesorting_%s.csv' % SPIKE_SORTING))
 
 # Exclude recordings
-#metrics = exclude_recordings(metrics)
+metrics, excluded = exclude_recordings(metrics, return_excluded=True)
 
 # Get lab info
 lab_number_map, institution_map, lab_colors = labs()
@@ -70,8 +70,8 @@ else:
 
 # %% Plot yield per channel
 
-sns.set(style='ticks', context='paper', font_scale=1.8)
-f, ax1 = plt.subplots(1, 1, figsize=(15, 5), dpi=150)
+figure_style()
+f, ax1 = plt.subplots(1, 1, figsize=(7, 3), dpi=150)
 metrics_plot = metrics.pivot(index='region_number', columns='recording_number',
                              values='yield_per_channel').sort_values('region_number')
 if NICKNAMES:
@@ -283,7 +283,7 @@ plt.tight_layout()
 plt.savefig(join(FIG_PATH, 'figure3_regions_rp-slope'))
 
 # %% Plot LFP power
-sns.set(style='ticks', context='paper', font_scale=1.8)
+sns.set(style='ticks', context='paper', font_scale=1.5)
 f, ax1 = plt.subplots(1, 1, figsize=(15, 5), dpi=150)
 metrics_plot = metrics.pivot(index='region_number', columns='recording_number',
                              values='lfp_power_high').sort_values('region_number')

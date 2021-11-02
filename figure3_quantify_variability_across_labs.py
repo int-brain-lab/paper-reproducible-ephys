@@ -23,13 +23,10 @@ from reproducible_ephys_paths import FIG_PATH
 
 # Settings
 MIN_REC_LAB = 4
-MAX_AP_RMS = 50  # max ap band rms to be included
-MIN_REGIONS = 3  # min amount of regions to be included
-MIN_CHANNELS = 10  # min amount of channels in a region to say it was targeted
 ANNOTATE = False
 COLORBAR = True
-EXAMPLE_METRIC = 'spike_amp_mean'
-#EXAMPLE_METRIC = 'lfp_power_high'
+#EXAMPLE_METRIC = 'rms_ap'
+EXAMPLE_METRIC = 'lfp_power_high'
 EXAMPLE_REGION = 'LP'
 REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
 METRICS = ['yield_per_channel', 'median_firing_rate', 'lfp_power_high', 'rms_ap', 'spike_amp_mean']
@@ -41,7 +38,7 @@ data = pd.read_csv(join(data_path(), 'metrics_region.csv'))
 data['institute'] = data['lab'].map(institution_map)
 
 # Exclude recordings
-data = exclude_recordings(data)
+data = exclude_recordings(data, destriped_rms=False)
 
 # Exclude labs with too few recordings
 rec_p_lab = data.groupby(['institute', 'eid']).size().reset_index()['institute'].value_counts()
@@ -112,17 +109,17 @@ cmap = []
 for i, inst in enumerate(data_example['institute'].unique()):
     cmap.append(lab_colors[inst])
 
-f, ax1 = plt.subplots(1, 1, figsize=(1.75, 2), dpi=300)
+f, ax1 = plt.subplots(1, 1, figsize=(1.75, 2), dpi=250)
 sns.stripplot(data=data_example, x='institute', y=EXAMPLE_METRIC, palette=cmap, s=3, ax=ax1)
 ax_lines = sns.pointplot(x='institute', y=EXAMPLE_METRIC, data=data_example,
-                         ci=0, join=False, estimator=np.mean, color='k',
+                         ci=0, join=False, estimator=np.nanmean, color='k',
                          markers="_", scale=1, ax=ax1)
 #plt.setp(ax_lines.collections, zorder=100, label="")
 plt.plot(np.arange(data_example['institute'].unique().shape[0]),
          [data_example[EXAMPLE_METRIC].mean()] * data_example['institute'].unique().shape[0],
          color='r', lw=1)
-ax1.set(ylabel=u'Spike amplitude in LP (${\mu}m$V)', xlabel='',
-        xlim=[-.5, 4.5])
+ax1.set(ylabel=u'LFP power in LP (dB)', xlabel='',
+        xlim=[-.5, 5.5])
 ax1.set_xticklabels(data_example['institute'].unique(), rotation=30, ha='right')
 #ax1.figure.axes[-1].yaxis.label.set_size(12)
 

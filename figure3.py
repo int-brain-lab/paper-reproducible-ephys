@@ -17,13 +17,13 @@ one = ONE()
 # Settings
 MIN_REC_PER_LAB = 4
 BOUNDARY = 'DG-TH'
-EXAMPLE_REGION = 'LP'
+EXAMPLE_REGION = 'CA1'
 EXAMPLE_METRIC = 'lfp_power_high'
 REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
-METRICS = ['yield_per_channel', 'median_firing_rate', 'lfp_power_high', 'rms_ap', 'spike_amp_mean']
+METRICS = ['yield_per_channel', 'median_firing_rate', 'lfp_power_high', 'rms_ap_p90', 'spike_amp_mean']
 LABELS = ['Neuron yield', 'Firing rate', 'LFP power', 'AP band RMS', 'Spike amp.']
-N_PERMUT = 500000  # Amount of shuffles for permutation testing
-DPI = 400  # if the figure is too big on your screen, lower this number
+N_PERMUT = 100000  # Amount of shuffles for permutation testing
+DPI = 150  # if the figure is too big on your screen, lower this number
 
 # Get amount of probe plots
 data, _ = plots_data(MIN_REC_PER_LAB)
@@ -31,10 +31,10 @@ n_columns = len(data['subject'].unique())
 
 # Set up figure
 figure_style()
-fig = plt.figure(figsize=(7, 7), dpi=DPI)  # full width figure is 7 inches
-ax = {'panel_A': fg.place_axes_on_grid(fig, xspan=[0.075, 0.6], yspan=[0.05, 0.45],
+fig = plt.figure(figsize=(8, 6), dpi=DPI)  # full width figure is 8 inches
+ax = {'panel_A': fg.place_axes_on_grid(fig, xspan=[0.07, 0.6], yspan=[0.05, 0.45],
                                        dim=[1, n_columns], wspace=0.3),
-      'panel_B': fg.place_axes_on_grid(fig, xspan=[0.075, 0.6], yspan=[0.57, 1],
+      'panel_B': fg.place_axes_on_grid(fig, xspan=[0.07, 0.6], yspan=[0.57, 1],
                                        dim=[1, n_columns], wspace=0.3),
       'panel_C': fg.place_axes_on_grid(fig, xspan=[0.8, 1], yspan=[0.05, 0.38]),
       'panel_D': fg.place_axes_on_grid(fig, xspan=[0.8, 1], yspan=[0.5, 1])}

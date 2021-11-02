@@ -36,6 +36,7 @@ LABELS = ['Firing rate (spks/s)', 'Power spectral density', 'AP band RMS']
 """
 PLOTS = ['psd']
 LABELS = ['Power spectral density']
+
 NICKNAMES = False
 YLIM = [-2000, 2000]
 FIG_SIZE = (7, 3.5)
@@ -44,7 +45,7 @@ FIG_SIZE = (7, 3.5)
 data = pd.read_csv(join(data_path(), 'metrics_region.csv'))
 
 # Exclude recordings
-data = exclude_recordings(data)
+data = exclude_recordings(data, destriped_rms=False)
 
 # Reformat dataframe
 lab_number_map, institution_map, lab_colors = labs()
@@ -109,10 +110,12 @@ for p, plot_name in enumerate(PLOTS):
         else:
             plt.figtext((plot_titles.loc[inst, 'lab_position'] - 0.06) * 1.02, 0.94, inst,
                         color=lab_colors[inst], ha='left')
+            #plt.figtext(plot_titles.loc[inst, 'lab_position'], 0.94, inst,
+            #            color=lab_colors[inst], ha='center')
     if not isdir(join(FIG_PATH, 'probe_plots')):
         mkdir(join(FIG_PATH, 'probe_plots'))
 
-    plt.savefig(join(FIG_PATH, 'probe_plots', 'figure3_probe_%s.png' % plot_name))
+    plt.savefig(join(FIG_PATH, 'probe_plots', 'figure3_probe_%s.png' % plot_name), dpi=300)
     plt.savefig(join(FIG_PATH, 'probe_plots', 'figure3_probe_%s.pdf' % plot_name))
 
 

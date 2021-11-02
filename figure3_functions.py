@@ -107,16 +107,13 @@ def panel_b(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-2000, 2000]
         # Download the data and get paths to downloaded data
         eid = one.search(subject=subj, date=date)[0]
         print(f'Recording {iR+1} of {data.shape[0]}')
-        """
+
         collections = one.list_collections(eid)
         if f'alf/{probe_label}/pykilosort' in collections:
-            alf_path = one.eid2path(eid).joinpath('alf', probe_label, 'pykilosort')
             collection = f'alf/{probe_label}/pykilosort'
         else:
-            alf_path = one.eid2path(eid).joinpath('alf', probe_label)
             collection = f'alf/{probe_label}'
-        """
-        collection = f'alf/{probe_label}'
+        #collection = f'alf/{probe_label}'
 
         insertion = one.alyx.rest('insertions', 'list', session=eid, name=probe_label)
         xyz_picks = np.array(insertion[0].get('json').get('xyz_picks', 0)) / 1e6
@@ -182,7 +179,7 @@ def panel_b(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-2000, 2000]
     cbar.ax.set_yticklabels([f'{levels[0]} Hz', f'{levels[1]} Hz'])
 
 
-def panel_c(ax, n_rec_per_lab=4, example_region='CA1', example_metric='median_firing_rate'):
+def panel_c(ax, n_rec_per_lab=4, example_region='LP', example_metric='lfp_power_high', ylim=[-190, -120]):
     data, lab_colors = plots_data(n_rec_per_lab)
     data_example = pd.DataFrame(data={
         'institute': data.loc[data['region'] == example_region, 'institute'],
@@ -201,7 +198,7 @@ def panel_c(ax, n_rec_per_lab=4, example_region='CA1', example_metric='median_fi
              [data_example[example_metric].mean()] * data_example['institute'].unique().shape[0],
              color='r', lw=1)
     ax.set(ylabel=f'LFP power in {example_region} (dB)', xlabel='',
-            xlim=[-.5, 4.5])
+           xlim=[-.5, len(data['institute'].unique()) + .5], ylim=ylim)
     ax.set_xticklabels(data_example['institute'].unique(), rotation=30, ha='right')
     sns.despine(trim=True)
 
@@ -238,7 +235,7 @@ def panel_d(ax, metrics, regions, labels, n_permut=10000, n_rec_per_lab=4):
     sns.heatmap(results_plot, cmap='viridis_r', square=True,
                 cbar=True, cbar_ax=axin,
                 annot=False, annot_kws={"size": 5},
-                linewidths=.5, fmt='.2f', vmin=-1.5, vmax=0, ax=ax)
+                linewidths=.5, fmt='.2f', vmin=-1.5, vmax=np.log10(0.5), ax=ax)
     cbar = ax.collections[0].colorbar
     cbar.set_ticks(np.log10([0.05, 0.5, 1]))
     cbar.set_ticklabels([0.05, 0.5, 1])
@@ -249,7 +246,7 @@ def panel_d(ax, metrics, regions, labels, n_permut=10000, n_rec_per_lab=4):
 
 def plots_data(n_rec_per_lab=4):
     data = pd.read_csv(join(data_path(), 'metrics_region.csv'))
-    data = exclude_recordings(data)
+    data = exclude_recordings(data, destriped_rms=True)
     lab_number_map, institution_map, lab_colors = labs()
     data['institute'] = data.lab.map(institution_map)
     data = data.groupby('institute').filter(
