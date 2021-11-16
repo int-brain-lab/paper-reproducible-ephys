@@ -177,10 +177,11 @@ def panel_b(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-2000, 2000]
     axin = inset_axes(ax[-1], width="50%", height="80%", loc='lower right', borderpad=0,
                       bbox_to_anchor=(1, 0.1, 1, 1), bbox_transform=ax[-1].transAxes)
     cbar = fig.colorbar(im, cax=axin, ticks=im.get_clim())
-    cbar.ax.set_yticklabels([f'{levels[0]} Hz', f'{levels[1]} Hz'])
+    cbar.ax.set_yticklabels([f'{levels[0]}', f'{levels[1]}'])
+    cbar.set_label('Firing rate (spks/s)', rotation=270, labelpad=-8)
 
 
-def panel_c(ax, n_rec_per_lab=4, example_region='LP', example_metric='lfp_power_high', ylim=[-190, -120]):
+def panel_c(ax, n_rec_per_lab=4, example_region='LP', example_metric='lfp_power_high', ylim=[-200, -150]):
     data, lab_colors = plots_data(n_rec_per_lab)
     data_example = pd.DataFrame(data={
         'institute': data.loc[data['region'] == example_region, 'institute'],

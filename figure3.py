@@ -15,15 +15,15 @@ from one.api import ONE
 one = ONE()
 
 # Settings
-MIN_REC_PER_LAB = 7
+MIN_REC_PER_LAB = 4
 BOUNDARY = 'DG-TH'
-EXAMPLE_REGION = 'CA1'
+EXAMPLE_REGION = 'LP'
 EXAMPLE_METRIC = 'lfp_power_high'
 REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
 METRICS = ['yield_per_channel', 'median_firing_rate', 'lfp_power_high', 'rms_ap_p90', 'spike_amp_mean']
 LABELS = ['Neuron yield', 'Firing rate', 'LFP power', 'AP band RMS', 'Spike amp.']
-#N_PERMUT = 100000  # Amount of shuffles for permutation testing
-N_PERMUT = 10  # Amount of shuffles for permutation testing
+N_PERMUT = 100000  # Amount of shuffles for permutation testing
+#N_PERMUT = 10  # Amount of shuffles for permutation testing
 DPI = 300  # if the figure is too big on your screen, lower this number
 
 # Get amount of probe plots
@@ -41,17 +41,17 @@ ax = {'panel_A': fg.place_axes_on_grid(fig, xspan=[0.05, 0.6], yspan=[0.05, 0.45
       'panel_D': fg.place_axes_on_grid(fig, xspan=[0.82, 1], yspan=[0.6, 1])}
 
 # Call functions to plot panels
-panel_a(fig, ax['panel_A'], n_rec_per_lab=MIN_REC_PER_LAB, boundary_align=BOUNDARY, one=one)
-panel_b(fig, ax['panel_B'], n_rec_per_lab=MIN_REC_PER_LAB, boundary_align=BOUNDARY, one=one)
+#panel_a(fig, ax['panel_A'], n_rec_per_lab=MIN_REC_PER_LAB, boundary_align=BOUNDARY, one=one)
+#panel_b(fig, ax['panel_B'], n_rec_per_lab=MIN_REC_PER_LAB, boundary_align=BOUNDARY, one=one)
 panel_c(ax['panel_C'], n_rec_per_lab=MIN_REC_PER_LAB, example_region=EXAMPLE_REGION,
         example_metric=EXAMPLE_METRIC)
 panel_d(ax['panel_D'], METRICS, REGIONS, LABELS, n_permut=N_PERMUT, n_rec_per_lab=MIN_REC_PER_LAB)
 
 # Add subplot labels
 labels = [{'label_text':'a', 'xpos':0, 'ypos':0, 'fontsize':10, 'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-          {'label_text':'b', 'xpos':0, 'ypos':0.5, 'fontsize':10, 'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
+          {'label_text':'b', 'xpos':0, 'ypos':0.55, 'fontsize':10, 'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
           {'label_text':'c', 'xpos':0.75, 'ypos':0, 'fontsize':10, 'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-          {'label_text':'d', 'xpos':0.75, 'ypos':0.5, 'fontsize':10, 'weight': 'bold', 'ha': 'right', 'va': 'bottom'}]
+          {'label_text':'d', 'xpos':0.75, 'ypos':0.55, 'fontsize':10, 'weight': 'bold', 'ha': 'right', 'va': 'bottom'}]
 fg.add_labels(fig, labels)
 
 # Save figure

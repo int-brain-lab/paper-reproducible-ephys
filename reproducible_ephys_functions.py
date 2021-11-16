@@ -184,7 +184,7 @@ def exclude_recordings(df, max_ap_rms=40, min_regions=3, min_channels_region=5, 
     df_excluded['high_lfp'] = df.groupby('subject')['lfp_power_high'].median() >= max_lfp_power
     df_excluded['low_yield'] = (
                     df.groupby('subject')['neuron_yield'].sum()
-                    / df.groupby('subject')['n_channels'].sum()) <= min_neurons_per_channel
+                    / df.groupby('subject')['n_channels'].sum()) < min_neurons_per_channel
     df['region_hit'] = df['n_channels'] > min_channels_region
     df_excluded['missed_target'] = df.groupby('subject')['region_hit'].sum() < min_regions
     df_excluded = df_excluded.reset_index()

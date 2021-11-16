@@ -22,7 +22,7 @@ one = ONE()
 # Plot settings
 BOUNDARY = 'DG-TH'
 # BOUNDARY = 'VIS-HPF'
-MIN_REC_PER_LAB = 4
+MIN_REC_PER_LAB = 1
 """
 PLOTS = ['fr', 'psd', 'rms_ap', 'rms_lf', 'fr_alt', 'amp', 'regions_line',
          'distance', 'amp_scatter']
@@ -37,7 +37,7 @@ LABELS = ['Firing rate (spks/s)', 'Power spectral density', 'AP band RMS']
 PLOTS = ['psd']
 LABELS = ['Power spectral density']
 
-NICKNAMES = True
+NICKNAMES = False
 YLIM = [-2000, 2000]
 FIG_SIZE = (7, 3.5)
 
@@ -45,7 +45,7 @@ FIG_SIZE = (7, 3.5)
 data = pd.read_csv(join(data_path(), 'metrics_region.csv'))
 
 # Exclude recordings
-data = exclude_recordings(data, destriped_rms=True)
+data, excluded = exclude_recordings(data, destriped_rms=False, return_excluded=True)
 
 # Reformat dataframe
 lab_number_map, institution_map, lab_colors = labs()
@@ -62,15 +62,6 @@ rec_per_lab = data.groupby('institution').size()
 data['recording'] = np.concatenate([np.arange(i) for i in rec_per_lab.values])
 data['lab_position'] = np.linspace(0.18, 0.91, data.shape[0])
 plot_titles = data.groupby('institution').mean()
-
-
-# Plot all of one mouse
-sessions = one.alyx.rest('insertions', 'list', subject='DY_013',
-                         task_protocol='_iblrig_tasks_opto_biasedChoiceWorld')
-sub = [i for i in sessions['session_info']['subject']]
-dates = [i for i in sessions['session_info']['start_time'][:10]]
-probes = [i for i in sessions['name']]
-
 
 # %% Plotting
 figure_style()
