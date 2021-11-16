@@ -13,11 +13,13 @@ import seaborn as sns
 import pickle
 import brainbox as bb
 from reproducible_ephys_functions import query
+from brainbox.metrics.single_units import spike_sorting_metrics, quick_unit_metrics
+import pandas as pd
 
 # %% Functions:
     
 def cluster_peths_FR_FF_sliding(ts, align_times, pre_time=0.2, post_time=0.5, 
-                                hist_win=0.1, N_SlidesPerWind = 5):
+                                hist_win=0.1, N_SlidesPerWind = 5, causal=0):
     """
     Calcluate peri-event time histograms of one unit/cluster at a time; returns
     means and standard deviations of FR and FF over time for each time point 
@@ -35,13 +37,19 @@ def cluster_peths_FR_FF_sliding(ts, align_times, pre_time=0.2, post_time=0.5,
     :type hist_win: float
     :param N_SlidesPerWind: The # of slides to do within each histogram window, i.e. increase in time resolution
     :type N_SlidesPerWind: float
+    :param causal: whether or not to place time points at the end of each hist_win (1) or in the center (0)
+    :type causal: float
     :return: FR_sorted, FR_STD_sorted, FF_sorted, TimeVect_sorted
     :rtype: np.array
     """
     #slidingStep = bin_size/n_slides
     epoch = [-pre_time, post_time]
     tshift = hist_win/N_SlidesPerWind 
-    
+    if causal==1: # Place time points at the end of each hist_win, i.e., only past events are taken into account.
+        epoch[0] = epoch[0] - hist_win/2 #to start earlier since we're shifting the time later
+        #epoch[1] = epoch[1] - hist_win/2
+        
+        
     FR_unsort, FRstd_unsort, FF_unsort, TimeVect = [], [], [], []
     for s in range(N_SlidesPerWind):
         ts_shift = ts[ts>(s*tshift)]
@@ -57,6 +65,11 @@ def cluster_peths_FR_FF_sliding(ts, align_times, pre_time=0.2, post_time=0.5,
         FR_TrialSTDPerShift = np.nanstd(CountPerBinPerShift, axis=0)/hist_win #stdev of firing rate; same as np.std(CountPerBinPerShift/hist_win, axis=0)
         FF_PerShift = np.nanvar(CountPerBinPerShift, axis=0)/np.nanmean(CountPerBinPerShift, axis=0)
         TimeVect_PerShift = PethsPerShift['tscale'] + s*tshift #np.arange(FR_PerShift.size) * hist_win + tshift*s #per slide
+        
+        # Place time points at the end of each hist_win (causal = 1),i.e., only past events are taken into account.
+        # Otherwise, time points are at the center of the time bins (using 'calculate_peths')
+        if causal==1: 
+            TimeVect_PerShift = TimeVect_PerShift + hist_win/2
     
         # Append this shifted result with previous ones:
         FR_unsort = np.hstack((FR_unsort, FR_TrialAvgPerShift))
@@ -77,31 +90,32 @@ def cluster_peths_FR_FF_sliding(ts, align_times, pre_time=0.2, post_time=0.5,
 # %% Run code:
 
 # Identify the RS subject and neuron:
-ClusterID = 335  #180 #398 #328 #
+ClusterID = 335 #406 #335  #180 #398 #328 #
 names = ['DY_018'] #['ZFM-01592'] #['ibl_witten_29'] #['DY_018']
-BrainRegion = 'VIS' #'LP' # 
+BrainRegion = 'VIS'#'VIS' #'LP' # 
 
 # Time course details for plotting:
-pre_time, post_time = 0.4, 0.8 #0.1, 0.35
-Side = 'Right Stim' #'Right Stim' or 'Left Stim'
+pre_time, post_time = 0.3, 0.2 #0.4, 0.8 #0.1, 0.35
+Side = 'Left Stim' #'Right Stim' or 'Left Stim'
 CorrChoice = 'Correct' #Only include correct choices, incorrect ones, or all? Options: 'Correct', 'Incorr', 'All Choices'
 AlignTo = 'Movement' #Align the trials to which, 'Movement' or 'Stim'?
-constrasts_all = [1., 0.25, 0.125, 0.0625, 0.] #The constrasts to examine. Full list: [1., 0.25, 0.125, 0.0625, 0.]
+constrasts_all = [1., 0.25, 0.125, 0.0625, 0.] #[1., 0.] #The constrasts to examine. Full list: [1., 0.25, 0.125, 0.0625, 0.]
 
 # For using a sliding window:
 SlidingWind = 1 # Use a sliding window for the plots? 1 for yes, 0 for no.
-SlideBinSize = 0.06
-SlideN = 3
+SlideBinSize = 0.06#0.04
+SlideN = 3#2 
+CausalOrNot = 1 #0 or 1; 1 means it's causal, i.e., time points placed at the end of each hist_win such that only past events are taken into account.
 
 # For saving figures:
-NameStr = 'AlignTo' + AlignTo + '_' +CorrChoice + '_Slide' + str(SlidingWind) #Any string for the filename when saving the file
+NameStr = 'AlignTo' + AlignTo + '_' +CorrChoice + '_SlideCausal' + str(SlidingWind) #Any string for the filename when saving the file
 saveFig = 0 #At the end, save figure or not? 1 for yes.
 
 one = ONE()
 traj = query(behavior=True)
 boundary_width = 0.01
 base_grey = 0.15
-fs = 18
+fs = 18 #figure size
 
 
 for count, t in enumerate(traj):
@@ -113,11 +127,29 @@ for count, t in enumerate(traj):
     # load data
     try:
         spikes, clusters, channels = pickle.load(open("../data/data_{}_sorting_1.p".format(eid), "rb"))
+        #spikes, clusters, channels, metrics = pickle.load(open("../data/data_{}.p".format(eid), "rb"))
+
     except FileNotFoundError:
         try:
-            spk, clus, chn = load_spike_sorting_with_channel(eid, one=one)
-            spikes, clusters, channels = spk[probe], clus[probe], chn[probe]
+            # spk, clus, chn = load_spike_sorting_with_channel(eid, one=one)
+            # spikes, clusters, channels = spk[probe], clus[probe], chn[probe]
+            
+            #Try ks2: 
+            spikes = one.load_object(eid, 'spikes', collection='alf/{}'.format(probe), revision='')
+            clusters = one.load_object(eid, 'clusters', collection='alf/{}'.format(probe), revision='')
+            channels = bb.io.one.load_channel_locations(eid, one=one, probe=probe, aligned=True)
+            clusters = bb.io.one.merge_clusters_channels(dic_clus={probe: clusters}, channels=channels)[probe]
+            channels = channels[probe]
+
+            # # #Try Pykilosort: 
+            # spikes = one.load_object(eid, 'spikes', collection='alf/{}/pykilosort'.format(probe))
+            # clusters = one.load_object(eid, 'clusters', collection='alf/{}/pykilosort'.format(probe))
+            # channels = bb.io.one.load_channel_locations(eid, one=one, probe=probe, aligned=True)
+            # clusters = bb.io.one.merge_clusters_channels(dic_clus={probe: clusters}, channels=channels)[probe]
+            # channels = channels[probe]
+            
             pickle.dump((spikes, clusters, channels), (open("../data/data_{}.p".format(eid), "wb")))
+            
         except KeyError:
             print(eid)
             continue
@@ -184,8 +216,32 @@ for count, t in enumerate(traj):
     elif Side=='Left Stim':
         event_times_Side = event_times_left
 
-    cluster_regions = channels.acronym[clusters.channels]
-    neurons = np.where(np.logical_and(np.chararray.startswith(cluster_regions.astype('U9'), BrainRegion), clusters['metrics']['label'] == 1))[0]
+    
+    try:
+        cluster_regions = channels['acronym'][clusters.channels] #channels.acronym[clusters.channels]
+        neurons = np.where(np.logical_and(np.chararray.startswith(cluster_regions.astype('U9'), BrainRegion), clusters['metrics']['label'] == 1))[0]
+    except:
+        #When using Pykilosort and no 'metrics' is found: 
+        # #Sometimes 'channels' using load_spike_sorting_with_channel does not have 'amps' needed to get 'metrics'; therefore use this method now:
+        # spikes = one.load_object(eid, 'spikes', collection='alf/{}/pykilosort'.format(probe))
+        # clusters = one.load_object(eid, 'clusters', collection='alf/{}/pykilosort'.format(probe))
+        # channels = bb.io.one.load_channel_locations(eid, one=one, probe=probe, aligned=True)
+        # clusters = bb.io.one.merge_clusters_channels(dic_clus={probe: clusters}, channels=channels)[probe]
+        # channels = channels[probe]
+
+        r = quick_unit_metrics(spikes.clusters, spikes.times, spikes.amps, spikes.depths, cluster_ids=np.arange(clusters.channels.size)) #Need to convert to a dataframe
+        dict_metrics = {} #converting r (a util.Bunch object that's really a dictionary) to a regular dictionary
+        for key in r.keys():
+            dict_metrics[key] = r[key]
+        df_metrics = pd.DataFrame.from_dict(dict_metrics) #converting dictionary to a Pandas dataframe
+        clusters['metrics'] = df_metrics
+ 
+        
+        pickle.dump((spikes, clusters, channels), (open("../data/data_{}.p".format(eid), "wb")))
+         
+        cluster_regions = channels['acronym'][clusters.channels] #channels.acronym[clusters.channels]
+        neurons = np.where(np.logical_and(np.chararray.startswith(cluster_regions.astype('U9'), BrainRegion), clusters['metrics']['label'] == 1))[0]
+        
 
     for j, neuron in enumerate(neurons):
         print("Warning, code is limited")
@@ -223,7 +279,7 @@ for count, t in enumerate(traj):
 
         plt.yticks(ylabel_pos, constrasts_all, size=fs)
         plt.axvline(0, color='k', ls='--')
-        plt.xlim(left=-pre_time, right=post_time)
+        plt.xlim(left= -pre_time - SlideBinSize/2, right= post_time + SlideBinSize/2) #(left=-pre_time, right=post_time)
         plt.ylim(top=0, bottom=counter)
         plt.gca().spines['right'].set_visible(False)
         plt.gca().spines['top'].set_visible(False)
@@ -231,7 +287,8 @@ for count, t in enumerate(traj):
         plt.gca().spines['bottom'].set_visible(False)
         plt.tick_params(left=False, right=False, labelbottom=False, bottom=False)
         plt.title("Contrast: {}, {}, Aligned to {}".format(Side, CorrChoice, AlignTo), loc='left', size=fs+2) 
-
+        #plt.title("Contrast ({})".format(Side), loc='left', size=fs+2) 
+        
         
         for c in constrasts_all:
             if Side=='Right Stim':
@@ -262,11 +319,12 @@ for count, t in enumerate(traj):
                 plt.plot(psths.tscale, FanoFactor, c=str(1 - (base_grey + c * (1 - base_grey))))
            
             elif SlidingWind==1:
-                #Use sliding window to get FR and FF over time; 1 neuron at a time so no neurons[j] or spikes.clusters not needed
+                #Use sliding window to get FR and FF over time; 1 neuron at a time so neurons[j] or spikes.clusters are not needed
                 FR_slide, FR_STD_slide, FF_slide, TimeVect_slide = cluster_peths_FR_FF_sliding(spikes.times[spikes.clusters == neurons[j]], 
                                                                                                event_times_Side[mask],
                                                                                                pre_time=pre_time, post_time=post_time,
-                                                                                               hist_win=SlideBinSize, N_SlidesPerWind = SlideN) 
+                                                                                               hist_win=SlideBinSize, N_SlidesPerWind = SlideN,
+                                                                                               causal=CausalOrNot) 
                 plt.subplot(3, 1, 2)
                 plt.plot(TimeVect_slide, FR_slide, c=str(1 - (base_grey + c * (1 - base_grey))))
                 plt.fill_between(TimeVect_slide,
@@ -280,7 +338,7 @@ for count, t in enumerate(traj):
             
         plt.subplot(3, 1, 2)
         plt.axvline(0, color='k', ls='--')
-        plt.xlim(left=-pre_time, right=post_time)
+        #plt.xlim(left= -pre_time - SlideBinSize/2, right= post_time + SlideBinSize/2)
         plt.gca().spines['right'].set_visible(False)
         plt.gca().spines['top'].set_visible(False)
         # plt.yticks([0, 25, 50, 75], [0, 25, 50, 75], size=fs)
@@ -289,6 +347,9 @@ for count, t in enumerate(traj):
                    [-0.4, -0.3, -0.2, -0.1, 0., 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8], size=fs)
         plt.ylabel("Firing rate (sp/s)", size=fs+3)
         #plt.xlabel("Time from stim onset (s)", size=fs+3)
+        #plt.xlim(left=-pre_time, right=post_time)
+        plt.xlim(left= -pre_time - SlideBinSize/2, right= post_time + SlideBinSize/2)
+        
 
         plt.subplot(3, 1, 3)
         plt.axvline(0, color='k', ls='--')
@@ -299,8 +360,12 @@ for count, t in enumerate(traj):
         plt.xticks([-0.4, -0.3, -0.2, -0.1, 0., 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8], 
                    [-0.4, -0.3, -0.2, -0.1, 0., 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8], size=fs)
         plt.ylabel("Fano Factor", size=fs+3)
-        plt.xlabel("Time from stim onset (s)", size=fs+3)
-        
+        if AlignTo == 'Movement':
+            plt.xlabel("Time from movement onset (s)", size=fs+3)
+        elif AlignTo == 'Stim':
+            plt.xlabel("Time from stim onset (s)", size=fs+3)
+            
+        plt.xlim(left= -pre_time - SlideBinSize/2, right= post_time + SlideBinSize/2)
         
         if saveFig==1:
             plt.savefig("SaveMyFigures/{}, {}, {}, {}".format(t['session']['subject'], neuron, Side, NameStr)) #MT modified to include folder name and Side
