@@ -90,6 +90,7 @@ def panel_a(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-2000, 2000]
                       bbox_to_anchor=(1, 0.1, 1, 1), bbox_transform=ax[-1].transAxes)
     cbar = fig.colorbar(im, cax=axin, ticks=im.get_clim())
     cbar.ax.set_yticklabels(['10th\nperc.', '90th\nperc'])
+    cbar.set_label('Power spectral density', rotation=270, labelpad=-8)
 
 
 def panel_b(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-2000, 2000], one=None):
@@ -246,7 +247,7 @@ def panel_d(ax, metrics, regions, labels, n_permut=10000, n_rec_per_lab=4):
 
 def plots_data(n_rec_per_lab=4):
     data = pd.read_csv(join(data_path(), 'metrics_region.csv'))
-    data = exclude_recordings(data, destriped_rms=True)
+    data = exclude_recordings(data, destriped_rms=False)
     lab_number_map, institution_map, lab_colors = labs()
     data['institute'] = data.lab.map(institution_map)
     data = data.groupby('institute').filter(

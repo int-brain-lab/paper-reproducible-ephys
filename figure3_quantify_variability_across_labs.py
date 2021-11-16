@@ -27,7 +27,7 @@ ANNOTATE = False
 COLORBAR = True
 #EXAMPLE_METRIC = 'rms_ap'
 EXAMPLE_METRIC = 'lfp_power_high'
-EXAMPLE_REGION = 'LP'
+EXAMPLE_REGION = 'PO'
 REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
 METRICS = ['yield_per_channel', 'median_firing_rate', 'lfp_power_high', 'rms_ap', 'spike_amp_mean']
 LABELS = ['Neuron yield', 'Firing rate', 'LFP power', 'AP band RMS', 'Spike amp.']
@@ -38,7 +38,7 @@ data = pd.read_csv(join(data_path(), 'metrics_region.csv'))
 data['institute'] = data['lab'].map(institution_map)
 
 # Exclude recordings
-data = exclude_recordings(data, destriped_rms=False)
+data = exclude_recordings(data, destriped_rms=True)
 
 # Exclude labs with too few recordings
 rec_p_lab = data.groupby(['institute', 'eid']).size().reset_index()['institute'].value_counts()
@@ -118,8 +118,8 @@ ax_lines = sns.pointplot(x='institute', y=EXAMPLE_METRIC, data=data_example,
 plt.plot(np.arange(data_example['institute'].unique().shape[0]),
          [data_example[EXAMPLE_METRIC].mean()] * data_example['institute'].unique().shape[0],
          color='r', lw=1)
-ax1.set(ylabel=u'LFP power in LP (dB)', xlabel='',
-        xlim=[-.5, 5.5])
+ax1.set(ylabel=u'LFP power in CA1 (dB)', xlabel='',
+        xlim=[-.5, data_example['institute'].unique().shape[0] + .5])
 ax1.set_xticklabels(data_example['institute'].unique(), rotation=30, ha='right')
 #ax1.figure.axes[-1].yaxis.label.set_size(12)
 

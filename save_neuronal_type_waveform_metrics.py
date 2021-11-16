@@ -11,13 +11,15 @@ from os.path import join
 from pathlib import Path
 import brainbox.io.one as bbone
 from scipy.optimize import curve_fit
+from brainbox.metrics.single_units import spike_sorting_metrics
 from reproducible_ephys_functions import query, data_path, combine_regions
-from oneibl.one import ONE
+from one.api import ONE
+from ibllib.atlas import AllenAtlas
+ba = AllenAtlas()
 one = ONE()
 
 # Settings
 NEURON_QC = True
-DOWNLOAD_DATA = False
 DATA_DIR = data_path()
 
 # Query repeated site trajectories
@@ -41,34 +43,49 @@ for i in range(len(traj)):
     lab = traj[i]['session']['lab']
     subject = traj[i]['session']['subject']
 
-    if DOWNLOAD_DATA:
-        _ = one.load(eid, dataset_types=['_phy_spikes_subset.waveforms',
-                                         '_phy_spikes_subset.spikes',
-                                         '_phy_spikes_subset.channels'], download_only=True)
-    try:
-        spikes, clusters, channels = bbone.load_spike_sorting_with_channel(
-            eid, aligned=True, dataset_types=['spikes.amps'], one=one)
-        alf_path = one.path_from_eid(eid).joinpath('alf', probe)
-        waveforms = np.load(Path(join(alf_path, '_phy_spikes_subset.waveforms.npy')))
-        wf_spikes = np.load(Path(join(alf_path, '_phy_spikes_subset.spikes.npy')))
-        wf_channels = np.load(Path(join(alf_path, '_phy_spikes_subset.channels.npy')))
-        waveforms = waveforms * 1000 # to mV
+    # Get data collection
+    collections = one.list_collections(eid)
+    if f'alf/{probe}/pykilosort' in collections:
+        alf_path = one.eid2path(eid).joinpath('alf', probe, 'pykilosort')
+        collection = f'alf/{probe}/pykilosort'
+    else:
+        alf_path = one.eid2path(eid).joinpath('alf', probe)
+        collection = f'alf/{probe}'
 
-    except Exception as error_message:
-        print(error_message)
-        continue
+    # Load in spikes
+    spikes, clusters, channels = bbone.load_spike_sorting_with_channel(
+        eid, aligned=True, one=one, dataset_types=['spikes.amps', 'spikes.depths'], brain_atlas=ba)
 
+    # Load in waveforms
+    data = one.load_datasets(eid, datasets=['_phy_spikes_subset.waveforms', '_phy_spikes_subset.spikes',
+                                            '_phy_spikes_subset.channels'],
+                             collections=[collection]*3)[0]
+    waveforms, wf_spikes, wf_channels = data[0], data[1], data[2]
+    waveforms = waveforms * 1000  # to uV
+
+    # Skip recording if data is not present
     if len(clusters) == 0:
         print('Spike data not found')
         continue
-
     if 'acronym' not in clusters[probe].keys():
         print('Brain regions not found')
         continue
+    if 'lateral_um' not in channels[probe].keys():
+        print('\nRecording site locations not found, skipping..\n')
+        continue
 
     # Get neurons that pass QC
-    clusters_pass = np.where(clusters[probe]['metrics']['label'] == 1)[0]
-    clusters_regions = combine_regions(clusters[probe]['acronym'])[clusters_pass]
+    if NEURON_QC:
+        print('Calculating neuron QC metrics..')
+        qc_metrics, _ = spike_sorting_metrics(spikes[probe].times, spikes[probe].clusters,
+                                              spikes[probe].amps, spikes[probe].depths,
+                                              cluster_ids=np.arange(clusters[probe].channels.size))
+        clusters_pass = np.where(qc_metrics['label'] == 1)[0]
+    else:
+        clusters_pass = np.unique(spikes[probe].clusters)
+    if len(spikes[probe].clusters) == 0:
+        continue
+    clusters_regions = clusters[probe]['acronym'][clusters_pass]
 
     # Loop over clusters
     for n, neuron_id in enumerate(clusters_pass):
@@ -114,22 +131,22 @@ for i in range(len(traj)):
         these_channels = wf_channels[spikes[probe].clusters[wf_spikes] == neuron_id][0, :]
 
         # Select channels on the side of the probe with the max amplitude
-        if channels[probe].lateral_um[these_channels][0] > 35:
-            lat_channels = channels[probe].lateral_um[these_channels] > 35
-        elif channels[probe].lateral_um[these_channels][0] < 35:
-            lat_channels = channels[probe].lateral_um[these_channels] < 35
+        if channels[probe]['lateral_um'][these_channels][0] > 35:
+            lat_channels = channels[probe]['lateral_um'][these_channels] > 35
+        elif channels[probe]['lateral_um'][these_channels][0] < 35:
+            lat_channels = channels[probe]['lateral_um'][these_channels] < 35
 
         # Select channels within 100 um of soma
-        ax_channels = np.abs(channels[probe].axial_um[these_channels]
-                             - channels[probe].axial_um[these_channels[0]]) <= 100
+        ax_channels = np.abs(channels[probe]['axial_um'][these_channels]
+                             - channels[probe]['axial_um'][these_channels[0]]) <= 100
         use_channels = lat_channels & ax_channels
 
         # Get distance to soma and sort channels accordingly
-        dist_soma = np.sort(channels[probe].axial_um[these_channels[use_channels]]
-                            - channels[probe].axial_um[these_channels[use_channels][0]])
+        dist_soma = np.sort(channels[probe]['axial_um'][these_channels[use_channels]]
+                            - channels[probe]['axial_um'][these_channels[use_channels][0]])
         dist_soma = dist_soma / 1000  # convert to mm
-        sort_ch = np.argsort(channels[probe].axial_um[these_channels[use_channels]]
-                             - channels[probe].axial_um[these_channels[use_channels][0]])
+        sort_ch = np.argsort(channels[probe]['axial_um'][these_channels[use_channels]]
+                             - channels[probe]['axial_um'][these_channels[use_channels][0]])
         wf_ch_sort = mean_wf_ch[:, use_channels]
         wf_ch_sort = wf_ch_sort[:, sort_ch]
         wf_ch_sort = wf_ch_sort.T  # put time on the second dimension
@@ -142,17 +159,15 @@ for i in range(len(traj)):
             time_trough[k] = (np.argmin(wf_ch_sort[k, :]) / 30000) * 1000  # ms
         norm_amp = (norm_amp - np.min(norm_amp)) / (np.max(norm_amp) - np.min(norm_amp))
 
-        # Get spread
+        # Get spread and velocity
         try:
             popt, pcov = curve_fit(gaus, dist_soma, norm_amp, p0=[1, 0, 0.1])
             fit = gaus(dist_soma, *popt)
             spread = (np.sum(fit / np.max(fit) > 0.12) * 20) / 1000
+            v_below, _ = np.polyfit(time_trough[dist_soma <= 0], dist_soma[dist_soma <= 0], 1)
+            v_above, _ = np.polyfit(time_trough[dist_soma >= 0], dist_soma[dist_soma >= 0], 1)
         except:
             continue
-
-        # Get velocity above and below
-        v_below, _ = np.polyfit(time_trough[dist_soma <= 0], dist_soma[dist_soma <= 0], 1)
-        v_above, _ = np.polyfit(time_trough[dist_soma >= 0], dist_soma[dist_soma >= 0], 1)
 
         # Add to dataframe
         waveforms_df = waveforms_df.append(pd.DataFrame(index=[waveforms_df.shape[0] + 1], data={

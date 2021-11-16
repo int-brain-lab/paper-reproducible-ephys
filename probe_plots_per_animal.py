@@ -67,9 +67,9 @@ plot_titles = data.groupby('institution').mean()
 # Plot all of one mouse
 sessions = one.alyx.rest('insertions', 'list', subject='DY_013',
                          task_protocol='_iblrig_tasks_opto_biasedChoiceWorld')
-sub = [i for i in sessions['session_info']['subject']]
-dates = [i for i in sessions['session_info']['start_time'][:10]]
-probes = [i for i in sessions['name']]
+sub = [i['session_info']['subject'] for i in sessions]
+dates = [i['session_info']['start_time'][:10] for i in sessions]
+probes = [i['name'] for i in sessions]
 
 
 # %% Plotting
@@ -82,7 +82,7 @@ for p, plot_name in enumerate(PLOTS):
                                   boundary_align=BOUNDARY, show_regions=True, figsize=FIG_SIZE)
     else:
 
-        f, axs, cbar = plot_2D_features(data['subject'], data['date'], data['probe'], one=one,
+        f, axs, cbar = plot_2D_features(sub, dates, probes, one=one,
                                         brain_atlas=brain_atlas, plot_type=plot_name,
                                         freq_range=[20, 80],
                                         boundary_align=BOUNDARY, figsize=FIG_SIZE)
@@ -122,7 +122,7 @@ for p, plot_name in enumerate(PLOTS):
     if not isdir(join(FIG_PATH, 'probe_plots')):
         mkdir(join(FIG_PATH, 'probe_plots'))
 
-    plt.savefig(join(FIG_PATH, 'probe_plots', 'figure3_probe_%s.png' % plot_name), dpi=300)
-    plt.savefig(join(FIG_PATH, 'probe_plots', 'figure3_probe_%s.pdf' % plot_name))
+    #plt.savefig(join(FIG_PATH, 'probe_plots', 'figure3_probe_%s.png' % plot_name), dpi=300)
+    #plt.savefig(join(FIG_PATH, 'probe_plots', 'figure3_probe_%s.pdf' % plot_name))
 
 

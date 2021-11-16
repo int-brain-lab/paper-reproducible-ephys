@@ -141,7 +141,7 @@ def combine_regions(regions):
     return regions
 
 
-def exclude_recordings(df, max_ap_rms=40, min_regions=3, min_channels_region=5,
+def exclude_recordings(df, max_ap_rms=40, min_regions=3, min_channels_region=5, max_lfp_power=-140,
                        min_neurons_per_channel=0.1, return_excluded=False, destriped_rms=True):
     """
     Exclude recordings from brain regions dataframe
@@ -181,6 +181,7 @@ def exclude_recordings(df, max_ap_rms=40, min_regions=3, min_channels_region=5,
         df_excluded['high_noise'] = df.groupby('subject')['rms_ap_p90'].median() >= max_ap_rms
     else:
         df_excluded['high_noise'] = df.groupby('subject')['rms_ap'].median() >= max_ap_rms
+    df_excluded['high_lfp'] = df.groupby('subject')['lfp_power_high'].median() >= max_lfp_power
     df_excluded['low_yield'] = (
                     df.groupby('subject')['neuron_yield'].sum()
                     / df.groupby('subject')['n_channels'].sum()) <= min_neurons_per_channel
@@ -193,6 +194,7 @@ def exclude_recordings(df, max_ap_rms=40, min_regions=3, min_channels_region=5,
         df = df.groupby('subject').filter(lambda s : s['rms_ap_p90'].median() <= max_ap_rms)
     else:
         df = df.groupby('subject').filter(lambda s : s['rms_ap'].median() <= max_ap_rms)
+    df = df.groupby('subject').filter(lambda s : s['lfp_power_high'].median() <= max_lfp_power)
     df = df.groupby('subject').filter(
         lambda s : (s['neuron_yield'].sum() / s['n_channels'].sum()) >= min_neurons_per_channel)
     df['region_hit'] = df['n_channels'] >= min_channels_region

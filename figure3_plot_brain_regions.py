@@ -19,7 +19,7 @@ from reproducible_ephys_paths import FIG_PATH
 
 # Settings
 REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
-NICKNAMES = False  # Whether to plot the animal nicknames instead of numbers
+NICKNAMES = True  # Whether to plot the animal nicknames instead of numbers
 MIN_CHANNELS = 5
 #SPIKE_SORTING = 'ks2_preproc_tests'
 SPIKE_SORTING = None
