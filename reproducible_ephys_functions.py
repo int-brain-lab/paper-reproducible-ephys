@@ -120,7 +120,11 @@ def figure_style(return_colors=False):
                 'CA1': sns.color_palette('colorblind')[2],
                 'DG': sns.color_palette('muted')[2],
                 'LP': sns.color_palette('colorblind')[4],
-                'PO': sns.color_palette('colorblind')[6]}
+                'PO': sns.color_palette('colorblind')[6],
+                'RS': sns.color_palette('Set2')[0],
+                'FS': sns.color_palette('Set2')[1],
+                'RS1': sns.color_palette('Set2')[2],
+                'RS2': sns.color_palette('Set2')[3]}
 
 
 def combine_regions(regions):

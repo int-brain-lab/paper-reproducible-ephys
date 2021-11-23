@@ -21,6 +21,7 @@ one = ONE()
 # Settings
 NEURON_QC = True
 DATA_DIR = data_path()
+REGIONS = ['PPC', 'CA1', 'DG', 'PO', 'LP']
 
 # Query repeated site trajectories
 traj = query()
@@ -85,98 +86,102 @@ for i in range(len(traj)):
         clusters_pass = np.unique(spikes[probe].clusters)
     if len(spikes[probe].clusters) == 0:
         continue
-    clusters_regions = clusters[probe]['acronym'][clusters_pass]
 
-    # Loop over clusters
-    for n, neuron_id in enumerate(clusters_pass):
+    # Loop over regions of interest
+    for k, region in enumerate(REGIONS):
 
-        # Get mean waveform of channel with max amplitude
-        n_waveforms = waveforms[spikes[probe].clusters[wf_spikes] == neuron_id].shape[0]
-        if n_waveforms == 0:
-            continue
-        mean_wf_ch = np.mean(waveforms[spikes[probe].clusters[wf_spikes] == neuron_id], axis=0)
-        mean_wf_ch = (mean_wf_ch
-                      - np.tile(np.mean(mean_wf_ch, axis=0), (mean_wf_ch.shape[0], 1)))
-        mean_wf = mean_wf_ch[:, np.argmin(np.min(mean_wf_ch, axis=0))]
-        wf_time = np.linspace(0, (mean_wf.shape[0] / 30000) * 1000, mean_wf.shape[0])
-        spike_amp = np.abs(np.min(mean_wf) - np.max(mean_wf))
+        # Get neuron count and firing rate
+        region_clusters = [x for x, y in enumerate(combine_regions(clusters[probe]['acronym']))
+                           if (region == y) and (x in clusters_pass)]
+        for n, neuron_id in enumerate(region_clusters):
 
-        # Get peak-to-trough ratio
-        pt_ratio = np.max(mean_wf) / np.abs(np.min(mean_wf))
+            # Get mean waveform of channel with max amplitude
+            n_waveforms = waveforms[spikes[probe].clusters[wf_spikes] == neuron_id].shape[0]
+            if n_waveforms == 0:
+                continue
+            mean_wf_ch = np.mean(waveforms[spikes[probe].clusters[wf_spikes] == neuron_id], axis=0)
+            mean_wf_ch = (mean_wf_ch
+                          - np.tile(np.mean(mean_wf_ch, axis=0), (mean_wf_ch.shape[0], 1)))
+            mean_wf = mean_wf_ch[:, np.argmin(np.min(mean_wf_ch, axis=0))]
+            wf_time = np.linspace(0, (mean_wf.shape[0] / 30000) * 1000, mean_wf.shape[0])
+            spike_amp = np.abs(np.min(mean_wf) - np.max(mean_wf))
 
-        # Get part of spike from trough to first peak after the trough
-        peak_after_trough = np.argmax(mean_wf[np.argmin(mean_wf):]) + np.argmin(mean_wf)
-        repolarization = mean_wf[np.argmin(mean_wf):np.argmax(mean_wf[np.argmin(mean_wf):]) + np.argmin(mean_wf)]
+            # Get peak-to-trough ratio
+            pt_ratio = np.max(mean_wf) / np.abs(np.min(mean_wf))
 
-        # Get spike width in ms
-        x_time = np.linspace(0, (mean_wf.shape[0] / 30000) * 1000, mean_wf.shape[0])
-        peak_to_trough = ((np.argmax(mean_wf) - np.argmin(mean_wf)) / 30000) * 1000
-        spike_width = ((peak_after_trough - np.argmin(mean_wf)) / 30000) * 1000
+            # Get part of spike from trough to first peak after the trough
+            peak_after_trough = np.argmax(mean_wf[np.argmin(mean_wf):]) + np.argmin(mean_wf)
+            repolarization = mean_wf[np.argmin(mean_wf):np.argmax(mean_wf[np.argmin(mean_wf):]) + np.argmin(mean_wf)]
 
-        # Get repolarization slope
-        if spike_width <= 0.08:
-            continue
-        else:
-            rp_slope, _, = np.polyfit(x_time[np.argmin(mean_wf):peak_after_trough],
-                                      mean_wf[np.argmin(mean_wf):peak_after_trough], 1)
+            # Get spike width in ms
+            x_time = np.linspace(0, (mean_wf.shape[0] / 30000) * 1000, mean_wf.shape[0])
+            peak_to_trough = ((np.argmax(mean_wf) - np.argmin(mean_wf)) / 30000) * 1000
+            spike_width = ((peak_after_trough - np.argmin(mean_wf)) / 30000) * 1000
 
-        # Get recovery slope
-        rc_slope, _ = np.polyfit(x_time[peak_after_trough:], mean_wf[peak_after_trough:], 1)
+            # Get repolarization slope
+            if spike_width <= 0.08:
+                continue
+            else:
+                rp_slope, _, = np.polyfit(x_time[np.argmin(mean_wf):peak_after_trough],
+                                          mean_wf[np.argmin(mean_wf):peak_after_trough], 1)
 
-        # Get firing rate
-        neuron_fr = (np.sum(spikes[probe]['clusters'] == neuron_id)
-                     / np.max(spikes[probe]['times']))
+            # Get recovery slope
+            rc_slope, _ = np.polyfit(x_time[peak_after_trough:], mean_wf[peak_after_trough:], 1)
 
-        # Get multichannel features
-        these_channels = wf_channels[spikes[probe].clusters[wf_spikes] == neuron_id][0, :]
+            # Get firing rate
+            neuron_fr = (np.sum(spikes[probe]['clusters'] == neuron_id)
+                         / np.max(spikes[probe]['times']))
 
-        # Select channels on the side of the probe with the max amplitude
-        if channels[probe]['lateral_um'][these_channels][0] > 35:
-            lat_channels = channels[probe]['lateral_um'][these_channels] > 35
-        elif channels[probe]['lateral_um'][these_channels][0] < 35:
-            lat_channels = channels[probe]['lateral_um'][these_channels] < 35
+            # Get multichannel features
+            these_channels = wf_channels[spikes[probe].clusters[wf_spikes] == neuron_id][0, :]
 
-        # Select channels within 100 um of soma
-        ax_channels = np.abs(channels[probe]['axial_um'][these_channels]
-                             - channels[probe]['axial_um'][these_channels[0]]) <= 100
-        use_channels = lat_channels & ax_channels
+            # Select channels on the side of the probe with the max amplitude
+            if channels[probe]['lateral_um'][these_channels][0] > 35:
+                lat_channels = channels[probe]['lateral_um'][these_channels] > 35
+            elif channels[probe]['lateral_um'][these_channels][0] < 35:
+                lat_channels = channels[probe]['lateral_um'][these_channels] < 35
 
-        # Get distance to soma and sort channels accordingly
-        dist_soma = np.sort(channels[probe]['axial_um'][these_channels[use_channels]]
-                            - channels[probe]['axial_um'][these_channels[use_channels][0]])
-        dist_soma = dist_soma / 1000  # convert to mm
-        sort_ch = np.argsort(channels[probe]['axial_um'][these_channels[use_channels]]
-                             - channels[probe]['axial_um'][these_channels[use_channels][0]])
-        wf_ch_sort = mean_wf_ch[:, use_channels]
-        wf_ch_sort = wf_ch_sort[:, sort_ch]
-        wf_ch_sort = wf_ch_sort.T  # put time on the second dimension
+            # Select channels within 100 um of soma
+            ax_channels = np.abs(channels[probe]['axial_um'][these_channels]
+                                 - channels[probe]['axial_um'][these_channels[0]]) <= 100
+            use_channels = lat_channels & ax_channels
 
-        # Get normalized amplitude per channel and time of waveform trough
-        norm_amp = np.empty(wf_ch_sort.shape[0])
-        time_trough = np.empty(wf_ch_sort.shape[0])
-        for k in range(wf_ch_sort.shape[0]):
-            norm_amp[k] = np.abs(np.min(wf_ch_sort[k, :]) - np.max(wf_ch_sort[k, :]))
-            time_trough[k] = (np.argmin(wf_ch_sort[k, :]) / 30000) * 1000  # ms
-        norm_amp = (norm_amp - np.min(norm_amp)) / (np.max(norm_amp) - np.min(norm_amp))
+            # Get distance to soma and sort channels accordingly
+            dist_soma = np.sort(channels[probe]['axial_um'][these_channels[use_channels]]
+                                - channels[probe]['axial_um'][these_channels[use_channels][0]])
+            dist_soma = dist_soma / 1000  # convert to mm
+            sort_ch = np.argsort(channels[probe]['axial_um'][these_channels[use_channels]]
+                                 - channels[probe]['axial_um'][these_channels[use_channels][0]])
+            wf_ch_sort = mean_wf_ch[:, use_channels]
+            wf_ch_sort = wf_ch_sort[:, sort_ch]
+            wf_ch_sort = wf_ch_sort.T  # put time on the second dimension
 
-        # Get spread and velocity
-        try:
-            popt, pcov = curve_fit(gaus, dist_soma, norm_amp, p0=[1, 0, 0.1])
-            fit = gaus(dist_soma, *popt)
-            spread = (np.sum(fit / np.max(fit) > 0.12) * 20) / 1000
-            v_below, _ = np.polyfit(time_trough[dist_soma <= 0], dist_soma[dist_soma <= 0], 1)
-            v_above, _ = np.polyfit(time_trough[dist_soma >= 0], dist_soma[dist_soma >= 0], 1)
-        except:
-            continue
+            # Get normalized amplitude per channel and time of waveform trough
+            norm_amp = np.empty(wf_ch_sort.shape[0])
+            time_trough = np.empty(wf_ch_sort.shape[0])
+            for k in range(wf_ch_sort.shape[0]):
+                norm_amp[k] = np.abs(np.min(wf_ch_sort[k, :]) - np.max(wf_ch_sort[k, :]))
+                time_trough[k] = (np.argmin(wf_ch_sort[k, :]) / 30000) * 1000  # ms
+            norm_amp = (norm_amp - np.min(norm_amp)) / (np.max(norm_amp) - np.min(norm_amp))
 
-        # Add to dataframe
-        waveforms_df = waveforms_df.append(pd.DataFrame(index=[waveforms_df.shape[0] + 1], data={
-            'eid': eid, 'probe': probe, 'lab': lab, 'subject': subject,
-            'cluster_id': neuron_id, 'regions': clusters_regions[n],
-            'spike_amp': spike_amp, 'pt_ratio': pt_ratio, 'rp_slope': rp_slope,
-            'rc_slope': rc_slope, 'peak_to_trough': peak_to_trough, 'spike_width': spike_width,
-            'firing_rate': neuron_fr, 'spread': spread, 'v_below': v_below, 'v_above': v_above,
-            'waveform_2D': [wf_ch_sort], 'dist_soma': [dist_soma], 'n_waveforms': n_waveforms}))
+            # Get spread and velocity
+            try:
+                popt, pcov = curve_fit(gaus, dist_soma, norm_amp, p0=[1, 0, 0.1])
+                fit = gaus(dist_soma, *popt)
+                spread = (np.sum(fit / np.max(fit) > 0.12) * 20) / 1000
+                v_below, _ = np.polyfit(time_trough[dist_soma <= 0], dist_soma[dist_soma <= 0], 1)
+                v_above, _ = np.polyfit(time_trough[dist_soma >= 0], dist_soma[dist_soma >= 0], 1)
+            except:
+                continue
+
+            # Add to dataframe
+            waveforms_df = waveforms_df.append(pd.DataFrame(index=[waveforms_df.shape[0] + 1], data={
+                'eid': eid, 'probe': probe, 'lab': lab, 'subject': subject,
+                'cluster_id': neuron_id, 'region': region,
+                'spike_amp': spike_amp, 'pt_ratio': pt_ratio, 'rp_slope': rp_slope,
+                'rc_slope': rc_slope, 'peak_to_trough': peak_to_trough, 'spike_width': spike_width,
+                'firing_rate': neuron_fr, 'spread': spread, 'v_below': v_below, 'v_above': v_above,
+                'waveform_2D': [wf_ch_sort], 'dist_soma': [dist_soma], 'n_waveforms': n_waveforms}))
 
 waveforms_df.to_pickle(join(DATA_DIR, 'waveform_metrics.p'))
 

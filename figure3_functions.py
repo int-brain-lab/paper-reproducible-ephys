@@ -178,7 +178,7 @@ def panel_b(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-2000, 2000]
                       bbox_to_anchor=(1, 0.1, 1, 1), bbox_transform=ax[-1].transAxes)
     cbar = fig.colorbar(im, cax=axin, ticks=im.get_clim())
     cbar.ax.set_yticklabels([f'{levels[0]}', f'{levels[1]}'])
-    cbar.set_label('Firing rate (spks/s)', rotation=270, labelpad=-8)
+    cbar.set_label('Firing rate (spks/s)', rotation=270, labelpad=0)
 
 
 def panel_c(ax, n_rec_per_lab=4, example_region='LP', example_metric='lfp_power_high', ylim=[-200, -150]):
