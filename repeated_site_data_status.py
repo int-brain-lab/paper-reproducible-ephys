@@ -69,7 +69,8 @@ def get_repeated_site_status(subj, date, probe, one=None):
     passive_exists = all([passive_alf_exists, passive_raw_exists])
 
     histology = one.alyx.rest('sessions', 'list', subject=subj,
-                              task_protocol='SWC_Histology_Serial2P_v0.0.1')
+                              task_protocol='SWC_Histology_Serial2P_v0.0.1', no_cache=True)
+    # Note: if histology does not show, try with additional argument : no_cache=True
     histology_exists = len(histology) == 1
 
     planned_trajectory = one.alyx.rest('trajectories', 'list', subject=subj, date=date,
