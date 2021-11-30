@@ -69,7 +69,8 @@ def get_repeated_site_status(subj, date, probe, one=None):
     passive_exists = all([passive_alf_exists, passive_raw_exists])
 
     histology = one.alyx.rest('sessions', 'list', subject=subj,
-                              task_protocol='SWC_Histology_Serial2P_v0.0.1')
+                              task_protocol='SWC_Histology_Serial2P_v0.0.1', no_cache=True)
+    # Note: if histology does not show, try with additional argument : no_cache=True
     histology_exists = len(histology) == 1
 
     planned_trajectory = one.alyx.rest('trajectories', 'list', subject=subj, date=date,
@@ -109,9 +110,12 @@ def get_repeated_site_status(subj, date, probe, one=None):
     if align_exists:
         traj = one.alyx.rest('trajectories', 'list', probe_insertion=align_trajectory[0]['probe_insertion'],
                              provenance='Ephys aligned histology track')
-        users = [*traj[0]['json'].keys()]
-        username = [us[20:] for us in users]
-        user_note = str(username)
+        if traj[0]['json'] is not None:
+            users = [*traj[0]['json'].keys()]
+            username = [us[20:] for us in users]
+            user_note = str(username)
+        else:
+            user_note = 'WARNING align exist but traj json None'
     else:
         user_note = ''
 
