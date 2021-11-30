@@ -146,7 +146,7 @@ def combine_regions(regions):
 
 
 def exclude_recordings(df, max_ap_rms=40, min_regions=3, min_channels_region=5, max_lfp_power=-140,
-                       min_neurons_per_channel=0.1, return_excluded=False, destriped_rms=False):
+                       min_neurons_per_channel=0.1, return_excluded=False, destriped_rms=True):
     """
     Exclude recordings from brain regions dataframe
 

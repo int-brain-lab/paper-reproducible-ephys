@@ -22,12 +22,12 @@ from reproducible_ephys_functions import data_path, labs, exclude_recordings, fi
 from reproducible_ephys_paths import FIG_PATH
 
 # Settings
-MIN_REC_LAB = 4
+MIN_REC_LAB = 1
 ANNOTATE = False
 COLORBAR = True
 #EXAMPLE_METRIC = 'rms_ap'
 EXAMPLE_METRIC = 'lfp_power_high'
-EXAMPLE_REGION = 'PO'
+EXAMPLE_REGION = 'CA1'
 REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
 METRICS = ['yield_per_channel', 'median_firing_rate', 'lfp_power_high', 'rms_ap', 'spike_amp_mean']
 LABELS = ['Neuron yield', 'Firing rate', 'LFP power', 'AP band RMS', 'Spike amp.']

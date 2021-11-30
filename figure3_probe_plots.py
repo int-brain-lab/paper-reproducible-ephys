@@ -22,7 +22,7 @@ one = ONE()
 # Plot settings
 BOUNDARY = 'DG-TH'
 # BOUNDARY = 'VIS-HPF'
-MIN_REC_PER_LAB = 1
+MIN_REC_PER_LAB = 4
 """
 PLOTS = ['fr', 'psd', 'rms_ap', 'rms_lf', 'fr_alt', 'amp', 'regions_line',
          'distance', 'amp_scatter']
@@ -45,7 +45,7 @@ FIG_SIZE = (7, 3.5)
 data = pd.read_csv(join(data_path(), 'metrics_region.csv'))
 
 # Exclude recordings
-data, excluded = exclude_recordings(data, destriped_rms=False, return_excluded=True)
+data, excluded = exclude_recordings(data, destriped_rms=True, return_excluded=True)
 
 # Reformat dataframe
 lab_number_map, institution_map, lab_colors = labs()

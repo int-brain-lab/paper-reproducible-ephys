@@ -235,7 +235,7 @@ print('Saving result..')
 metrics.to_csv(join(DATA_DIR, 'metrics_region.csv'))
 
 # Apply additional selection criteria and save list of eids
-metrics_excl = exclude_recordings(metrics)
+metrics_excl, excluded = exclude_recordings(metrics, return_excluded=True)
 np.save('repeated_site_eids.npy', np.array(metrics_excl['eid'].unique(), dtype=str))
 np.save('repeated_site_pids.npy', np.array(metrics_excl['pid'].unique(), dtype=str))
 print('Done!')
