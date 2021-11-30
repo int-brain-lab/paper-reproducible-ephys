@@ -38,7 +38,7 @@ data = pd.read_csv(join(data_path(), 'metrics_region.csv'))
 data['institute'] = data['lab'].map(institution_map)
 
 # Exclude recordings
-data = exclude_recordings(data, destriped_rms=True)
+data = exclude_recordings(data, destriped_rms=False)
 
 # Exclude labs with too few recordings
 rec_p_lab = data.groupby(['institute', 'eid']).size().reset_index()['institute'].value_counts()

@@ -55,5 +55,5 @@ labels = [{'label_text':'a', 'xpos':0, 'ypos':0, 'fontsize':10, 'weight': 'bold'
 fg.add_labels(fig, labels)
 
 # Save figure
-plt.savefig(join(FIG_PATH, 'figure3.png'))
-plt.savefig(join(FIG_PATH, 'figure3.pdf'))
+plt.savefig(join(FIG_PATH, 'figure3.png'), bbox_inches='tight', pad_inches=0)
+plt.savefig(join(FIG_PATH, 'figure3.pdf'), bbox_inches='tight', pad_inches=0)
