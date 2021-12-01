@@ -127,7 +127,14 @@ def get_acronyms_per_eid(eid, probe=None, new_spike = False):
         # Get for each cluster the location acronym                                   
         cluster_chans = clusters['channels'][Clusters]
         els = load_channel_locations(eid, one=one)   
-        acronyms = els[probe]['acronym'][cluster_chans]
+        
+        ids = els[probe]['atlas_id'][chn_inds]
+        br = atlas.BrainRegions()
+        mapped_ids = br.remap(ids, source_map='Allen', target_map='Beryl')
+        id_info = br.get(ids=mapped_ids)
+        acronyms2 = id_info['acronym']  
+        acronyms = combine_regions(acronyms2)   
+
         As[probe] = acronyms
 
     return As
@@ -241,8 +248,13 @@ def bin_neural(eid, double=True, probe=None, reg=None, query_type='remote',
             print(f'region: {reg}')
             # Get for each cluster the location x,y,z   
             cluster_chans = clusters['channels'][Clusters]      
-            els = load_channel_locations(eid, one=one)   
-            acronyms = els[probe]['acronym'][cluster_chans] 
+            els = load_channel_locations(eid, one=one) 
+
+            ids = els[probe]['atlas_id'][chn_inds]
+            br = atlas.BrainRegions()
+            mapped_ids = br.remap(ids, source_map='Allen', target_map='Beryl')
+            id_info = br.get(ids=mapped_ids)
+            acronyms = id_info['acronym']  
             acronyms2 = combine_regions(acronyms)    
             m_ask = acronyms2 == reg
             D = D[:,m_ask]
