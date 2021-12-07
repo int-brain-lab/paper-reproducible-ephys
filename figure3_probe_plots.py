@@ -37,7 +37,7 @@ LABELS = ['Firing rate (spks/s)', 'Power spectral density', 'AP band RMS']
 PLOTS = ['psd']
 LABELS = ['Power spectral density']
 
-NICKNAMES = False
+NICKNAMES = True
 YLIM = [-2000, 2000]
 FIG_SIZE = (7, 3.5)
 

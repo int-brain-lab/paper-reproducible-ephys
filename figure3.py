@@ -20,7 +20,7 @@ BOUNDARY = 'DG-TH'
 EXAMPLE_REGION = 'LP'
 EXAMPLE_METRIC = 'lfp_power_high'
 REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
-METRICS = ['yield_per_channel', 'median_firing_rate', 'lfp_power_high', 'rms_ap_p90', 'spike_amp_mean']
+METRICS = ['yield_per_channel', 'median_firing_rate', 'lfp_power_high', 'rms_ap', 'spike_amp_mean']
 LABELS = ['Neuron yield', 'Firing rate', 'LFP power', 'AP band RMS', 'Spike amp.']
 N_PERMUT = 100000  # Amount of shuffles for permutation testing
 #N_PERMUT = 10  # Amount of shuffles for permutation testing
@@ -55,5 +55,5 @@ labels = [{'label_text':'a', 'xpos':0, 'ypos':0, 'fontsize':10, 'weight': 'bold'
 fg.add_labels(fig, labels)
 
 # Save figure
-plt.savefig(join(FIG_PATH, 'figure3.png'), bbox_inches='tight', pad_inches=0)
-plt.savefig(join(FIG_PATH, 'figure3.pdf'), bbox_inches='tight', pad_inches=0)
+plt.savefig(join(FIG_PATH, 'figure3.png'))
+plt.savefig(join(FIG_PATH, 'figure3.pdf'))

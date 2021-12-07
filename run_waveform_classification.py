@@ -1,3 +1,4 @@
+# %%
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
@@ -23,9 +24,9 @@ from reproducible_ephys_functions import (query, data_path, combine_regions, fig
 
 # Settings
 CLUSTERING = 'gaussian'  # gaussian or k-means
-MIN_SPIKE_AMP = 0.05
-MIN_FR = 0.1
-MIN_WAVEFORMS = 20
+MIN_SPIKE_AMP = 0.07
+MIN_FR = 0.05
+MIN_WAVEFORMS = 10
 REGIONS = 'PO', 'LP', 'DG', 'CA1', 'PPC'
 N_TYPES = {'PO': 2, 'LP': 2, 'CA1': 3, 'PPC': 3, 'DG': 2}
 #FEATURES = ['spike_amp', 'pt_ratio', 'rp_slope', 'spike_width', 'firing_rate', 'peak_to_trough',
@@ -89,24 +90,26 @@ time_ax = np.linspace(0, (waveforms_df['waveform_2D'][1].shape[1]/30000)*1000,
 
 for i, region in enumerate(REGIONS):
     print(f'Processing {region}')
-    
-    if CLUSTERING == 'k-means':
-        # K-means clustering
-        kmeans = KMeans(n_clusters=N_TYPES[region], random_state=42, n_init=100).fit(
-            waveforms_df.loc[waveforms_df['region'] == region, FEATURES_2D].to_numpy())
-        waveforms_df.loc[waveforms_df['region'] == region, 'group_label'] = kmeans.labels_
-    elif CLUSTERING == 'gaussian':
-        # Mixture of Gaussians clustering
-        gauss_mix = GaussianMixture(n_components=N_TYPES[region]).fit(
-            waveforms_df.loc[waveforms_df['region'] == region, FEATURES_2D].to_numpy())
-        waveforms_df.loc[waveforms_df['region'] == region, 'group_label'] = gauss_mix.predict(
-            waveforms_df.loc[waveforms_df['region'] == region, FEATURES_2D].to_numpy())
 
-    # Get the RS and FS labels right
-    fs_label = waveforms_df[waveforms_df['region'] == region].groupby('group_label').mean()['firing_rate'].idxmax()
-    waveforms_df.loc[(waveforms_df['region'] == region) & (waveforms_df['group_label'] == fs_label), 'type'] = 'FS'
 
     if N_TYPES[region] == 2:
+
+        if CLUSTERING == 'k-means':
+            # K-means clustering
+            kmeans = KMeans(n_clusters=N_TYPES[region], random_state=42, n_init=100).fit(
+                waveforms_df.loc[waveforms_df['region'] == region, FEATURES_1D].to_numpy())
+            waveforms_df.loc[waveforms_df['region'] == region, 'group_label'] = kmeans.labels_
+        elif CLUSTERING == 'gaussian':
+            # Mixture of Gaussians clustering
+            gauss_mix = GaussianMixture(n_components=N_TYPES[region], random_state=42).fit(
+                waveforms_df.loc[waveforms_df['region'] == region, FEATURES_1D].to_numpy())
+            waveforms_df.loc[waveforms_df['region'] == region, 'group_label'] = gauss_mix.predict(
+                waveforms_df.loc[waveforms_df['region'] == region, FEATURES_1D].to_numpy())
+
+        # Get the RS and FS labels right
+        fs_label = waveforms_df[waveforms_df['region'] == region].groupby('group_label').mean()['firing_rate'].idxmax()
+        waveforms_df.loc[(waveforms_df['region'] == region) & (waveforms_df['group_label'] == fs_label), 'type'] = 'FS'
+
         rs_label = waveforms_df[waveforms_df['region'] == region].groupby('group_label').mean()['firing_rate'].idxmin()
         waveforms_df.loc[(waveforms_df['region'] == region) & (waveforms_df['group_label'] == rs_label), 'type'] = 'RS'
         region_wfs_df = waveforms_df[waveforms_df['region'] == region]
@@ -155,6 +158,22 @@ for i, region in enumerate(REGIONS):
         plt.savefig(join(FIG_PATH, f'{region}_2_types'), dpi=300)
 
     elif N_TYPES[region] == 3:
+
+        if CLUSTERING == 'k-means':
+            # K-means clustering
+            kmeans = KMeans(n_clusters=N_TYPES[region], random_state=42, n_init=100).fit(
+                waveforms_df.loc[waveforms_df['region'] == region, FEATURES_2D].to_numpy())
+            waveforms_df.loc[waveforms_df['region'] == region, 'group_label'] = kmeans.labels_
+        elif CLUSTERING == 'gaussian':
+            # Mixture of Gaussians clustering
+            gauss_mix = GaussianMixture(n_components=N_TYPES[region]).fit(
+                waveforms_df.loc[waveforms_df['region'] == region, FEATURES_2D].to_numpy())
+            waveforms_df.loc[waveforms_df['region'] == region, 'group_label'] = gauss_mix.predict(
+                waveforms_df.loc[waveforms_df['region'] == region, FEATURES_2D].to_numpy())
+
+        # Get the RS and FS labels right
+        fs_label = waveforms_df[waveforms_df['region'] == region].groupby('group_label').mean()['firing_rate'].idxmax()
+        waveforms_df.loc[(waveforms_df['region'] == region) & (waveforms_df['group_label'] == fs_label), 'type'] = 'FS'
 
         rs2_label = waveforms_df[waveforms_df['region'] == region].groupby('group_label').mean()['v_below'].idxmin()
         types = np.array([0, 1, 2])

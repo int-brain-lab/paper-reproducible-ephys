@@ -248,12 +248,13 @@ def panel_d(ax, metrics, regions, labels, n_permut=10000, n_rec_per_lab=4):
 
 def plots_data(n_rec_per_lab=4):
     data = pd.read_csv(join(data_path(), 'metrics_region.csv'))
-    data = exclude_recordings(data, destriped_rms=False)
+    data = exclude_recordings(data)
     lab_number_map, institution_map, lab_colors = labs()
     data['institute'] = data.lab.map(institution_map)
+    data['lab_number'] = data.lab.map(lab_number_map)
     data = data.groupby('institute').filter(
         lambda s : s['eid'].unique().shape[0] >= n_rec_per_lab)
-    data = data.sort_values(by=['institute', 'subject']).reset_index(drop=True)
+    data = data.sort_values(by=['lab_number', 'subject']).reset_index(drop=True)
     data['lab_position'] = np.linspace(0.18, 0.9, data.shape[0])
     data['in_recording'] = data['neuron_yield'].isnull() == False
     data['yield_per_channel'] = data['neuron_yield'] / data['n_channels']

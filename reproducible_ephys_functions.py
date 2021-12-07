@@ -18,18 +18,16 @@ BRAIN_REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
 
 
 def labs():
-    lab_number_map = {'cortexlab': 'Lab 1', 'mainenlab': 'Lab 2', 'zadorlab': 'Lab 3',
-                      'churchlandlab': 'Lab 4', 'angelakilab': 'Lab 5', 'wittenlab': 'Lab 6',
-                      'hoferlab': 'Lab 7', 'mrsicflogellab': 'Lab 7', 'danlab': 'Lab 8',
+    lab_number_map = {'cortexlab': 'Lab 1', 'mainenlab': 'Lab 2', 'churchlandlab': 'Lab 3',
+                      'angelakilab': 'Lab 4', 'wittenlab': 'Lab 5', 'hoferlab': 'Lab 6',
+                      'mrsicflogellab': 'Lab 6', 'danlab': 'Lab 7', 'zadorlab': 'Lab 8',
                       'steinmetzlab': 'Lab 9', 'churchlandlab_ucla': 'Lab 10'}
     institution_map = {'cortexlab': 'UCL', 'mainenlab': 'CCU', 'zadorlab': 'CSHL (Z)',
                        'churchlandlab': 'CSHL (C)', 'angelakilab': 'NYU',
                        'wittenlab': 'Princeton', 'hoferlab': 'SWC', 'mrsicflogellab': 'SWC',
                        'danlab': 'Berkeley', 'steinmetzlab': 'UW', 'churchlandlab_ucla': 'UCLA'}
-    colors = np.concatenate([sns.color_palette("Set1")[0:4], sns.color_palette("Set1")[6:],
-                             [[0, 0, 0]], [sns.color_palette("Dark2")[3]],
-                             [sns.color_palette("Set2")[0]]])
-    institutions = ['UCL', 'CCU', 'CSHL (Z)', 'CSHL (C)', 'NYU', 'Princeton', 'SWC', 'Berkeley',
+    colors = np.concatenate([sns.color_palette("Dark2"), sns.color_palette('Set2')[0:2]])
+    institutions = ['UCL', 'CCU', 'CSHL (C)', 'NYU', 'Princeton', 'SWC', 'Berkeley', 'CSHL (Z)',
                     'UW', 'UCLA']
     institution_colors = {}
     for i, inst in enumerate(institutions):
@@ -195,6 +193,7 @@ def exclude_recordings(df, max_ap_rms=40, min_regions=3, min_channels_region=5, 
 
     # Get dataframe with recordings to include
     df = df[df['subject'] != 'DY_013']  # exclude mouse DY_013
+    df = df[df['subject'] != 'ibl_witten_26']  # exclude mouse ibl_witten_26
     if destriped_rms:
         df = df.groupby('subject').filter(lambda s : s['rms_ap_p90'].median() <= max_ap_rms)
     else:
