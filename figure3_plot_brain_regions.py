@@ -1,11 +1,9 @@
-#%%
-
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Created on Fri Nov 13 09:48:00 2020
 
-@author: guido
+@author: Guido Meijer
 """
 
 from os.path import join, isdir
@@ -21,7 +19,7 @@ from reproducible_ephys_paths import FIG_PATH
 REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
 NICKNAMES = True  # Whether to plot the animal nicknames instead of numbers
 MIN_CHANNELS = 5
-#SPIKE_SORTING = 'ks2_preproc_tests'
+# SPIKE_SORTING = 'ks2_preproc_tests'
 SPIKE_SORTING = None
 ANNOTATE = False
 LAB_NAMES = True
@@ -61,13 +59,13 @@ metrics['yield_per_channel'] = metrics['neuron_yield'] / metrics['n_channels']
 for i, eid in enumerate(metrics['eid'].unique()):
     metrics.loc[metrics['eid'] == eid, 'recording_number'] = i
 
-
 # Set figure path
 if SPIKE_SORTING is None:
     FIG_PATH = join(FIG_PATH, 'brain_regions')
 else:
     FIG_PATH = join(FIG_PATH, 'brain_regions', 'new_spike_sorting')
 
+##
 # %% Plot yield per channel
 
 figure_style()
@@ -113,6 +111,7 @@ for i, inst in enumerate(rec_per_lab.index.values):
 plt.tight_layout()
 plt.savefig(join(FIG_PATH, 'figure3_regions_yield-per-channel'))
 
+##
 # %% Plot firing rate
 
 sns.set(style='ticks', context='paper', font_scale=1.8)
@@ -156,6 +155,7 @@ for i, inst in enumerate(rec_per_lab.index.values):
 plt.tight_layout()
 plt.savefig(join(FIG_PATH, 'figure3_regions_firing-rate'))
 
+##
 # %% Plot spike amplitude
 sns.set(style='ticks', context='paper', font_scale=1.8)
 f, ax1 = plt.subplots(1, 1, figsize=(15, 5), dpi=150)
@@ -198,6 +198,7 @@ for i, inst in enumerate(rec_per_lab.index.values):
 plt.tight_layout()
 plt.savefig(join(FIG_PATH, 'figure3_regions_spike-amplitude'))
 
+##
 # %% Plot peak-to-trough ratio
 sns.set(style='ticks', context='paper', font_scale=1.8)
 f, ax1 = plt.subplots(1, 1, figsize=(15, 5), dpi=150)
@@ -240,6 +241,7 @@ for i, inst in enumerate(rec_per_lab.index.values):
 plt.tight_layout()
 plt.savefig(join(FIG_PATH, 'figure3_regions_pt-ratio'))
 
+##
 # %% Plot repolarization slope
 sns.set(style='ticks', context='paper', font_scale=1.8)
 f, ax1 = plt.subplots(1, 1, figsize=(15, 5), dpi=150)
@@ -282,6 +284,7 @@ for i, inst in enumerate(rec_per_lab.index.values):
 plt.tight_layout()
 plt.savefig(join(FIG_PATH, 'figure3_regions_rp-slope'))
 
+##
 # %% Plot LFP power
 sns.set(style='ticks', context='paper', font_scale=1.5)
 f, ax1 = plt.subplots(1, 1, figsize=(15, 5), dpi=150)
@@ -324,7 +327,8 @@ for i, inst in enumerate(rec_per_lab.index.values):
 plt.tight_layout()
 plt.savefig(join(FIG_PATH, 'figure3_regions_lfp-power'))
 
-#%%  Plot rms AP
+##
+# %%  Plot rms AP
 sns.set(style='ticks', context='paper', font_scale=1.8)
 f, ax1 = plt.subplots(1, 1, figsize=(15, 5), dpi=150)
 metrics_plot = metrics.pivot(index='region_number', columns='recording_number',
@@ -366,8 +370,8 @@ for i, inst in enumerate(rec_per_lab.index.values):
 plt.tight_layout()
 plt.savefig(join(FIG_PATH, 'figure3_regions_rms-ap'))
 
-
-#%%  Plot neuron count
+##
+# %%  Plot neuron count
 sns.set(style='ticks', context='paper', font_scale=1.8)
 f, ax1 = plt.subplots(1, 1, figsize=(15, 5), dpi=150)
 metrics_plot = metrics.pivot(index='region_number', columns='recording_number',
