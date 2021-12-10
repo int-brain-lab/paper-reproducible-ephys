@@ -28,7 +28,7 @@ def panel_a(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-2000, 2000]
     depths = SITES_COORDINATES[:, 1]
     data, lab_colors = plots_data(n_rec_per_lab)
     data = data.drop_duplicates(subset='subject').reset_index()
-    rec_per_lab = data.groupby('institute').size()
+    rec_per_lab = data.groupby('lab_number').size()
     data['recording'] = np.concatenate([np.arange(i) for i in rec_per_lab.values])
 
     for iR, (subj, date, probe_label) in enumerate(zip(data['subject'], data['date'], data['probe'])):
@@ -100,7 +100,7 @@ def panel_b(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-2000, 2000]
     depths = SITES_COORDINATES[:, 1]
     data, lab_colors = plots_data(n_rec_per_lab)
     data = data.drop_duplicates(subset='subject').reset_index()
-    rec_per_lab = data.groupby('institute').size()
+    rec_per_lab = data.groupby('lab_number').size()
     data['recording'] = np.concatenate([np.arange(i) for i in rec_per_lab.values])
 
     for iR, (subj, date, probe_label) in enumerate(zip(data['subject'], data['date'], data['probe'])):
@@ -185,8 +185,9 @@ def panel_c(ax, n_rec_per_lab=4, example_region='LP', example_metric='lfp_power_
     data, lab_colors = plots_data(n_rec_per_lab)
     data_example = pd.DataFrame(data={
         'institute': data.loc[data['region'] == example_region, 'institute'],
+        'lab_number': data.loc[data['region'] == example_region, 'lab_number'],
         example_metric: data.loc[data['region'] == example_region, example_metric].values})
-    data_example = data_example.sort_values('institute')
+    data_example = data_example.sort_values('lab_number')
     cmap = []
     for i, inst in enumerate(data_example['institute'].unique()):
         cmap.append(lab_colors[inst])
@@ -200,7 +201,8 @@ def panel_c(ax, n_rec_per_lab=4, example_region='LP', example_metric='lfp_power_
              [data_example[example_metric].mean()] * data_example['institute'].unique().shape[0],
              color='r', lw=1)
     ax.set(ylabel=f'LFP power in {example_region} (dB)', xlabel='',
-           xlim=[-.5, len(data['institute'].unique()) + .5], ylim=ylim)
+           xlim=[-.5, len(data['institute'].unique()) + .5], ylim=ylim,
+           yticks=np.arange(ylim[0], ylim[1]+1, 10))
     ax.set_xticklabels(data_example['institute'].unique(), rotation=30, ha='right')
     sns.despine(trim=True)
 

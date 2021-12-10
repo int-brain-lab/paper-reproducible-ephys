@@ -22,7 +22,7 @@ from reproducible_ephys_functions import data_path, labs, exclude_recordings, fi
 from reproducible_ephys_paths import FIG_PATH
 
 # Settings
-MIN_REC_LAB = 1
+MIN_REC_LAB = 4
 ANNOTATE = False
 COLORBAR = True
 #EXAMPLE_METRIC = 'rms_ap'
@@ -38,7 +38,7 @@ data = pd.read_csv(join(data_path(), 'metrics_region.csv'))
 data['institute'] = data['lab'].map(institution_map)
 
 # Exclude recordings
-data = exclude_recordings(data, destriped_rms=False)
+data = exclude_recordings(data)
 
 # Exclude labs with too few recordings
 rec_p_lab = data.groupby(['institute', 'eid']).size().reset_index()['institute'].value_counts()
