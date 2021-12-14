@@ -65,7 +65,8 @@ for i_pid, pid in enumerate(pids):
     spikes, clusters, channels = load_spike_sorting_with_channel(eid=eid, one=one, probe=pname,
                                                                  dataset_types=['spikes.amps', 'spikes.depths'],
                                                                  brain_atlas=ba)
-
+    # unnest
+    spikes, clusters, channels = spikes[pname], clusters[pname], channels[pname]
     # PLOT
     # HISTOLOGY
     if 'atlas_id' in channels.keys():
@@ -78,10 +79,10 @@ for i_pid, pid in enumerate(pids):
     # RASTER
     bbplot.driftmap(spikes['times'],
                     spikes['depths'],
-                    ax=axs[2:], plot_style='bincount')
+                    ax=axs[2], plot_style='bincount')
 
     # Save plot
-    fname = f'{fig_path}Drift__{eid}'
+    fname = fig_path.joinpath(f'{pid}_RasterHist.pdf')
     plt.savefig(fname)
     plt.close()
 
@@ -90,4 +91,3 @@ for i_pid, pid in enumerate(pids):
     # break
     fig.savefig(fname=figname)
     plt.close(fig)
-    break
