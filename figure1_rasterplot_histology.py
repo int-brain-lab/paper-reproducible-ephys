@@ -11,8 +11,8 @@ from reproducible_ephys_functions import query
 from pathlib import Path
 import random
 import brainbox.plot as bbplot
-
-from brainbox.io.one import load_spike_sorting_with_channel
+# from brainbox.io.one import load_spike_sorting_with_channel
+from brainbox.io.one import load_spike_sorting_fast
 from ibllib.atlas import AllenAtlas
 from ibllib.atlas.regions import BrainRegions
 from brainbox.ephys_plots import plot_brain_regions
@@ -31,7 +31,7 @@ n_plt = len(flat_vect_plt)
 
 OVERWRITE = False
 
-fig_path = Path.home().joinpath('Desktop/Overview_plot_BWM/Repeatedsite/Raster_Fig1')
+fig_path = Path.home().joinpath('Desktop/Overview_plot_BWM/Repeatedsite/Raster_Fig1_V2')
 fig_path.mkdir(parents=True, exist_ok=True)
 
 # Get pid used in Repeated site analysis
@@ -62,9 +62,13 @@ for i_pid, pid in enumerate(pids):
     # GET SPIKE SORTING DATA
     fig, axs = plt.subplots(nrows=1, ncols=n_plt, figsize=(14, 5), gridspec_kw={'width_ratios': flat_vect_plt})
     fig.suptitle(path_name)
-    spikes, clusters, channels = load_spike_sorting_with_channel(eid=eid, one=one, probe=pname,
-                                                                 dataset_types=['spikes.amps', 'spikes.depths'],
-                                                                 brain_atlas=ba)
+    spikes, clusters, channels = load_spike_sorting_fast(eid=eid, one=one, probe=pname,
+                                                         dataset_types=['spikes.amps', 'spikes.depths'])
+
+    # spikes, clusters, channels = load_spike_sorting_with_channels(eid=eid, one=one, probe=pname,
+    #                                                              dataset_types=['spikes.amps', 'spikes.depths'],
+    #                                                              brain_atlas=ba)
+
     # unnest
     spikes, clusters, channels = spikes[pname], clusters[pname], channels[pname]
     # PLOT
@@ -82,12 +86,7 @@ for i_pid, pid in enumerate(pids):
                     ax=axs[2], plot_style='bincount')
 
     # Save plot
-    fname = fig_path.joinpath(f'{pid}_RasterHist.pdf')
-    plt.savefig(fname)
-    plt.close()
-
-    # Save figure
     fig.tight_layout()
-    # break
-    fig.savefig(fname=figname)
+    fname = fig_path.joinpath(f'{pid}_RasterHist.pdf')
+    plt.savefig(fname=fname)
     plt.close(fig)
