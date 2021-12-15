@@ -189,6 +189,10 @@ def exclude_recordings(df, max_ap_rms=40, min_regions=3, min_channels_region=5, 
                     / df.groupby('subject')['n_channels'].sum()) < min_neurons_per_channel
     df['region_hit'] = df['n_channels'] > min_channels_region
     df_excluded['missed_target'] = df.groupby('subject')['region_hit'].sum() < min_regions
+    df_excluded['artifacts'] = False
+    df_excluded.loc['DY_013', 'artifacts'] = True
+    df_excluded.loc['ibl_witten_26', 'artifacts'] = True
+    df_excluded['excluded'] = df_excluded.any(axis=1, bool_only=True)
     df_excluded = df_excluded.reset_index()
 
     # Get dataframe with recordings to include

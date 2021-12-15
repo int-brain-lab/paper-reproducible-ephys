@@ -22,7 +22,6 @@ one = ONE()
 # Plot settings
 BOUNDARY = 'DG-TH'
 # BOUNDARY = 'VIS-HPF'
-MIN_REC_PER_LAB = 1
 """
 PLOTS = ['fr', 'psd', 'rms_ap', 'rms_lf', 'fr_alt', 'amp', 'regions_line',
          'distance', 'amp_scatter']
@@ -30,15 +29,13 @@ LABELS = ['Firing rate (spks/s)', 'Power spectral density', 'AP band RMS', 'LFP 
           '', '', 'Histology Regions',
           'Distance from Repeated Site', 'Firing rate (spks/s)']
 """
-
+"""
 PLOTS = ['amp_scatter', 'psd', 'rms_ap']
 LABELS = ['Firing rate (spks/s)', 'Power spectral density', 'AP band RMS']
 """
 PLOTS = ['psd']
 LABELS = ['Power spectral density']
-"""
 
-NICKNAMES = False
 YLIM = [-2000, 2000]
 FIG_SIZE = (7, 3.5)
 
@@ -46,17 +43,18 @@ FIG_SIZE = (7, 3.5)
 data = pd.read_csv(join(data_path(), 'metrics_region_all.csv'))
 
 # Exclude recordings
-#data, excluded = exclude_recordings(data, return_excluded=True)
+_, excluded = exclude_recordings(data, return_excluded=True)
 
 # Reformat dataframe
 lab_number_map, institution_map, lab_colors = labs()
 data['institution'] = data.lab.map(institution_map)
-data = data.drop_duplicates(subset='subject')
+data = data.drop_duplicates(subset='subject', ignore_index=True)
+data = data.set_index('subject')
+excluded = excluded.set_index('subject')
 
-# Exclude labs with too few recordings done
-data = data.groupby('institution').filter(
-    lambda s : s['eid'].unique().shape[0] >= MIN_REC_PER_LAB)
-data = data.sort_values(by=['institution', 'subject']).reset_index(drop=True)
+# Sort by included, excluded
+data['excluded'] = excluded['excluded']
+data = data.sort_values(by=['excluded']).reset_index()
 
 # Get lab info
 rec_per_lab = data.groupby('institution').size()
@@ -80,12 +78,10 @@ for p, plot_name in enumerate(PLOTS):
                                         boundary_align=BOUNDARY, figsize=FIG_SIZE)
 
     for i, subject in enumerate(data['subject']):
-        if NICKNAMES:
-            axs[i].set_title(subject, rotation=30, ha='left',
-                             color=lab_colors[data.loc[i, 'institution']])
+        if data.loc[i, 'excluded'] == False:
+            axs[i].set_title(subject, rotation=30, ha='left', color='green', fontsize=4)
         else:
-            axs[i].set_title(data.loc[i, 'recording'] + 1,
-                             color=lab_colors[data.loc[i, 'institution']])
+            axs[i].set_title(subject, rotation=30, ha='left', color='red', fontsize=4)
 
         if i == 0:
             axs[i].tick_params(axis='y')
@@ -102,19 +98,10 @@ for p, plot_name in enumerate(PLOTS):
         cbar.set_label(LABELS[p], rotation=270, labelpad=-8)
         cbar.ax.tick_params()
 
-    for i, inst in enumerate(plot_titles.index.values):
-        if NICKNAMES:
-            plt.figtext(plot_titles.loc[inst, 'lab_position'], 0.94, inst, color=lab_colors[inst],
-                        fontsize=9, ha='center')
-        else:
-            plt.figtext((plot_titles.loc[inst, 'lab_position'] - 0.06) * 1.02, 0.94, inst,
-                        color=lab_colors[inst], ha='left')
-            #plt.figtext(plot_titles.loc[inst, 'lab_position'], 0.94, inst,
-            #            color=lab_colors[inst], ha='center')
     if not isdir(join(FIG_PATH, 'probe_plots')):
         mkdir(join(FIG_PATH, 'probe_plots'))
 
-    plt.savefig(join(FIG_PATH, 'probe_plots', 'figure3_probe_%s.png' % plot_name), dpi=300)
-    plt.savefig(join(FIG_PATH, 'probe_plots', 'figure3_probe_%s.pdf' % plot_name))
+    plt.savefig(join(FIG_PATH, 'probe_plots', 'figure3_probe_excl_%s.png' % plot_name), dpi=300)
+    plt.savefig(join(FIG_PATH, 'probe_plots', 'figure3_probe_excl_%s.pdf' % plot_name))
 
 

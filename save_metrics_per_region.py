@@ -17,9 +17,12 @@ from one.api import ONE
 from ibllib.atlas import AllenAtlas
 ba = AllenAtlas()
 one = ONE()
+import ssl
+ssl._create_default_https_context = ssl._create_unverified_context
 
 # Settings
 NEURON_QC = True
+EXCL_REC = False  # Exclude recordings that missed target
 DOWNLOAD_WAVEFORMS = False  # Only set to true if you're doing spike waveform analyses
 REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
 LFP_BAND_HIGH = [20, 80]
@@ -27,7 +30,10 @@ LFP_BAND_LOW = [2, 15]
 DATA_DIR = data_path()
 
 # Query repeated site trajectories
-traj = query()
+if EXCL_REC:
+    traj = query()
+else:
+    traj = query(min_regions=0)
 
 # Initialize dataframe
 rep_site = pd.DataFrame()
@@ -232,10 +238,13 @@ for i in range(len(traj)):
 
 # Save result
 print('Saving result..')
-metrics.to_csv(join(DATA_DIR, 'metrics_region.csv'))
+if EXCL_REC:
+    metrics.to_csv(join(DATA_DIR, 'metrics_region.csv'))
 
-# Apply additional selection criteria and save list of eids
-metrics_excl, excluded = exclude_recordings(metrics, return_excluded=True)
-np.save('repeated_site_eids.npy', np.array(metrics_excl['eid'].unique(), dtype=str))
-np.save('repeated_site_pids.npy', np.array(metrics_excl['pid'].unique(), dtype=str))
+    # Apply additional selection criteria and save list of eids
+    metrics_excl, excluded = exclude_recordings(metrics, return_excluded=True)
+    np.save('repeated_site_eids.npy', np.array(metrics_excl['eid'].unique(), dtype=str))
+    np.save('repeated_site_pids.npy', np.array(metrics_excl['pid'].unique(), dtype=str))
+else:
+    metrics.to_csv(join(DATA_DIR, 'metrics_region_all.csv'))
 print('Done!')
