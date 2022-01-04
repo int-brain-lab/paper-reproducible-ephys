@@ -22,7 +22,7 @@ one = ONE()
 # Plot settings
 BOUNDARY = 'DG-TH'
 # BOUNDARY = 'VIS-HPF'
-MIN_REC_PER_LAB = 1
+MIN_REC_PER_LAB = 4
 """
 PLOTS = ['fr', 'psd', 'rms_ap', 'rms_lf', 'fr_alt', 'amp', 'regions_line',
          'distance', 'amp_scatter']
@@ -30,23 +30,22 @@ LABELS = ['Firing rate (spks/s)', 'Power spectral density', 'AP band RMS', 'LFP 
           '', '', 'Histology Regions',
           'Distance from Repeated Site', 'Firing rate (spks/s)']
 """
-
+"""
 PLOTS = ['amp_scatter', 'psd', 'rms_ap']
 LABELS = ['Firing rate (spks/s)', 'Power spectral density', 'AP band RMS']
 """
 PLOTS = ['psd']
 LABELS = ['Power spectral density']
-"""
 
 NICKNAMES = False
 YLIM = [-2000, 2000]
 FIG_SIZE = (7, 3.5)
 
 # Load in recordings
-data = pd.read_csv(join(data_path(), 'metrics_region_all.csv'))
+data = pd.read_csv(join(data_path(), 'metrics_region.csv'))
 
 # Exclude recordings
-#data, excluded = exclude_recordings(data, return_excluded=True)
+data, excluded = exclude_recordings(data, return_excluded=True)
 
 # Reformat dataframe
 lab_number_map, institution_map, lab_colors = labs()
@@ -64,14 +63,15 @@ data['recording'] = np.concatenate([np.arange(i) for i in rec_per_lab.values])
 data['lab_position'] = np.linspace(0.18, 0.91, data.shape[0])
 plot_titles = data.groupby('institution').mean()
 
+##
 # %% Plotting
 figure_style()
 for p, plot_name in enumerate(PLOTS):
     print('Generating %s plot' % plot_name)
     if plot_name == 'amp_scatter':
         f, axs, cbar = plot_2D_features(data['subject'], data['date'], data['probe'], one=one,
-                                  brain_atlas=brain_atlas, plot_type=plot_name,
-                                  boundary_align=BOUNDARY, show_regions=True, figsize=FIG_SIZE)
+                                        brain_atlas=brain_atlas, plot_type=plot_name,
+                                        boundary_align=BOUNDARY, show_regions=True, figsize=FIG_SIZE)
     else:
 
         f, axs, cbar = plot_2D_features(data['subject'], data['date'], data['probe'], one=one,
@@ -98,7 +98,7 @@ for p, plot_name in enumerate(PLOTS):
         axs[i].set(xticks=[], ylim=YLIM)
 
     if plot_name[-4:] != 'line':
-        #cbar = axs[-1].images[-1].colorbar
+        # cbar = axs[-1].images[-1].colorbar
         cbar.set_label(LABELS[p], rotation=270, labelpad=-8)
         cbar.ax.tick_params()
 
@@ -109,8 +109,8 @@ for p, plot_name in enumerate(PLOTS):
         else:
             plt.figtext((plot_titles.loc[inst, 'lab_position'] - 0.06) * 1.02, 0.94, inst,
                         color=lab_colors[inst], ha='left')
-            #plt.figtext(plot_titles.loc[inst, 'lab_position'], 0.94, inst,
-            #            color=lab_colors[inst], ha='center')
+            # plt.figtext(plot_titles.loc[inst, 'lab_position'], 0.94, inst,
+            #             color=lab_colors[inst], ha='center')
     if not isdir(join(FIG_PATH, 'probe_plots')):
         mkdir(join(FIG_PATH, 'probe_plots'))
 

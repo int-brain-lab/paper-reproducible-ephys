@@ -17,12 +17,10 @@ from one.api import ONE
 from ibllib.atlas import AllenAtlas
 ba = AllenAtlas()
 one = ONE()
-import ssl
-ssl._create_default_https_context = ssl._create_unverified_context
 
 # Settings
 NEURON_QC = True
-EXCL_REC = False  # Exclude recordings that missed target
+EXCL_REC = True  # Exclude recordings that missed target
 DOWNLOAD_WAVEFORMS = False  # Only set to true if you're doing spike waveform analyses
 REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
 LFP_BAND_HIGH = [20, 80]
@@ -33,7 +31,8 @@ DATA_DIR = data_path()
 if EXCL_REC:
     traj = query()
 else:
-    traj = query(min_regions=0)
+    traj = query(str_query='probe_insertion__session__project__name__icontains,ibl_neuropixel_brainwide_01',
+                 min_regions=0)
 
 # Initialize dataframe
 rep_site = pd.DataFrame()
