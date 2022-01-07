@@ -1,9 +1,10 @@
 """
 Display all trajectories in one single brain volume
-Author: Mayo
+Author: Mayo, Gaelle
 """
 
-
+import numpy as np
+from ibllib.atlas.regions import BrainRegions
 from one.api import ONE
 import ibllib.atlas as atlas
 from mayavi import mlab
@@ -38,3 +39,21 @@ for traj in traj_rep:
     color = color_cycle(1)
     mlab.plot3d(mlapdv[:, 1], mlapdv[:, 2], mlapdv[:, 0],
                 line_width=1, tube_radius=20, color=color)
+
+
+'''
+Display structure meshes within the brain volume
+You can download the mesh object for each brain structure here:
+http://download.alleninstitute.org/informatics-archive/current-release/mouse_ccf/annotation/ccf_2017/structure_meshes/
+'''
+br = BrainRegions()
+
+target_area = ['VISa', 'CA1', 'DG', 'LP', 'PO']
+for target in target_area:
+    rindx_void = np.where(br.acronym == target)
+    idx = rindx_void[0][0]
+    mesh_id = br.id[idx]
+    # print(mesh_id) --> useful to download the specific mesh obj from the Allen website
+    color = br.rgb[idx,:]/255
+    path = f'/Users/gaelle/Desktop/Allenmesh/{mesh_id}.obj.txt'
+    rendering.add_mesh(fig, path, color, opacity=0.6)
