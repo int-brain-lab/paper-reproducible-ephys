@@ -2,6 +2,7 @@
 Supplementary Fig 1-1a
 Plot selected trajectories, with specific brain regions highlighted
 '''
+# Author: Gaelle
 
 import numpy as np
 from ibllib.atlas.regions import BrainRegions
@@ -10,7 +11,6 @@ import ibllib.atlas as atlas
 from mayavi import mlab
 from atlaselectrophysiology import rendering
 from ibllib.plots import color_cycle
-
 
 one = ONE()
 ba = atlas.AllenAtlas(25)
@@ -27,7 +27,7 @@ list_pid2 = ['523f8301-4f56-4faf-ab33-a9ff11331118',  # GOOD
             'f86e9571-63ff-4116-9c40-aa44d57d2da9',
              'f936a701-5f8a-4aa1-b7a9-9f8b5b69bc7c']
 
-list_pid3 = ['7cbecb3f-6a8a-48e5-a3be-8f7a762b5a04', # BAD - Miss target
+list_pid3 = ['7cbecb3f-6a8a-48e5-a3be-8f7a762b5a04',  # BAD - Miss target
             '8ca1a850-26ef-42be-8b28-c2e2d12f06d6',
             '63a32e5c-f63a-450d-85cb-140947b67eaf']
 
@@ -57,7 +57,6 @@ for list_pid, color_list in zip(list_pid_overall, color_list_overall):
         color = color_cycle(1)
         mlab.plot3d(mlapdv[:, 1], mlapdv[:, 2], mlapdv[:, 0],
                     line_width=1, tube_radius=20, color=color_list)
-
 
 '''
 Display structure meshes within the brain volume
