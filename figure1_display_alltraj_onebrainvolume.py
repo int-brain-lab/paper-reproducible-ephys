@@ -54,6 +54,6 @@ for target in target_area:
     idx = rindx_void[0][0]
     mesh_id = br.id[idx]
     # print(mesh_id) --> useful to download the specific mesh obj from the Allen website
-    color = br.rgb[idx,:]/255
+    color = br.rgb[idx, :]/255
     path = f'/Users/gaelle/Desktop/Allenmesh/{mesh_id}.obj.txt'
     rendering.add_mesh(fig, path, color, opacity=0.6)
