@@ -42,10 +42,10 @@ ax = {'panel_A': fg.place_axes_on_grid(fig, xspan=[0.05, 0.6], yspan=[0.05, 0.45
 
 # Call functions to plot panels
 panel_a(fig, ax['panel_A'], n_rec_per_lab=MIN_REC_PER_LAB, boundary_align=BOUNDARY, one=one)
-panel_b(fig, ax['panel_B'], n_rec_per_lab=MIN_REC_PER_LAB, boundary_align=BOUNDARY, one=one)
-panel_c(ax['panel_C'], n_rec_per_lab=MIN_REC_PER_LAB, example_region=EXAMPLE_REGION,
-        example_metric=EXAMPLE_METRIC, ylim=[-180, -150])
-panel_d(ax['panel_D'], METRICS, REGIONS, LABELS, n_permut=N_PERMUT, n_rec_per_lab=MIN_REC_PER_LAB)
+#panel_b(fig, ax['panel_B'], n_rec_per_lab=MIN_REC_PER_LAB, boundary_align=BOUNDARY, one=one)
+#panel_c(ax['panel_C'], n_rec_per_lab=MIN_REC_PER_LAB, example_region=EXAMPLE_REGION,
+#        example_metric=EXAMPLE_METRIC, ylim=[-180, -150])
+#panel_d(ax['panel_D'], METRICS, REGIONS, LABELS, n_permut=N_PERMUT, n_rec_per_lab=MIN_REC_PER_LAB)
 
 # Add subplot labels
 labels = [{'label_text':'a', 'xpos':0, 'ypos':0, 'fontsize':10, 'weight': 'bold', 'ha': 'right', 'va': 'bottom'},

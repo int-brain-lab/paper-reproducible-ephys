@@ -31,208 +31,206 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
     z_extent = []
 
     for iR, (subj, date, probe_label) in enumerate(zip(subjects, dates, probes)):
-        try:
-            # Download the data and get paths to downloaded data
-            eid = one.search(subject=subj, task_protocol='ephys', date=date)[0]
-            if iR == 0:
-                chn_inds = one.load_dataset(eid, dataset=['channels.rawInd.npy'],
-                                            collection=f'alf/{probe_label}')
+        
+        # Download the data and get paths to downloaded data
+        eid = one.search(subject=subj, task_protocol='ephys', date=date)[0]
+        if iR == 0:
+            chn_inds = one.load_dataset(eid, dataset=['channels.rawInd.npy'],
+                                        collection=f'alf/{probe_label}')
 
-            ephys_path = one.eid2path(eid).joinpath('raw_ephys_data', probe_label)
-            collections = one.list_collections(eid)
-            if f'alf/{probe_label}/pykilosort' in collections:
-                collection = f'alf/{probe_label}/pykilosort'
-                print(collection)
-            else:
-                collection = f'alf/{probe_label}'
-                print(collection)
+        ephys_path = one.eid2path(eid).joinpath('raw_ephys_data', probe_label)
+        collections = one.list_collections(eid)
+        if f'alf/{probe_label}/pykilosort' in collections:
+            collection = f'alf/{probe_label}/pykilosort'
+            print(collection)
+        else:
+            collection = f'alf/{probe_label}'
+            print(collection)
 
-            insertion = one.alyx.rest('insertions', 'list', session=eid, name=probe_label)
-            xyz_picks = np.array(insertion[0].get('json').get('xyz_picks', 0)) / 1e6
-            align_key = insertion[0].get('json').get('extended_qc').get('alignment_stored', None)
-            resolved = insertion[0].get('json').get('extended_qc').get('alignment_resolved', False)
-            tracing = insertion[0].get('json').get('extended_qc').get('tracing_exists', False)
+        insertion = one.alyx.rest('insertions', 'list', session=eid, name=probe_label)
+        xyz_picks = np.array(insertion[0].get('json').get('xyz_picks', 0)) / 1e6
+        align_key = insertion[0].get('json').get('extended_qc').get('alignment_stored', None)
+        resolved = insertion[0].get('json').get('extended_qc').get('alignment_resolved', False)
+        tracing = insertion[0].get('json').get('extended_qc').get('tracing_exists', False)
 
-            if align_key:
-                trajectory = one.alyx.rest('trajectories', 'list',
-                                           provenance='Ephys aligned histology track',
-                                           probe_insertion=insertion[0]['id'])
-                alignments = trajectory[0]['json']
-                feature = np.array(alignments[align_key][0])
-                track = np.array(alignments[align_key][1])
-                # Instantiate EphysAlignment object
-                ephysalign = EphysAlignment(xyz_picks, depths, track_prev=track,
-                                            feature_prev=feature,
-                                            brain_atlas=brain_atlas)
-                xyz_channels = ephysalign.get_channel_locations(feature, track)
-                z = xyz_channels[:, 2] * 1e6
-                brain_regions = ephysalign.get_brain_locations(xyz_channels)
+        if align_key:
+            trajectory = one.alyx.rest('trajectories', 'list',
+                                       provenance='Ephys aligned histology track',
+                                       probe_insertion=insertion[0]['id'])
+            alignments = trajectory[0]['json']
+            feature = np.array(alignments[align_key][0])
+            track = np.array(alignments[align_key][1])
+            # Instantiate EphysAlignment object
+            ephysalign = EphysAlignment(xyz_picks, depths, track_prev=track,
+                                        feature_prev=feature,
+                                        brain_atlas=brain_atlas)
+            xyz_channels = ephysalign.get_channel_locations(feature, track)
+            z = xyz_channels[:, 2] * 1e6
+            brain_regions = ephysalign.get_brain_locations(xyz_channels)
 
-                boundaries, colours, regions = get_brain_boundaries(brain_regions, z, r)
-                if show_regions:
-                    bound_reg, col_reg, reg_name = get_brain_boundaries_interest(brain_regions,
-                                                                                 z, r)
-
-                if resolved:
-                    status = 'resolved'
-                    col = 'g'
-                else:
-                    status = 'aligned'
-                    col = 'y'
-
-            elif tracing:
-
-                ephysalign = EphysAlignment(xyz_picks, depths, brain_atlas=brain_atlas)
-                feature = ephysalign.feature_init
-                track = ephysalign.track_init
-                xyz_channels = ephysalign.get_channel_locations(feature, track)
-                z = xyz_channels[:, 2] * 1e6
-                brain_regions = ephysalign.get_brain_locations(xyz_channels)
-
-                boundaries, colours, regions = get_brain_boundaries(brain_regions, z, r)
-                if show_regions:
-                    bound_reg, col_reg, reg_name = get_brain_boundaries_interest(brain_regions,
-                                                                                 z, r)
-
-                status = 'histology'
-                col = 'r'
-
-            else:
-                z = depths
-                status = 'channels'
-                col = 'k'
-                boundaries = []
-
-            if boundary_align is not None:
-                z_subtract = boundaries[np.where(np.array(regions) == boundary_align)[0][0] + 1]
-                z = z - z_subtract
-                boundaries, colours, regions = get_brain_boundaries(brain_regions, z, r)
-                if show_regions:
-                    bound_reg, col_reg, reg_name = get_brain_boundaries_interest(brain_regions,
-                                                                                 z, r)
-
-            z_min = np.min(z)
-            z_extent.append(z_min)
-            z_max = np.max(z)
-            z_extent.append(z_max)
-            ax = axs[iR]
-
-            if plot_type == 'psd':
-                data = psd_data(ephys_path, one, eid, chn_inds, freq_range)
-                im = plot_probe(data, z, ax, cmap='viridis')
-
-            elif plot_type == 'rms_ap':
-                data = rms_data(ephys_path, one, eid, chn_inds, 'AP')
-                im = plot_probe(data, z, ax, cmap='plasma')
-
-            elif plot_type == 'rms_lf':
-                data = rms_data(ephys_path, one, eid, chn_inds, 'LF')
-                im = plot_probe(data, z, ax, cmap='magma')
-
-            elif plot_type == 'fr_alt':
-                data = fr_data_alt(eid, collection, one, depths)
-                im = plot_probe(data, z, ax, cmap='magma')
-
-            elif plot_type == 'fr':
-                y, data = fr_data(eid, collection, one, depths)
-                y = ephysalign.get_channel_locations(feature, track, y / 1e6)[:, 2] * 1e6
-                if boundary_align is not None:
-                    y = y - z_subtract
-                im = NonUniformImage(ax, interpolation='nearest', cmap='magma')
-                levels = np.nanquantile(data, [0.1, 0.9])
-                im.set_clim(levels[0], levels[1])
-                im.set_data(np.array([0]), y, data)
-                ax.images.append(im)
-
-            elif plot_type == 'amp':
-                y, data = amp_data(eid, collection, one, depths)
-                y = ephysalign.get_channel_locations(feature, track, y / 1e6)[:, 2] * 1e6
-                if boundary_align is not None:
-                    y = y - z_subtract
-                im = NonUniformImage(ax, interpolation='nearest', cmap='magma')
-                levels = np.nanquantile(data, [0.1, 0.9])
-                im.set_clim(levels[0], levels[1])
-                im.set_data(np.array([0]), y, data)
-                ax.images.append(im)
-
-            elif plot_type == 'amp_scatter':
-                x, y, c = spike_amp_data(eid, collection, one)
-                y = ephysalign.get_channel_locations(feature, track, y / 1e6)[:, 2] * 1e6
-                if boundary_align is not None:
-                    y = y - z_subtract
-                levels = [0, 30]
-                im = ax.scatter(x, y, c=c, s=8, cmap='hot', vmin=levels[0], vmax=levels[1])
-                ax.images.append(im)
-                ax.set_xlim(1.3, 3)
-
-            elif plot_type == 'fr_line':
-                y, data = fr_data(eid, collection, one, depths)
-                y = ephysalign.get_channel_locations(feature, track, y / 1e6)[:, 2] * 1e6
-                if boundary_align is not None:
-                    y = y - z_subtract
-                ax.plot(data, y, 'k', linewidth=2)
-                ax.set_xlim(0, 50)
-
-            elif plot_type == 'amp_line':
-                y, data = amp_data(eid, collection, one, depths)
-                y = ephysalign.get_channel_locations(feature, track, y / 1e6)[:, 2] * 1e6
-                if boundary_align is not None:
-                    y = y - z_subtract
-                ax.plot(data, y, 'k', linewidth=2)
-                ax.set_xlim(0, 200)
-
-            elif plot_type == 'regions_line':
-                region, region_lab, region_col = region_data(xyz_channels, z, brain_atlas)
-                for reg, co, lab in zip(region, region_col, region_lab):
-                    height = np.abs(reg[1] - reg[0])
-                    color = co / 255
-                    ax.bar(x=0.5, height=height, width=1, color=color, bottom=reg[0],
-                           edgecolor='w')
-                    ax.text(x=0.2, y=reg[0] + height/2, s=lab[1], fontdict=None, fontsize=5)
-
-                ax.get_xaxis().set_visible(False)
-                ax.spines['right'].set_visible(False)
-                ax.spines['top'].set_visible(False)
-                ax.spines['bottom'].set_visible(False)
-
-            elif plot_type == 'distance':
-                rep_site = {
-                    'x': -2243,
-                    'y': -2000,
-                    'z': 0.0,
-                    'phi': 180.0,
-                    'theta': 15.0,
-                    'depth': 4000
-                }
-                traj_repeated = atlas.Insertion.from_dict(rep_site).trajectory
-                dist = traj_repeated.mindist(xyz_channels) * 1e6
-                dist = dist[:, np.newaxis]
-                im = NonUniformImage(ax, interpolation='nearest', cmap='Purples')
-                levels = [0, 1000]
-                im.set_clim(levels[0], levels[1])
-                im.set_data(np.array([0]), z, dist)
-                ax.images.append(im)
-
-            ax.set_title(subj + '\n' + status, color=col)
-
+            boundaries, colours, regions = get_brain_boundaries(brain_regions, z, r)
             if show_regions:
-                for reg, co, lab in zip(bound_reg, col_reg, reg_name):
-                    height = np.abs(reg[1] - reg[0])
-                    color = co / 255
-                    width = ax.get_xlim()[1]
-                    ax.bar(x=width/2, height=height, width=width, color=color, bottom=reg[0],
-                           edgecolor='k', alpha=0.5)
-                    """
-                    ax.text(x=width/2, y=reg[0] + height / 2, s=lab, fontdict=None, fontsize=10,
-                            color='w', fontweight='bold')
-                    """
-            elif show_boundaries:
-                for bound, col in zip(boundaries, colours):
-                    ax.hlines(bound, *ax.get_xlim(), linestyles='dashed',
-                              colors=col/255)
+                bound_reg, col_reg, reg_name = get_brain_boundaries_interest(brain_regions,
+                                                                             z, r)
 
-        except Exception as err:
-            print(err)
+            if resolved:
+                status = 'resolved'
+                col = 'g'
+            else:
+                status = 'aligned'
+                col = 'y'
+
+        elif tracing:
+
+            ephysalign = EphysAlignment(xyz_picks, depths, brain_atlas=brain_atlas)
+            feature = ephysalign.feature_init
+            track = ephysalign.track_init
+            xyz_channels = ephysalign.get_channel_locations(feature, track)
+            z = xyz_channels[:, 2] * 1e6
+            brain_regions = ephysalign.get_brain_locations(xyz_channels)
+
+            boundaries, colours, regions = get_brain_boundaries(brain_regions, z, r)
+            if show_regions:
+                bound_reg, col_reg, reg_name = get_brain_boundaries_interest(brain_regions,
+                                                                             z, r)
+
+            status = 'histology'
+            col = 'r'
+
+        else:
+            z = depths
+            status = 'channels'
+            col = 'k'
+            boundaries = []
+
+        if boundary_align is not None:
+            z_subtract = boundaries[np.where(np.array(regions) == boundary_align)[0][0] + 1]
+            z = z - z_subtract
+            boundaries, colours, regions = get_brain_boundaries(brain_regions, z, r)
+            if show_regions:
+                bound_reg, col_reg, reg_name = get_brain_boundaries_interest(brain_regions,
+                                                                             z, r)
+
+        z_min = np.min(z)
+        z_extent.append(z_min)
+        z_max = np.max(z)
+        z_extent.append(z_max)
+        ax = axs[iR]
+
+        if plot_type == 'psd':
+            data = psd_data(ephys_path, one, eid, chn_inds, freq_range)
+            levels = [-190, -150]
+            im = plot_probe(data, z, ax, clim=levels, normalize=False, cmap='viridis')
+
+        elif plot_type == 'rms_ap':
+            data = rms_data(ephys_path, one, eid, chn_inds, 'AP')
+            im = plot_probe(data, z, ax, cmap='plasma')
+
+        elif plot_type == 'rms_lf':
+            data = rms_data(ephys_path, one, eid, chn_inds, 'LF')
+            im = plot_probe(data, z, ax, cmap='magma')
+
+        elif plot_type == 'fr_alt':
+            data = fr_data_alt(eid, collection, one, depths)
+            im = plot_probe(data, z, ax, cmap='magma')
+
+        elif plot_type == 'fr':
+            y, data = fr_data(eid, collection, one, depths)
+            y = ephysalign.get_channel_locations(feature, track, y / 1e6)[:, 2] * 1e6
+            if boundary_align is not None:
+                y = y - z_subtract
+            im = NonUniformImage(ax, interpolation='nearest', cmap='magma')
+            levels = np.nanquantile(data, [0.1, 0.9])
+            im.set_clim(levels[0], levels[1])
+            im.set_data(np.array([0]), y, data)
+            ax.images.append(im)
+
+        elif plot_type == 'amp':
+            y, data = amp_data(eid, collection, one, depths)
+            y = ephysalign.get_channel_locations(feature, track, y / 1e6)[:, 2] * 1e6
+            if boundary_align is not None:
+                y = y - z_subtract
+            im = NonUniformImage(ax, interpolation='nearest', cmap='magma')
+            levels = np.nanquantile(data, [0.1, 0.9])
+            im.set_clim(levels[0], levels[1])
+            im.set_data(np.array([0]), y, data)
+            ax.images.append(im)
+
+        elif plot_type == 'amp_scatter':
+            x, y, c = spike_amp_data(eid, collection, one)
+            y = ephysalign.get_channel_locations(feature, track, y / 1e6)[:, 2] * 1e6
+            if boundary_align is not None:
+                y = y - z_subtract
+            levels = [0, 30]
+            im = ax.scatter(x, y, c=c, s=8, cmap='hot', vmin=levels[0], vmax=levels[1])
+            ax.images.append(im)
+            ax.set_xlim(1.3, 3)
+
+        elif plot_type == 'fr_line':
+            y, data = fr_data(eid, collection, one, depths)
+            y = ephysalign.get_channel_locations(feature, track, y / 1e6)[:, 2] * 1e6
+            if boundary_align is not None:
+                y = y - z_subtract
+            ax.plot(data, y, 'k', linewidth=2)
+            ax.set_xlim(0, 50)
+
+        elif plot_type == 'amp_line':
+            y, data = amp_data(eid, collection, one, depths)
+            y = ephysalign.get_channel_locations(feature, track, y / 1e6)[:, 2] * 1e6
+            if boundary_align is not None:
+                y = y - z_subtract
+            ax.plot(data, y, 'k', linewidth=2)
+            ax.set_xlim(0, 200)
+
+        elif plot_type == 'regions_line':
+            region, region_lab, region_col = region_data(xyz_channels, z, brain_atlas)
+            for reg, co, lab in zip(region, region_col, region_lab):
+                height = np.abs(reg[1] - reg[0])
+                color = co / 255
+                ax.bar(x=0.5, height=height, width=1, color=color, bottom=reg[0],
+                       edgecolor='w')
+                ax.text(x=0.2, y=reg[0] + height/2, s=lab[1], fontdict=None, fontsize=5)
+
+            ax.get_xaxis().set_visible(False)
+            ax.spines['right'].set_visible(False)
+            ax.spines['top'].set_visible(False)
+            ax.spines['bottom'].set_visible(False)
+
+        elif plot_type == 'distance':
+            rep_site = {
+                'x': -2243,
+                'y': -2000,
+                'z': 0.0,
+                'phi': 180.0,
+                'theta': 15.0,
+                'depth': 4000
+            }
+            traj_repeated = atlas.Insertion.from_dict(rep_site).trajectory
+            dist = traj_repeated.mindist(xyz_channels) * 1e6
+            dist = dist[:, np.newaxis]
+            im = NonUniformImage(ax, interpolation='nearest', cmap='Purples')
+            levels = [0, 1000]
+            im.set_clim(levels[0], levels[1])
+            im.set_data(np.array([0]), z, dist)
+            ax.images.append(im)
+
+        ax.set_title(subj + '\n' + status, color=col)
+
+        if show_regions:
+            for reg, co, lab in zip(bound_reg, col_reg, reg_name):
+                height = np.abs(reg[1] - reg[0])
+                color = co / 255
+                width = ax.get_xlim()[1]
+                ax.bar(x=width/2, height=height, width=width, color=color, bottom=reg[0],
+                       edgecolor='k', alpha=0.5)
+                """
+                ax.text(x=width/2, y=reg[0] + height / 2, s=lab, fontdict=None, fontsize=10,
+                        color='w', fontweight='bold')
+                """
+        elif show_boundaries:
+            for bound, col in zip(boundaries, colours):
+                ax.hlines(bound, *ax.get_xlim(), linestyles='dashed',
+                          colors=col/255)
 
     for ax in np.ravel(axs):
         z_max = np.max(z_extent)
@@ -247,6 +245,8 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
             cbar.ax.set_yticklabels([f'{levels[0]} um', f'{levels[1]} um'])
         elif plot_type == 'amp_scatter':
             cbar.ax.set_yticklabels([f'{levels[0]} Hz', f'{levels[1]} Hz'])
+        elif plot_type == 'psd':
+            cbar.ax.set_yticklabels([f'{levels[0]} dB', f'{levels[1]} dB'])
         else:
             cbar.ax.set_yticklabels(['10th\nperc.', '90th\nperc'])
         return fig, axs, cbar
@@ -255,12 +255,15 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
 
 
 
-def plot_probe(data, z, ax, cmap=None):
+def plot_probe(data, z, ax, clim=[0.1, 0.9], normalize=True, cmap=None):
     bnk_x, bnk_y, bnk_data = arrange_channels2banks(data, z)
     for x, y, dat in zip(bnk_x, bnk_y, bnk_data):
         im = NonUniformImage(ax, interpolation='nearest', cmap=cmap)
-        levels = np.nanquantile(bnk_data[0], [0.1, 0.9])
-        im.set_clim(levels[0], levels[1])
+        if normalize:
+            levels = np.nanquantile(bnk_data[0], clim)
+            im.set_clim(levels[0], levels[1])
+        else:
+            im.set_clim(clim)
         im.set_data(x, y, dat.T)
         ax.images.append(im)
     ax.set_xlim(0, 4.5)
