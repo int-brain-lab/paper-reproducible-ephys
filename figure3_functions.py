@@ -21,7 +21,8 @@ import numpy as np
 import seaborn as sns
 
 
-def panel_a(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-2000, 2000], one=None):
+def panel_a(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-2000, 2000],
+            normalize=False, clim=[-190, -150], one=None):
     one = one or ONE()
     brain_atlas = atlas.AllenAtlas(25)
     r = BrainRegions()
@@ -56,10 +57,10 @@ def panel_a(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-2000, 2000]
                                     brain_atlas=brain_atlas)
         xyz_channels = ephysalign.get_channel_locations(feature, track)
         z = xyz_channels[:, 2] * 1e6
+        
+        # Align plots to boundary between brain regions
         brain_regions = ephysalign.get_brain_locations(xyz_channels)
-
         boundaries, colours, regions = get_brain_boundaries(brain_regions, z, r)
-
         if boundary_align is not None:
             z_subtract = boundaries[np.where(np.array(regions) == boundary_align)[0][0] + 1]
             z = z - z_subtract
@@ -67,11 +68,12 @@ def panel_a(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-2000, 2000]
 
         # Get LFP data
         plot_data = psd_data(ephys_path, one, eid, chn_inds, freq_range=[20, 80])
-        im = plot_probe(plot_data, z, ax[iR], cmap='viridis')
-
+        
+        # Plot
+        im = plot_probe(plot_data, z, ax[iR], clim=clim, normalize=normalize,
+                        cmap='viridis')
         ax[iR].set_title(data.loc[iR, 'recording'] + 1,
                          color=lab_colors[data.loc[iR, 'institute']])
-
         if iR == 0:
             ax[iR].set(yticks=np.arange(ylim[0], ylim[1]+1, 500),
                        yticklabels=np.arange(ylim[0], ylim[1]+1, 500) / 1000,
@@ -86,10 +88,13 @@ def panel_a(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-2000, 2000]
         ax[iR].set(ylim=ylim)
 
     # Add colorbar
-    axin = inset_axes(ax[-1], width="50%", height="80%", loc='lower right', borderpad=0,
+    axin = inset_axes(ax[-1], width="50%", height="90%", loc='lower right', borderpad=0,
                       bbox_to_anchor=(1, 0.1, 1, 1), bbox_transform=ax[-1].transAxes)
     cbar = fig.colorbar(im, cax=axin, ticks=im.get_clim())
-    cbar.ax.set_yticklabels(['10th\nperc.', '90th\nperc'])
+    if normalize:
+        cbar.ax.set_yticklabels(['10th\nperc.', '90th\nperc'])
+    else:
+        cbar.ax.set_yticklabels([f'{clim[0]} dB', f'{clim[1]} dB'])
     cbar.set_label('Power spectral density', rotation=270, labelpad=-8)
 
 
