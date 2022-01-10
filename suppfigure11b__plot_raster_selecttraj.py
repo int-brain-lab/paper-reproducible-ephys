@@ -50,7 +50,7 @@ pids = ['523f8301-4f56-4faf-ab33-a9ff11331118',  # GOOD
 
 len_pids = len(pids)
 
-fig_name = f"Raster_suppfig11b.pdf"
+fig_name = f"Raster_suppfig11b_v1.pdf"
 figname = fig_path.joinpath(fig_name)
 
 n_plot_col = 3
@@ -86,8 +86,12 @@ for i_pid, pid in enumerate(pids):
     # HISTOLOGY
     if 'atlas_id' in channels.keys():
         # Plot brain regions
-        plot_brain_regions(channel_ids=channels['atlas_id'], channel_depths=None, brain_regions=None, display=True,
-                           ax=axs_1)
+        # plot_brain_regions(channel_ids=channels['atlas_id'], channel_depths=None, brain_regions=None, display=True,
+        #                    ax=axs_1)
+        # Remap to Beryl
+        mapped_ids = br.remap(channels['atlas_id'], source_map='Allen', target_map='Beryl')
+        plot_brain_regions(channel_ids=mapped_ids, channel_depths=None, brain_regions=None, display=True, ax=axs_1)
+
     # RASTER
     bbplot.driftmap(spikes['times'],
                     spikes['depths'],
