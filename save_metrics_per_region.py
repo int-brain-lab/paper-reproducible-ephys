@@ -18,6 +18,9 @@ from ibllib.atlas import AllenAtlas
 ba = AllenAtlas()
 one = ONE()
 
+# TEMPORARY
+one.mode = 'remote'
+
 # Settings
 NEURON_QC = True
 EXCL_REC = True  # Exclude recordings that missed target
