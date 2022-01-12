@@ -110,7 +110,7 @@ for i, pid in enumerate(pids):
     median_lfp = median_lfp.reset_index()
     median_lfp['subject'] = subject
     lfp_df = lfp_df.append(median_lfp, ignore_index=True)
-    lfp_df.to_csv(join(data_path(), 'lfp_ratio_per_region.csv'))
+    lfp_df.to_csv(join(data_path(), 'lfp_ratio_per_region.csv'), index=False)
     
     
         

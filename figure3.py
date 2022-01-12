@@ -16,14 +16,17 @@ one = ONE()
 
 # Settings
 MIN_REC_PER_LAB = 4
+MIN_REC_PER_REGION = 3
 BOUNDARY = 'DG-TH'
 EXAMPLE_REGION = 'CA1'
 EXAMPLE_METRIC = 'lfp_power_high'
 REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
-METRICS = ['yield_per_channel', 'median_firing_rate', 'lfp_power_high', 'rms_ap', 'spike_amp_mean']
-LABELS = ['Neuron yield', 'Firing rate', 'LFP power', 'AP band RMS', 'Spike amp.']
+METRICS = ['yield_per_channel', 'median_firing_rate', 'lfp_power_high', 'lfp_ratio',
+           'rms_ap', 'spike_amp_mean']
+LABELS = ['Neuron yield', 'Firing rate', 'LFP power', 'LFP ratio',
+          'AP band RMS', 'Spike amp.']
 N_PERMUT = 100000  # Amount of shuffles for permutation testing
-#N_PERMUT = 10  # Amount of shuffles for permutation testing
+#N_PERMUT = 1000  # Amount of shuffles for permutation testing
 DPI = 300  # if the figure is too big on your screen, lower this number
 
 # Get amount of probe plots

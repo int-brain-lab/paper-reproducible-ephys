@@ -212,18 +212,30 @@ def panel_c(ax, n_rec_per_lab=4, example_region='LP', example_metric='lfp_power_
     sns.despine(trim=True)
 
 
-def panel_d(ax, metrics, regions, labels, n_permut=10000, n_rec_per_lab=4):
+def panel_d(ax, metrics, regions, labels, n_permut=10000, n_rec_per_lab=4,
+            n_rec_per_region=3):
     data, lab_colors = plots_data(n_rec_per_lab)
     results = pd.DataFrame()
     for metric in metrics:
         for region in regions:
+            # Select data for this region and metrics 
             this_data = data.loc[data['region'] == region, metric].values
-            p = permut_test(
-                    this_data[~np.isnan(this_data)],
-                    metric=permut_dist,
-                    labels1=data.loc[data['region'] == region, 'institute'].values[~np.isnan(this_data)],
-                    labels2=data.loc[data['region'] == region, 'subject'].values[~np.isnan(this_data)],
-                    n_permut=n_permut)
+            this_labs = data.loc[data['region'] == region, 'institute'].values
+            this_subjects = data.loc[data['region'] == region, 'subject'].values
+            this_labs = this_labs[~np.isnan(this_data)]
+            this_subjects = this_subjects[~np.isnan(this_data)]
+            this_data = this_data[~np.isnan(this_data)]
+            
+            # Exclude data from labs that do not have enough recordings
+            lab_names, this_n_labs = np.unique(this_labs, return_counts=True)
+            excl_labs = lab_names[this_n_labs < n_rec_per_region]
+            this_data = this_data[~np.isin(this_labs, excl_labs)]
+            this_subjects = this_subjects[~np.isin(this_labs, excl_labs)]
+            this_labs = this_labs[~np.isin(this_labs, excl_labs)]
+            
+            # Do permutation test
+            p = permut_test(this_data, metric=permut_dist, labels1=this_labs,
+                            labels2=this_subjects, n_permut=n_permut)
             results = results.append(pd.DataFrame(index=[results.shape[0]+1], data={
                 'metric': metric, 'region': region, 'p_value_permut': p}))
 
@@ -254,8 +266,17 @@ def panel_d(ax, metrics, regions, labels, n_permut=10000, n_rec_per_lab=4):
 
 
 def plots_data(n_rec_per_lab=4):
+    # Load in data
     data = pd.read_csv(join(data_path(), 'metrics_region.csv'))
+    lfp = pd.read_csv(join(data_path(), 'lfp_ratio_per_region.csv'))
+        
+    # Exclude recordings
     data = exclude_recordings(data)
+    
+    # Merge LFP ratio data with the rest
+    data = data.merge(lfp, on=['subject', 'region'])
+    
+    # Reformat data
     lab_number_map, institution_map, lab_colors = labs()
     data['institute'] = data.lab.map(institution_map)
     data['lab_number'] = data.lab.map(lab_number_map)
