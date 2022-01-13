@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Wed Jul 28 08:43:23 2021
-By: Guido Meijer
+By: Guido Meijer & Noam Roth
 """
 
 from one.api import ONE
@@ -16,13 +16,73 @@ from features_2D import (psd_data, get_brain_boundaries, plot_probe, spike_amp_d
                          get_brain_boundaries_interest)
 from reproducible_ephys_functions import labs, data_path, exclude_recordings
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+from matplotlib.sankey import Sankey
 import pandas as pd
 import numpy as np
 import seaborn as sns
 
 
-def panel_a(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-2000, 2000],
-            normalize=False, clim=[-190, -150], one=None):
+def panel_sankey(fig, ax):
+
+    #fig, ax = plt.subplots(1, 1, figsize=(6, 3), dpi=400)
+    ax.axis('off')
+
+    #currently hardcoded to match Steven & Guido analyses;
+    #todo: finalize numbers and match with above code
+    num_trajectories = [92, -7, -16, -21, -7, -16, -32]
+
+    # Sankey plot
+    sankey = Sankey(ax=ax, scale=0.0025, offset=0.2, head_angle=90)
+    sankey.add(flows=num_trajectories,
+               labels=['All sessions', 'Histology damage',
+                       'Insufficient # recordings',
+                       'Noise/yield',
+                       'Targeting',
+                       'Behavior',
+                       'Data analysis'],
+               trunklength=1,
+               orientations=[0, 1, 1, -1, -1,-1, 0],
+               pathlengths=[0.2, 0.2, 0.1, 0.1, 0.15, 0.2, 0.2],
+               facecolor = sns.color_palette('Pastel1')[1])
+    diagrams = sankey.finish()
+
+    #text font and positioning
+    for text in diagrams[0].texts:
+            text.set_fontsize('7')
+
+    text = diagrams[0].texts[0]
+    xy = text.get_position()
+    text.set_position((xy[0] - 0.2, xy[1]))
+    text.set_weight('bold')
+
+    text = diagrams[0].texts[-1]
+    xy = text.get_position()
+    text.set_position((xy[0] + 0.1, xy[1]))
+    text.set_weight('bold')
+
+    text = diagrams[0].texts[1]
+    xy = text.get_position()
+    text.set_position((xy[0], xy[1] - 0.1))
+
+    text = diagrams[0].texts[2]
+    xy = text.get_position()
+    text.set_position((xy[0] + 0.2, xy[1]-0.2))
+
+    text = diagrams[0].texts[3]
+    xy = text.get_position()
+    text.set_position((xy[0] + 0.06, xy[1]+0.1))
+
+    text = diagrams[0].texts[4]
+    xy = text.get_position()
+    text.set_position((xy[0], xy[1]+0.1))
+
+    text = diagrams[0].texts[5]
+    xy = text.get_position()
+    text.set_position((xy[0], xy[1]+0.1))
+
+
+def panel_probe_lfp(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-2000, 2000],
+                    normalize=False, clim=[-190, -150], one=None):
     one = one or ONE()
     brain_atlas = atlas.AllenAtlas(25)
     r = BrainRegions()
@@ -57,7 +117,7 @@ def panel_a(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-2000, 2000]
                                     brain_atlas=brain_atlas)
         xyz_channels = ephysalign.get_channel_locations(feature, track)
         z = xyz_channels[:, 2] * 1e6
-        
+
         # Align plots to boundary between brain regions
         brain_regions = ephysalign.get_brain_locations(xyz_channels)
         boundaries, colours, regions = get_brain_boundaries(brain_regions, z, r)
@@ -68,7 +128,7 @@ def panel_a(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-2000, 2000]
 
         # Get LFP data
         plot_data = psd_data(ephys_path, one, eid, chn_inds, freq_range=[20, 80])
-        
+
         # Plot
         im = plot_probe(plot_data, z, ax[iR], clim=clim, normalize=normalize,
                         cmap='viridis')
@@ -98,7 +158,8 @@ def panel_a(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-2000, 2000]
     cbar.set_label('Power spectral density', rotation=270, labelpad=-8)
 
 
-def panel_b(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-2000, 2000], one=None):
+def panel_probe_neurons(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-2000, 2000],
+                        one=None):
     one = one or ONE()
     brain_atlas = atlas.AllenAtlas(25)
     r = BrainRegions()
@@ -151,7 +212,7 @@ def panel_b(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-2000, 2000]
         y = ephysalign.get_channel_locations(feature, track, y / 1e6)[:, 2] * 1e6
         y = y - z_subtract
         levels = [0, 30]
-        im = ax[iR].scatter(x, y, c=c, s=1, cmap='hot', vmin=levels[0], vmax=levels[1])
+        im = ax[iR].scatter(x, y, c=c, s=1, cmap='hot', vmin=levels[0], vmax=levels[1], zorder=1)
         ax[iR].images.append(im)
         ax[iR].set_xlim(1.3, 3)
 
@@ -160,7 +221,7 @@ def panel_b(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-2000, 2000]
             color = co / 255
             width = ax[iR].get_xlim()[1]
             ax[iR].bar(x=width/2, height=height, width=width, color=color, bottom=reg[0],
-                       edgecolor='k', linewidth=1, alpha=0.5)
+                       edgecolor='k', linewidth=1, alpha=0.5, zorder=0)
 
         ax[iR].set_title(data.loc[iR, 'recording'] + 1,
                          color=lab_colors[data.loc[iR, 'institute']])
@@ -186,7 +247,8 @@ def panel_b(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-2000, 2000]
     cbar.set_label('Firing rate (spks/s)', rotation=270, labelpad=0)
 
 
-def panel_c(ax, n_rec_per_lab=4, example_region='LP', example_metric='lfp_power_high', ylim=[-200, -150]):
+def panel_example(ax, n_rec_per_lab=4, example_region='LP', example_metric='lfp_power_high',
+                  ylim=[-200, -150]):
     data, lab_colors = plots_data(n_rec_per_lab)
     data_example = pd.DataFrame(data={
         'institute': data.loc[data['region'] == example_region, 'institute'],
@@ -212,27 +274,27 @@ def panel_c(ax, n_rec_per_lab=4, example_region='LP', example_metric='lfp_power_
     sns.despine(trim=True)
 
 
-def panel_d(ax, metrics, regions, labels, n_permut=10000, n_rec_per_lab=4,
-            n_rec_per_region=3):
+def panel_permutation(ax, metrics, regions, labels, n_permut=10000, n_rec_per_lab=4,
+                      n_rec_per_region=3):
     data, lab_colors = plots_data(n_rec_per_lab)
     results = pd.DataFrame()
     for metric in metrics:
         for region in regions:
-            # Select data for this region and metrics 
+            # Select data for this region and metrics
             this_data = data.loc[data['region'] == region, metric].values
             this_labs = data.loc[data['region'] == region, 'institute'].values
             this_subjects = data.loc[data['region'] == region, 'subject'].values
             this_labs = this_labs[~np.isnan(this_data)]
             this_subjects = this_subjects[~np.isnan(this_data)]
             this_data = this_data[~np.isnan(this_data)]
-            
+
             # Exclude data from labs that do not have enough recordings
             lab_names, this_n_labs = np.unique(this_labs, return_counts=True)
             excl_labs = lab_names[this_n_labs < n_rec_per_region]
             this_data = this_data[~np.isin(this_labs, excl_labs)]
             this_subjects = this_subjects[~np.isin(this_labs, excl_labs)]
             this_labs = this_labs[~np.isin(this_labs, excl_labs)]
-            
+
             # Do permutation test
             p = permut_test(this_data, metric=permut_dist, labels1=this_labs,
                             labels2=this_subjects, n_permut=n_permut)
@@ -269,13 +331,14 @@ def plots_data(n_rec_per_lab=4):
     # Load in data
     data = pd.read_csv(join(data_path(), 'metrics_region.csv'))
     lfp = pd.read_csv(join(data_path(), 'lfp_ratio_per_region.csv'))
-        
+
     # Exclude recordings
     data = exclude_recordings(data)
-    
+
     # Merge LFP ratio data with the rest
-    data = data.merge(lfp, on=['subject', 'region'])
-    
+    if data.shape[0] == lfp.shape[0]:
+        data = data.merge(lfp, on=['subject', 'region'])
+
     # Reformat data
     lab_number_map, institution_map, lab_colors = labs()
     data['institute'] = data.lab.map(institution_map)
