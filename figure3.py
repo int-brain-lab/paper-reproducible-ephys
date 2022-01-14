@@ -27,6 +27,7 @@ METRICS = ['yield_per_channel', 'median_firing_rate', 'lfp_power_high', 'lfp_rat
 LABELS = ['Neuron yield', 'Firing rate', 'LFP power', 'LFP ratio',
           'AP band RMS', 'Spike amp.']
 N_PERMUT = 100000  # Amount of shuffles for permutation testing
+#N_PERMUT = 100  # Amount of shuffles for permutation testing
 DPI = 300  # if the figure is too big on your screen, lower this number
 
 # Get amount of probe plots
@@ -35,7 +36,7 @@ n_columns = len(data['subject'].unique())
 
 # Set up figure
 figure_style()
-fig = plt.figure(figsize=(8, 12), dpi=DPI)  # full width figure is 8 inches
+fig = plt.figure(figsize=(8, 8), dpi=DPI)  # full width figure is 8 inches
 ax = {'panel_A': fg.place_axes_on_grid(fig, xspan=[0.05, 0.8], yspan=[0, 0.25]),
       'panel_B': fg.place_axes_on_grid(fig, xspan=[0.075, 0.65], yspan=[0.3, 0.6],
                                        dim=[1, n_columns], wspace=0.3),
@@ -50,7 +51,8 @@ panel_probe_lfp(fig, ax['panel_B'], n_rec_per_lab=MIN_REC_PER_LAB, boundary_alig
 panel_probe_neurons(fig, ax['panel_C'], n_rec_per_lab=MIN_REC_PER_LAB, boundary_align=BOUNDARY, one=one)
 panel_example(ax['panel_D'], n_rec_per_lab=MIN_REC_PER_LAB, example_region=EXAMPLE_REGION,
               example_metric=EXAMPLE_METRIC, ylim=[-180, -150])
-panel_permutation(ax['panel_E'], METRICS, REGIONS, LABELS, n_permut=N_PERMUT, n_rec_per_lab=MIN_REC_PER_LAB)
+p_values = panel_permutation(ax['panel_E'], METRICS, REGIONS, LABELS, n_permut=N_PERMUT,
+                             n_rec_per_lab=MIN_REC_PER_LAB)
 
 # Add subplot labels
 labels = [{'label_text':'a', 'xpos':0, 'ypos':0, 'fontsize':10, 'weight': 'bold', 'ha': 'right', 'va': 'bottom'},

@@ -345,6 +345,7 @@ def panel_permutation(ax, metrics, regions, labels, n_permut=10000, n_rec_per_la
     ax.set(xlabel='', ylabel='', title='Permutation p-values')
     ax.set_yticklabels(regions, va='center', rotation=0)
     ax.set_xticklabels(labels, rotation=30, ha='right')
+    return results
 
 
 def plots_data(n_rec_per_lab=4):
