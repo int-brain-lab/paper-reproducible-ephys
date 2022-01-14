@@ -154,8 +154,8 @@ def panel_probe_lfp(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-200
     if normalize:
         cbar.ax.set_yticklabels(['10th\nperc.', '90th\nperc'])
     else:
-        cbar.ax.set_yticklabels([f'{clim[0]} dB', f'{clim[1]} dB'])
-    cbar.set_label('Power spectral density', rotation=270, labelpad=-8)
+        cbar.ax.set_yticklabels([f'{clim[0]}', f'{clim[1]}'])
+    cbar.set_label('Power spectral density (dB)', rotation=270, labelpad=-5)
 
 
 def panel_probe_neurons(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-2000, 2000],
@@ -216,7 +216,7 @@ def panel_probe_neurons(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[
         ax[iR].images.append(im)
         ax[iR].set_xlim(1.3, 3)
 
-        for reg, co, lab in zip(bound_reg, col_reg, reg_name):
+        for reg, co in zip(bound_reg, col_reg):
             height = np.abs(reg[1] - reg[0])
             color = co / 255
             width = ax[iR].get_xlim()[1]
@@ -239,12 +239,32 @@ def panel_probe_neurons(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[
             ax[iR].set_axis_off()
         ax[iR].set(ylim=ylim)
 
+    # Add brain regions
+    width = ax[-1].get_xlim()[1]
+    ax[-1].set(ylim=ylim)
+    ax[-1].bar(x=width/2, height=750, width=width, color=np.array([0, 159, 172]) / 255,
+               bottom=1250, edgecolor='k', linewidth=0)
+    ax[-1].bar(x=width/2, height=500, width=width, color=np.array([126, 208,  75]) / 255,
+               bottom=650, edgecolor='k', linewidth=0)
+    ax[-1].bar(x=width/2, height=500, width=width, color=np.array([126, 208,  75]) / 255,
+               bottom=50, edgecolor='k', linewidth=0)
+    ax[-1].bar(x=width/2, height=900, width=width, color=np.array([255, 144, 159]) / 255,
+               bottom=-950, edgecolor='k', linewidth=0)
+    ax[-1].bar(x=width/2, height=950, width=width, color=np.array([255, 144, 159]) / 255,
+               bottom=-2000, edgecolor='k', linewidth=0)
+    ax[-1].text(0, 1600, 'PPC', rotation=90, va='center')
+    ax[-1].text(0, 900, 'CA1', rotation=90, va='center')
+    ax[-1].text(0, 300, 'DG', rotation=90, va='center')
+    ax[-1].text(0, -500, 'LP', rotation=90, va='center')
+    ax[-1].text(0, -1500, 'PO', rotation=90, va='center')
+    ax[-1].set_axis_off()
+
     # Add colorbar
     axin = inset_axes(ax[-1], width="50%", height="80%", loc='lower right', borderpad=0,
                       bbox_to_anchor=(1, 0.1, 1, 1), bbox_transform=ax[-1].transAxes)
     cbar = fig.colorbar(im, cax=axin, ticks=im.get_clim())
     cbar.ax.set_yticklabels([f'{levels[0]}', f'{levels[1]}'])
-    cbar.set_label('Firing rate (spks/s)', rotation=270, labelpad=0)
+    cbar.set_label('Firing rate (spks/s)', rotation=270, labelpad=-2)
 
 
 def panel_example(ax, n_rec_per_lab=4, example_region='LP', example_metric='lfp_power_high',
@@ -320,8 +340,8 @@ def panel_permutation(ax, metrics, regions, labels, n_permut=10000, n_rec_per_la
                 annot=False, annot_kws={"size": 5},
                 linewidths=.5, fmt='.2f', vmin=-1.5, vmax=np.log10(0.5), ax=ax)
     cbar = ax.collections[0].colorbar
-    cbar.set_ticks(np.log10([0.05, 0.5, 1]))
-    cbar.set_ticklabels([0.05, 0.5, 1])
+    cbar.set_ticks(np.log10([0.05, 0.25, 0.5]))
+    cbar.set_ticklabels([0.05, 0.25, 0.5])
     ax.set(xlabel='', ylabel='', title='Permutation p-values')
     ax.set_yticklabels(regions, va='center', rotation=0)
     ax.set_xticklabels(labels, rotation=30, ha='right')
