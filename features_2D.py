@@ -31,7 +31,7 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
     z_extent = []
 
     for iR, (subj, date, probe_label) in enumerate(zip(subjects, dates, probes)):
-        
+
         # Download the data and get paths to downloaded data
         eid = one.search(subject=subj, task_protocol='ephys', date=date)[0]
         if iR == 0:
@@ -124,7 +124,8 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
 
         elif plot_type == 'rms_ap':
             data = rms_data(ephys_path, one, eid, chn_inds, 'AP')
-            im = plot_probe(data, z, ax, cmap='plasma')
+            levels = [4e6, 1e7]
+            im = plot_probe(data, z, ax, clim=levels, normalize=False, cmap='plasma')
 
         elif plot_type == 'rms_lf':
             data = rms_data(ephys_path, one, eid, chn_inds, 'LF')

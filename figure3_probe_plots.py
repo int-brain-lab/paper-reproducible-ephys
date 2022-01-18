@@ -33,9 +33,12 @@ LABELS = ['Firing rate (spks/s)', 'Power spectral density', 'AP band RMS', 'LFP 
 """
 PLOTS = ['amp_scatter', 'psd', 'rms_ap']
 LABELS = ['Firing rate (spks/s)', 'Power spectral density', 'AP band RMS']
-"""
+
 PLOTS = ['psd']
 LABELS = ['Power spectral density']
+"""
+PLOTS = ['rms_ap']
+LABELS = ['AP band RMS']
 
 NICKNAMES = False
 YLIM = [-2000, 2000]

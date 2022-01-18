@@ -18,10 +18,8 @@ one = ONE()
 # Settings
 OVERWRITE = True
 REGIONS = ['PPC', 'CA1', 'DG', 'PO', 'LP']
-BIN_CENTERS = np.arange(-1, 2.01, 0.2)
-BASELINE = [-1, 0]
-STIM = [0, 1]
-BIN_SIZE = 0.25
+BASELINE = [-0.5, 0]
+STIM = [0, 0.5]
 LFP_BAND = [20, 80]
 
 # Load in PIDs
