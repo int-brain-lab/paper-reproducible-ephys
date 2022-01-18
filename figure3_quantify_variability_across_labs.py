@@ -26,10 +26,10 @@ MIN_REC_LAB = 5
 ANNOTATE = False
 COLORBAR = True
 N_PERMUT = 1000
-EXCL_REC = False
+EXCL_REC = True
 #EXAMPLE_METRIC = 'rms_ap'
 EXAMPLE_METRIC = 'lfp_power_high'
-EXAMPLE_REGION = 'CA1'
+EXAMPLE_REGION = 'LP'
 REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
 METRICS = ['yield_per_channel', 'median_firing_rate', 'lfp_power_high', 'rms_ap', 'spike_amp_mean']
 LABELS = ['Neuron yield', 'Firing rate', 'LFP power', 'AP band RMS', 'Spike amp.']
@@ -120,7 +120,7 @@ ax_lines = sns.pointplot(x='institute', y=EXAMPLE_METRIC, data=data_example,
 ax2.plot(np.arange(data_example['institute'].unique().shape[0]),
          [data_example[EXAMPLE_METRIC].mean()] * data_example['institute'].unique().shape[0],
          color='r', lw=1)
-ax2.set(ylabel=u'LFP power in CA1 (dB)', xlabel='', ylim=[-200, -150],
+ax2.set(ylabel=f'LFP power in {EXAMPLE_REGION} (dB)', xlabel='', ylim=[-200, -150],
         xlim=[-.5, data_example['institute'].unique().shape[0] + .5])
 ax2.set_xticklabels(data_example['institute'].unique(), rotation=30, ha='right')
 #ax1.figure.axes[-1].yaxis.label.set_size(12)
