@@ -18,9 +18,10 @@ one = ONE()
 # Settings
 OVERWRITE = True
 REGIONS = ['PPC', 'CA1', 'DG', 'PO', 'LP']
-BASELINE = [-0.5, 0]
-STIM = [0, 0.5]
+BASELINE = [-1, 0]
+STIM = [0, 1]
 LFP_BAND = [20, 80]
+WELCH_WIN_LENGTH_SAMPLES = 1024
 
 # Load in PIDs
 pids = np.load('repeated_site_pids.npy')
@@ -67,7 +68,7 @@ for i, pid in enumerate(pids):
     channels[probe]['acronym'] = combine_regions(channels[probe]['acronym'])
 
     # Loop over trials and get LFP slices for each trial
-    this_lfp_df = pd.DataFrame()
+    this_lfp_df, this_lfp_ch_df = pd.DataFrame(), pd.DataFrame()
     for t, onset in enumerate(trials['stimOn_times'][~np.isnan(trials['stimOn_times'])]):
 
         # Get LFP slice of current trial
@@ -75,34 +76,42 @@ for i, pid in enumerate(pids):
                       csel=slice(None, None, None))[0]
         lfp = lfp.T
         time = np.arange(int((onset-2) * sr.fs), int((onset+4) * sr.fs)) / sr.fs
+        Nperseg = int(sr.fs/2)
 
         # Get baseline power
         f, wb = signal.welch(lfp[np.ix_([True]*lfp.shape[0],
                                         (time > onset + BASELINE[0]) & (time < onset + BASELINE[1]))],
-                             fs=sr.fs, window='hanning', nperseg=256,
+                             fs=sr.fs, window='hanning', nperseg=WELCH_WIN_LENGTH_SAMPLES,
                              detrend='constant', return_onesided=True, scaling='density', axis=-1)
 
         # Get stim power
         f, ws = signal.welch(lfp[np.ix_([True]*lfp.shape[0],
                                         (time > onset + STIM[0]) & (time < onset + STIM[1]))],
-                             fs=sr.fs, window='hanning', nperseg=256,
+                             fs=sr.fs, window='hanning', nperseg=WELCH_WIN_LENGTH_SAMPLES,
                              detrend='constant', return_onesided=True, scaling='density', axis=-1)
-
+        
         # Get ratio stim / baseline
         wr = ws / wb
+        
+        # Add all channels to df
+        this_lfp_ch_df = this_lfp_ch_df.append(pd.DataFrame(data={
+                'lfp_stim_ch': [np.median(ws[:, (f > LFP_BAND[0]) & (f < LFP_BAND[1])], axis=1)[chan_ind]],
+                'lfp_bl_ch': [np.median(wb[:, (f > LFP_BAND[0]) & (f < LFP_BAND[1])], axis=1)[chan_ind]],
+                'lfp_ratio_ch': [np.median(wr[:, (f > LFP_BAND[0]) & (f < LFP_BAND[1])], axis=1)[chan_ind]],
+                'trial': t}))
 
         # Get LFP power per brain region
         for r, region in enumerate(REGIONS):
 
             # Get mean ratio for all channels in this region for frequency of interest
             region_chan = chan_ind[channels[probe]['acronym'] == region]
-            mean_ratio = np.mean(wr[np.ix_(np.isin(np.arange(lfp.shape[0]), region_chan),
-                                           (f > LFP_BAND[0]) & (f < LFP_BAND[1]))])
-            mean_stim = np.mean(ws[np.ix_(np.isin(np.arange(lfp.shape[0]), region_chan),
+            mean_ratio = np.median(wr[np.ix_(np.isin(np.arange(lfp.shape[0]), region_chan),
+                                             (f > LFP_BAND[0]) & (f < LFP_BAND[1]))])
+            mean_stim = np.median(ws[np.ix_(np.isin(np.arange(lfp.shape[0]), region_chan),
+                                            (f > LFP_BAND[0]) & (f < LFP_BAND[1]))])
+            mean_bl = np.median(wb[np.ix_(np.isin(np.arange(lfp.shape[0]), region_chan),
                                           (f > LFP_BAND[0]) & (f < LFP_BAND[1]))])
-            mean_bl = np.mean(wb[np.ix_(np.isin(np.arange(lfp.shape[0]), region_chan),
-                                        (f > LFP_BAND[0]) & (f < LFP_BAND[1]))])
-
+            
             # Add to dataframe
             this_lfp_df = this_lfp_df.append(pd.DataFrame(index=[lfp_df.shape[0] + 1], data={
                 'lfp_ratio': mean_ratio, 'lfp_stim': mean_stim, 'lfp_baseline': mean_bl,

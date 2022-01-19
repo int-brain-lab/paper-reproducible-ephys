@@ -218,10 +218,12 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
         ax.set_title(subj + '\n' + status, color=col)
 
         if show_regions:
-            for reg, co, lab in zip(bound_reg, col_reg, reg_name):
+            for reg, co, reg_name in zip(bound_reg, col_reg, reg_name):
+                
                 height = np.abs(reg[1] - reg[0])
                 color = co / 255
                 width = ax.get_xlim()[1]
+                
                 ax.bar(x=width/2, height=height, width=width, color=color, bottom=reg[0],
                        edgecolor='k', alpha=0.5)
                 """
@@ -253,7 +255,6 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
         return fig, axs, cbar
     else:
         return fig, axs
-
 
 
 def plot_probe(data, z, ax, clim=[0.1, 0.9], normalize=True, cmap=None):

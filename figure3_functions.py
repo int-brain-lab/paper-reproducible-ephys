@@ -32,7 +32,7 @@ def panel_sankey(fig, ax):
     num_trajectories = [92, -7, -16, -21, -7, -16, -32]
 
     # Sankey plot
-    sankey = Sankey(ax=ax, scale=0.0025, offset=0.2, head_angle=90)
+    sankey = Sankey(ax=ax, scale=0.0015, offset=0.2, head_angle=90, shoulder=0.025, gap=0.2, radius=0.05)
     sankey.add(flows=num_trajectories,
                labels=['All sessions', 'Histology damage',
                        'Insufficient # recordings',
@@ -40,16 +40,17 @@ def panel_sankey(fig, ax):
                        'Targeting',
                        'Behavior',
                        'Data analysis'],
-               trunklength=1,
+               trunklength=0.8,
                orientations=[0, 1, 1, -1, -1,-1, 0],
-               pathlengths=[0.2, 0.2, 0.1, 0.1, 0.15, 0.2, 0.2],
+               pathlengths=[0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.4],
                facecolor = sns.color_palette('Pastel1')[1])
     diagrams = sankey.finish()
-
+    
     #text font and positioning
     for text in diagrams[0].texts:
             text.set_fontsize('7')
 
+    
     text = diagrams[0].texts[0]
     xy = text.get_position()
     text.set_position((xy[0] - 0.2, xy[1]))
@@ -79,6 +80,7 @@ def panel_sankey(fig, ax):
     text = diagrams[0].texts[5]
     xy = text.get_position()
     text.set_position((xy[0], xy[1]+0.1))
+    
 
 
 def panel_probe_lfp(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-2000, 2000],
@@ -146,6 +148,7 @@ def panel_probe_lfp(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-200
         else:
             ax[iR].set_axis_off()
         ax[iR].set(ylim=ylim)
+    ax[-1].set_axis_off()
 
     # Add colorbar
     axin = inset_axes(ax[-1], width="50%", height="90%", loc='lower right', borderpad=0,
@@ -156,7 +159,7 @@ def panel_probe_lfp(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-200
     else:
         cbar.ax.set_yticklabels([f'{clim[0]}', f'{clim[1]}'])
     cbar.set_label('Power spectral density (dB)', rotation=270, labelpad=-5)
-
+    
 
 def panel_probe_neurons(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-2000, 2000],
                         one=None):
@@ -252,11 +255,11 @@ def panel_probe_neurons(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[
                bottom=-950, edgecolor='k', linewidth=0)
     ax[-1].bar(x=width/2, height=950, width=width, color=np.array([255, 144, 159]) / 255,
                bottom=-2000, edgecolor='k', linewidth=0)
-    ax[-1].text(0, 1600, 'PPC', rotation=90, va='center')
-    ax[-1].text(0, 900, 'CA1', rotation=90, va='center')
-    ax[-1].text(0, 300, 'DG', rotation=90, va='center')
-    ax[-1].text(0, -500, 'LP', rotation=90, va='center')
-    ax[-1].text(0, -1500, 'PO', rotation=90, va='center')
+    ax[-1].text(width/2, 1600, 'PPC', rotation=90, va='center', color='w', fontweight='bold', ha='center')
+    ax[-1].text(width/2, 900, 'CA1', rotation=90, va='center', color='w', fontweight='bold', ha='center')
+    ax[-1].text(width/2, 300, 'DG', rotation=90, va='center', color='w', fontweight='bold', ha='center')
+    ax[-1].text(width/2, -500, 'LP', rotation=90, va='center', color='w', fontweight='bold', ha='center')
+    ax[-1].text(width/2, -1500, 'PO', rotation=90, va='center', color='w', fontweight='bold', ha='center')
     ax[-1].set_axis_off()
 
     # Add colorbar
@@ -287,9 +290,9 @@ def panel_example(ax, n_rec_per_lab=4, example_region='LP', example_metric='lfp_
     ax.plot(np.arange(data_example['institute'].unique().shape[0]),
              [data_example[example_metric].mean()] * data_example['institute'].unique().shape[0],
              color='r', lw=1)
-    ax.set(ylabel=f'LFP power in {example_region} (dB)', xlabel='',
+    ax.set(ylabel=f'LFP ratio in {example_region}\n(stim/baseline)', xlabel='',
            xlim=[-.5, len(data['institute'].unique()) + .5], ylim=ylim,
-           yticks=np.arange(ylim[0], ylim[1]+1, 10))
+           yticks=np.arange(ylim[0], ylim[1]+1, 1))
     ax.set_xticklabels(data_example['institute'].unique(), rotation=30, ha='right')
     sns.despine(trim=True)
 
@@ -335,14 +338,15 @@ def panel_permutation(ax, metrics, regions, labels, n_permut=10000, n_rec_per_la
                       bbox_to_anchor=(0.1, 0.1, 1, 1), bbox_transform=ax.transAxes)
     #cmap = sns.color_palette('viridis_r', n_colors=20)
     #cmap[0] = [1, 0, 0]
-    sns.heatmap(results_plot, cmap='viridis_r', square=True,
+    sns.heatmap(results_plot, cmap='RdYlGn', square=True,
                 cbar=True, cbar_ax=axin,
                 annot=False, annot_kws={"size": 5},
-                linewidths=.5, fmt='.2f', vmin=-1.5, vmax=np.log10(0.5), ax=ax)
+                linewidths=.5, fmt='.2f', vmin=-1.5, vmax=np.log10(1), ax=ax)
     cbar = ax.collections[0].colorbar
-    cbar.set_ticks(np.log10([0.05, 0.25, 0.5]))
-    cbar.set_ticklabels([0.05, 0.25, 0.5])
-    ax.set(xlabel='', ylabel='', title='Permutation p-values')
+    cbar.set_ticks(np.log10([0.05, 0.1, 0.2, 0.4, 0.8]))
+    cbar.set_ticklabels([0.05, 0.1, 0.2, 0.4, 0.8])
+    cbar.set_label('log p-value', rotation=270, labelpad=8)
+    ax.set(xlabel='', ylabel='')
     ax.set_yticklabels(regions, va='center', rotation=0)
     ax.set_xticklabels(labels, rotation=30, ha='right')
     return results
@@ -357,8 +361,7 @@ def plots_data(n_rec_per_lab=4):
     data = exclude_recordings(data)
 
     # Merge LFP ratio data with the rest
-    if data.shape[0] == lfp.shape[0]:
-        data = data.merge(lfp, on=['subject', 'region'])
+    data = data.merge(lfp, on=['subject', 'region'])
 
     # Reformat data
     lab_number_map, institution_map, lab_colors = labs()

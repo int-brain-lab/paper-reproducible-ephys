@@ -33,12 +33,9 @@ LABELS = ['Firing rate (spks/s)', 'Power spectral density', 'AP band RMS', 'LFP 
 """
 PLOTS = ['amp_scatter', 'psd', 'rms_ap']
 LABELS = ['Firing rate (spks/s)', 'Power spectral density', 'AP band RMS']
-
+"""
 PLOTS = ['psd']
 LABELS = ['Power spectral density']
-"""
-PLOTS = ['rms_ap']
-LABELS = ['AP band RMS']
 
 NICKNAMES = False
 YLIM = [-2000, 2000]
@@ -79,7 +76,7 @@ for p, plot_name in enumerate(PLOTS):
 
         f, axs, cbar = plot_2D_features(data['subject'], data['date'], data['probe'], one=one,
                                         brain_atlas=brain_atlas, plot_type=plot_name,
-                                        freq_range=[20, 80],
+                                        freq_range=[20, 80], show_regions=True,
                                         boundary_align=BOUNDARY, figsize=FIG_SIZE)
 
     for i, subject in enumerate(data['subject']):

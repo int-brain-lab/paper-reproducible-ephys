@@ -120,7 +120,7 @@ ax_lines = sns.pointplot(x='institute', y=EXAMPLE_METRIC, data=data_example,
 ax2.plot(np.arange(data_example['institute'].unique().shape[0]),
          [data_example[EXAMPLE_METRIC].mean()] * data_example['institute'].unique().shape[0],
          color='r', lw=1)
-ax2.set(ylabel=f'LFP power in {EXAMPLE_REGION} (dB)', xlabel='', ylim=[-200, -150],
+ax2.set(ylabel=f'LFP power in {EXAMPLE_REGION} (dB)', xlabel='',
         xlim=[-.5, data_example['institute'].unique().shape[0] + .5])
 ax2.set_xticklabels(data_example['institute'].unique(), rotation=30, ha='right')
 #ax1.figure.axes[-1].yaxis.label.set_size(12)
