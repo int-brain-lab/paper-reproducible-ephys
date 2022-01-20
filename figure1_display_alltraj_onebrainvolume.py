@@ -40,6 +40,11 @@ for traj in traj_rep:
     mlab.plot3d(mlapdv[:, 1], mlapdv[:, 2], mlapdv[:, 0],
                 line_width=1, tube_radius=20, color=color)
 
+    # # Display pid on top of it, for debugging purpose
+    # label = traj['probe_insertion']
+    # mlab.text3d(mlapdv[0, 1], mlapdv[0, 2], mlapdv[0, 0] - 500, label,
+    #             line_width=4, color=tuple(color), figure=fig, scale=150)
+
 
 '''
 Display structure meshes within the brain volume
