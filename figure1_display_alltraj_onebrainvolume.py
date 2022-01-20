@@ -41,9 +41,9 @@ for traj in traj_rep:
         ins = atlas.Insertion.from_dict(temp_traj[0])
         mlapdv = ba.xyz2ccf(ins.xyz)
         # display the trajectories
-        color = color_cycle(1)
+        color = (0., 0., 0.)  # color_cycle(1)
         mlab.plot3d(mlapdv[:, 1], mlapdv[:, 2], mlapdv[:, 0],
-                    line_width=1, tube_radius=20, color=color)
+                    line_width=2, tube_radius=20, color=color)
 
         # # Display pid on top of it, for debugging purpose
         # label = traj['probe_insertion']
