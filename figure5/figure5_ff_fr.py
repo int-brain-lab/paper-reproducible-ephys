@@ -424,232 +424,236 @@ for ins in insertions:
                        eventMove_stRchR, eventMove_stRchL, eventMove_stLchL, eventMove_stLchR]
 
 
-        cluster = clusterIDs[0]
-        spike_times_per_cluster = spikes['times'][spikes['clusters'] == cluster]
+        for clust in clusterIDs:
+            spike_times_per_cluster = spikes['times'][spikes['clusters'] == clust]
 
 
-        data = {}
-        # TODO think how to append as list or as array?
+            data = {}
+            # TODO think how to append as list or as array?
 
-        start = time.time()
-        firing_rates = {}
-        intervals = np.c_[events['eventStim_All'] - 0.2, events['eventStim_All']]
-        idx = np.searchsorted(spike_times_per_cluster, intervals)
-        data['FR_200msPreStim_All'] = (idx[:, 1] - idx[:, 0]) / 0.2
-
-
-        intervals = np.c_[events['eventStim_All'],events['eventMove_All']]
-        idx = np.searchsorted(spike_times_per_cluster, intervals)
-        # account for cases when firstMovement_time before stimOn_time --> set FR to 0 (check this is what we want)
-        idx[idx[:, 1] < idx[:, 0], 1] = idx[idx[:, 1] < idx[:, 0], 0]
-        data['FR_RxnTime_All'] = (idx[:, 1] - idx[:, 0]) / events['rxnTimes_All']
+            start = time.time()
+            intervals = np.c_[events['eventStim_All'] - 0.2, events['eventStim_All']]
+            idx = np.searchsorted(spike_times_per_cluster, intervals)
+            data['FR_200msPreStim_All'] = (idx[:, 1] - idx[:, 0]) / 0.2
 
 
-        intervals = np.c_[events['eventStim_fbCorr'] - 0.2, events['eventStim_fbCorr']]
-        idx = np.searchsorted(spike_times_per_cluster, intervals)
-        data['FR_200msPreStim_fbCorr'] = (idx[:, 1] - idx[:, 0]) / 0.2
+            intervals = np.c_[events['eventStim_All'],events['eventMove_All']]
+            idx = np.searchsorted(spike_times_per_cluster, intervals)
+            # account for cases when firstMovement_time before stimOn_time --> set FR to 0 (check this is what we want)
+            idx[idx[:, 1] < idx[:, 0], 1] = idx[idx[:, 1] < idx[:, 0], 0]
+            data['FR_RxnTime_All'] = (idx[:, 1] - idx[:, 0]) / events['rxnTimes_All']
 
 
-        intervals = np.c_[events['eventStim_fbCorr'], events['eventMove_fbCorr']]
-        idx = np.searchsorted(spike_times_per_cluster, intervals)
-        # account for cases when firstMovement_time before stimOn_time --> set FR to 0 (check this is what we want)
-        idx[idx[:, 1] < idx[:, 0], 1] = idx[idx[:, 1] < idx[:, 0], 0]
-        data['FR_RxnTime_fbCorr'] = (idx[:, 1] - idx[:, 0]) / events['rxnTimes_fbCorr']
+            intervals = np.c_[events['eventStim_fbCorr'] - 0.2, events['eventStim_fbCorr']]
+            idx = np.searchsorted(spike_times_per_cluster, intervals)
+            data['FR_200msPreStim_fbCorr'] = (idx[:, 1] - idx[:, 0]) / 0.2
 
 
-        intervals = np.c_[events['eventStimRestr_All'] - 0.2, events['eventStimRestr_All']]
-        idx = np.searchsorted(spike_times_per_cluster, intervals)
-        data['FR_200msPreStim_restr_All'] = (idx[:, 1] - idx[:, 0]) / 0.2
+            intervals = np.c_[events['eventStim_fbCorr'], events['eventMove_fbCorr']]
+            idx = np.searchsorted(spike_times_per_cluster, intervals)
+            # account for cases when firstMovement_time before stimOn_time --> set FR to 0 (check this is what we want)
+            idx[idx[:, 1] < idx[:, 0], 1] = idx[idx[:, 1] < idx[:, 0], 0]
+            data['FR_RxnTime_fbCorr'] = (idx[:, 1] - idx[:, 0]) / events['rxnTimes_fbCorr']
 
 
-        intervals = np.c_[events['eventStimRestr_All'], events['eventMoveRestr_All']]
-        idx = np.searchsorted(spike_times_per_cluster, intervals)
-        data['FR_RxnTime_restr_All'] = (idx[:, 1] - idx[:, 0]) / events['rxnTimesRestr_All']
+            intervals = np.c_[events['eventStimRestr_All'] - 0.2, events['eventStimRestr_All']]
+            idx = np.searchsorted(spike_times_per_cluster, intervals)
+            data['FR_200msPreStim_restr_All'] = (idx[:, 1] - idx[:, 0]) / 0.2
 
 
-        intervals = np.c_[events['eventStimRestr_fbCorr'] - 0.2, events['eventStimRestr_fbCorr'] ]
-        idx = np.searchsorted(spike_times_per_cluster, intervals)
-        data['FR_200msPreStim_restr_fbCorr'] = (idx[:, 1] - idx[:, 0]) / 0.2
+            intervals = np.c_[events['eventStimRestr_All'], events['eventMoveRestr_All']]
+            idx = np.searchsorted(spike_times_per_cluster, intervals)
+            data['FR_RxnTime_restr_All'] = (idx[:, 1] - idx[:, 0]) / events['rxnTimesRestr_All']
 
 
-        intervals = np.c_[events['eventStimRestr_fbCorr'] , events['eventMoveRestr_fbCorr'] ]
-        idx = np.searchsorted(spike_times_per_cluster, intervals)
-        data['FR_RxnTime_restr_fbCorr'] = (idx[:, 1] - idx[:, 0]) / events['rxnTimesRestr_fbCorr']
-
-        # N>B Key and calculation are not the sameeee!!
-        intervals = np.c_[events['eventStim_fbCorr'], events['eventStim_fbCorr'] + 0.4]
-        idx = np.searchsorted(spike_times_per_cluster, intervals)
-        data['FR_400msPostStim_restr_fbCorr'] = (idx[:, 1] - idx[:, 0]) / 0.4
-
-        # N>B Key and calculation are not the sameeee!!
-        intervals = np.c_[events['eventStim_fbCorr'] + 0.05, events['eventStim_fbCorr'] + 0.15]
-        idx = np.searchsorted(spike_times_per_cluster, intervals)
-        data['FR_100msPostStim_restr_fbCorr'] = (idx[:, 1] - idx[:, 0]) / 0.1
-
-        # N>B Key and calculation are not the sameeee!!
-        intervals = np.c_[events['eventMove_stRfbCorr'] - 0.1, events['eventMove_stRfbCorr'] + 0.05]
-        idx = np.searchsorted(spike_times_per_cluster, intervals)
-        data['FR_RightPreMove_stRfbCorr'] = (idx[:, 1] - idx[:, 0]) / 0.15
-
-        intervals = np.c_[events['eventMove_stLfbCorr'] - 0.1, events['eventMove_stLfbCorr'] + 0.05]
-        idx = np.searchsorted(spike_times_per_cluster, intervals)
-        data['FR_LeftPreMove_stLfbCorr'] = (idx[:, 1] - idx[:, 0]) / 0.15
-
-        print(time.time() - start)
-
-        start = time.time()
-        FR_200msBeforeStim_perClust = [sum(np.bitwise_and(spike_times_per_cluster >= timesStimOn_fullTrial[t]-0.2, spike_times_per_cluster < timesStimOn_fullTrial[t]))/0.2
-                             for t in range(0,len(timesStimOn_fullTrial))]
-        FR_during_RxnTime_perClust = [sum(np.bitwise_and(spike_times_per_cluster >= timesStimOn_fullTrial[t], spike_times_per_cluster <= times1stMove_fullTrial[t]))/RxnTimes_fullTrial[t]
-                             for t in range(0,len(timesStimOn_fullTrial))]
-        FR_200msPreStim_Corr = [sum(np.bitwise_and(spike_times_per_cluster >= timesStimOn_CorrTrial[t]-0.2, spike_times_per_cluster < timesStimOn_CorrTrial[t]))/0.2
-                             for t in range(0,len(timesStimOn_CorrTrial))]
-        FR_during_RxnTime_Corr = [sum(np.bitwise_and(spike_times_per_cluster >= timesStimOn_CorrTrial[t], spike_times_per_cluster <= times1stMove_CorrTrial[t]))/RxnTimes_CorrTrial[t]
-                             for t in range(0,len(timesStimOn_CorrTrial))]
-        FR_200msPreStim_restrTrials1 = [sum(np.bitwise_and(spike_times_per_cluster >= timesStart_restrTrials1[t]-0.2, spike_times_per_cluster < timesStart_restrTrials1[t]))/0.2
-                             for t in range(0,len(timesStart_restrTrials1))]
-        FR_RxnTime_perClust_restrTrials1 = [sum(np.bitwise_and(spike_times_per_cluster >= timesStart_restrTrials1[t], spike_times_per_cluster <= times1stMove_restrTrials1[t]))/RxnTimes_restrTrials1[t]
-                             for t in range(0,len(timesStart_restrTrials1))]
-        FR_200msPreStim_restrTrials2 = [sum(np.bitwise_and(spike_times_per_cluster >= timesStart_restrTrials2[t]-0.2, spike_times_per_cluster < timesStart_restrTrials2[t]))/0.2
-                             for t in range(0,len(timesStart_restrTrials2))]
-        FR_RxnTime_perClust_restrTrials2 = [sum(np.bitwise_and(spike_times_per_cluster >= timesStart_restrTrials2[t], spike_times_per_cluster <= times1stMove_restrTrials2[t]))/RxnTimes_restrTrials2[t]
-                             for t in range(0,len(timesStart_restrTrials2))]
-        # N>B Key and calculation are not the sameeee!!
-        FR_400msPostStim_restrTrials1 = [sum(np.bitwise_and(spike_times_per_cluster >= timesStimOn_CorrTrial[t], spike_times_per_cluster < (timesStimOn_CorrTrial[t] + 0.4)))/0.4
-                             for t in range(0,len(timesStimOn_CorrTrial))]
-        # N>B Key and calculation are not the sameeee!!
-        FR_100msPostStim_restrTrials1 = [sum(np.bitwise_and(spike_times_per_cluster >= timesStimOn_CorrTrial[t]+0.05, spike_times_per_cluster < (timesStimOn_CorrTrial[t] + 0.15)))/0.1
-                             for t in range(0,len(timesStimOn_CorrTrial))]
-        FR_RightPreMove_restrTrials1 = [sum(np.bitwise_and(spike_times_per_cluster >= times1stMove_RightCorr[t]-0.1, spike_times_per_cluster < (times1stMove_RightCorr[t] + 0.05)))/0.15
-                             for t in range(0,len(times1stMove_RightCorr))]
-        FR_LeftPreMove_restrTrials1 = [sum(np.bitwise_and(spike_times_per_cluster >= times1stMove_LeftCorr[t]-0.1, spike_times_per_cluster < (times1stMove_LeftCorr[t] + 0.05)))/0.15
-                             for t in range(0,len(times1stMove_LeftCorr))]
-
-        print(time.time() - start)
-
-        assert np.array_equal(data['FR_200msPreStim_All'], FR_200msBeforeStim_perClust)
-        assert np.array_equal(data['FR_RxnTime_All'], FR_during_RxnTime_perClust)
-        assert np.array_equal(data['FR_200msPreStim_fbCorr'], FR_200msPreStim_Corr)
-        assert np.array_equal(data['FR_RxnTime_fbCorr'], FR_during_RxnTime_Corr)
-        assert np.array_equal(data['FR_200msPreStim_restr_All'], FR_200msPreStim_restrTrials1)
-        assert np.array_equal(data['FR_RxnTime_restr_All'], FR_RxnTime_perClust_restrTrials1)
-        assert np.array_equal(data['FR_200msPreStim_restr_fbCorr'], FR_200msPreStim_restrTrials2)
-        assert np.array_equal(data['FR_RxnTime_restr_fbCorr'], FR_RxnTime_perClust_restrTrials2)
-        assert np.array_equal(data['FR_400msPostStim_restr_fbCorr'], FR_400msPostStim_restrTrials1)
-        assert np.array_equal(data['FR_100msPostStim_restr_fbCorr'], FR_100msPostStim_restrTrials1)
-        assert np.array_equal(data['FR_RightPreMove_stRfbCorr'], FR_RightPreMove_restrTrials1)
-        assert np.array_equal(data['FR_LeftPreMove_stLfbCorr'], FR_LeftPreMove_restrTrials1)
+            intervals = np.c_[events['eventStimRestr_fbCorr'] - 0.2, events['eventStimRestr_fbCorr'] ]
+            idx = np.searchsorted(spike_times_per_cluster, intervals)
+            data['FR_200msPreStim_restr_fbCorr'] = (idx[:, 1] - idx[:, 0]) / 0.2
 
 
-        # MARSA CODE
-        start = time.time()
-        event_times = [event_times_right, event_times_left, event_times_right100, event_times_left100,
-                       event_times_0, event_times_Rchoice, event_times_Lchoice,
-                       event_CorrR, event_CorrL, event_IncorrR, event_IncorrL,
-                       eventMove_stR100chR, eventMove_stR100chL, eventMove_stL100chR, eventMove_stL100chL,
-                       eventStim_stR100chR, eventStim_stR100chL, eventStim_stL100chR, eventStim_stL100chL,
-                       event_FdbckCorr, event_FdbckIncorr,
-                       eventMove_stRchR, eventMove_stRchL, eventMove_stLchL, eventMove_stLchR]
+            intervals = np.c_[events['eventStimRestr_fbCorr'] , events['eventMoveRestr_fbCorr'] ]
+            idx = np.searchsorted(spike_times_per_cluster, intervals)
+            data['FR_RxnTime_restr_fbCorr'] = (idx[:, 1] - idx[:, 0]) / events['rxnTimesRestr_fbCorr']
 
-        TimeVect_FR = []
-        TimeVect_FF = []
-        maskNoEvent = [1] * len(event_times)  # []
-        for idx in range(0, len(event_times)):
-            if size(event_times[idx]) == 0:
-                maskNoEvent[idx] = event_times[idx]  # 0 #1 #.append(1)
-                event_times[idx] = np.array([1], dtype=float64)
+            # N>B Key and calculation are not the sameeee!!
+            intervals = np.c_[events['eventStim_fbCorr'], events['eventStim_fbCorr'] + 0.4]
+            idx = np.searchsorted(spike_times_per_cluster, intervals)
+            data['FR_400msPostStim_restr_fbCorr'] = (idx[:, 1] - idx[:, 0]) / 0.4
 
-        # Calculate the FR using a smaller bin size of binSzFRPeri (~20 ms) and with sliding window for 1 cluster at a time, for all events:
-        ActivitySmallBin = [cluster_peths_FR_FF_sliding(spikes['times'][spikes['clusters'] == cluster],
-                                                        event_times[x], pre_time=pre_time, post_time=post_time,
-                                                        hist_win=binSzFRPeri, N_SlidesPerWind=n_slideFR, causal=Caus) for x in
-                            range(0, len(event_times))]
-        FRoverT = [ActivitySmallBin[x][0] for x in range(0, len(event_times))]
-        FR_STD_overT = [ActivitySmallBin[x][1] for x in range(0, len(event_times))]
-        TimeVect_FR0 = ActivitySmallBin[0][3]  # the 0th event, the 4th np.array (with idx=3) which is the time vector
-        TimeVect_FR.append(TimeVect_FR0)
+            # N>B Key and calculation are not the sameeee!!
+            intervals = np.c_[events['eventStim_fbCorr'] + 0.05, events['eventStim_fbCorr'] + 0.15]
+            idx = np.searchsorted(spike_times_per_cluster, intervals)
+            data['FR_100msPostStim_restr_fbCorr'] = (idx[:, 1] - idx[:, 0]) / 0.1
 
-        # Calculate the FF using a larger bin size of binSzFFPeri (~100 ms) and with sliding window for 1 cluster at a time, for all events:
-        ActivitySlideLargeBin = [cluster_peths_FR_FF_sliding(spikes['times'][spikes['clusters'] == cluster],
-                                                             event_times[x], pre_time=pre_time, post_time=post_time,
-                                                             hist_win=binSzFFPeri, N_SlidesPerWind=n_slideFF, causal=Caus) for x
-                                 in range(0, len(event_times))]
-        FFoverT = [ActivitySlideLargeBin[x][2] for x in range(0, len(event_times))]
-        TimeVect_FF0 = ActivitySlideLargeBin[0][3]  # the 0th event, the 4th np.array (with idx=3) which is the time vector
-        TimeVect_FF.append(TimeVect_FF0)
+            # N>B Key and calculation are not the sameeee!!
+            intervals = np.c_[events['eventMove_stRfbCorr'] - 0.1, events['eventMove_stRfbCorr'] + 0.05]
+            idx = np.searchsorted(spike_times_per_cluster, intervals)
+            data['FR_RightPreMove_stRfbCorr'] = (idx[:, 1] - idx[:, 0]) / 0.15
 
-        # test=[d for d, s in zip(FRoverT, maskNoEvent) if s] #keep the FRoverT cases where maskNoEvent was true, i.e., 1
-        for idx in range(0, len(event_times)):
-            if size(maskNoEvent[idx]) == 0:  # cases where there were no events
-                event_times[idx] = maskNoEvent[idx]
-                # FFoverT[idx] = np.empty([1, 1, int((post_time - (-pre_time))/binSzFFPeri)])
-                FFoverT[idx][:] = np.NaN
-                # FRoverT[idx] = np.empty([1, int((post_time - (-pre_time))/binSzFRPeri)])
-                FRoverT[idx][:] = np.NaN
-                FR_STD_overT[idx] = FRoverT[idx]
+            intervals = np.c_[events['eventMove_stLfbCorr'] - 0.1, events['eventMove_stLfbCorr'] + 0.05]
+            idx = np.searchsorted(spike_times_per_cluster, intervals)
+            data['FR_LeftPreMove_stLfbCorr'] = (idx[:, 1] - idx[:, 0]) / 0.15
 
-        FR_PreEvent = [float(np.nanmean(FRoverT[x][TimeVect_FR0<0])) for x in range(0,len(event_times))]
-        FF_PreEvent = [float(np.nanmean(FFoverT[x][TimeVect_FF0<0])) for x in range(0,len(event_times))]
-        FR_PostEvent = [float(np.nanmean(FRoverT[x][np.logical_and(TimeVect_FR0>0, TimeVect_FR0<CapPostTime)])) for x in range(0,len(event_times))]
-        FF_PostEvent = [float(np.nanmean(FFoverT[x][np.logical_and(TimeVect_FF0>0, TimeVect_FF0<CapPostTime)])) for x in range(0,len(event_times))]
+            print(f'Mayo: fr {time.time() - start}')
 
-        print(time.time() - start)
+            start = time.time()
+            FR_200msBeforeStim_perClust = [sum(np.bitwise_and(spike_times_per_cluster >= timesStimOn_fullTrial[t]-0.2, spike_times_per_cluster < timesStimOn_fullTrial[t]))/0.2
+                                 for t in range(0,len(timesStimOn_fullTrial))]
+            FR_during_RxnTime_perClust = [sum(np.bitwise_and(spike_times_per_cluster >= timesStimOn_fullTrial[t], spike_times_per_cluster <= times1stMove_fullTrial[t]))/RxnTimes_fullTrial[t]
+                                 for t in range(0,len(timesStimOn_fullTrial))]
+            FR_200msPreStim_Corr = [sum(np.bitwise_and(spike_times_per_cluster >= timesStimOn_CorrTrial[t]-0.2, spike_times_per_cluster < timesStimOn_CorrTrial[t]))/0.2
+                                 for t in range(0,len(timesStimOn_CorrTrial))]
+            FR_during_RxnTime_Corr = [sum(np.bitwise_and(spike_times_per_cluster >= timesStimOn_CorrTrial[t], spike_times_per_cluster <= times1stMove_CorrTrial[t]))/RxnTimes_CorrTrial[t]
+                                 for t in range(0,len(timesStimOn_CorrTrial))]
+            FR_200msPreStim_restrTrials1 = [sum(np.bitwise_and(spike_times_per_cluster >= timesStart_restrTrials1[t]-0.2, spike_times_per_cluster < timesStart_restrTrials1[t]))/0.2
+                                 for t in range(0,len(timesStart_restrTrials1))]
+            FR_RxnTime_perClust_restrTrials1 = [sum(np.bitwise_and(spike_times_per_cluster >= timesStart_restrTrials1[t], spike_times_per_cluster <= times1stMove_restrTrials1[t]))/RxnTimes_restrTrials1[t]
+                                 for t in range(0,len(timesStart_restrTrials1))]
+            FR_200msPreStim_restrTrials2 = [sum(np.bitwise_and(spike_times_per_cluster >= timesStart_restrTrials2[t]-0.2, spike_times_per_cluster < timesStart_restrTrials2[t]))/0.2
+                                 for t in range(0,len(timesStart_restrTrials2))]
+            FR_RxnTime_perClust_restrTrials2 = [sum(np.bitwise_and(spike_times_per_cluster >= timesStart_restrTrials2[t], spike_times_per_cluster <= times1stMove_restrTrials2[t]))/RxnTimes_restrTrials2[t]
+                                 for t in range(0,len(timesStart_restrTrials2))]
+            # N>B Key and calculation are not the sameeee!!
+            FR_400msPostStim_restrTrials1 = [sum(np.bitwise_and(spike_times_per_cluster >= timesStimOn_CorrTrial[t], spike_times_per_cluster < (timesStimOn_CorrTrial[t] + 0.4)))/0.4
+                                 for t in range(0,len(timesStimOn_CorrTrial))]
+            # N>B Key and calculation are not the sameeee!!
+            FR_100msPostStim_restrTrials1 = [sum(np.bitwise_and(spike_times_per_cluster >= timesStimOn_CorrTrial[t]+0.05, spike_times_per_cluster < (timesStimOn_CorrTrial[t] + 0.15)))/0.1
+                                 for t in range(0,len(timesStimOn_CorrTrial))]
+            FR_RightPreMove_restrTrials1 = [sum(np.bitwise_and(spike_times_per_cluster >= times1stMove_RightCorr[t]-0.1, spike_times_per_cluster < (times1stMove_RightCorr[t] + 0.05)))/0.15
+                                 for t in range(0,len(times1stMove_RightCorr))]
+            FR_LeftPreMove_restrTrials1 = [sum(np.bitwise_and(spike_times_per_cluster >= times1stMove_LeftCorr[t]-0.1, spike_times_per_cluster < (times1stMove_LeftCorr[t] + 0.05)))/0.15
+                                 for t in range(0,len(times1stMove_LeftCorr))]
 
-        # MAYO CODE
-        start = time.time()
-        event_keys = ['eventStim_stR', 'eventStim_stL', 'eventStim_stR100', 'eventStim_stL100', 'eventStim_0',
-                      'eventMove_chR', 'eventMove_chL', 'eventStim_stRfbCorr', 'eventStim_stLfbCorr', 'eventStim_stRfbIncorr',
-                      'eventStim_stLfbIncorr', 'eventStim_stR100chR', 'eventStim_stR100chL', 'eventStim_stL100chR',
-                      'eventStim_stL100chL', 'eventMove_stR100chR', 'eventMove_stR100chL', 'eventMove_stL100chR',
-                      'eventMove_stL100chL', 'eventMove_stRchR', 'eventMove_stRchL', 'eventMove_stLchL', 'eventMove_stLchR',
-                      'eventFdbck_fbCorr', 'eventFdbck_fbIncorr']
+            print(f'Marsa: fr {time.time() - start}')
+
+            assert np.array_equal(data['FR_200msPreStim_All'], FR_200msBeforeStim_perClust)
+            assert np.array_equal(data['FR_RxnTime_All'], FR_during_RxnTime_perClust)
+            assert np.array_equal(data['FR_200msPreStim_fbCorr'], FR_200msPreStim_Corr)
+            assert np.array_equal(data['FR_RxnTime_fbCorr'], FR_during_RxnTime_Corr)
+            assert np.array_equal(data['FR_200msPreStim_restr_All'], FR_200msPreStim_restrTrials1)
+            assert np.array_equal(data['FR_RxnTime_restr_All'], FR_RxnTime_perClust_restrTrials1)
+            assert np.array_equal(data['FR_200msPreStim_restr_fbCorr'], FR_200msPreStim_restrTrials2)
+            assert np.array_equal(data['FR_RxnTime_restr_fbCorr'], FR_RxnTime_perClust_restrTrials2)
+            assert np.array_equal(data['FR_400msPostStim_restr_fbCorr'], FR_400msPostStim_restrTrials1)
+            assert np.array_equal(data['FR_100msPostStim_restr_fbCorr'], FR_100msPostStim_restrTrials1)
+            assert np.array_equal(data['FR_RightPreMove_stRfbCorr'], FR_RightPreMove_restrTrials1)
+            assert np.array_equal(data['FR_LeftPreMove_stLfbCorr'], FR_LeftPreMove_restrTrials1)
 
 
-        data = {}
-        # TODO get this working so we don't rely on
-        # FR_len = (pre_time + post_time + binSzFRPeri/n_slideFR) / (binSzFRPeri/n_slideFR)
-        # FF_len = (pre_time + post_time + binSzFFPeri/n_slideFF) / (binSzFFPeri/n_slideFF)
-        for iK, key in enumerate(event_keys):
-            data_temp = {}
-            if events[key].shape[0] == 0:
-                # need to think about this
-                data_temp['FR'] = np.nan * np.ones_like(time_FR)
-                data_temp['FR_std'] = np.nan * np.ones_like(time_FR)
-                data_temp['FF'] = np.nan * np.ones_like(time_FF)
-                data_temp['FR_PreTime'] = np.nan
-                data_temp['FR_PostTime'] = np.nan
-                data_temp['FF_PreTime'] = np.nan
-                data_temp['FF_PostTime'] = np.nan
+            # MARSA CODE
+            start = time.time()
+            event_times = [event_times_right, event_times_left, event_times_right100, event_times_left100,
+                           event_times_0, event_times_Rchoice, event_times_Lchoice,
+                           event_CorrR, event_CorrL, event_IncorrR, event_IncorrL,
+                           eventMove_stR100chR, eventMove_stR100chL, eventMove_stL100chR, eventMove_stL100chL,
+                           eventStim_stR100chR, eventStim_stR100chL, eventStim_stL100chR, eventStim_stL100chL,
+                           event_FdbckCorr, event_FdbckIncorr,
+                           eventMove_stRchR, eventMove_stRchL, eventMove_stLchL, eventMove_stLchR]
 
-            else:
-                # Do we really need to save these?
-                data_temp['FR'], data_temp['FR_std'], _, time_FR = \
-                    cluster_peths_FR_FF_sliding(spike_times_per_cluster, events[key], pre_time=pre_time, post_time=post_time,
-                                                hist_win=binSzFRPeri, N_SlidesPerWind=n_slideFR, causal=Caus)
-                _, _, data_temp['FF'], time_FF = \
-                    cluster_peths_FR_FF_sliding(spike_times_per_cluster, events[key], pre_time=pre_time, post_time=post_time,
-                                                hist_win=binSzFFPeri, N_SlidesPerWind=n_slideFF, causal=Caus)
+            TimeVect_FR = []
+            TimeVect_FF = []
+            maskNoEvent = [1] * len(event_times)  # []
+            for idx in range(0, len(event_times)):
+                if size(event_times[idx]) == 0:
+                    maskNoEvent[idx] = event_times[idx]  # 0 #1 #.append(1)
+                    event_times[idx] = np.array([1], dtype=float64)
 
-                data_temp['FR_PreEvent'] = np.nanmean(data_temp['FR'][time_FR < 0])
-                data_temp['FF_PreEvent'] = np.nanmean(data_temp['FF'][time_FF < 0])
-                data_temp['FR_PostEvent'] = np.nanmean(data_temp['FR'][np.logical_and(time_FR >0, time_FR < CapPostTime)])
-                data_temp['FF_PostEvent'] = np.nanmean(data_temp['FF'][np.logical_and(time_FF >0, time_FF < CapPostTime)])
+            # Calculate the FR using a smaller bin size of binSzFRPeri (~20 ms) and with sliding window for 1 cluster at a time, for all events:
+            ActivitySmallBin = [cluster_peths_FR_FF_sliding(spikes['times'][spikes['clusters'] == cluster],
+                                                            event_times[x], pre_time=pre_time, post_time=post_time,
+                                                            hist_win=binSzFRPeri, N_SlidesPerWind=n_slideFR, causal=Caus) for x in
+                                range(0, len(event_times))]
+            FRoverT = [ActivitySmallBin[x][0] for x in range(0, len(event_times))]
+            FR_STD_overT = [ActivitySmallBin[x][1] for x in range(0, len(event_times))]
+            TimeVect_FR0 = ActivitySmallBin[0][3]  # the 0th event, the 4th np.array (with idx=3) which is the time vector
+            TimeVect_FR.append(TimeVect_FR0)
 
-                # case where ik = 0 has no trials ( do we need to take into account? NO)
-                if iK == 0:
-                    # see whether we want to save this for each event or not?
-                    data['Time_FR'] = time_FR
-                    data['Time_FF'] = time_FF
+            # Calculate the FF using a larger bin size of binSzFFPeri (~100 ms) and with sliding window for 1 cluster at a time, for all events:
+            ActivitySlideLargeBin = [cluster_peths_FR_FF_sliding(spikes['times'][spikes['clusters'] == cluster],
+                                                                 event_times[x], pre_time=pre_time, post_time=post_time,
+                                                                 hist_win=binSzFFPeri, N_SlidesPerWind=n_slideFF, causal=Caus) for x
+                                     in range(0, len(event_times))]
+            FFoverT = [ActivitySlideLargeBin[x][2] for x in range(0, len(event_times))]
+            TimeVect_FF0 = ActivitySlideLargeBin[0][3]  # the 0th event, the 4th np.array (with idx=3) which is the time vector
+            TimeVect_FF.append(TimeVect_FF0)
 
-        print(time.time() - start)
-        for ik, key in enumerate(event_keys):
-            assert np.array_equal(data[key]['FR'], FRoverT[ik])
-            assert np.array_equal(data[key]['FR_std'], FR_STD_overT)
-            assert np.array_equal(data[key]['FF'], FFoverT)
-            assert np.array_equal(data[key]['FR_PreEvent'], FR_PreEvent)
-            assert np.array_equal(data[key]['FR_PostEvent'], FR_PreEvent)
-            assert np.array_equal(data[key]['FF_PreEvent'], FF_PreEvent)
-            assert np.array_equal(data[key]['FF_PostEvent'], FF_PostEvent)
+            # test=[d for d, s in zip(FRoverT, maskNoEvent) if s] #keep the FRoverT cases where maskNoEvent was true, i.e., 1
+            for idx in range(0, len(event_times)):
+                if size(maskNoEvent[idx]) == 0:  # cases where there were no events
+                    event_times[idx] = maskNoEvent[idx]
+                    # FFoverT[idx] = np.empty([1, 1, int((post_time - (-pre_time))/binSzFFPeri)])
+                    FFoverT[idx][:] = np.NaN
+                    # FRoverT[idx] = np.empty([1, int((post_time - (-pre_time))/binSzFRPeri)])
+                    FRoverT[idx][:] = np.NaN
+                    FR_STD_overT[idx] = FRoverT[idx]
+
+            FR_PreEvent = [float(np.nanmean(FRoverT[x][TimeVect_FR0<0])) for x in range(0,len(event_times))]
+            FF_PreEvent = [float(np.nanmean(FFoverT[x][TimeVect_FF0<0])) for x in range(0,len(event_times))]
+            FR_PostEvent = [float(np.nanmean(FRoverT[x][np.logical_and(TimeVect_FR0>0, TimeVect_FR0<CapPostTime)])) for x in range(0,len(event_times))]
+            FF_PostEvent = [float(np.nanmean(FFoverT[x][np.logical_and(TimeVect_FF0>0, TimeVect_FF0<CapPostTime)])) for x in range(0,len(event_times))]
+
+            print(f'Marsa: slide {time.time() - start}')
+
+            # MAYO CODE
+            start = time.time()
+            event_keys = ['eventStim_stR', 'eventStim_stL', 'eventStim_stR100', 'eventStim_stL100',
+                          'eventStim_0','eventMove_chR', 'eventMove_chL',
+                          'eventStim_stRfbCorr', 'eventStim_stLfbCorr', 'eventStim_stRfbIncorr', 'eventStim_stLfbIncorr',
+                          'eventMove_stR100chR', 'eventMove_stR100chL', 'eventMove_stL100chR','eventMove_stL100chL',
+                          'eventStim_stR100chR', 'eventStim_stR100chL', 'eventStim_stL100chR', 'eventStim_stL100chL',
+                          'eventFdbck_fbCorr', 'eventFdbck_fbIncorr',
+                          'eventMove_stRchR', 'eventMove_stRchL', 'eventMove_stLchL', 'eventMove_stLchR']
+
+
+            data = {}
+            # TODO get this working so we don't rely on
+            # FR_len = (pre_time + post_time + binSzFRPeri/n_slideFR) / (binSzFRPeri/n_slideFR)
+            # FF_len = (pre_time + post_time + binSzFFPeri/n_slideFF) / (binSzFFPeri/n_slideFF)
+            for iK, key in enumerate(event_keys):
+                data_temp = {}
+                if events[key].shape[0] == 0:
+                    # need to think about this
+                    data_temp['FR'] = np.nan * np.ones_like(time_FR)
+                    data_temp['FR_std'] = np.nan * np.ones_like(time_FR)
+                    data_temp['FF'] = np.nan * np.ones_like(time_FF)
+                    data_temp['FR_PreEvent'] = np.nan
+                    data_temp['FR_PostEvent'] = np.nan
+                    data_temp['FF_PreEvent'] = np.nan
+                    data_temp['FF_PostEvent'] = np.nan
+
+                    data[key] = data_temp
+
+                else:
+                    # Do we really need to save these?
+                    data_temp['FR'], data_temp['FR_std'], _, time_FR = \
+                        cluster_peths_FR_FF_sliding(spike_times_per_cluster, events[key], pre_time=pre_time, post_time=post_time,
+                                                    hist_win=binSzFRPeri, N_SlidesPerWind=n_slideFR, causal=Caus)
+                    _, _, data_temp['FF'], time_FF = \
+                        cluster_peths_FR_FF_sliding(spike_times_per_cluster, events[key], pre_time=pre_time, post_time=post_time,
+                                                    hist_win=binSzFFPeri, N_SlidesPerWind=n_slideFF, causal=Caus)
+
+                    data_temp['FR_PreEvent'] = np.nanmean(data_temp['FR'][time_FR < 0])
+                    data_temp['FF_PreEvent'] = np.nanmean(data_temp['FF'][time_FF < 0])
+                    data_temp['FR_PostEvent'] = np.nanmean(data_temp['FR'][np.logical_and(time_FR >0, time_FR < CapPostTime)])
+                    data_temp['FF_PostEvent'] = np.nanmean(data_temp['FF'][np.logical_and(time_FF >0, time_FF < CapPostTime)])
+
+                    # case where ik = 0 has no trials ( do we need to take into account? NO)
+
+                    data[key] = data_temp
+
+            data['Time_FR'] = time_FR
+            data['Time_FF'] = time_FF
+
+            print(f'Mayo: slide {time.time() - start}')
+
+            for ik, key in enumerate(event_keys):
+                np.testing.assert_equal(data[key]['FR'], FRoverT[ik])
+                np.testing.assert_equal(data[key]['FR_std'], FR_STD_overT[ik])
+                np.testing.assert_equal(data[key]['FF'], FFoverT[ik])
+                np.testing.assert_equal(data[key]['FR_PreEvent'], FR_PreEvent[ik])
+                np.testing.assert_equal(data[key]['FR_PostEvent'], FR_PostEvent[ik])
+                np.testing.assert_equal(data[key]['FF_PreEvent'], FF_PreEvent[ik])
+                np.testing.assert_equal(data[key]['FF_PostEvent'], FF_PostEvent[ik])
             assert np.array_equal(data['Time_FR'], TimeVect_FR0)
             assert np.array_equal(data['Time_FF'], TimeVect_FF0)
 
