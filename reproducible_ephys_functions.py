@@ -8,6 +8,13 @@ import seaborn as sns
 import matplotlib
 import numpy as np
 from one.api import ONE
+from one.alf.exceptions import ALFObjectNotFound
+from iblutil.numerical import ismember
+import logging
+from pathlib import Path
+
+logger = logging.getLogger('paper_reproducible_ephys')
+
 
 STR_QUERY = 'probe_insertion__session__project__name__icontains,ibl_neuropixel_brainwide_01,' \
             'probe_insertion__session__qc__lt,50,' \
@@ -35,56 +42,116 @@ def labs():
     return lab_number_map, institution_map, institution_colors
 
 
-def query(resolved=True, behavior=False, min_regions=2, as_dataframe=False, str_query=STR_QUERY,
-          one=None):
-    if one is None:
-        one = ONE()
+def query(behavior=False, n_trials=400, resolved=True, min_regions=2, exclude_critical=True, one=None, str_query=None,
+          as_dataframe=False):
 
-    # Query repeated site recordings
+    one = one or ONE()
+
+    if isinstance(str_query, str):
+        django_queries = [str_query]
+    elif isinstance(str_query, list):
+        django_queries = str_query
+    else:
+        django_queries = []
+
+    if exclude_critical:
+        django_queries.append('probe_insertion__session__qc__lt,50,~probe_insertion__json__qc,CRITICAL')
     if resolved:
-        str_query = str_query + ',' + 'probe_insertion__json__extended_qc__alignment_resolved,True'
+        django_queries.append('probe_insertion__json__extended_qc__alignment_resolved,True')
     if behavior:
-        str_query = str_query + ',' + 'probe_insertion__session__extended_qc__behavior,1'
+        django_queries.append('probe_insertion__session__extended_qc__behavior,1')
+    if n_trials > 0:
+        django_queries.append(f'probe_insertion__session__n_trials__gte,{n_trials}')
+
+    django_query = ','.join(django_queries)
 
     trajectories = one.alyx.rest('trajectories', 'list', provenance='Planned',
-                                 x=-2243, y=-2000, theta=15,
-                                 django=str_query)
+                                 x=-2243, y=-2000, theta=15, project='ibl_neuropixel_brainwide_01',
+                                 django=django_query)
+    pids = [traj['probe_insertion'] for traj in trajectories]
 
-    # Query how many of the target regions were hit per recording
-    region_traj = []
-    query_regions = BRAIN_REGIONS.copy()
-    query_regions[query_regions.index('PPC')] = 'VIS'
-    for i, region in enumerate(query_regions):
-        region_query = one.alyx.rest(
-                    'trajectories', 'list', provenance='Ephys aligned histology track',
-                    django=(str_query + ',channels__brain_region__acronym__icontains,%s' % region))
-        region_traj = np.append(region_traj, [i['probe_insertion'] for i in region_query])
-    num_regions = np.empty(len(trajectories))
-    for i, trajectory in enumerate(trajectories):
-        num_regions[i] = sum(trajectory['probe_insertion'] in s for s in region_traj)
-    trajectories = [trajectories[i] for i in np.where(num_regions >= min_regions)[0]]
+    if min_regions > 0:
+        region_traj = []
+        query_regions = BRAIN_REGIONS.copy()
+        query_regions[query_regions.index('PPC')] = 'VIS'
+        # Query how many of the target regions were hit per recording
+        for i, region in enumerate(query_regions):
+            region_query = one.alyx.rest(
+                'trajectories', 'list', provenance='Ephys aligned histology track',
+                django=f'{django_query},channels__brain_region__acronym__icontains,{region},probe_insertion__in,{pids}')
+            region_traj = np.append(region_traj, [i['probe_insertion'] for i in region_query])
+
+        region_pids, num_regions = np.unique(region_traj, return_counts=True)
+        isin, _ = ismember(np.array(pids), region_pids[num_regions >= min_regions])
+        trajectories = [trajectories[i] for i, val in enumerate(isin) if val]
 
     # Convert to dataframe if necessary
     if as_dataframe:
         trajectories = pd.DataFrame(data={
-                            'subjects': [i['session']['subject'] for i in trajectories],
-                            'dates': [i['session']['start_time'][:10] for i in trajectories],
-                            'probes': [i['probe_name'] for i in trajectories],
-                            'lab': [i['session']['lab'] for i in trajectories],
-                            'eid': [i['session']['id'] for i in trajectories],
-                            'probe_insertion': [i['probe_insertion'] for i in trajectories]})
-        institution_map = labs()[1]
-        trajectories['institution'] = trajectories.lab.map(institution_map)
+            'subjects': [i['session']['subject'] for i in trajectories],
+            'dates': [i['session']['start_time'][:10] for i in trajectories],
+            'probes': [i['probe_name'] for i in trajectories],
+            'lab': [i['session']['lab'] for i in trajectories],
+            'eid': [i['session']['id'] for i in trajectories],
+            'probe_insertion': [i['probe_insertion'] for i in trajectories]})
+        trajectories['institution'] = trajectories.lab.map(labs()[1])
     return trajectories
+
+
+def get_insertions(level=2, recompute=False, as_dataframe=False, one=None):
+    one = one or ONE()
+    if level == 0:
+        traj = query(min_regions=0, exclude_critical=False, one=one, as_dataframe=as_dataframe)
+
+        return traj
+    if level == 1:
+        traj = query(one=one, as_dataframe=as_dataframe)
+
+        return traj
+    if level >= 2:
+        traj_init = query(one=one, as_dataframe=False)
+        pids_init = np.array([t['probe_insertion'] for t in traj_init])
+        if recompute:
+            metrics = compute_metrics(traj_init, one=one)
+        else:
+            metrics = load_metrics()
+            pids = metrics['pid'].unique()
+
+            isin, _ = ismember(pids_init, metrics['pid'].unique())
+            if all(isin):
+                logger.warning('metrics dataframe for computing exclusion is not up to date. '
+                               'Should rerun get_insertions(level=2, recompute=True)')
+
+        traj = exclude_recordings(metrics, return_excluded=False)
+
+        if level == 3:
+            traj = further_exclude_recordings(traj)
+
+        if not as_dataframe:
+            isin, _ = ismember(pids_init, traj['pid'].unique())
+            traj = [traj_init[i] for i, val in enumerate(isin) if val]
+
+            # get the trajectories from alyx
+
+    return traj
+
 
 
 def data_path():
     # Retrieve absolute path of paper-behavior dir
+    repo_dir = Path(__file__).resolve().parent
+    data_dir = repo_dir.joinpath('data')
+    data_dir.mkdir(exist_ok=True)
+
+    return data_dir
+
+def data_path_old():
     repo_dir = os.path.dirname(os.path.realpath(__file__))
     data_dir = os.path.join(repo_dir, 'data')
     if not os.path.exists(data_dir):
         os.mkdir(data_dir)
     return data_dir
+
 
 
 def figure_style(return_colors=False):
@@ -144,7 +211,8 @@ def combine_regions(regions):
 
 
 def exclude_recordings(df, max_ap_rms=40, min_regions=3, min_channels_region=5, max_lfp_power=-140,
-                       min_neurons_per_channel=0.1, return_excluded=False, destriped_rms=True):
+                       min_neurons_per_channel=0.1,
+                       return_excluded=False, destriped_rms=True):
     """
     Exclude recordings from brain regions dataframe
 
@@ -183,6 +251,7 @@ def exclude_recordings(df, max_ap_rms=40, min_regions=3, min_channels_region=5, 
         df_excluded['high_noise'] = df.groupby('subject')['rms_ap_p90'].median() >= max_ap_rms
     else:
         df_excluded['high_noise'] = df.groupby('subject')['rms_ap'].median() >= max_ap_rms
+
     df_excluded['high_lfp'] = df.groupby('subject')['lfp_power_high'].median() >= max_lfp_power
     df_excluded['low_yield'] = (
                     df.groupby('subject')['neuron_yield'].sum()
@@ -207,10 +276,39 @@ def exclude_recordings(df, max_ap_rms=40, min_regions=3, min_channels_region=5, 
         lambda s : (s['neuron_yield'].sum() / s['n_channels'].sum()) >= min_neurons_per_channel)
     df['region_hit'] = df['n_channels'] >= min_channels_region
     df = df.groupby('subject').filter(lambda s : s['region_hit'].sum() >= min_regions)
+
     if return_excluded == False:
         return df
     else:
         return df, df_excluded
+
+
+
+# need to ask what is useful, probably region dict and the probes to process per region? Let's ask
+
+def further_exclude_recordings(df, n_neuron_per_reg=5, n_rec_per_lab=4, n_lab_per_reg=3):
+    lab_number_map, institution_map, lab_colors = labs()
+    df['institute'] = df.lab.map(institution_map)
+    df['lab_number'] = df.lab.map(lab_number_map)
+
+    # Filter by the regions that have greater than n_neurons
+    df = df[df['neuron_yield'] >= n_neuron_per_reg]
+
+    # Find the number of regions per lab
+    rec_per_lab = df.groupby('region')['institute'].value_counts()
+
+    for reg in BRAIN_REGIONS:
+        lab_reg = rec_per_lab[reg]
+        n_labs = np.sum(lab_reg.values >= n_rec_per_lab)
+
+        if n_labs >= n_lab_per_reg:
+            for l in lab_reg.index.values:
+                if lab_reg[l] <= n_rec_per_lab:
+                    df = df[np.invert(np.logical_and(df['region'] == reg, df['institue'] == l))]
+        else:
+            df = df[df['region'] != reg]
+
+    return df
 
 
 def eid_list():
@@ -227,3 +325,111 @@ def eid_list_all():
     """
     eids = np.load('all_repeated_site_eids.npy')
     return eids
+
+
+import brainbox.io.one as bbone
+from brainbox.metrics.single_units import quick_unit_metrics
+from ibllib.atlas import AllenAtlas
+
+
+def compute_metrics(trajectories, one=None, ba=None, spike_sorter='pykilosort'):
+    one = one or ONE()
+    ba = ba or AllenAtlas()
+    metrics = pd.DataFrame()
+    LFP_BAND_HIGH = [20, 80]
+
+    for i, traj in enumerate(trajectories):
+        eid = traj['session']['id']
+        lab = traj['session']['lab']
+        nickname = traj['session']['subject']
+        date = traj['session']['start_time'][:10]
+        pid = traj['probe_insertion']
+        probe = traj['probe_name']
+
+        collection = f'alf/{probe}/{spike_sorter}'
+
+        try:
+            ap = one.load_object(eid, 'ephysChannels', collection=f'raw_ephys_data/{probe}', attribute=['apRMS'])
+        except ALFObjectNotFound:
+            logger.warning(f'ephysChannels object not found for pid: {pid}')
+            ap = {}
+
+        try:
+            lfp = one.load_object(eid, 'ephysSpectralDensityLF', collection=f'raw_ephys_data/{probe}')
+        except ALFObjectNotFound:
+            logger.warning(f'ephysSpectralDensityLF object not found for pid: {pid}')
+            lfp = {}
+
+        try:
+            clusters = one.load_object(eid, 'clusters', collection=collection, attribute=['metrics', 'channels'])
+            if 'metrics' not in clusters.keys():
+                spikes, clusters = bbone.load_spike_sorting(eid, probe=probe, spike_sorter='pykilosort',
+                                                            dataset_types=['spikes.amps', 'spikes.depths'], one=one)
+                spikes = spikes[probe]
+                clusters = clusters[probe]
+                clusters['metrics'] = quick_unit_metrics(spikes.clusters, spikes.times, spikes.amps, spikes.depths,
+                                                         cluster_ids=np.arange(clusters.channels.size))
+
+            channels = bbone.load_channel_locations(eid, probe=probe, one=one, aligned=True, brain_atlas=ba)[probe]
+            channels['rawInd'] = one.load_dataset(eid, dataset='channels.rawInd.npy', collection=collection)
+            channels['rep_site_acronym'] = combine_regions(channels['acronym'])
+            clusters['rep_site_acronym'] = channels['rep_site_acronym'][clusters['channels']]
+
+        except Exception as err:
+            print(err)
+
+        try:
+            for region in BRAIN_REGIONS:
+                region_clusters = np.where(np.bitwise_and(clusters['rep_site_acronym'] == region,
+                                                          clusters['metrics']['label'] == 1))[0]
+                region_chan = channels['rawInd'][np.where(channels['rep_site_acronym'] == region)[0]]
+
+                if 'power' in lfp.keys():
+                    freqs = ((lfp['freqs'] > LFP_BAND_HIGH[0])
+                             & (lfp['freqs'] < LFP_BAND_HIGH[1]))
+                    chan_power = lfp['power'][:, region_chan]
+                    lfp_high_region = np.mean(10 * np.log(chan_power[freqs]))  # convert to dB
+                else:
+                    # TO DO SEE IF THIS IS LEGIT
+                    lfp_high_region = np.nan
+
+                if 'apRMS' in ap.keys() and region_chan.shape[0] > 0:
+                    ap_rms = np.percentile(ap['apRMS'][1, region_chan], 90) * 1e6
+                else:
+                    ap_rms = 0
+
+                metrics = metrics.append(pd.DataFrame(
+                    index=[metrics.shape[0] + 1], data={'pid': pid, 'eid': eid, 'probe': probe,
+                                                        'lab': lab, 'subject': nickname,
+                                                        'region': region, 'date': date,
+                                                        'n_channels': region_chan.shape[0],
+                                                        'neuron_yield': region_clusters.shape[0],
+                                                        'lfp_power_high': lfp_high_region,
+                                                        'lfp_band_high': [LFP_BAND_HIGH],
+                                                        'rms_ap_p90': ap_rms}))
+        except Exception as err:
+            print(err)
+
+    metrics.to_csv(data_path().joinpath('exclusion_metrics.csv'))
+
+    return metrics
+
+
+def dataframe2dict(df):
+    pass
+
+
+def load_metrics():
+    metrics = pd.read_csv(data_path().joinpath('metrics_region.csv'))
+
+
+    return metrics
+
+
+def load_figure_data(traj, figure):
+    pass
+
+
+
+
+
