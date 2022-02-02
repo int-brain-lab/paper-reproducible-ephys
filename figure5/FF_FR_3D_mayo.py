@@ -93,7 +93,6 @@ for ins in insertions[5:15]:
         print(f'feedback_nans: {np.sum(nanFeedback)}')
         print(f'stim and movement_nans: {np.sum(nanStimMovement)}')
 
-        trials_id = np.arange(trials['feedbackType'].shape[0])
 
         # Make a dict of all trials permutations that we will use later for analysis
         # fb - feedback, either Corr (correct) or Incorr (incorrect)
@@ -511,10 +510,15 @@ for ins in insertions[5:15]:
                                  for t in range(0,len(timesStart_restrTrials1))]
             FR_RxnTime_perClust_restrTrials1 = [sum(np.bitwise_and(spike_times_per_cluster >= timesStart_restrTrials1[t], spike_times_per_cluster <= times1stMove_restrTrials1[t]))/RxnTimes_restrTrials1[t]
                                  for t in range(0,len(timesStart_restrTrials1))]
+
+            # This is used in Figure 5b
             FR_200msPreStim_restrTrials2 = [sum(np.bitwise_and(spike_times_per_cluster >= timesStart_restrTrials2[t]-0.2, spike_times_per_cluster < timesStart_restrTrials2[t]))/0.2
                                  for t in range(0,len(timesStart_restrTrials2))]
+            # This is used in Figure 5b
             FR_RxnTime_perClust_restrTrials2 = [sum(np.bitwise_and(spike_times_per_cluster >= timesStart_restrTrials2[t], spike_times_per_cluster <= times1stMove_restrTrials2[t]))/RxnTimes_restrTrials2[t]
                                  for t in range(0,len(timesStart_restrTrials2))]
+
+
             # N>B Key and calculation are not the sameeee!!
             FR_400msPostStim_restrTrials1 = [sum(np.bitwise_and(spike_times_per_cluster >= timesStimOn_CorrTrial[t], spike_times_per_cluster < (timesStimOn_CorrTrial[t] + 0.4)))/0.4
                                  for t in range(0,len(timesStimOn_CorrTrial))]

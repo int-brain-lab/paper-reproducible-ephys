@@ -7,11 +7,16 @@ import pandas as pd
 import seaborn as sns
 import matplotlib
 import numpy as np
+import logging
+from pathlib import Path
+
 from one.api import ONE
 from one.alf.exceptions import ALFObjectNotFound
 from iblutil.numerical import ismember
-import logging
-from pathlib import Path
+from ibllib.atlas import AllenAtlas
+import brainbox.io.one as bbone
+from brainbox.metrics.single_units import quick_unit_metrics
+
 
 logger = logging.getLogger('paper_reproducible_ephys')
 
@@ -99,6 +104,19 @@ def query(behavior=False, n_trials=400, resolved=True, min_regions=2, exclude_cr
 
 
 def get_insertions(level=2, recompute=False, as_dataframe=False, one=None):
+    """
+    Find insertions used for analysis based in different exclusion levels
+    Level 0: minimum_regions = 0, resolved = True, behavior = False, n_trial >= 400, exclude_critical = True
+    Level 1: minimum_regions = 2, resolved = True, behavior = False, n_trial >= 400, exclude_critical = True
+    Level 2: minimum_regions = 3, resolved = True, behavior = False, n_trial >= 400, exclude_critical = True,
+             max_ap_rms=40,  max_lfp_power=-140, mininumum_channels_per_region=5, max_lfp_power=-140, min_neurons_per_channel=0.1
+
+    :param level: exclusion level 0, 1 or 2
+    :param recompute: whether to recompute the metrics dataframe that is used to exclude recordings at level=2
+    :param as_dataframe: whether to return a dict or a dataframe
+    :param one: ONE instance
+    :return: dict or pandas dataframe of probe insertions
+    """
     one = one or ONE()
     if level == 0:
         traj = query(min_regions=0, exclude_critical=False, one=one, as_dataframe=as_dataframe)
@@ -111,30 +129,22 @@ def get_insertions(level=2, recompute=False, as_dataframe=False, one=None):
     if level >= 2:
         traj_init = query(one=one, as_dataframe=False)
         pids_init = np.array([t['probe_insertion'] for t in traj_init])
-        if recompute:
+        metrics = load_metrics()
+        if (metrics is None) or recompute:
             metrics = compute_metrics(traj_init, one=one)
         else:
-            metrics = load_metrics()
-            pids = metrics['pid'].unique()
-
             isin, _ = ismember(pids_init, metrics['pid'].unique())
-            if all(isin):
-                logger.warning('metrics dataframe for computing exclusion is not up to date. '
-                               'Should rerun get_insertions(level=2, recompute=True)')
+            if not np.all(isin):
+                logger.warning('Metrics dataframe for computing exclusion is not up to date. '
+                               'To compute the latest metrics dataframe run get_insertions(level=2, recompute=True)')
 
         traj = exclude_recordings(metrics, return_excluded=False)
-
-        if level == 3:
-            traj = further_exclude_recordings(traj)
 
         if not as_dataframe:
             isin, _ = ismember(pids_init, traj['pid'].unique())
             traj = [traj_init[i] for i, val in enumerate(isin) if val]
 
-            # get the trajectories from alyx
-
     return traj
-
 
 
 def data_path():
@@ -144,14 +154,6 @@ def data_path():
     data_dir.mkdir(exist_ok=True)
 
     return data_dir
-
-def data_path_old():
-    repo_dir = os.path.dirname(os.path.realpath(__file__))
-    data_dir = os.path.join(repo_dir, 'data')
-    if not os.path.exists(data_dir):
-        os.mkdir(data_dir)
-    return data_dir
-
 
 
 def figure_style(return_colors=False):
@@ -283,10 +285,8 @@ def exclude_recordings(df, max_ap_rms=40, min_regions=3, min_channels_region=5, 
         return df, df_excluded
 
 
-
-# need to ask what is useful, probably region dict and the probes to process per region? Let's ask
-
 def further_exclude_recordings(df, n_neuron_per_reg=5, n_rec_per_lab=4, n_lab_per_reg=3):
+
     lab_number_map, institution_map, lab_colors = labs()
     df['institute'] = df.lab.map(institution_map)
     df['lab_number'] = df.lab.map(lab_number_map)
@@ -325,11 +325,6 @@ def eid_list_all():
     """
     eids = np.load('all_repeated_site_eids.npy')
     return eids
-
-
-import brainbox.io.one as bbone
-from brainbox.metrics.single_units import quick_unit_metrics
-from ibllib.atlas import AllenAtlas
 
 
 def compute_metrics(trajectories, one=None, ba=None, spike_sorter='pykilosort'):
@@ -410,26 +405,14 @@ def compute_metrics(trajectories, one=None, ba=None, spike_sorter='pykilosort'):
         except Exception as err:
             print(err)
 
-    metrics.to_csv(data_path().joinpath('exclusion_metrics.csv'))
+    metrics.to_csv(data_path().joinpath('insertion_metrics.csv'))
 
     return metrics
-
-
-def dataframe2dict(df):
-    pass
 
 
 def load_metrics():
-    metrics = pd.read_csv(data_path().joinpath('metrics_region.csv'))
-
-
+    if data_path().joinpath('insertion_metrics.csv').exists():
+        metrics = pd.read_csv(data_path().joinpath('metrics_region.csv'))
+    else:
+        metrics = None
     return metrics
-
-
-def load_figure_data(traj, figure):
-    pass
-
-
-
-
-
