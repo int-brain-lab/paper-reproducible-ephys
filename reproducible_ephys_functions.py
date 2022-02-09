@@ -78,6 +78,23 @@ def query(resolved=True, behavior=False, min_regions=2, as_dataframe=False, str_
     return trajectories
 
 
+def query_histology():
+    '''
+    Return the trajectories for histology analysis
+
+    Returns
+    -------
+    List of histology subjs
+
+    '''
+    import figure_hist_data as fhd
+    
+    data = fhd.get_probe_data()
+    
+    return list(data['subject'])
+    
+
+
 def data_path():
     # Retrieve absolute path of paper-behavior dir
     repo_dir = os.path.dirname(os.path.realpath(__file__))
