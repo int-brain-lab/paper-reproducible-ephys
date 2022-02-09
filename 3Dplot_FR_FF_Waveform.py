@@ -39,13 +39,13 @@ ListOfEIDs = eid_list()
 ClusterFeatures = pd.DataFrame() #['eID', 'Lab ID','clusterID', 'AvgFR', 'AvgFF', 'amps', 'peak-trough', 'Xloc', 'Yloc', 'Zloc']
 PeriEventFRandFF = pd.DataFrame() #['FR stimOn', 'FR '] FR and FF averaged over entire session
 
-regions = 'PPC' #[PPC', 'CA1', 'DG', 'LP', 'PO']
+regions = 'LP' #[PPC', 'CA1', 'DG', 'LP', 'PO']
 binSzPeri = 0.1 #bin size for calculating perievent FR and FF
 pre_time, post_time = 0.4, 0.8 
 CapPostTime = 0.4 #The time point at which to cap the FR/FF post-event mean, so even though over time we have 0.8 s post-event, we can cap the analysis of mean post-event to 0.4 s 
 
-SaveFigs=0 # To choose whether to save the figures & .pkl & .mat files at the end; to save, set equal to 1
-SaveStr = '_Oct2021' #String to have at the end of the figure/file names to be saved, e.g., the date
+SaveFigs = 0 # To choose whether to save the figures & .pkl & .mat files at the end; to save, set equal to 1
+SaveStr = '_110821' #String to have at the end of the figure/file names to be saved, e.g., the date
 
 include_NonRS = 0 #Whether or not to include non-RS that pass the area; 0 for No, 1 for Yes.
 
@@ -103,9 +103,9 @@ for i in range(len(traj)):
     Ntrials=[]
 
     # Load in data
-    eid = traj[i]['session']['id']
-    probe = traj[i]['probe_name']
-    DateInfo = traj[i]['datetime']
+    eid = traj[i]['session']['id'] # UCLA ex: '824cf03d-4012-4ab1-b499-c83a92c5589e'
+    probe = traj[i]['probe_name'] #For UCLA ex: 'probe00'
+    DateInfo = traj[i]['session']['start_time'] #traj[i]['datetime']
     subj = traj[i]['session']['subject'] 
 
     #Is it a planned repeated site probe or not (e.g., nearby probe):
@@ -159,7 +159,7 @@ for i in range(len(traj)):
                 dict_metrics = {} #converting r (a util.Bunch object that's really a dictionary) to a regular dictionary
                 for key in r.keys():
                     dict_metrics[key] = r[key]
-                df_metrics = pd.DataFrame.from_dict(dict_metrics) #cnverting dictionary to a Pandas dataframe
+                df_metrics = pd.DataFrame.from_dict(dict_metrics) #converting dictionary to a Pandas dataframe
                 ##c, drift = spike_sorting_metrics(spikes.times, spikes.clusters, spikes.amps, spikes.depths)
                 clusters['metrics'] = df_metrics #before: = c
                 clusterIDs  = clusters['metrics']['cluster_id'][BrainRegionsInProbe == regions][clusters['metrics']['label'] == 1]
@@ -261,13 +261,13 @@ for i in range(len(traj)):
                    event_CorrR, event_CorrL, event_IncorrR, event_IncorrL,
                    eventMove_stR100chR, eventMove_stR100chL, eventMove_stL100chR, eventMove_stL100chL,
                    eventStim_stR100chR, eventStim_stR100chL, eventStim_stL100chR, eventStim_stL100chL,
-                   event_FdbckCorr, event_FdbckCorr]
+                   event_FdbckCorr, event_FdbckIncorr]
     event_Titles = ['event_times_right', 'event_times_left', 'event_times_right100', 'event_times_left100', 
                    'event_times_0', 'event_times_Rchoice', 'event_times_Lchoice',
                    'event_CorrR', 'event_CorrL', 'event_IncorrR', 'event_IncorrL',
                    'eventMove_stR100chR', 'eventMove_stR100chL', 'eventMove_stL100chR', 'eventMove_stL100chL',
                    'eventStim_stR100chR', 'eventStim_stR100chL', 'eventStim_stL100chR', 'eventStim_stL100chL',
-                   'event_FdbckCorr', 'event_FdbckCorr']
+                   'event_FdbckCorr', 'event_FdbckIncorr']
     
     #TO DO: complete below:
     #if condition returns True, nothing happens; if condition returns False, AssertionError is raised:

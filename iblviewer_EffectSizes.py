@@ -32,7 +32,8 @@ if __name__ == '__main__':
     #viewer.plot.remove(point_actors, render=False)
 
     point_actors = viewer.add_points(XYZs, radius=16, values=ValuesPerKey, screen_space=False, 
-                               noise_amount=0, min_v=ValuesPerKey.min(), max_v=ValuesPerKey.max())
+                               noise_amount=0, min_v=ValuesPerKey.min(), max_v=ValuesPerKey.max(), color_map='viridis')
+     #viridis, vlag, Accent, cool
     viewer.plot.add(point_actors)
 
     viewer.show().close()
