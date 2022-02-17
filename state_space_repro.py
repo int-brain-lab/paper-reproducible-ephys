@@ -36,6 +36,7 @@ from matplotlib.patches import Ellipse
 import matplotlib.transforms as transforms
 import string
 from itertools import combinations
+from statsmodels.stats.multitest import multipletests
 
 T_BIN = 0.02  # time bin size in seconds
 one = ONE()
@@ -274,7 +275,7 @@ def bin_neural(eid, double=True, probe=None, reg=None, query_type='remote',
 
 
 def PSTH(eid, duration=1.5 ,lag=-0.5, double=True, probe=None, 
-             reg=None, choice_split=True, new_spike=True):
+             reg=None, split='choice', new_spike=True):
     #eid = '56b57c38-2699-4091-90a8-aba35103155e'
     #eid,reg,probe='671c7ea7-6726-4fbe-adeb-f89c2c8e489b','GRN','probe00'
     
@@ -345,13 +346,21 @@ def PSTH(eid, duration=1.5 ,lag=-0.5, double=True, probe=None,
         if all(~ind):
             #print(f'non-still start, trial {tr} and eid {eid}')
             continue
-        a=A[ind][0]
+        a = A[ind][0]
 
         start_idx = find_nearest(times,a + lag)#trials['stimOn_times'][tr] 
         end_idx = start_idx + int(duration/T_BIN)   
 
+        if split == 'RT':
+             
+            rt = a - b 
+            if rt < 0.1:
+                neuleft.append(D[start_idx:end_idx])
+            if rt > 0.2:
+                neuright.append(D[start_idx:end_idx]) 
+                        
 
-        if choice_split:
+        if split == 'choice':
             # split trials 
 
             if trials['choice'][tr] == 1:
@@ -361,7 +370,7 @@ def PSTH(eid, duration=1.5 ,lag=-0.5, double=True, probe=None,
             else:
                 continue
 
-        else:    
+        if split == 'block':    
             # split by block
             if trials['probabilityLeft'][tr] == 0.5:
                 continue
@@ -371,10 +380,10 @@ def PSTH(eid, duration=1.5 ,lag=-0.5, double=True, probe=None,
             if trials['probabilityLeft'][tr] == 0.2:
                 neuright.append(D[start_idx:end_idx])
 
-    if choice_split:
+    if split == 'choice':
         print('left choice trials: ',len(neuleft),
               '; right choice trials: ', len(neuright))
-    else:
+    if split == 'block':
         print('pleft0.8 trials: ',len(neuleft),
               '; pleft0.2 trials: ', len(neuright))    
 
@@ -410,7 +419,8 @@ batch
 
 
 
-def single_cell_embedding(duration=1.5, lag=-0.5, new_spike=True,norm_=True):
+def single_cell_embedding(duration=1.5, lag=-0.5, new_spike=True,
+                          split='RT', norm_=True):
 
     '''
     PCA on time (choice left/right psth concatenated)
@@ -431,7 +441,7 @@ def single_cell_embedding(duration=1.5, lag=-0.5, new_spike=True,norm_=True):
         for ses in sess:
             try:
                 w = PSTH(ses[0],duration,lag,probe=ses[1],reg=reg,
-                    new_spike=new_spike)
+                    new_spike=new_spike,split=split)
                 neus1 = np.concatenate(w)
                 neus.append(neus1)
                 ns.append(neus1.shape[1])
@@ -470,10 +480,8 @@ def single_cell_embedding(duration=1.5, lag=-0.5, new_spike=True,norm_=True):
         D[reg] = {'ns':ns,'labs':labs,
                   'Y':M2,'var_exp':pca.explained_variance_ratio_[:3],
                   'Y_re_star':Y_re_star}
-    
-    
         
-    np.save('/home/mic/repro_manifold/single_cell_motion.npy', D,
+    np.save(f'/home/mic/repro_manifold/single_cell_{split}2.npy', D,
             allow_pickle=True)    
     print(errs) 
     #return D
@@ -1204,8 +1212,7 @@ def scat3d(c, choice_split=True, lag=-0.5, ax=None, dim2 = False):
         ax.set_zlabel('pc3')     
         set_axes_equal(ax)  
     
-    
-            
+
     legend_elements = [Patch(facecolor='b', edgecolor='b',
                        label='pleft0.2'),
                        Patch(facecolor='r', edgecolor='r',
@@ -1627,17 +1634,20 @@ def confidence_ellipse(x, y, ax, n_std=3.0, facecolor='none', **kwargs):
 
 
 def all_panels(algo = 'PCA',rm_unre=True, 
-                           align='motion',
-                           lim5 = True):
+               align='motion',lim5 = True,split='RT'):
 
     # may also try umap here instead of PCA!
      
     _,b,lab_cols = labs_maps()
 
-    if align == 'motion':
-        s = '/home/mic/repro_manifold/single_cell_motion.npy'
-    else:
-        s = '/home/mic/repro_manifold/single_cell_new_norm.npy'
+    if split == 'choice':
+        s = '/home/mic/repro_manifold/single_cell_motion.npy'   
+        ts = 'left|right choice PSTH'
+    if split == 'RT':
+        s = '/home/mic/repro_manifold/single_cell_RT2.npy'
+        ts = 'fast|slow RT PSTH'
+            
+        
     D = np.load(s, allow_pickle=True).flat[0]
     
     ys = []
@@ -1703,15 +1713,15 @@ def all_panels(algo = 'PCA',rm_unre=True,
 
     #fig,axs = plt.subplots(nrows=2,ncols=2,figsize=(5,6))
     
-    fig = plt.figure(figsize=(14,10))
+    fig = plt.figure(figsize=(16,10))
     
     inner = [['Ea'],
              ['Eb']]
 
-    mosaic = [['C','A','D','B'],
-              ['Ga','G','Ja','J'],
-              ['Ha','H','Ka','K'],
-              ['Ia','I',inner,'F']]
+    mosaic = [['C','A','Ia','I',None],
+              ['Ga','G','Ja','J',None],
+              ['Ha','H','Ka','K',None],
+              ['D','B','L',inner,'F']]
    
     ms2 = ['Ga','Ha','Ia','Ja','Ka']
     #panel_n = {
@@ -1769,12 +1779,13 @@ def all_panels(algo = 'PCA',rm_unre=True,
            label=b[lab]) for lab in labs_] 
                
     axs['A'].legend(handles=le,
-     loc='lower right', ncol=1).set_draggable(True)      
-    
+     loc='lower right', ncol=1).set_draggable(True)
+           
+    axs['A'].set_title('all cells')
     axs['A'].set_xlabel('embedding dim 1')
     axs['A'].set_ylabel('embedding dim 2')
     axs['A'].text(-0.1, 1.15, 'A', transform=axs['A'].transAxes,
-      fontsize=16,  va='top', ha='right')
+      fontsize=16,  va='top', ha='right', weight='bold')
             
     
     # plot average PSTHs across labs
@@ -1785,8 +1796,11 @@ def all_panels(algo = 'PCA',rm_unre=True,
         axs['C'].plot(xs,ms,color=lab_cols[b[lab]])
         axs['C'].fill_between(xs, ms + ste, ms - ste, 
                               color=lab_cols[b[lab]],alpha=0.2)
+    
+    
+
                               
-    axs['C'].set_title('left|right choice PSTH')
+    axs['C'].set_title(ts)
     axs['C'].set_xlabel('time [sec]')
     axs['C'].set_ylabel('firing rate [Hz]')    
     for x in np.array([25, 100])*T_BIN:
@@ -1797,7 +1811,7 @@ def all_panels(algo = 'PCA',rm_unre=True,
                            c='cyan',label='trial cut')                               
                                
     axs['C'].text(-0.1, 1.15, 'C', transform=axs['C'].transAxes,
-      fontsize=16,  va='top', ha='right')
+      fontsize=16,  va='top', ha='right', weight='bold')
     
     le = [Line2D([0], [0], color='g', lw=0.5, ls='--', label='motion start'),
           Line2D([0], [0], color='cyan', lw=2, ls='-', label='trial cut')] 
@@ -1831,12 +1845,13 @@ def all_panels(algo = 'PCA',rm_unre=True,
            label=reg) for reg in regs_] 
                
     axs['B'].legend(handles=le,
-     loc='lower right', ncol=1).set_draggable(True)      
-    
+     loc='lower right', ncol=1).set_draggable(True) 
+          
+    axs['B'].set_title('all cells')
     axs['B'].set_xlabel('embedding dim 1')
     axs['B'].set_ylabel('embedding dim 2')
     axs['B'].text(-0.1, 1.15, 'B', transform=axs['B'].transAxes,
-      fontsize=16,  va='top', ha='right')
+      fontsize=16,  va='top', ha='right', weight='bold')
     
     axs['B'].sharex(axs['A'])
     axs['B'].sharey(axs['A']) 
@@ -1860,11 +1875,11 @@ def all_panels(algo = 'PCA',rm_unre=True,
     axs['D'].axvline(x=75*T_BIN, lw=2, linestyle='-', 
                            c='cyan',label='trial cut') 
             
-    axs['D'].set_title('left|right choice PSTH')
+    axs['D'].set_title(ts)
     axs['D'].set_xlabel('time [sec]')
     axs['D'].set_ylabel('firing rate [Hz]')        
     axs['D'].text(-0.1, 1.15, 'D', transform=axs['D'].transAxes,
-      fontsize=16,  va='top', ha='right')
+      fontsize=16,  va='top', ha='right', weight='bold')
       
     le = [Line2D([0], [0], color='g', lw=0.5, ls='--', label='motion start'),
           Line2D([0], [0], color='cyan', lw=2, ls='-', label='trial cut')] 
@@ -1905,7 +1920,7 @@ def all_panels(algo = 'PCA',rm_unre=True,
                                    c='g',label='motion start')
         axs[ms[k]].axvline(x=75*T_BIN, lw=2, linestyle='-', 
                                c='cyan',label='trial cut')               
-        axs[ms[k]].set_ylabel('firing rate [Hz]')
+        axs[ms[k]].set_ylabel('firing rate \n [Hz]')
         axs[ms[k]].text(1, 0.2, 
                         rf'$r^2$={np.round(r2_score(y[idxs[k]],y_re[idxs[k]]),2)}',
                         transform=axs[ms[k]].transAxes,
@@ -1918,7 +1933,7 @@ def all_panels(algo = 'PCA',rm_unre=True,
     axs['Ea'].set_title('example cells PSTHs \n and PCA-reconstruction')
         
     axs['Ea'].text(-0.1, 1.15, 'E', transform=axs['Ea'].transAxes,
-      fontsize=16,  va='top', ha='right')
+      fontsize=16,  va='top', ha='right', weight='bold')
       
       
     le = [Line2D([0], [0], c='r',ls='--', label='fit'),
@@ -1926,8 +1941,7 @@ def all_panels(algo = 'PCA',rm_unre=True,
                
     axs['Ea'].legend(handles=le,
      loc='lower right', ncol=1).set_draggable(True)
-     
-        
+      
     n, bins, patches = axs['F'].hist(x=r2s, bins='auto', color='#0504aa',                
                                 alpha=0.7, rwidth=0.85)
                                 
@@ -1935,13 +1949,8 @@ def all_panels(algo = 'PCA',rm_unre=True,
     axs['F'].set_ylabel('number of neurons')
     axs['F'].set_title('goodness of PSTH \n reconstruction')     
     axs['F'].text(-0.1, 1.15, 'F', transform=axs['F'].transAxes,
-      fontsize=16,  va='top', ha='right')
+      fontsize=16,  va='top', ha='right', weight='bold')
     
-    
-    plt.suptitle(f'{algo}; dim reduction of PSTH; {len(y)} clusters'
-                 f'; responsive only {rm_unre}; align = {align}')
-        
- 
     # per region dim red
     ms = ['G','H','I','J','K']
     ms2 = ['Ga','Ha','Ia','Ja','Ka']
@@ -1982,7 +1991,7 @@ def all_panels(algo = 'PCA',rm_unre=True,
             confidence_ellipse(x[:,0], x[:,1], axs[ms[k]], n_std=1.0,
                                edgecolor=lab_cols[b[lab]])
 
-
+        # shuffle test
         nrand = 20  #random lab allocations    
         centsr = []
         for shuf in range(nrand):
@@ -1993,30 +2002,34 @@ def all_panels(algo = 'PCA',rm_unre=True,
                 cenr[lab] = np.mean(emb2[labsr == lab],axis=0)            
             centsr.append(cenr)
         
-        comb = combinations(cents, 2)
 
         ps = {}
-        for pair in comb:
-            dist = distE(cents[pair[0]],cents[pair[1]])
-            null_d = [distE(cenr[pair[0]],cenr[pair[1]]) for cenr in centsr]
+        for lab in cents:
+            cs = np.mean([cents[l] for l in cents if l!=lab],axis=0)
+            dist = distE(cents[lab],cs)
+             
+            null_d = [distE(cenr[lab],
+                      np.mean([cenr[l] for l in cenr if l!=lab],axis=0)) 
+                      for cenr in centsr]
             p = 1 - (0.01 * percentileofscore(null_d,dist))
-            ps[pair] = np.round(p,3) 
+            ps[lab] = np.round(p,3) 
         p_r[reg] = ps
 
+#        comb = combinations(cents, 2)
 
+#        ps = {}
+#        for pair in comb:
+#            dist = distE(cents[pair[0]],cents[pair[1]])
+#            null_d = [distE(cenr[pair[0]],cenr[pair[1]]) for cenr in centsr]
+#            p = 1 - (0.01 * percentileofscore(null_d,dist))
+#            ps[pair] = np.round(p,3) 
+#        p_r[reg] = ps
 
-#        le = [Patch(facecolor=lab_cols[b[lab]], 
-#               edgecolor=lab_cols[b[lab]],
-#               label=b[lab]) for lab in labs_] 
-#                   
-#        axs[ms[k]].legend(handles=le,
-#         loc='upper left',bbox_to_anchor=(0, 0.5), ncol=1).set_draggable(True)      
-        
         axs[ms[k]].set_title(reg)
         axs[ms[k]].set_xlabel('embedding dim 1')
         axs[ms[k]].set_ylabel('embedding dim 2')
         axs[ms[k]].text(-0.1, 1.15, ms[k], transform=axs[ms[k]].transAxes,
-          fontsize=16,  va='top', ha='right')
+          fontsize=16,  va='top', ha='right', weight='bold')
           
         axs[ms[k]].sharex(axs['A'])
         axs[ms[k]].sharey(axs['A']) 
@@ -2043,28 +2056,34 @@ def all_panels(algo = 'PCA',rm_unre=True,
                                c='cyan',label='trial cut')                               
                                    
         axs[ms2[k]].text(-0.1, 1.15, ms2[k], transform=axs[ms2[k]].transAxes,
-          fontsize=16,  va='top', ha='right')
+          fontsize=16,  va='top', ha='right', weight='bold')
         
         le = [Line2D([0], [0], color='g', lw=0.5, ls='--', label='motion start'),
               Line2D([0], [0], color='cyan', lw=2, ls='-', label='trial cut')] 
                    
-        axs[ms2[k]].legend(handles=le,
-         loc='lower right', ncol=1).set_draggable(True)         
+#        axs[ms2[k]].legend(handles=le,
+#         loc='lower right', ncol=1).set_draggable(True)         
 
         axs[ms2[k]].sharex(axs['C'])
         axs[ms2[k]].sharey(axs['C'])
                 
         k+=1
 
-    plt.tight_layout()
-    return p_r
-
-
-def plot_permutation(p_r):
-   
-    _,b,lab_cols = labs_maps()    
-    a = np.zeros((len(p_r),len(p_r[list(p_r.keys())[0]])))    
-
+    # plot permutation test p values for regional scatters 
+    a = np.zeros((len(p_r),len(p_r[list(p_r.keys())[0]])))
+    
+    # multiple comparison correction
+    pvals = [p_r[reg][lab] for  reg in p_r for lab in p_r[reg]]
+    _, pvals_c, _, _ = multipletests(pvals, 0.05, method='fdr_bh')
+    
+    p_rc = {}
+    i = 0
+    for reg in p_r:
+        p_rc[reg] = {}
+        for lab in p_r[reg]:
+            p_rc[reg][lab] = pvals_c[i]        
+            i += 1
+            
     i = 0
     for reg in p_r:
         j = 0
@@ -2074,18 +2093,24 @@ def plot_permutation(p_r):
             j += 1                        
         i += 1
     
-    fig, ax = plt.subplots()
-    im = ax.imshow(a, cmap='Greys',aspect="auto",#'Greys'
+    im = axs['L'].imshow(a, cmap='cool',aspect="auto",#'Greys'
         interpolation='none')      
-    fig.colorbar(im, ax=ax, location='right', anchor=(0, 0.3), shrink=0.7)
-    ax.set_xticks(range(len(p_r[reg].keys())))
-    ax.set_xticklabels(p_r[reg].keys(),rotation = 90)
-    ax.set_yticks(range(len(p_r.keys())))
-    ax.set_yticklabels(p_r.keys())    
+    cb = fig.colorbar(im, ax=axs['L'], location='right', anchor=(0, 0.3), shrink=0.7)
+    cb.ax.set_ylabel('p')
+    axs['L'].set_xticks(range(len(p_r[reg].keys())))
+    axs['L'].set_xticklabels([b[lab] for lab in p_r[reg].keys()],rotation = 90)
+    axs['L'].set_yticks(range(len(p_r.keys())))
+    axs['L'].set_yticklabels(p_r.keys())    
     
-    ax.set_title(f'lab pairs p')
-    ax.set_xlabel(f'lab pairs')
-    ax.set_ylabel('regions') 
+    axs['L'].set_title(f'permutation test')
+    axs['L'].set_xlabel(f'labs')
+    axs['L'].set_ylabel('regions') 
+    axs['L'].text(-0.1, 1.15, 'L', transform=axs['L'].transAxes,
+      fontsize=16,  va='top', ha='right', weight='bold')
+      
+    plt.suptitle(f'{algo}; dim reduction of PSTH; {len(y)} clusters'
+                 f'; responsive only {rm_unre}; align = {align}; split = {split}')     
+    plt.tight_layout()
 
 
 
@@ -2135,7 +2160,6 @@ def plot_reaction_time_hists(rts=None):
     plt.xlabel('reaction time [sec]')
     plt.ylabel('frequency')
     plt.title('pooled reaction times \n of repeated site sessions')
-
 
 
 
