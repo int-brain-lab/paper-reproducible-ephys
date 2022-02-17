@@ -36,13 +36,16 @@ n_columns = len(data['subject'].unique())
 # Set up figure
 figure_style()
 fig = plt.figure(figsize=(7, 9), dpi=DPI)  # full width figure is 7 inches
-ax = {'panel_A': fg.place_axes_on_grid(fig, xspan=[0.1, 1], yspan=[0, 0.18]),
-      'panel_B': fg.place_axes_on_grid(fig, xspan=[0.1, 1], yspan=[0.25, 0.5],
-                                       dim=[1, n_columns + 1], wspace=0.3),
-      'panel_C': fg.place_axes_on_grid(fig, xspan=[0.1, 1], yspan=[0.55, 0.8],
-                                       dim=[1, n_columns + 1], wspace=0.3),
-      'panel_D': fg.place_axes_on_grid(fig, xspan=[0.2, 0.45], yspan=[0.85, 1]),
-      'panel_E': fg.place_axes_on_grid(fig, xspan=[0.55, 1], yspan=[0.85, 1])}
+# ax = {'panel_A': fg.place_axes_on_grid(fig, xspan=[0.1, 1], yspan=[0, 0.18]),
+#       'panel_B': fg.place_axes_on_grid(fig, xspan=[0.1, 1], yspan=[0.25, 0.5],
+#                                        dim=[1, n_columns + 1], wspace=0.3),
+#       'panel_C': fg.place_axes_on_grid(fig, xspan=[0.1, 1], yspan=[0.55, 0.8],
+#                                        dim=[1, n_columns + 1], wspace=0.3),
+#       'panel_D': fg.place_axes_on_grid(fig, xspan=[0.2, 0.45], yspan=[0.85, 1]),
+#       'panel_E': fg.place_axes_on_grid(fig, xspan=[0.55, 1], yspan=[0.85, 1])}
+#
+#TODO remove GC print
+ax = {'panel_C': fg.place_axes_on_grid(fig, xspan=[0.1, 1], yspan=[0.55, 0.8])}
 
 # Add subplot labels
 labels = [{'label_text':'a', 'xpos':0, 'ypos':0, 'fontsize':10, 'weight': 'bold',
@@ -58,14 +61,15 @@ labels = [{'label_text':'a', 'xpos':0, 'ypos':0, 'fontsize':10, 'weight': 'bold'
 fg.add_labels(fig, labels)
 
 # Call functions to plot panels
-panel_sankey(fig, ax['panel_A'])
-panel_probe_lfp(fig, ax['panel_B'], n_rec_per_lab=MIN_REC_PER_LAB, boundary_align=BOUNDARY, one=one)
+# TODO GC uncomment
+# panel_sankey(fig, ax['panel_A'])
+# panel_probe_lfp(fig, ax['panel_B'], n_rec_per_lab=MIN_REC_PER_LAB, boundary_align=BOUNDARY, one=one)
 panel_probe_neurons(fig, ax['panel_C'], n_rec_per_lab=MIN_REC_PER_LAB, boundary_align=BOUNDARY, one=one)
-panel_example(ax['panel_D'], n_rec_per_lab=MIN_REC_PER_LAB, example_region=EXAMPLE_REGION,
-              example_metric=EXAMPLE_METRIC, ylim=[0, 4])
-p_values = panel_permutation(ax['panel_E'], METRICS, REGIONS, LABELS, n_permut=N_PERMUT,
-                             n_rec_per_lab=MIN_REC_PER_LAB)
-
-# Save figure
-plt.savefig(join(FIG_PATH, 'figure3.png'))
-plt.savefig(join(FIG_PATH, 'figure3.pdf'))
+# panel_example(ax['panel_D'], n_rec_per_lab=MIN_REC_PER_LAB, example_region=EXAMPLE_REGION,
+#               example_metric=EXAMPLE_METRIC, ylim=[0, 4])
+# p_values = panel_permutation(ax['panel_E'], METRICS, REGIONS, LABELS, n_permut=N_PERMUT,
+#                              n_rec_per_lab=MIN_REC_PER_LAB)
+#
+# # Save figure
+# plt.savefig(join(FIG_PATH, 'figure3.png'))
+# plt.savefig(join(FIG_PATH, 'figure3.pdf'))

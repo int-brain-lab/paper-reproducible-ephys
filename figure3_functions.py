@@ -173,6 +173,9 @@ def panel_probe_neurons(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[
     data['recording'] = np.concatenate([np.arange(i) for i in rec_per_lab.values])
 
     for iR, (subj, date, probe_label) in enumerate(zip(data['subject'], data['date'], data['probe'])):
+        #TODO comment out, GC print PID
+        ins = one.alyx.rest('insertions', 'list', subject=subj, date=date, name=probe_label)
+        pid = ins[0]['id']
 
         # Download the data and get paths to downloaded data
         eid = one.search(subject=subj, date=date)[0]
@@ -226,8 +229,11 @@ def panel_probe_neurons(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[
             ax[iR].bar(x=width/2, height=height, width=width, color=color, bottom=reg[0],
                        edgecolor='k', linewidth=1, alpha=0.5, zorder=0)
 
-        ax[iR].set_title(data.loc[iR, 'recording'] + 1,
-                         color=lab_colors[data.loc[iR, 'institute']])
+        # TODO comment out GC print PID
+        ax[iR].set_title(pid[0:4], color=lab_colors[data.loc[iR, 'institute']], rotation=90)
+
+        # ax[iR].set_title(data.loc[iR, 'recording'] + 1,
+        #                  color=lab_colors[data.loc[iR, 'institute']])
 
         if iR == 0:
             ax[iR].set(yticks=np.arange(ylim[0], ylim[1]+1, 500),
