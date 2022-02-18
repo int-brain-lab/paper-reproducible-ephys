@@ -39,8 +39,7 @@ def cluster_peths_FR_FF_sliding_1D(spike_times, align_times, pre_time=0.2, post_
 
     return FR_TrialAvg, FR_TrialSTD, FF_TrialAvg, TimeVect
 
-
-def bin_spikes(spike_times, align_times, pre_time, post_time, bin_size):
+def bin_spikes(spike_times, align_times, pre_time, post_time, bin_size, weights=None):
 
     n_bins_pre = int(np.ceil(pre_time / bin_size))
     n_bins_post = int(np.ceil(post_time / bin_size))
@@ -52,7 +51,8 @@ def bin_spikes(spike_times, align_times, pre_time, post_time, bin_size):
 
     for i, (ep, t) in enumerate(zip(epoch_idxs, ts)):
         xind = (np.floor((spike_times[ep[0]:ep[1]] - t[0]) / bin_size)).astype(np.int64)
-        r = np.bincount(xind, minlength=tscale.shape[0])
+        w = weights[ep[0]:ep[1]] if weights is not None else None
+        r = np.bincount(xind, minlength=tscale.shape[0], weights=w)
         bins[i, :] = r[:-1]
 
     tscale = (tscale[:-1] + tscale[1:]) / 2
@@ -60,7 +60,7 @@ def bin_spikes(spike_times, align_times, pre_time, post_time, bin_size):
     return bins, tscale
 
 
-def bin_spikes2D(spike_times, spike_clusters, cluster_ids, align_times, pre_time, post_time, bin_size):
+def bin_spikes2D(spike_times, spike_clusters, cluster_ids, align_times, pre_time, post_time, bin_size, weights=None):
 
     n_bins_pre = int(np.ceil(pre_time / bin_size))
     n_bins_post = int(np.ceil(post_time / bin_size))
@@ -72,10 +72,11 @@ def bin_spikes2D(spike_times, spike_clusters, cluster_ids, align_times, pre_time
 
     for i, (ep, t) in enumerate(zip(epoch_idxs, ts)):
         xind = (np.floor((spike_times[ep[0]:ep[1]] - t[0]) / bin_size)).astype(np.int64)
+        w = weights[ep[0]:ep[1]] if weights is not None else None
         yscale, yind = np.unique(spike_clusters[ep[0]:ep[1]], return_inverse=True)
         nx, ny = [tscale.size, yscale.size]
         ind2d = np.ravel_multi_index(np.c_[yind, xind].transpose(), dims=(ny, nx))
-        r = np.bincount(ind2d, minlength=nx * ny).reshape(ny, nx)
+        r = np.bincount(ind2d, minlength=nx * ny, weights=w).reshape(ny, nx)
 
         bs_idxs = np.isin(cluster_ids, yscale)
         bins[i, bs_idxs, :] = r[:, :-1]

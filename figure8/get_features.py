@@ -3,7 +3,7 @@ functions for getting/processing features for training MTNN
 """
 
 import numpy as np
-from oneibl.one import ONE
+from one.api import ONE
 from reproducible_ephys_functions import query
 from tqdm import notebook
 import brainbox as bb
@@ -110,8 +110,11 @@ def get_acronym_dict(one, traj, has_GPIO, no_GPIO, output_directory):
             right_dlc = one.load_dataset(eid, '_ibl_rightCamera.dlc.pqt')
 
             if eid in has_GPIO:
-                left_dlc_times = np.load(os.path.join(output_directory,'{}_{}.npy'.format(eid, video_type)))
-                right_dlc_times = np.load(os.path.join(output_directory,'{}_{}.npy'.format(eid, video_type)))
+                #left_dlc_times = np.load(os.path.join(output_directory,'{}_{}.npy'.format(eid, video_type)))
+                #right_dlc_times = np.load(os.path.join(output_directory,'{}_{}.npy'.format(eid, video_type)))
+                left_dlc_times = one.load_dataset(eid, '_ibl_leftCamera.times.npy')
+                right_dlc_times = one.load_dataset(eid, '_ibl_rightCamera.times.npy')
+
             elif eid in no_GPIO.keys():
                 left_dlc_times = one.load_dataset(eid, '_ibl_leftCamera.times.npy')
                 right_dlc_times = one.load_dataset(eid, '_ibl_rightCamera.times.npy')
@@ -255,8 +258,10 @@ def featurize(i, trajectory, one, lab_number_map, acronym_dict, has_GPIO, no_GPI
         right_dlc = one.load_dataset(eid, '_ibl_rightCamera.dlc.pqt')
         
         if eid in has_GPIO:
-            left_dlc_times = np.load(os.path.join(output_directory,'{}_{}.npy'.format(eid, video_type)))
-            right_dlc_times = np.load(os.path.join(output_directory,'{}_{}.npy'.format(eid, video_type)))
+            #left_dlc_times = np.load(os.path.join(output_directory,'{}_{}.npy'.format(eid, video_type)))
+            #right_dlc_times = np.load(os.path.join(output_directory,'{}_{}.npy'.format(eid, video_type)))
+            left_dlc_times = one.load_dataset(eid, '_ibl_leftCamera.times.npy')
+            right_dlc_times = one.load_dataset(eid, '_ibl_rightCamera.times.npy')
         elif eid in no_GPIO.keys():
             left_dlc_times = one.load_dataset(eid, '_ibl_leftCamera.times.npy')
             right_dlc_times = one.load_dataset(eid, '_ibl_rightCamera.times.npy')
@@ -398,10 +403,10 @@ def featurize(i, trajectory, one, lab_number_map, acronym_dict, has_GPIO, no_GPI
     print("good cluster id: ", good_clusters)
     
     # load spike amps + spike wf width
-    amps = one.load_dataset(eid, 'clusters.amps.npy', collection='alf/{}'.format(probe))
+    amps = one.load_dataset(eid, 'clusters.amps.npy', collection=f'alf/{probe}/pykilosort')
     amps = amps[good_clusters]
     
-    ptt = one.load_dataset(eid, 'clusters.peakToTrough.npy', collection='alf/{}'.format(probe))
+    ptt = one.load_dataset(eid, 'clusters.peakToTrough.npy', collection=f'alf/{probe}/pykilosort')
     ptt = ptt[good_clusters]
     
     n_clusters = good_clusters.shape[0]
@@ -418,6 +423,8 @@ def featurize(i, trajectory, one, lab_number_map, acronym_dict, has_GPIO, no_GPI
     zs = clusters[probe]['z']
     
     # cluster specific
+    # output is the actual data
+    start = time.time()
     for j, cluster in notebook.tqdm(enumerate(good_clusters)):
         spike_array = spikes[probe]['times'][spikes[probe]['clusters'] == cluster]
         
@@ -433,17 +440,18 @@ def featurize(i, trajectory, one, lab_number_map, acronym_dict, has_GPIO, no_GPI
             for idx, i in enumerate(bin_loc):
                 spike_num = spike_array[np.logical_and(spike_array >= i, 
                                                        spike_array < i + bin_size)].shape[0]
-            
-                output[j,k,idx] = spike_num / bin_size
 
+                # per cluster, per trial, firing rate in bins
+                output[j,k,idx] = spike_num / bin_size
+        print(time.time() - start)
         x = xs[cluster]
         y = ys[cluster]
         z = zs[cluster]
 
         # acronym
-        acronym = clusters[probe]['acronym'][cluster]
-        print(acronym)
-        acronym_idx = acronym_dict[acronym]
+        # acronym = clusters[probe]['acronym'][cluster]
+        # print(acronym)
+        # acronym_idx = acronym_dict[acronym]
 
         feature[j,:,:,0] = j
         
@@ -451,7 +459,7 @@ def featurize(i, trajectory, one, lab_number_map, acronym_dict, has_GPIO, no_GPI
         feature[j,:,:,xyz_offset+1] = y
         feature[j,:,:,xyz_offset+2] = z
         
-        feature[j,:,:,acronym_offset+acronym_idx] = 1
+        # feature[j,:,:,acronym_offset+acronym_idx] = 1
         
         # spike max ptp
         feature[j,:,:,max_ptp_offset] = amps[j]
@@ -481,13 +489,16 @@ def featurize(i, trajectory, one, lab_number_map, acronym_dict, has_GPIO, no_GPI
             
         for idx, i in enumerate(bin_loc):
             if idx == 0:
+                # Finding any frames that are in one earlier bin
                 left_in_range_prev = np.logical_and(left_dlc_times >= i - bin_size, 
                                                left_dlc_times < i)
                 right_in_range_prev = np.logical_and(right_dlc_times >= i - bin_size, 
                                                right_dlc_times < i)
                 
                 f = i - bin_size
+                # go through previous bins until you find one that has some dlc timepoints in it
                 while left_in_range_prev.astype(int).sum() == 0 or right_in_range_prev.astype(int).sum() == 0:
+                    print('here')
                     left_in_range_prev = np.logical_and(left_dlc_times >= f - bin_size, 
                                                    left_dlc_times < f)
                     right_in_range_prev = np.logical_and(right_dlc_times >= f - bin_size, 
@@ -514,6 +525,11 @@ def featurize(i, trajectory, one, lab_number_map, acronym_dict, has_GPIO, no_GPI
 
             left_dlc_k = left_dlcs[:,left_in_range]
             right_dlc_k = right_dlcs[:,right_in_range]
+
+            # each bin taking away the previous bin
+
+            # rather than the change in values
+            #
 
             if left_in_range.astype(int).sum() > 1:
                 left_dlc_k = left_dlc_k.mean(1)
@@ -567,7 +583,10 @@ def featurize(i, trajectory, one, lab_number_map, acronym_dict, has_GPIO, no_GPI
 
             
         trial_offset = 0
+        # doesn't need tot take into account previous or next trial information
+        # option to change whether stim on is delta or not
         while k + trial_offset < stimOn_times.shape[0] and stimOn_times[k + trial_offset] < trial_end:
+            # print('here')
             cur_idx = k + trial_offset
             stimOn_bin = int(np.floor((stimOn_times[cur_idx] - trial_start) / bin_size))
             stimOff_bin = int(np.ceil((stimOff_times[cur_idx] - trial_start) / bin_size))
@@ -586,6 +605,9 @@ def featurize(i, trajectory, one, lab_number_map, acronym_dict, has_GPIO, no_GPI
                 feature[:,k,stimOn_bin:stimOff_bin,contrast_offset+1] = contrastRight_k
             
             trial_offset += 1
+        if trial_offset > 1:
+            print('I went in here twice')
+            print(k)
 
     return feature, output, trial_length_array, good_clusters, nan_idx, True
 
