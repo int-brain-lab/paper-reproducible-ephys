@@ -141,7 +141,7 @@ concat_df = pd.concat(all_df, ignore_index=True)
 save_path = Path(DATA_PATH).joinpath('figure8')
 save_path.mkdir(exist_ok=True, parents=True)
 concat_df.to_csv(save_path.joinpath('figure8_dataframe.csv'))
-np.save(save_path.joinpath(f'figure8_data_split_{split}.npy'))
+np.save(save_path.joinpath(f'figure8_data_split_{split}.npy'), all_frs)
 
 
 
