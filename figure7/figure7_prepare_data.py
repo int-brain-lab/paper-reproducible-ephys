@@ -36,9 +36,7 @@ for iIns, ins in enumerate(insertions):
     clusters = sl.merge_clusters(spikes, clusters, channels)
     clusters['rep_site_acronym'] = combine_regions(clusters['acronym'])
     # Find clusters that are in the repeated site brain regions and that have been labelled as good
-    # cluster_idx = np.sort(np.where(np.bitwise_and(np.isin(clusters['rep_site_acronym'], BRAIN_REGIONS), clusters['label'] == 1))[0])
-    cluster_idx = np.sort(
-        np.where(np.isin(clusters['rep_site_acronym'], BRAIN_REGIONS))[0])
+    cluster_idx = np.sort(np.where(np.bitwise_and(np.isin(clusters['rep_site_acronym'], BRAIN_REGIONS), clusters['label'] == 1))[0])
     data['cluster_ids'] = clusters['cluster_id'][cluster_idx]
     data['region'] = clusters['rep_site_acronym'][cluster_idx]
     print(len(data['cluster_ids']))
