@@ -33,6 +33,8 @@ DPI = 150  # if the figure is too big on your screen, lower this number
 data, _ = plots_data(MIN_REC_PER_LAB)
 n_columns = len(data['subject'].unique())
 
+# %%
+
 # Set up figure
 figure_style()
 fig = plt.figure(figsize=(7, 9), dpi=DPI)  # full width figure is 7 inches
