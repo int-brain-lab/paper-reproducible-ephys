@@ -38,7 +38,7 @@ for iIns, ins in enumerate(insertions):
     # Find clusters that are in the repeated site brain regions and that have been labelled as good
     cluster_idx = np.sort(np.where(np.bitwise_and(np.isin(clusters['rep_site_acronym'], BRAIN_REGIONS), clusters['label'] == 1))[0])
     data['cluster_ids'] = clusters['cluster_id'][cluster_idx]
-    data['region'] = clusters['rep_site_acronym'][cluster_idx]
+
     print(len(data['cluster_ids']))
 
     # Find spikes that are from the clusterIDs
@@ -120,6 +120,24 @@ for iIns, ins in enumerate(insertions):
     data['responsive'], data['p_responsive'], _ = \
         compute_comparison_statistics(fr_base, fr_post_move, test='signrank')
 
+    # Add other cluster information
+    data['region'] = clusters['rep_site_acronym'][cluster_idx]
+    data['x'] = clusters['x'][cluster_idx]
+    data['y'] = clusters['y'][cluster_idx]
+    data['z'] = clusters['z'][cluster_idx]
+
+    # Annotate any regions that have less than threshold units
+    data['include'] = np.ones_like(data['cluster_ids']).astype(bool)
+    reg, reg_counts = np.unique(data['region'], return_counts=True)
+    print(eid)
+    print(f'{reg}: {reg_counts}')
+    n_counts = 4
+    if np.any(reg_counts < n_counts):
+        lt_idx = np.where(reg_counts < n_counts)[0]
+        for idx in lt_idx:
+            print(reg[idx])
+            data['include'][data['region'] == reg[idx]] = 0
+
     df = pd.DataFrame.from_dict(data)
     df['eid'] = eid
     df['pid'] = pid
@@ -143,10 +161,11 @@ save_path.mkdir(exist_ok=True, parents=True)
 concat_df.to_csv(save_path.joinpath('figure8_dataframe.csv'))
 np.save(save_path.joinpath(f'figure8_data_split_{split}.npy'), all_frs)
 
-
-
-
 ### TEMP from here down####
+# Filter out recordings that have less than n_thresh units per region
+all_frs = all_frs[concat_df['include'], :]
+concat_df = concat_df[concat_df['include']].reset_index()
+
 # Embedding with 2 PCA components on all responsive units
 # Find responsive units
 pca = PCA(n_components=2)
@@ -157,6 +176,26 @@ concat_df['emb2'] = np.nan
 concat_df.loc[concat_df['responsive'], 'emb1'] = emb[:, 0]
 concat_df.loc[concat_df['responsive'], 'emb2'] = emb[:, 1]
 
+# For each region show how to find the reconstructed PCA
+concat_df_reg = concat_df.groupby('region')
+for reg in BRAIN_REGIONS:
+    df_reg = concat_df_reg.get_group(reg)
+    reg_idx = concat_df_reg.groups[reg]
+    frs_reg = all_frs[reg_idx, :]
+
+    pca = PCA()
+    pca.fit(frs_reg)
+    u, s, vh = np.linalg.svd(frs_reg)
+    print('comps:', pca.n_components_, 'features:', pca.n_features_)
+    print(pca.explained_variance_ratio_[:3])
+    S_star = np.zeros(frs_reg.shape)
+    for i in range(2):
+        S_star[i, i] = s[i]
+    Y_re_star = np.matrix(u) * np.matrix(S_star) * np.matrix(vh)
+
+
+# For each region show how to make some of the plots
+import matplotlib.pyplot as plt
 concat_df_resp = concat_df[concat_df['responsive']]
 concat_df_reg = concat_df_resp.groupby('region')
 fig, ax = plt.subplots()
@@ -166,15 +205,13 @@ for reg in BRAIN_REGIONS:
     frs_reg = all_frs[reg_idx, :]
     ax.plot(np.mean(frs_reg, axis=0) / bin_size)
 
-# This happens at the end, where we need to groupby individual regions
-    # Compute the PCA and reconstructed trial data from first two components
-    pca = PCA()
-    pca.fit(frs_reg)
-    u, s, vh = np.linalg.svd(frs_reg)
-    print('comps:', pca.n_components_, 'features:', pca.n_features_)
-    print(pca.explained_variance_ratio_[:3])
 
-    S_star = np.zeros(frs_reg.shape)
-    for i in range(2):
-        S_star[i, i] = s[i]
-    Y_re_star = np.matrix(u) * np.matrix(S_star) * np.matrix(vh)
+    fig_reg, ax_reg = plt.subplots()
+    df_lab = df_reg.groupby('institute')
+    for lab in df_lab.groups.keys():
+
+        lab_idx = df_lab.groups[lab]
+        frs_lab = all_frs[lab_idx, :]
+        ax_reg.plot(np.mean(frs_lab, axis=0) / bin_size)
+
+
