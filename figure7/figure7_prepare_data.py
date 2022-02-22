@@ -31,7 +31,7 @@ for iIns, ins in enumerate(insertions):
     data = {}
 
     # Load in spikesorting
-    sl = SpikeSortingLoader(eid=eid, pname=probe, one=one_local, atlas=ba)
+    sl = SpikeSortingLoader(eid=eid, pname=probe, one=one_online, atlas=ba)
     spikes, clusters, channels = sl.load_spike_sorting()
     clusters = sl.merge_clusters(spikes, clusters, channels)
     clusters['rep_site_acronym'] = combine_regions(clusters['acronym'])
@@ -45,7 +45,7 @@ for iIns, ins in enumerate(insertions):
     spike_idx = np.isin(spikes['clusters'], data['cluster_ids'])
 
     # Load in trials data
-    trials = one_local.load_object(eid, 'trials', collection='alf')
+    trials = one_online.load_object(eid, 'trials', collection='alf')
     # For this computation we use correct, non zero contrast trials
     trial_idx = np.bitwise_and(trials['feedbackType'] == 1,
                                np.bitwise_or(trials['contrastLeft'] > 0, trials['contrastRight'] > 0))
@@ -157,8 +157,8 @@ concat_df['emb2'] = np.nan
 concat_df.loc[concat_df['responsive'], 'emb1'] = emb[:, 0]
 concat_df.loc[concat_df['responsive'], 'emb2'] = emb[:, 1]
 
-
-concat_df_reg = concat_df.groupby('region')
+concat_df_resp = concat_df[concat_df['responsive']]
+concat_df_reg = concat_df_resp.groupby('region')
 fig, ax = plt.subplots()
 for reg in BRAIN_REGIONS:
     df_reg = concat_df_reg.get_group(reg)
