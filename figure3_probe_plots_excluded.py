@@ -56,11 +56,6 @@ excluded = excluded.set_index('subject')
 data['excluded'] = excluded['excluded']
 data = data.sort_values(by=['excluded']).reset_index()
 
-# Get lab info
-rec_per_lab = data.groupby('institution').size()
-data['recording'] = np.concatenate([np.arange(i) for i in rec_per_lab.values])
-data['lab_position'] = np.linspace(0.18, 0.91, data.shape[0])
-plot_titles = data.groupby('institution').mean()
 
 # %% Plotting
 figure_style()

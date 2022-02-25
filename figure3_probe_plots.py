@@ -20,6 +20,7 @@ brain_atlas = atlas.AllenAtlas(25)
 one = ONE()
 
 # Plot settings
+#BOUNDARY = None
 BOUNDARY = 'DG-TH'
 # BOUNDARY = 'VIS-HPF'
 MIN_REC_PER_LAB = 4
@@ -34,11 +35,11 @@ LABELS = ['Firing rate (spks/s)', 'Power spectral density', 'AP band RMS', 'LFP 
 PLOTS = ['amp_scatter', 'psd', 'rms_ap']
 LABELS = ['Firing rate (spks/s)', 'Power spectral density', 'AP band RMS']
 """
-PLOTS = ['psd']
-LABELS = ['Power spectral density']
+PLOTS = ['amp_scatter']
+LABELS = ['Firing rate (spks/s)']
 
-NICKNAMES = False
-YLIM = [-2000, 2000]
+NICKNAMES = True
+YLIM = [-5000, 0]
 FIG_SIZE = (7, 3.5)
 
 # Load in recordings
@@ -55,10 +56,11 @@ data = data.drop_duplicates(subset='subject')
 # Exclude labs with too few recordings done
 data = data.groupby('institution').filter(
     lambda s : s['eid'].unique().shape[0] >= MIN_REC_PER_LAB)
-data = data.sort_values(by=['institution', 'subject']).reset_index(drop=True)
+data['lab_number'] = data.lab.map(lab_number_map)
+data = data.sort_values(by=['lab_number', 'subject']).reset_index(drop=True)
 
 # Get lab info
-rec_per_lab = data.groupby('institution').size()
+rec_per_lab = data.groupby('lab_number').size()
 data['recording'] = np.concatenate([np.arange(i) for i in rec_per_lab.values])
 data['lab_position'] = np.linspace(0.18, 0.91, data.shape[0])
 plot_titles = data.groupby('institution').mean()
@@ -76,7 +78,7 @@ for p, plot_name in enumerate(PLOTS):
 
         f, axs, cbar = plot_2D_features(data['subject'], data['date'], data['probe'], one=one,
                                         brain_atlas=brain_atlas, plot_type=plot_name,
-                                        freq_range=[20, 80],
+                                        freq_range=[20, 80], show_regions=True,
                                         boundary_align=BOUNDARY, figsize=FIG_SIZE)
 
     for i, subject in enumerate(data['subject']):
@@ -103,10 +105,7 @@ for p, plot_name in enumerate(PLOTS):
         cbar.ax.tick_params()
 
     for i, inst in enumerate(plot_titles.index.values):
-        if NICKNAMES:
-            plt.figtext(plot_titles.loc[inst, 'lab_position'], 0.94, inst, color=lab_colors[inst],
-                        fontsize=9, ha='center')
-        else:
+        if not NICKNAMES:
             plt.figtext((plot_titles.loc[inst, 'lab_position'] - 0.06) * 1.02, 0.94, inst,
                         color=lab_colors[inst], ha='left')
             # plt.figtext(plot_titles.loc[inst, 'lab_position'], 0.94, inst,

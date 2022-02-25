@@ -18,8 +18,12 @@ from ibllib.atlas import AllenAtlas
 ba = AllenAtlas()
 one = ONE()
 
+# TEMPORARY
+one.mode = 'remote'
+
 # Settings
 NEURON_QC = True
+MIN_NEURONS_PER_REGION = 5
 EXCL_REC = True  # Exclude recordings that missed target
 DOWNLOAD_WAVEFORMS = False  # Only set to true if you're doing spike waveform analyses
 REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
@@ -153,44 +157,50 @@ for i in range(len(traj)):
         # Get neuron count and firing rate
         region_clusters = [x for x, y in enumerate(combine_regions(clusters[probe]['acronym']))
                            if (region == y) and (x in clusters_pass)]
-        neuron_fr = np.empty(len(region_clusters))
-        spike_amp = np.empty(len(region_clusters))
-        pt_ratio = np.empty(len(region_clusters))
-        rp_slope = np.empty(len(region_clusters))
-        for n, neuron_id in enumerate(region_clusters):
-            # Get firing rate
-            neuron_fr[n] = (np.sum(spikes[probe]['clusters'] == neuron_id)
-                            / np.max(spikes[probe]['times']))
 
-            try:
-                # Get mean waveform of channel with max amplitude
-                mean_wf_ch = np.mean(waveforms[spikes[probe].clusters[wf_spikes] == neuron_id],
-                                     axis=0)
-                mean_wf_ch = (mean_wf_ch
-                              - np.tile(np.mean(mean_wf_ch, axis=0), (mean_wf_ch.shape[0], 1)))
-                mean_wf = mean_wf_ch[:, np.argmin(np.min(mean_wf_ch, axis=0))] * 1000000
-                spike_amp[n] = np.abs(np.min(mean_wf) - np.max(mean_wf))
-
-                # Get peak-to-trough ration
-                pt_ratio[n] = np.max(mean_wf) / np.abs(np.min(mean_wf))
-
-                # Get repolarization slope
-                if ((np.isnan(mean_wf[0])) or (np.argmin(mean_wf) > np.argmax(mean_wf))
-                    or (np.abs(np.argmin(mean_wf) - np.argmax(mean_wf)) <= 2)):
-                    rp_slope[n] = np.nan
-                else:
-                    rp_slope[n] = np.max(np.gradient(mean_wf[
-                                            np.argmin(mean_wf):np.argmax(mean_wf)]))
-            except:
-                spike_amp[n] = np.nan
-                pt_ratio[n] = np.nan
-                rp_slope[n] = np.nan
-
-        # Get mean and 90th percentile of spike amplitudes
-        if len(spike_amp) == 0:
-            spike_amp_90 = np.nan
+        # Don't calculate single neuron metrics if there are too few neurons
+        if len(region_clusters) < MIN_NEURONS_PER_REGION:
+            neuron_fr, spike_amp, spike_amp_90, pt_ratio, rp_slope = (
+                np.nan, np.nan, np.nan, np.nan, np.nan)
         else:
-            spike_amp_90 = np.percentile(spike_amp, 95)
+            neuron_fr = np.empty(len(region_clusters))
+            spike_amp = np.empty(len(region_clusters))
+            pt_ratio = np.empty(len(region_clusters))
+            rp_slope = np.empty(len(region_clusters))
+            for n, neuron_id in enumerate(region_clusters):
+                # Get firing rate
+                neuron_fr[n] = (np.sum(spikes[probe]['clusters'] == neuron_id)
+                                / np.max(spikes[probe]['times']))
+
+                try:
+                    # Get mean waveform of channel with max amplitude
+                    mean_wf_ch = np.mean(waveforms[spikes[probe].clusters[wf_spikes] == neuron_id],
+                                         axis=0)
+                    mean_wf_ch = (mean_wf_ch
+                                  - np.tile(np.mean(mean_wf_ch, axis=0), (mean_wf_ch.shape[0], 1)))
+                    mean_wf = mean_wf_ch[:, np.argmin(np.min(mean_wf_ch, axis=0))] * 1000000
+                    spike_amp[n] = np.abs(np.min(mean_wf) - np.max(mean_wf))
+
+                    # Get peak-to-trough ration
+                    pt_ratio[n] = np.max(mean_wf) / np.abs(np.min(mean_wf))
+
+                    # Get repolarization slope
+                    if ((np.isnan(mean_wf[0])) or (np.argmin(mean_wf) > np.argmax(mean_wf))
+                        or (np.abs(np.argmin(mean_wf) - np.argmax(mean_wf)) <= 2)):
+                        rp_slope[n] = np.nan
+                    else:
+                        rp_slope[n] = np.max(np.gradient(mean_wf[
+                                                np.argmin(mean_wf):np.argmax(mean_wf)]))
+                except:
+                    spike_amp[n] = np.nan
+                    pt_ratio[n] = np.nan
+                    rp_slope[n] = np.nan
+
+            # Get mean and 90th percentile of spike amplitudes
+            if len(spike_amp) == 0:
+                spike_amp_90 = np.nan
+            else:
+                spike_amp_90 = np.percentile(spike_amp, 95)
 
         # Get LFP power on high frequencies
         region_chan = chn_inds[[x for x, y in enumerate(combine_regions(channels[probe]['acronym']))
@@ -198,13 +208,13 @@ for i in range(len(traj)):
         freqs = ((lfp_spectrum['freqs'] > LFP_BAND_HIGH[0])
                  & (lfp_spectrum['freqs'] < LFP_BAND_HIGH[1]))
         chan_power = lfp_spectrum['power'][:, region_chan]
-        lfp_high_region = np.mean(10 * np.log(chan_power[freqs]))  # convert to dB
+        lfp_high_region = np.median(10 * np.log(chan_power[freqs]))  # convert to dB
 
         # Get LFP power on low frequencies
         freqs = ((lfp_spectrum['freqs'] > LFP_BAND_LOW[0])
                  & (lfp_spectrum['freqs'] < LFP_BAND_LOW[1]))
         chan_power = lfp_spectrum['power'][:, region_chan]
-        lfp_low_region = np.mean(10 * np.log(chan_power[freqs]))  # convert to dB
+        lfp_low_region = np.median(10 * np.log(chan_power[freqs]))  # convert to dB
 
         # Get AP band rms
         rms_ap_region = np.median(rms_ap_data_median[:, region_chan])

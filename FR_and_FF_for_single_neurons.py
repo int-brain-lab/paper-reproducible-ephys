@@ -16,6 +16,9 @@ from reproducible_ephys_functions import query
 from brainbox.metrics.single_units import spike_sorting_metrics, quick_unit_metrics
 import pandas as pd
 
+from MT_selectivity import p_value_analysis
+
+
 # %% Functions:
     
 def cluster_peths_FR_FF_sliding(ts, align_times, pre_time=0.2, post_time=0.5, 
@@ -77,7 +80,7 @@ def cluster_peths_FR_FF_sliding(ts, align_times, pre_time=0.2, post_time=0.5,
         FF_unsort = np.hstack((FF_unsort, FF_PerShift))
         TimeVect = np.hstack((TimeVect, TimeVect_PerShift)) #stacks the time vectors
 
-    #Sort the time and FR vectors:
+    #Sort the time and FR vectors and convert lists to an np.array:
     TimeVect_sorted = np.sort(TimeVect)
     FR_sorted = np.array([x for _,x in sorted(zip(TimeVect, FR_unsort))])
     FR_STD_sorted = np.array([x for _,x in sorted(zip(TimeVect, FRstd_unsort))])
@@ -90,13 +93,13 @@ def cluster_peths_FR_FF_sliding(ts, align_times, pre_time=0.2, post_time=0.5,
 # %% Run code:
 
 # Identify the RS subject and neuron:
-ClusterID = 335 #406 #335  #180 #398 #328 #
-names = ['DY_018'] #['ZFM-01592'] #['ibl_witten_29'] #['DY_018']
-BrainRegion = 'VIS'#'VIS' #'LP' # 
+ClusterID = 614 #345 #147 #289 #241 #335#335#180 #406 #335  #180 #398 #328 #
+names = ['SWC_054']# ['NYU-12'] #['ibl_witten_27'] #['SWC_054']# ['DY_018'] #['ZFM-01592'] #['ibl_witten_29'] #['DY_018']
+BrainRegion = 'VIS' #'VIS' #'VIS' #'LP' #'VIS'#'VIS' #'LP'#'VIS' #'LP' # 
 
 # Time course details for plotting:
-pre_time, post_time = 0.3, 0.2 #0.4, 0.8 #0.1, 0.35
-Side = 'Left Stim' #'Right Stim' or 'Left Stim'
+pre_time, post_time = 0.4, 0.6 #0.4, 0.8 #0.1, 0.35
+Side = 'Right Stim' #'Right Stim' or 'Left Stim'
 CorrChoice = 'Correct' #Only include correct choices, incorrect ones, or all? Options: 'Correct', 'Incorr', 'All Choices'
 AlignTo = 'Movement' #Align the trials to which, 'Movement' or 'Stim'?
 constrasts_all = [1., 0.25, 0.125, 0.0625, 0.] #[1., 0.] #The constrasts to examine. Full list: [1., 0.25, 0.125, 0.0625, 0.]
@@ -114,7 +117,7 @@ saveFig = 0 #At the end, save figure or not? 1 for yes.
 one = ONE()
 traj = query(behavior=True)
 boundary_width = 0.01
-base_grey = 0.15
+base_grey = 0.3 #0.15
 fs = 18 #figure size
 
 
@@ -124,35 +127,45 @@ for count, t in enumerate(traj):
     if t['session']['subject'] not in names:
         continue
 
+
+    # #Selectivity:
+    # Ps = p_value_analysis(eid, probe)
+
     # load data
     try:
-        spikes, clusters, channels = pickle.load(open("../data/data_{}_sorting_1.p".format(eid), "rb"))
-        #spikes, clusters, channels, metrics = pickle.load(open("../data/data_{}.p".format(eid), "rb"))
+        # #Try Pykilosort: 
+        spikes = one.load_object(eid, 'spikes', collection='alf/{}/pykilosort'.format(probe))
+        clusters = one.load_object(eid, 'clusters', collection='alf/{}/pykilosort'.format(probe))
+        channels = bb.io.one.load_channel_locations(eid, one=one, probe=probe, aligned=True)
+        clusters = bb.io.one.merge_clusters_channels(dic_clus={probe: clusters}, channels=channels)[probe]
+        channels = channels[probe]
+        #spikes, clusters, channels = pickle.load(open("../data/data_{}_sorting_1.p".format(eid), "rb"))
 
-    except FileNotFoundError:
-        try:
-            # spk, clus, chn = load_spike_sorting_with_channel(eid, one=one)
-            # spikes, clusters, channels = spk[probe], clus[probe], chn[probe]
+    # except FileNotFoundError:
+    #     try:
+    #         # spk, clus, chn = load_spike_sorting_with_channel(eid, one=one)
+    #         # spikes, clusters, channels = spk[probe], clus[probe], chn[probe]
             
-            #Try ks2: 
-            spikes = one.load_object(eid, 'spikes', collection='alf/{}'.format(probe), revision='')
-            clusters = one.load_object(eid, 'clusters', collection='alf/{}'.format(probe), revision='')
-            channels = bb.io.one.load_channel_locations(eid, one=one, probe=probe, aligned=True)
-            clusters = bb.io.one.merge_clusters_channels(dic_clus={probe: clusters}, channels=channels)[probe]
-            channels = channels[probe]
+    #         #Try ks2: 
+    #         spikes = one.load_object(eid, 'spikes', collection='alf/{}'.format(probe), revision='')
+    #         clusters = one.load_object(eid, 'clusters', collection='alf/{}'.format(probe), revision='')
+    #         channels = bb.io.one.load_channel_locations(eid, one=one, probe=probe, aligned=True)
+    #         clusters = bb.io.one.merge_clusters_channels(dic_clus={probe: clusters}, channels=channels)[probe]
+    #         channels = channels[probe]
 
-            # # #Try Pykilosort: 
-            # spikes = one.load_object(eid, 'spikes', collection='alf/{}/pykilosort'.format(probe))
-            # clusters = one.load_object(eid, 'clusters', collection='alf/{}/pykilosort'.format(probe))
-            # channels = bb.io.one.load_channel_locations(eid, one=one, probe=probe, aligned=True)
-            # clusters = bb.io.one.merge_clusters_channels(dic_clus={probe: clusters}, channels=channels)[probe]
-            # channels = channels[probe]
+    #         # # #Try Pykilosort: 
+    #         # spikes = one.load_object(eid, 'spikes', collection='alf/{}/pykilosort'.format(probe))
+    #         # clusters = one.load_object(eid, 'clusters', collection='alf/{}/pykilosort'.format(probe))
+    #         # channels = bb.io.one.load_channel_locations(eid, one=one, probe=probe, aligned=True)
+    #         # clusters = bb.io.one.merge_clusters_channels(dic_clus={probe: clusters}, channels=channels)[probe]
+    #         # channels = channels[probe]
             
-            pickle.dump((spikes, clusters, channels), (open("../data/data_{}.p".format(eid), "wb")))
+    #         pickle.dump((spikes, clusters, channels), (open("../data/data_{}.p".format(eid), "wb")))
             
-        except KeyError:
-            print(eid)
-            continue
+    except KeyError:
+        print(eid)
+        continue
+
 
 
     contrasts = one.load_object(eid, 'trials',  attribute=['contrastLeft', 'contrastRight'])
@@ -266,19 +279,24 @@ for count, t in enumerate(traj):
             for i, time in enumerate(event_times_Side[temp]):
                 idx = np.bitwise_and(clu_spks >= time - pre_time, clu_spks <= time + post_time)
                 event_spks = clu_spks[idx]
-                plt.vlines(event_spks - time, counter - i, counter - i - 1)
+                plt.vlines(event_spks - time, counter - i, counter - i - 1, color='k')
             counter -= np.sum(temp)
             contrast_count_list.append(counter)
         ylabel_pos = []
         for i, c in enumerate(constrasts_all):
             top = contrast_count_list[i]
             bottom = contrast_count_list[i + 1]
-            plt.fill_between([-pre_time, -pre_time + boundary_width], [top, top], [bottom, bottom],
+            #Position of the contrast colorbar:
+            plt.fill_between([-pre_time - SlideBinSize/2, -pre_time - SlideBinSize/2 + boundary_width], 
+                             [top, top], [bottom, bottom],
                              zorder=3, color=str(1 - (base_grey + c * (1 - base_grey))))
             ylabel_pos.append((top - bottom) / 2 + bottom)
 
         plt.yticks(ylabel_pos, constrasts_all, size=fs)
-        plt.axvline(0, color='k', ls='--')
+        if AlignTo == 'Stim':
+            plt.axvline(0, color=(0, 0.5, 1), ls='--', linewidth=2)
+        elif AlignTo == 'Movement':
+            plt.axvline(0, color='g', ls='--', linewidth=2)
         plt.xlim(left= -pre_time - SlideBinSize/2, right= post_time + SlideBinSize/2) #(left=-pre_time, right=post_time)
         plt.ylim(top=0, bottom=counter)
         plt.gca().spines['right'].set_visible(False)
@@ -286,7 +304,7 @@ for count, t in enumerate(traj):
         plt.gca().spines['left'].set_visible(False)
         plt.gca().spines['bottom'].set_visible(False)
         plt.tick_params(left=False, right=False, labelbottom=False, bottom=False)
-        plt.title("Contrast: {}, {}, Aligned to {}".format(Side, CorrChoice, AlignTo), loc='left', size=fs+2) 
+        plt.title("Contrast    {}, {}, Aligned to {}".format(Side, CorrChoice, AlignTo), loc='left', size=fs) 
         #plt.title("Contrast ({})".format(Side), loc='left', size=fs+2) 
         
         
@@ -297,7 +315,7 @@ for count, t in enumerate(traj):
                 mask = left_contrasts == c
             
             if sum(mask)==0:
-                print('No events for side %s, contrast %d, and choice %d' %(Side, c, CorrChoice))
+                print('No events for side %s, contrast %d, and choice %s' %(Side, c, CorrChoice))
                 continue
             
             
@@ -337,8 +355,12 @@ for count, t in enumerate(traj):
                 
             
         plt.subplot(3, 1, 2)
-        plt.axvline(0, color='k', ls='--')
-        #plt.xlim(left= -pre_time - SlideBinSize/2, right= post_time + SlideBinSize/2)
+        if AlignTo == 'Stim':
+            plt.axvline(0, color=(0, 0.5, 1), ls='--', linewidth=2)
+            #plt.xlabel("Time from stim onset (s)", size=fs+3)  
+        elif AlignTo == 'Movement':
+            plt.axvline(0, color='g', ls='--', linewidth=2)
+            #plt.xlabel("Time from movement onset (s)", size=fs+3)         
         plt.gca().spines['right'].set_visible(False)
         plt.gca().spines['top'].set_visible(False)
         # plt.yticks([0, 25, 50, 75], [0, 25, 50, 75], size=fs)
@@ -346,13 +368,11 @@ for count, t in enumerate(traj):
         plt.xticks([-0.4, -0.3, -0.2, -0.1, 0., 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8], 
                    [-0.4, -0.3, -0.2, -0.1, 0., 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8], size=fs)
         plt.ylabel("Firing rate (sp/s)", size=fs+3)
-        #plt.xlabel("Time from stim onset (s)", size=fs+3)
-        #plt.xlim(left=-pre_time, right=post_time)
-        plt.xlim(left= -pre_time - SlideBinSize/2, right= post_time + SlideBinSize/2)
+        plt.xlim(left=-pre_time, right=post_time)
+        #plt.xlim(left= -pre_time - SlideBinSize/2, right= post_time + SlideBinSize/2)
         
 
         plt.subplot(3, 1, 3)
-        plt.axvline(0, color='k', ls='--')
         plt.xlim(left=-pre_time, right=post_time)
         plt.gca().spines['right'].set_visible(False)
         plt.gca().spines['top'].set_visible(False)
@@ -360,12 +380,14 @@ for count, t in enumerate(traj):
         plt.xticks([-0.4, -0.3, -0.2, -0.1, 0., 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8], 
                    [-0.4, -0.3, -0.2, -0.1, 0., 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8], size=fs)
         plt.ylabel("Fano Factor", size=fs+3)
-        if AlignTo == 'Movement':
-            plt.xlabel("Time from movement onset (s)", size=fs+3)
-        elif AlignTo == 'Stim':
-            plt.xlabel("Time from stim onset (s)", size=fs+3)
-            
-        plt.xlim(left= -pre_time - SlideBinSize/2, right= post_time + SlideBinSize/2)
+        if AlignTo == 'Stim':
+            plt.axvline(0, color=(0, 0.5, 1), ls='--', linewidth=2)
+            plt.xlabel("Time from stim onset (s)", size=fs+3)            
+        elif AlignTo == 'Movement':
+            plt.axvline(0, color='g', ls='--', linewidth=2)
+            plt.xlabel("Time from movement onset (s)", size=fs+3)            
+        #plt.xlim(left= -pre_time - SlideBinSize/2, right= post_time + SlideBinSize/2)
+        plt.xlim(left= -pre_time, right= post_time)
         
         if saveFig==1:
             plt.savefig("SaveMyFigures/{}, {}, {}, {}".format(t['session']['subject'], neuron, Side, NameStr)) #MT modified to include folder name and Side

@@ -26,10 +26,10 @@ MIN_REGIONS = 3  # min amount of regions to be included
 MIN_CHANNELS = 10  # min amount of channels in a region to say it was targeted
 ANNOTATE = False
 COLORBAR = True
-EXAMPLE_METRIC = 'neuron_yield'
-EXAMPLE_REGION = 'CA1'
+EXAMPLE_METRIC = 'lfp_power_high'
+EXAMPLE_REGION = 'LP'
 REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
-METRICS = ['neuron_yield', 'median_firing_rate', 'lfp_power_low', 'rms_ap', 'spike_amp_mean']
+METRICS = ['neuron_yield', 'median_firing_rate', 'lfp_power_high', 'rms_ap', 'spike_amp_mean']
 LABELS = ['Neuron yield', 'Firing rate', 'LFP power', 'AP band RMS', 'Spike amplitude']
 lab_number_map, institution_map, lab_colors = labs()
 

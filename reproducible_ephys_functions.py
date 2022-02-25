@@ -147,6 +147,23 @@ def get_insertions(level=2, recompute=False, as_dataframe=False, one=None):
     return traj
 
 
+def query_histology():
+    '''
+    Return the trajectories for histology analysis
+
+    Returns
+    -------
+    List of histology subjs
+
+    '''
+    import figure_hist_data as fhd
+
+    data = fhd.get_probe_data()
+
+    return list(data['subject'])
+
+
+
 def data_path():
     # Retrieve absolute path of paper-behavior dir
     repo_dir = Path(__file__).resolve().parent
@@ -315,7 +332,8 @@ def eid_list():
     """
     Static list of eids which pass the ADVANCED criterium to include for repeated site analysis
     """
-    eids = np.load('repeated_site_eids.npy')
+    repo_dir = os.path.dirname(os.path.realpath(__file__))
+    eids = np.load(os.path.join(repo_dir, 'repeated_site_eids.npy'))
     return eids
 
 
@@ -323,7 +341,8 @@ def eid_list_all():
     """
     Static list of all repeated site eids
     """
-    eids = np.load('all_repeated_site_eids.npy')
+    repo_dir = os.path.dirname(os.path.realpath(__file__))
+    eids = np.load(os.path.join(repo_dir, 'all_repeated_site_eids.npy'))
     return eids
 
 
@@ -416,3 +435,11 @@ def load_metrics():
     else:
         metrics = None
     return metrics
+
+def pid_list():
+    """
+    Static list of all repeated site eids
+    """
+    repo_dir = os.path.dirname(os.path.realpath(__file__))
+    pids = np.load(os.path.join(repo_dir, 'repeated_site_pids.npy'))
+    return pids
