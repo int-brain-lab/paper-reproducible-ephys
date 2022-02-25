@@ -3,7 +3,7 @@ import pandas as pd
 from pathlib import Path
 import time
 
-from one.api import ONE
+from one.api import ONE, One
 from ibllib.atlas import AllenAtlas
 from brainbox.population.decode import get_spike_counts_in_bins
 from brainbox.task.closed_loop import compute_comparison_statistics
@@ -14,13 +14,15 @@ from reproducible_ephys_paths import DATA_PATH
 from figure5.figure5_functions import cluster_peths_FR_FF_sliding_2D
 
 one = ONE()
+one_local = One()
 ba = AllenAtlas()
 lab_number_map, institution_map, lab_colors = labs()
 insertions = get_insertions(level=2, as_dataframe=False)
-
+save_waveforms = True
+start0 = time.time()
 all_df = []
 for iIns, ins in enumerate(insertions):
-
+    start = time.time()
     print(f'processing {iIns + 1}/{len(insertions)}')
 
     data = {}
@@ -28,11 +30,11 @@ for iIns, ins in enumerate(insertions):
     # Load in data
     pid = ins['probe_insertion']
     eid = ins['session']['id']
-    sl = SpikeSortingLoader(pid=pid, one=one, atlas=ba)
+    probe = ins['probe_name']
+    sl = SpikeSortingLoader(eid=eid, pname=probe, one=one_local, atlas=ba)
     spikes, clusters, channels = sl.load_spike_sorting(dataset_types=['clusters.amps', 'clusters.peakToTrough'])
     clusters = sl.merge_clusters(spikes, clusters, channels)
     clusters['rep_site_acronym'] = combine_regions(clusters['acronym'])
-    trials = one.load_object(eid, 'trials')
 
     # Find clusters that are in the regions we are interested in and are good
     cluster_idx = np.bitwise_and(np.isin(clusters['rep_site_acronym'], BRAIN_REGIONS), clusters['label'] == 1)
@@ -47,6 +49,7 @@ for iIns, ins in enumerate(insertions):
 
     # COMPUTE FIRING RATES DURING DIFFERENT PARTS OF TASK
     # For this computation we use correct, non zero contrast trials
+    trials = one_local.load_object(eid, 'trials')
     trial_idx = np.bitwise_and(trials['feedbackType'] == 1,
                                np.bitwise_or(trials['contrastLeft'] > 0, trials['contrastRight'] > 0))
 
@@ -172,12 +175,48 @@ for iIns, ins in enumerate(insertions):
 
     ff_bin = 0.1
     ff_n_slide = 5
+    pre_time = 0.4
+    post_time = 0.8
 
-    _, _, ff, time_ff = cluster_peths_FR_FF_sliding_2D(spikes['times'][spike_idx], spikes['clusters'][spike_idx],
-                                                       data['cluster_ids'], eventMove, pre_time=0, post_time=0.4,
+    _, _, ff_r, time_ff = cluster_peths_FR_FF_sliding_2D(spikes['times'][spike_idx], spikes['clusters'][spike_idx],
+                                                       data['cluster_ids'], eventMove, pre_time=pre_time, post_time=post_time,
                                                        hist_win=ff_bin, N_SlidesPerWind=ff_n_slide, causal=1)
-    # Compute average FF for time period 40 - 200 ms after movement onset
-    data['avg_ff_post_move'] = np.nanmean(ff[:, np.bitwise_and(time_ff >= 0.04, time_ff <= 0.2)], axis=1)
+    data['avg_ff_post_move'] = np.nanmean(ff_r[:, np.bitwise_and(time_ff >= 0.04, time_ff <= 0.2)], axis=1)
+
+    # COMPUTE FANOFACTOR AND FIRING RATE WAVEFORMS (for figure 6 supplement)
+    if save_waveforms:
+        # Compute firing rate waveforms for right 100% contrast
+        fr_bin = 0.04
+        fr_n_slide = 2
+
+        fr_r, _, _, time_fr = cluster_peths_FR_FF_sliding_2D(spikes['times'][spike_idx], spikes['clusters'][spike_idx],
+                                                           data['cluster_ids'], eventMove, pre_time=pre_time, post_time=post_time,
+                                                           hist_win=fr_bin, N_SlidesPerWind=fr_n_slide, causal=1)
+
+        # Compute fanofactor and firing rate waveforms for left 100% contrast
+        trial_idx = np.bitwise_and(trials['feedbackType'] == 1, trials['contrastLeft'] == 1)
+        eventMove = trials['firstMovement_times'][np.bitwise_and(trial_idx, ~nanStimMove)]
+
+        # Compute fanofactor
+        _, _, ff_l, time_ff = cluster_peths_FR_FF_sliding_2D(spikes['times'][spike_idx], spikes['clusters'][spike_idx],
+                                                             data['cluster_ids'], eventMove, pre_time=pre_time,
+                                                             post_time=post_time, hist_win=ff_bin, N_SlidesPerWind=ff_n_slide,
+                                                             causal=1)
+
+        # Compute firing rate
+        fr_l, _, _, time_fr = cluster_peths_FR_FF_sliding_2D(spikes['times'][spike_idx], spikes['clusters'][spike_idx],
+                                                           data['cluster_ids'], eventMove, pre_time=pre_time, post_time=post_time,
+                                                           hist_win=fr_bin, N_SlidesPerWind=fr_n_slide, causal=1)
+        if iIns == 0:
+            all_frs_l = fr_l
+            all_frs_r = fr_r
+            all_ffs_l = ff_l
+            all_ffs_r = ff_r
+        else:
+            all_frs_l = np.r_[all_frs_l, fr_l]
+            all_frs_r = np.r_[all_frs_r, fr_r]
+            all_ffs_l = np.r_[all_ffs_l, ff_l]
+            all_ffs_r = np.r_[all_ffs_r, ff_r]
 
     # Add some extra cluster data to store
     data['region'] = clusters['rep_site_acronym'][cluster_idx]
@@ -207,9 +246,50 @@ for iIns, ins in enumerate(insertions):
     df['lab_number'] = df['lab'].map(lab_number_map)
 
     all_df.append(df)
+    print(time.time() - start)
 
 # Save data frame
 concat_df = pd.concat(all_df, ignore_index=True)
 save_path = Path(DATA_PATH).joinpath('figure5')
 save_path.mkdir(exist_ok=True, parents=True)
 concat_df.to_csv(save_path.joinpath('figure5_figure6_dataframe.csv'))
+if save_waveforms:
+    np.savez(save_path.joinpath('figure6_data_fr_ff.npy'), all_frs_l=all_frs_l, all_frs_r=all_frs_r, all_ffs_l=all_ffs_l,
+             all_ffs_r=all_ffs_r, time_ff=time_ff, time_fr=time_fr)
+print(time.time() - start0)
+
+import matplotlib.pyplot as plt
+concat_df_reg = concat_df.groupby('region')
+
+
+
+for reg in BRAIN_REGIONS:
+    fig, ax = plt.subplots(2, 2)
+    df_reg = concat_df_reg.get_group(reg)
+    reg_idx = concat_df_reg.groups[reg]
+    ffs_r_reg = all_ffs_r[reg_idx, :]
+    frs_r_reg = all_frs_r[reg_idx, :]
+    ffs_l_reg = all_ffs_l[reg_idx, :]
+    frs_l_reg = all_frs_l[reg_idx, :]
+
+    ax[0][0].plot(time_fr, np.nanmean(frs_r_reg, axis=0))
+    ax[1][0].plot(time_ff, np.nanmean(ffs_r_reg, axis=0))
+    ax[0][1].plot(time_fr, np.nanmean(frs_l_reg, axis=0))
+    ax[1][1].plot(time_ff, np.nanmean(ffs_l_reg, axis=0))
+    fig.suptitle(reg)
+
+
+from matplotlib import cm, colors
+for reg in BRAIN_REGIONS:
+    fig = plt.figure()
+    ax = fig.add_subplot(projection='3d')
+    df_reg = concat_df_reg.get_group(reg)
+    norm = colors.Normalize(vmin=np.nanmin(df_reg['avg_ff_post_move']), vmax=np.nanmax(df_reg['avg_ff_post_move']),
+                                       clip=False)
+    mapper = cm.ScalarMappable(norm=norm, cmap=cm.get_cmap('viridis'))
+    cluster_color = np.array([mapper.to_rgba(col) for col in df_reg['avg_ff_post_move']])
+    s = np.ones_like(df_reg['x']) * 2
+    s[df_reg['avg_ff_post_move'] < 1] = 6
+    scat = ax.scatter(df_reg['x'], df_reg['y'], df_reg['z'], c=cluster_color, marker='o', s=s)
+    cbar = fig.colorbar(cm.ScalarMappable(norm=norm, cmap='viridis'), ax=ax)
+    break

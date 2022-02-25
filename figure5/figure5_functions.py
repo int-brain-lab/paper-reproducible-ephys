@@ -121,7 +121,7 @@ def cluster_peths_FR_FF_sliding_2D(spike_times, spike_clusters, cluster_ids, ali
     FR_TrialAvg = FR_TrialAvg[:, sort_idx]
     FR_TrialSTD = FR_TrialSTD[:, sort_idx]
     FF_TrialAvg = FF_TrialAvg[:, sort_idx]
-    TimeVect= TimeVect[sort_idx]
+    TimeVect = TimeVect[sort_idx]
 
     return FR_TrialAvg, FR_TrialSTD, FF_TrialAvg, TimeVect
 

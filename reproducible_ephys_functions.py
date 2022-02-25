@@ -108,8 +108,8 @@ def get_insertions(level=2, recompute=False, as_dataframe=False, one=None):
     Find insertions used for analysis based in different exclusion levels
     Level 0: minimum_regions = 0, resolved = True, behavior = False, n_trial >= 400, exclude_critical = True
     Level 1: minimum_regions = 2, resolved = True, behavior = False, n_trial >= 400, exclude_critical = True
-    Level 2: minimum_regions = 3, resolved = True, behavior = False, n_trial >= 400, exclude_critical = True,
-             max_ap_rms=40,  max_lfp_power=-140, mininumum_channels_per_region=5, max_lfp_power=-140, min_neurons_per_channel=0.1
+    Level 2: minimum_regions = 2, resolved = True, behavior = False, n_trial >= 400, exclude_critical = True,
+             max_ap_rms=40,  max_lfp_power=-140, mininumum_channels_per_region=5, min_neurons_per_channel=0.1
 
     :param level: exclusion level 0, 1 or 2
     :param recompute: whether to recompute the metrics dataframe that is used to exclude recordings at level=2
@@ -412,7 +412,7 @@ def compute_metrics(trajectories, one=None, ba=None, spike_sorter='pykilosort'):
 
 def load_metrics():
     if data_path().joinpath('insertion_metrics.csv').exists():
-        metrics = pd.read_csv(data_path().joinpath('metrics_region.csv'))
+        metrics = pd.read_csv(data_path().joinpath('insertion_metrics.csv'))
     else:
         metrics = None
     return metrics
