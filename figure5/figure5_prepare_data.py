@@ -141,31 +141,31 @@ for iIns, ins in enumerate(insertions):
 
     # COMPARE FIRING RATES TO FIND RESPONSIVE UNITS
     # Trial vs Baseline
-    data['trial'], data['p_trial'], _ = \
+    data['trial'], _, data['p_trial'] = \
         compute_comparison_statistics(fr_base, fr_trial, test='signrank')
 
     # Post-stimulus vs Baseline
-    data['post_stim'], data['p_post_stim'], _ = \
+    data['post_stim'], _, data['p_post_stim'] = \
         compute_comparison_statistics(fr_base, fr_post_stim, test='signrank')
 
     # Pre-movement vs Baseline
-    data['pre_move'], data['p_pre_move'], _ = \
+    data['pre_move'], _, data['p_pre_move'] = \
         compute_comparison_statistics(fr_base, fr_pre_move, test='signrank')
 
     # Pre-movement left versus right
-    data['pre_move_lr'], data['p_pre_move_lr'], _ = \
+    data['pre_move_lr'], _, data['p_pre_move_lr'] = \
         compute_comparison_statistics(fr_pre_moveL, fr_pre_moveR, test='ranksums')
 
     # Time warped start-to-move vs Baseline
-    data['start_to_move'], data['p_start_to_move'], _ = \
+    data['start_to_move'], _, data['p_start_to_move'] = \
         compute_comparison_statistics(fr_base[:, rxn_idx], fr_pre_move_tw, test='signrank')
 
     # Post-movement vs Baseline
-    data['post_move'], data['p_post_move'], _ = \
+    data['post_move'], _, data['p_post_move'] = \
         compute_comparison_statistics(fr_base, fr_post_move, test='signrank')
 
     # Post-reward vs Baseline
-    data['post_reward'], data['p_post_reward'], _ = \
+    data['post_reward'], _, data['p_post_reward'] = \
         compute_comparison_statistics(fr_base, fr_post_reward, test='signrank')
 
     # COMPUTE FANOFACTOR
