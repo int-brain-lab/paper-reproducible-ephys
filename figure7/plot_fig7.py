@@ -15,6 +15,7 @@ from datetime import datetime
 from sklearn.decomposition import PCA
 from scipy.stats import zscore
 import itertools
+from scipy.signal import correlate
 
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -32,6 +33,8 @@ import matplotlib.transforms as transforms
 import string
 from itertools import combinations
 from statsmodels.stats.multitest import multipletests
+from sklearn.cross_decomposition import CCA
+
 
 T_BIN = 0.02  # time bin size in seconds
 one = ONE()
@@ -195,8 +198,8 @@ def all_panels(rm_unre=True, align='motion',split='RT'):
              ['Eb']]
 
     mosaic = [['C','A','Ia','I','R'],
-              ['Ga','G','Ja','J','CC'],
-              ['Ha','H','Ka','K',None],
+              ['Ga','G','Ja','J','Cr'],
+              ['Ha','H','Ka','K','Cl'],
               ['D','B','L',inner,'F']]
    
     ms2 = ['Ga','Ha','Ia','Ja','Ka']
@@ -225,29 +228,10 @@ def all_panels(rm_unre=True, align='motion',split='RT'):
         confidence_ellipse(x[:,0], x[:,1], axs['A'], n_std=1.0,
                            edgecolor=lab_cols[b[lab]])
 
-    # permutation test
-    # for a given pair of labs there's a distance of means 
+    # Euclidean distance of points for permutation test
     def distE(x,y):    
         return np.sqrt(np.dot(x, x) - 2 * np.dot(x, y) + np.dot(y, y))    
      
-    nrand = 20  #random lab allocations    
-    centsr = []
-    for shuf in range(nrand):
-        labsr = labs.copy()
-        random.shuffle(labsr)        
-        cenr = {}
-        for lab in labs_:
-            cenr[lab] = np.mean(emb[labsr == lab],axis=0)            
-        centsr.append(cenr)
-    
-    comb = combinations(cents, 2)
-
-    ps = {}
-    for pair in comb:
-        dist = distE(cents[pair[0]],cents[pair[1]])
-        null_d = [distE(cenr[pair[0]],cenr[pair[1]]) for cenr in centsr]
-        p = 1 - (0.01 * percentileofscore(null_d,dist))
-        ps[pair] = p 
 
 
     le = [Patch(facecolor=lab_cols[b[lab]], 
@@ -462,7 +446,7 @@ def all_panels(rm_unre=True, align='motion',split='RT'):
                                edgecolor=lab_cols[b[lab]])
 
         # shuffle test
-        nrand = 20  #random lab allocations    
+        nrand = 100  #random lab allocations    
         centsr = []
         for shuf in range(nrand):
             labsr = labs2.copy()
@@ -596,12 +580,90 @@ def all_panels(rm_unre=True, align='motion',split='RT'):
     axs['R'].text(-0.1, 1.15, 'R', transform=axs['R'].transAxes,
       fontsize=16,  va='top', ha='right', weight='bold') 
 
+
+    '''
+    display the max value of the cross correlation
+    between all x (y, z) and emb1 (emb2) for all
+    cells in a region (lab)
+    '''
+    
+    regs_ = Counter(regs)
+    labs_ = Counter(labs)
+
+    # shuffle test
+#    random.shuffle(labs)
+#    random.shuffle(regs)
+
+#    cca = CCA(n_components=1)
+#    cca.fit(X, Y)
+#X = [[0., 0., 1.], [1.,0.,0.], [2.,2.,2.], [3.,5.,4.]]
+#Y = [[0.1, -0.2], [0.9, 1.1], [6.2, 5.9], [11.9, 12.3]]
+#cca = CCA(n_components=1)
+#cca.fit(X, Y)
+
+#X_c, Y_c = cca.transform(X, Y)
+    #return emb, xyz, labs, regs
+    
+#    pcr_ = {}
+#    pcr = []
+#    for reg in regs_:
+#        X = emb[regs == reg]
+#        Y = xyz[regs == reg]
+#        cca = CCA(n_components=1)
+#        cca.fit(X, Y)
+#        pcr.append(cca.score(X,Y))
+#        X_c, Y_c = cca.transform(X, Y)
+#        pcr_[reg] = X_c, Y_c
+#        
+#    pcl_ = {}    
+#    pcl = []
+#    for lab in labs_:
+#        X = emb[labs == lab]
+#        Y = xyz[labs == lab]
+#        cca = CCA(n_components=1)
+#        cca.fit(X, Y)
+#        pcl.append(cca.score(X,Y))
+#        X_c, Y_c = cca.transform(X, Y)
+#        pcl_[lab] = X_c, Y_c                 
+
+#    vmin, vmax = np.amin([al, ar]), np.amax([al, ar])
+#            
+#    dat = {'Cr':ar, 'Cl':al}
+#    met = {'Cr':'regions', 'Cl':'labs'}
+#    xlabels = [s1+','+s2 for s1 in ['emb1','emb2'] for s2 in ['x','y','z']]
+#    ylabels = {'Cr':regs_, 'Cl':[b[l] for l in labs_]}
+#                
+#    for p in ['Cr','Cl']:
+#        
+#        im = axs[p].imshow(dat[p], cmap='cool',aspect="auto",#'Greys'
+#                           interpolation='none',vmin=vmin, vmax=vmax)      
+#        cb = fig.colorbar(im, ax=axs[p], location='right', 
+#                          anchor=(0, 0.3), shrink=0.7)
+#        cb.ax.set_ylabel('max(cc)')
+#        axs[p].set_xticks(range(dat[p].shape[1]))
+#        axs[p].set_xticklabels(xlabels,rotation = 90)
+#        axs[p].set_yticks(range(dat[p].shape[0]))
+#        axs[p].set_yticklabels(ylabels[p])    
+#        
+#        axs[p].set_title(f'max cross correlation')
+#        axs[p].set_xlabel(f'covariate pairs')
+#        axs[p].set_ylabel(met[p]) 
+#        axs[p].text(-0.1, 1.15, p, transform=axs[p].transAxes,
+#          fontsize=16,  va='top', ha='right', weight='bold')
+
+
     supt = (f'PCA dim reduction of PSTH; {len(y)} clusters (good units only)'
-             f'; responsive only {rm_unre}; align = {align}; split = {split}')
-       
+             f'; responsive only {rm_unre}; align = {align}; split = {split}')       
     plt.suptitle(supt)     
     plt.tight_layout()
-    return emb, xyz, labs, regs
+    
+
+
+    
+    
+        
+
+
 
 
 def plot_reaction_time_hists(rts=None,pool=False):
