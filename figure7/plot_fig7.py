@@ -34,7 +34,7 @@ import string
 from itertools import combinations
 from statsmodels.stats.multitest import multipletests
 from sklearn.cross_decomposition import CCA
-
+from sklearn.linear_model import Ridge
 
 T_BIN = 0.02  # time bin size in seconds
 one = ONE()
@@ -131,7 +131,8 @@ def confidence_ellipse(x, y, ax, n_std=3.0, facecolor='none', **kwargs):
 
 
 
-def all_panels(rm_unre=True, align='motion',split='RT'):
+def all_panels(rm_unre=True, align='motion',split='RT',xyz_res=False,
+               re_rank=2, fdr=True):
 
 
     # load metainfo df, row per cell
@@ -178,13 +179,24 @@ def all_panels(rm_unre=True, align='motion',split='RT'):
     pca = PCA(n_components=2)
     pca.fit(y)
     emb = pca.transform(y)
+    
+    if xyz_res:
+        clf = Ridge(alpha=0)
+        clf.fit(xyz, emb)
+        emb_p = clf.predict(xyz)
+        res = emb_p - emb        
+        emb = res
+        
 
-    # get reproduction using two PCs
+    # get reproduction using serveral first PCs
     u, s, vh = np.linalg.svd(y)
-    S_star = np.zeros(y.shape)
-    for i in range(2):
-        S_star[i, i] = s[i]
-    y_re = np.array(np.matrix(u) * np.matrix(S_star) * np.matrix(vh))               
+    y_res = {}
+    
+    for re_rank in [1,2,3]:#,30,100]:
+        S_star = np.zeros(y.shape)
+        for i in range(re_rank):
+            S_star[i, i] = s[i]
+        y_res[re_rank] = np.array(np.matrix(u) * np.matrix(S_star) * np.matrix(vh))
  
     xs = np.arange(len(y[0]))*T_BIN   
 
@@ -192,15 +204,26 @@ def all_panels(rm_unre=True, align='motion',split='RT'):
     labs[labs=='mrsicflogellab'] = 'hoferlab'
 
     
-    fig = plt.figure(figsize=(16,10))
+    fig = plt.figure(figsize=(10,10))
+
+
+
     
     inner = [['Ea'],
              ['Eb']]
 
-    mosaic = [['C','A','Ia','I','R'],
-              ['Ga','G','Ja','J','Cr'],
-              ['Ha','H','Ka','K','Cl'],
-              ['D','B','L',inner,'F']]
+
+    mosaic = [[inner,'Ga','G'],
+              ['F','Ha','H'],
+              ['B','Ia','I'],
+              ['D','Ja','J'],
+              ['L','Ka','K']]
+
+
+#    mosaic = [['C','A','Ia','I','R'],
+#              ['Ga','G','Ja','J','Cr'],
+#              ['Ha','H','Ka','K','Cl'],
+#              ['D','B','L',inner,'F']]
    
     ms2 = ['Ga','Ha','Ia','Ja','Ka']
     #panel_n = {
@@ -209,24 +232,24 @@ def all_panels(rm_unre=True, align='motion',split='RT'):
     axs = fig.subplot_mosaic(mosaic)
     
     cols_lab = [lab_cols[b[x]] for x in labs]                       
-    axs['A'].scatter(emb[:,0],emb[:,1],marker='o',c=cols_lab, s=2)
+#    axs['A'].scatter(emb[:,0],emb[:,1],marker='o',c=cols_lab, s=2)
 
     labs_ = Counter(labs)
 
-    cents = {}
-    for lab in labs_:
-        cents[lab] = np.mean(emb[labs == lab],axis=0)
+#    cents = {}
+#    for lab in labs_:
+#        cents[lab] = np.mean(emb[labs == lab],axis=0)
 
-    # plot means
-    for lab in cents:
-        axs['A'].scatter(cents[lab][0],cents[lab][1],
-                      s=800,marker='x',color=lab_cols[b[lab]])      
+#    # plot means
+#    for lab in cents:
+#        axs['A'].scatter(cents[lab][0],cents[lab][1],
+#                      s=800,marker='x',color=lab_cols[b[lab]])      
 
-    # plot confidence ellipses
-    for lab in labs_:
-        x = emb[labs == lab]
-        confidence_ellipse(x[:,0], x[:,1], axs['A'], n_std=1.0,
-                           edgecolor=lab_cols[b[lab]])
+#    # plot confidence ellipses
+#    for lab in labs_:
+#        x = emb[labs == lab]
+#        confidence_ellipse(x[:,0], x[:,1], axs['A'], n_std=1.0,
+#                           edgecolor=lab_cols[b[lab]])
 
     # Euclidean distance of points for permutation test
     def distE(x,y):    
@@ -237,44 +260,44 @@ def all_panels(rm_unre=True, align='motion',split='RT'):
     le = [Patch(facecolor=lab_cols[b[lab]], 
            edgecolor=lab_cols[b[lab]],
            label=b[lab]) for lab in labs_] 
-               
-    axs['A'].legend(handles=le,
-     loc='lower right', ncol=1).set_draggable(True)
-           
-    axs['A'].set_title('all cells')
-    axs['A'].set_xlabel('embedding dim 1')
-    axs['A'].set_ylabel('embedding dim 2')
-    axs['A'].text(-0.1, 1.15, 'A', transform=axs['A'].transAxes,
-      fontsize=16,  va='top', ha='right', weight='bold')
+#               
+    axs['G'].legend(handles=le,
+     loc='lower right', ncol=1, prop={'size': 6}).set_draggable(True)
+#           
+#    axs['A'].set_title('all cells')
+#    axs['A'].set_xlabel('embedding dim 1')
+#    axs['A'].set_ylabel('embedding dim 2')
+#    axs['A'].text(-0.1, 1.30, 'A', transform=axs['A'].transAxes,
+#      fontsize=16,  va='top', ha='right', weight='bold')
             
     
-    # plot average PSTHs across labs
-    for lab in labs_:     
-        ms = np.mean((y[labs == lab])/T_BIN,axis=0)
-        ste = np.std((y[labs == lab])/T_BIN,axis=0)/np.sqrt(len(y[labs == lab]))
-        
-        axs['C'].plot(xs,ms,color=lab_cols[b[lab]])
-        axs['C'].fill_between(xs, ms + ste, ms - ste, 
-                              color=lab_cols[b[lab]],alpha=0.2)
-       
-    axs['C'].set_title(ts)
-    axs['C'].set_xlabel('time [sec]')
-    axs['C'].set_ylabel('firing rate [Hz]')    
-    for x in np.array([25, 100])*T_BIN:
-        axs['C'].axvline(x=x, lw=0.5, linestyle='--', 
-                               c='g',label='motion start')
-                               
-    axs['C'].axvline(x=75*T_BIN, lw=2, linestyle='-', 
-                           c='cyan',label='trial cut')                               
-                               
-    axs['C'].text(-0.1, 1.15, 'C', transform=axs['C'].transAxes,
-      fontsize=16,  va='top', ha='right', weight='bold')
-    
-    le = [Line2D([0], [0], color='g', lw=0.5, ls='--', label='motion start'),
-          Line2D([0], [0], color='cyan', lw=2, ls='-', label='trial cut')] 
-               
-    axs['C'].legend(handles=le,
-     loc='lower right', ncol=1).set_draggable(True)  
+#    # plot average PSTHs across labs
+#    for lab in labs_:     
+#        ms = np.mean((y[labs == lab])/T_BIN,axis=0)
+#        ste = np.std((y[labs == lab])/T_BIN,axis=0)/np.sqrt(len(y[labs == lab]))
+#        
+#        axs['C'].plot(xs,ms,color=lab_cols[b[lab]])
+#        axs['C'].fill_between(xs, ms + ste, ms - ste, 
+#                              color=lab_cols[b[lab]],alpha=0.2)
+#       
+#    axs['C'].set_title(ts)
+#    axs['C'].set_xlabel('time [sec]')
+#    axs['C'].set_ylabel('firing rate [Hz]')    
+#    for x in np.array([25, 100])*T_BIN:
+#        axs['C'].axvline(x=x, lw=0.5, linestyle='--', 
+#                               c='g',label='motion start')
+#                               
+#    axs['C'].axvline(x=75*T_BIN, lw=2, linestyle='-', 
+#                           c='cyan',label='trial cut')                               
+#                               
+#    axs['C'].text(-0.1, 1.30, 'C', transform=axs['C'].transAxes,
+#      fontsize=16,  va='top', ha='right', weight='bold')
+#    
+#    le = [Line2D([0], [0], color='g', lw=0.5, ls='--', label='motion start'),
+#          Line2D([0], [0], color='cyan', lw=2, ls='-', label='trial cut')] 
+#               
+#    axs['C'].legend(handles=le,
+#     loc='lower right', ncol=1, prop={'size': 6}).set_draggable(True)  
                                     
     Dc = reg_cols()
     regs_ = Counter(regs)    
@@ -302,19 +325,18 @@ def all_panels(rm_unre=True, align='motion',split='RT'):
            label=reg) for reg in regs_] 
                
     axs['B'].legend(handles=le,
-     loc='lower right', ncol=1).set_draggable(True) 
+     loc='lower right', ncol=1, prop={'size': 6}).set_draggable(True) 
           
     axs['B'].set_title('all cells')
     axs['B'].set_xlabel('embedding dim 1')
     axs['B'].set_ylabel('embedding dim 2')
-    axs['B'].text(-0.1, 1.15, 'B', transform=axs['B'].transAxes,
+    axs['B'].text(-0.1, 1.30, 'B', transform=axs['B'].transAxes,
       fontsize=16,  va='top', ha='right', weight='bold')
     
-    axs['B'].sharex(axs['A'])
-    axs['B'].sharey(axs['A']) 
-    
-    axs['C'].sharex(axs['D'])
-    axs['C'].sharey(axs['D'])     
+    axs['B'].sharex(axs['H'])
+    axs['B'].sharey(axs['H']) 
+    axs['D'].sharex(axs['Ga'])
+    axs['D'].sharey(axs['Ga']) 
     
     # plot average PSTHs
     for reg in regs_:   
@@ -335,42 +357,45 @@ def all_panels(rm_unre=True, align='motion',split='RT'):
     axs['D'].set_title(ts)
     axs['D'].set_xlabel('time [sec]')
     axs['D'].set_ylabel('firing rate [Hz]')        
-    axs['D'].text(-0.1, 1.15, 'D', transform=axs['D'].transAxes,
+    axs['D'].text(-0.1, 1.30, 'D', transform=axs['D'].transAxes,
       fontsize=16,  va='top', ha='right', weight='bold')
       
     le = [Line2D([0], [0], color='g', lw=0.5, ls='--', label='motion start'),
           Line2D([0], [0], color='cyan', lw=2, ls='-', label='trial cut')] 
                
     axs['D'].legend(handles=le,
-     loc='lower right', ncol=1).set_draggable(True)
+     loc='lower right', ncol=1, prop={'size': 6}).set_draggable(True)
   
     '''
     check mosaic plot function to get different space allocation
     '''
 
-    r2s = []
-    l2s = []
-    iex = []
-    for i in range(len(y)):
-        r2s.append(r2_score(y[i],y_re[i]))
-        l2s.append(np.sum(np.power((y[i]-y_re[i]),2)))
-        iex.append(i)
-            
     # illustrate example cells
     # 1 with great, 1 with bad reconstruction     
-    t = np.argsort(r2s)   
-    t_ = np.concatenate([t[170:171],t[-1:]])#,t[len(t)//2:len(t)//2 +1]
-    
+    r2s_ = {}     
+    for re_rank in y_res:
+        r2s = []
+        iex = []
+        for i in range(len(y)):
+            r2s.append(r2_score(y[i],y_res[re_rank][i]))
+            iex.append(i)            
+   
+        r2s_[re_rank] = r2s
+        if re_rank == 2:
+            t = np.argsort(r2s)   
+            t_ = np.concatenate([t[170:171],t[-1:]])#,t[len(t)//2:len(t)//2 +1]
+            idxs = [iex[j] for j in t_]
+        
+        
     xs = np.arange(len(y[0]))*T_BIN
     
     # split good and bad example cell into two panels
     ms = ['Ea','Eb']
-    idxs = [iex[j] for j in t_]
-    
+       
     for k in range(len(idxs)):
 
         axs[ms[k]].plot(xs,y[idxs[k]]/T_BIN,c='k',label='PSTH')
-        axs[ms[k]].plot(xs,y_re[idxs[k]]/T_BIN,c='r',ls='--',label='fit')
+        axs[ms[k]].plot(xs,y_res[2][idxs[k]]/T_BIN,c='r',ls='--',label='fit')
 
         for x in np.array([25, 100])*T_BIN:
             axs[ms[k]].axvline(x=x, linewidth=0.5, linestyle='--', 
@@ -378,18 +403,18 @@ def all_panels(rm_unre=True, align='motion',split='RT'):
         axs[ms[k]].axvline(x=75*T_BIN, lw=2, linestyle='-', 
                                c='cyan',label='trial cut')               
         axs[ms[k]].set_ylabel('firing rate \n [Hz]')
-        axs[ms[k]].text(1, 0.2, 
-                        rf'$r^2$={np.round(r2_score(y[idxs[k]],y_re[idxs[k]]),2)}',
-                        transform=axs[ms[k]].transAxes,
-                        fontsize=8,  va='top', ha='right') 
+        axs[ms[k]].text(1, 1.1, 
+            rf'$r^2$={np.round(r2_score(y[idxs[k]],y_res[2][idxs[k]]),2)}',
+            transform=axs[ms[k]].transAxes,
+            fontsize=8,  va='top', ha='right') 
         k+=1                       
         
         
     axs['Eb'].set_xlabel('time [sec]')
     
-    axs['Ea'].set_title('example cells PSTHs \n and PCA-reconstruction')
+    axs['Ea'].set_title('2-PCs reconstruction')
         
-    axs['Ea'].text(-0.1, 1.15, 'E', transform=axs['Ea'].transAxes,
+    axs['Ea'].text(-0.1, 2.4, 'E', transform=axs['Ea'].transAxes,
       fontsize=16,  va='top', ha='right', weight='bold')
       
       
@@ -397,15 +422,20 @@ def all_panels(rm_unre=True, align='motion',split='RT'):
           Line2D([0], [0], c='k', label='PSTH')] 
                
     axs['Ea'].legend(handles=le,
-     loc='lower right', ncol=1).set_draggable(True)
-      
-    n, bins, patches = axs['F'].hist(x=r2s, bins='auto', color='#0504aa',                
-                                alpha=0.7, rwidth=0.85)
-                                
+     loc='lower right', ncol=1, prop={'size': 6}).set_draggable(True)
+     
+     
+    for re_rank in r2s_:
+        _,patches,_ =axs['F'].hist(x=r2s_[re_rank], bins='auto',label=re_rank,
+                alpha=0.7, rwidth=0.85,
+                histtype=u'step',lw=2)
+
+    leg = axs['F'].legend(ncol=len(r2s_[re_rank])//4, 
+                    prop={'size': 6}).set_draggable(True)
     axs['F'].set_xlabel(r'$r^2$')
     axs['F'].set_ylabel('number of neurons')
-    axs['F'].set_title('goodness of PSTH \n reconstruction')     
-    axs['F'].text(-0.1, 1.15, 'F', transform=axs['F'].transAxes,
+    axs['F'].set_title(f'goodness of PSTH \n reconstruction')     
+    axs['F'].text(-0.1, 1.30, 'F', transform=axs['F'].transAxes,
       fontsize=16,  va='top', ha='right', weight='bold')
     
     # per region dim red
@@ -424,6 +454,7 @@ def all_panels(rm_unre=True, align='motion',split='RT'):
         labs2 = labs[regs == reg]
 
         emb2 = emb[regs == reg]
+
 
         cols_lab = [lab_cols[b[x]] for x in labs2]                      
         axs[ms[k]].scatter(emb2[:,0],emb2[:,1],marker='o',c=cols_lab, s=2)
@@ -482,18 +513,19 @@ def all_panels(rm_unre=True, align='motion',split='RT'):
         axs[ms[k]].set_title(reg)
         axs[ms[k]].set_xlabel('embedding dim 1')
         axs[ms[k]].set_ylabel('embedding dim 2')
-        axs[ms[k]].text(-0.1, 1.15, ms[k], transform=axs[ms[k]].transAxes,
+        axs[ms[k]].text(-0.1, 1.30, ms[k], transform=axs[ms[k]].transAxes,
           fontsize=16,  va='top', ha='right', weight='bold')
           
-        axs[ms[k]].sharex(axs['A'])
-        axs[ms[k]].sharey(axs['A']) 
+        axs[ms[k]].sharex(axs['B'])
+        axs[ms[k]].sharey(axs['B']) 
         
         # plot average PSTHs across labs
         for lab in labs_:  
    
             mes = np.mean((y2[labs2 == lab])/T_BIN,axis=0)
-            ste = np.std((y2[labs2 == lab])/T_BIN,axis=0)/np.sqrt(len(y2[labs2 == lab]))
-            
+            ste = np.std((y2[labs2 == lab])/T_BIN,axis=0)/np.sqrt(
+                                                len(y2[labs2 == lab]))
+
             
             axs[ms2[k]].plot(xs,mes,color=lab_cols[b[lab]])
             axs[ms2[k]].fill_between(xs, mes + ste, mes - ste, 
@@ -507,19 +539,20 @@ def all_panels(rm_unre=True, align='motion',split='RT'):
                                    c='g',label='motion start')
                                    
         axs[ms2[k]].axvline(x=75*T_BIN, lw=2, linestyle='-', 
-                               c='cyan',label='trial cut')                               
+                               c='cyan',label='trial cut')
                                    
-        axs[ms2[k]].text(-0.1, 1.15, ms2[k], transform=axs[ms2[k]].transAxes,
+        axs[ms2[k]].text(-0.1, 1.30, ms2[k], transform=axs[ms2[k]].transAxes,
           fontsize=16,  va='top', ha='right', weight='bold')
         
         le = [Line2D([0], [0], color='g', lw=0.5, ls='--', label='motion start'),
               Line2D([0], [0], color='cyan', lw=2, ls='-', label='trial cut')] 
-                   
-#        axs[ms2[k]].legend(handles=le,
-#         loc='lower right', ncol=1).set_draggable(True)         
 
-        axs[ms2[k]].sharex(axs['C'])
-        axs[ms2[k]].sharey(axs['C'])
+#        if k == 0:                   
+#            axs[ms2[k]].legend(handles=le,
+#             loc='lower right', ncol=1).set_draggable(True)         
+
+        axs[ms2[k]].sharex(axs['D'])
+        axs[ms2[k]].sharey(axs['D'])
                 
         k+=1
 
@@ -529,25 +562,34 @@ def all_panels(rm_unre=True, align='motion',split='RT'):
     pvals = [p_r[reg][lab] for  reg in p_r for lab in p_r[reg]]
     _, pvals_c, _, _ = multipletests(pvals, 0.05, method='fdr_bh')
     
+    if fdr:
+        pps = pvals_c
+    else: 
+        pps = pvals
+    
     p_rc = {}
     i = 0
     for reg in p_r:
         p_rc[reg] = {}
         for lab in p_r[reg]:
-            p_rc[reg][lab] = pvals_c[i]        
+            p_rc[reg][lab] = np.round(pps[i],3)        
             i += 1
-            
+   
     i = 0
-    for reg in p_r:
+    for reg in p_rc:
         j = 0
-        for pair in p_r[reg]:
+        for pair in p_rc[reg]:
             #if p_r[reg][pair] < 0.05:
-            a[i,j] = p_r[reg][pair]
+            a[i,j] = p_rc[reg][pair]
             j += 1                        
         i += 1
-    
+        
     im = axs['L'].imshow(a, cmap='cool',aspect="auto",#'Greys'
-        interpolation='none')      
+        interpolation='none')
+    # print values onto image
+    for (i,j), s in np.ndenumerate(a):
+        axs['L'].text(j,i,s,ha='center',va='center', fontsize=8)         
+            
     cb = fig.colorbar(im, ax=axs['L'], location='right', anchor=(0, 0.3), shrink=0.7)
     cb.ax.set_ylabel('p')
     axs['L'].set_xticks(range(len(p_r[reg].keys())))
@@ -556,75 +598,40 @@ def all_panels(rm_unre=True, align='motion',split='RT'):
     axs['L'].set_yticklabels(p_r.keys())    
     
     axs['L'].set_title(f'permutation test')
-    axs['L'].set_xlabel(f'labs')
-    axs['L'].set_ylabel('regions') 
-    axs['L'].text(-0.1, 1.15, 'L', transform=axs['L'].transAxes,
+    #axs['L'].set_xlabel(f'labs')
+    #axs['L'].set_ylabel('regions') 
+    axs['L'].text(-0.1, 1.30, 'L', transform=axs['L'].transAxes,
       fontsize=16,  va='top', ha='right', weight='bold')
 
 
-    rts = np.load('/home/mic/repro_manifold/rts.npy',
-                  allow_pickle=True).flat[0]
+#    # reaction time histograms
+#    rts = np.load('/home/mic/repro_manifold/rts.npy',
+#                  allow_pickle=True).flat[0]
 
 
-    for lab in rts:
-        if lab in ['UCLA']:
-            continue  
-        rtsf = np.array(rts[lab])
-        axs['R'].hist(rtsf[np.where(rtsf<5)[0]],bins=200,
-                      label=lab,histtype=u'step',lw=2)
-    axs['R'].set_xlabel('reaction time [sec]')
-    axs['R'].set_ylabel('frequency')
-    #axs['R'].set_title('pooled reaction times \n of repeated site sessions')
-    axs['R'].legend().set_draggable(True)
-    axs['R'].set_xlim([0, 0.5])    
-    axs['R'].text(-0.1, 1.15, 'R', transform=axs['R'].transAxes,
-      fontsize=16,  va='top', ha='right', weight='bold') 
+#    for lab in rts:
+#        if lab in ['UCLA']:
+#            continue  
+#        rtsf = np.array(rts[lab])
+#        axs['R'].hist(rtsf[np.where(rtsf<5)[0]],bins=200,
+#                      label=lab,histtype=u'step',lw=2)
+#    axs['R'].set_xlabel('reaction time [sec]')
+#    axs['R'].set_ylabel('frequency')
+#    #axs['R'].set_title('pooled reaction times \n of repeated site sessions')
+#    axs['R'].legend().set_draggable(True)
+#    axs['R'].set_xlim([0, 0.5])    
+#    axs['R'].text(-0.1, 1.30, 'R', transform=axs['R'].transAxes,
+#      fontsize=16,  va='top', ha='right', weight='bold') 
 
+#    
+    #return emb, xyz, labs, regs    
 
-    '''
-    display the max value of the cross correlation
-    between all x (y, z) and emb1 (emb2) for all
-    cells in a region (lab)
-    '''
-    
-    regs_ = Counter(regs)
-    labs_ = Counter(labs)
 
     # shuffle test
 #    random.shuffle(labs)
 #    random.shuffle(regs)
 
-#    cca = CCA(n_components=1)
-#    cca.fit(X, Y)
-#X = [[0., 0., 1.], [1.,0.,0.], [2.,2.,2.], [3.,5.,4.]]
-#Y = [[0.1, -0.2], [0.9, 1.1], [6.2, 5.9], [11.9, 12.3]]
-#cca = CCA(n_components=1)
-#cca.fit(X, Y)
 
-#X_c, Y_c = cca.transform(X, Y)
-    #return emb, xyz, labs, regs
-    
-#    pcr_ = {}
-#    pcr = []
-#    for reg in regs_:
-#        X = emb[regs == reg]
-#        Y = xyz[regs == reg]
-#        cca = CCA(n_components=1)
-#        cca.fit(X, Y)
-#        pcr.append(cca.score(X,Y))
-#        X_c, Y_c = cca.transform(X, Y)
-#        pcr_[reg] = X_c, Y_c
-#        
-#    pcl_ = {}    
-#    pcl = []
-#    for lab in labs_:
-#        X = emb[labs == lab]
-#        Y = xyz[labs == lab]
-#        cca = CCA(n_components=1)
-#        cca.fit(X, Y)
-#        pcl.append(cca.score(X,Y))
-#        X_c, Y_c = cca.transform(X, Y)
-#        pcl_[lab] = X_c, Y_c                 
 
 #    vmin, vmax = np.amin([al, ar]), np.amax([al, ar])
 #            
@@ -648,12 +655,13 @@ def all_panels(rm_unre=True, align='motion',split='RT'):
 #        axs[p].set_title(f'max cross correlation')
 #        axs[p].set_xlabel(f'covariate pairs')
 #        axs[p].set_ylabel(met[p]) 
-#        axs[p].text(-0.1, 1.15, p, transform=axs[p].transAxes,
+#        axs[p].text(-0.1, 1.30, p, transform=axs[p].transAxes,
 #          fontsize=16,  va='top', ha='right', weight='bold')
 
 
-    supt = (f'PCA dim reduction of PSTH; {len(y)} clusters (good units only)'
-             f'; responsive only {rm_unre}; align = {align}; split = {split}')       
+    supt = (f'PCA dim reduction of PSTH; {len(y)} clusters; xyz_res = {xyz_res}'
+             f'; responsive only {rm_unre};'
+             f' fdr = {fdr}; align = {align}; split = {split}')       
     plt.suptitle(supt)     
     plt.tight_layout()
     
