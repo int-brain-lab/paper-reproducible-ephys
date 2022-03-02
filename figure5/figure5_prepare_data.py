@@ -17,7 +17,7 @@ one = ONE()
 one_local = One()
 ba = AllenAtlas()
 lab_number_map, institution_map, lab_colors = labs()
-insertions = get_insertions(level=2, as_dataframe=False)
+insertions = get_insertions(level=2, as_dataframe=False, one=one)
 save_waveforms = True
 start0 = time.time()
 all_df = []
@@ -31,7 +31,7 @@ for iIns, ins in enumerate(insertions):
     pid = ins['probe_insertion']
     eid = ins['session']['id']
     probe = ins['probe_name']
-    sl = SpikeSortingLoader(eid=eid, pname=probe, one=one_local, atlas=ba)
+    sl = SpikeSortingLoader(eid=eid, pname=probe, one=one, atlas=ba)
     spikes, clusters, channels = sl.load_spike_sorting(dataset_types=['clusters.amps', 'clusters.peakToTrough'])
     clusters = sl.merge_clusters(spikes, clusters, channels)
     clusters['rep_site_acronym'] = combine_regions(clusters['acronym'])
@@ -41,6 +41,9 @@ for iIns, ins in enumerate(insertions):
     data['cluster_ids'] = clusters['cluster_id'][cluster_idx]
     # Find spikes that are from the clusterIDs
     spike_idx = np.isin(spikes['clusters'], data['cluster_ids'])
+    if np.sum(spike_idx) == 0:
+
+        continue
 
     # COMPUTE AVERAGE FIRING RATE ACROSS SESSION
     counts, cluster_ids = get_spike_counts_in_bins(spikes['times'][spike_idx], spikes['clusters'][spike_idx],
@@ -49,7 +52,7 @@ for iIns, ins in enumerate(insertions):
 
     # COMPUTE FIRING RATES DURING DIFFERENT PARTS OF TASK
     # For this computation we use correct, non zero contrast trials
-    trials = one_local.load_object(eid, 'trials')
+    trials = one.load_object(eid, 'trials')
     trial_idx = np.bitwise_and(trials['feedbackType'] == 1,
                                np.bitwise_or(trials['contrastLeft'] > 0, trials['contrastRight'] > 0))
 
@@ -226,14 +229,6 @@ for iIns, ins in enumerate(insertions):
     data['p2t'] = clusters['peakToTrough'][cluster_idx]
     data['amp'] = clusters['amps'][cluster_idx]
 
-    # Annotate any regions that have less than threshold units
-    data['include'] = np.ones_like(data['cluster_ids'])
-    reg, reg_counts = np.unique(data['region'], return_counts=True)
-    n_counts = 4
-    if np.any(reg_counts < n_counts):
-        lt_idx = np.where(reg_counts < n_counts)[0]
-        for idx in lt_idx:
-            data['include'][data['region'] == reg[idx]] = 0
 
     df = pd.DataFrame.from_dict(data)
     df['eid'] = eid
@@ -258,38 +253,36 @@ if save_waveforms:
              all_ffs_r=all_ffs_r, time_ff=time_ff, time_fr=time_fr)
 print(time.time() - start0)
 
-import matplotlib.pyplot as plt
-concat_df_reg = concat_df.groupby('region')
-
-
-
-for reg in BRAIN_REGIONS:
-    fig, ax = plt.subplots(2, 2)
-    df_reg = concat_df_reg.get_group(reg)
-    reg_idx = concat_df_reg.groups[reg]
-    ffs_r_reg = all_ffs_r[reg_idx, :]
-    frs_r_reg = all_frs_r[reg_idx, :]
-    ffs_l_reg = all_ffs_l[reg_idx, :]
-    frs_l_reg = all_frs_l[reg_idx, :]
-
-    ax[0][0].plot(time_fr, np.nanmean(frs_r_reg, axis=0))
-    ax[1][0].plot(time_ff, np.nanmean(ffs_r_reg, axis=0))
-    ax[0][1].plot(time_fr, np.nanmean(frs_l_reg, axis=0))
-    ax[1][1].plot(time_ff, np.nanmean(ffs_l_reg, axis=0))
-    fig.suptitle(reg)
-
-
-from matplotlib import cm, colors
-for reg in BRAIN_REGIONS:
-    fig = plt.figure()
-    ax = fig.add_subplot(projection='3d')
-    df_reg = concat_df_reg.get_group(reg)
-    norm = colors.Normalize(vmin=np.nanmin(df_reg['avg_ff_post_move']), vmax=np.nanmax(df_reg['avg_ff_post_move']),
-                                       clip=False)
-    mapper = cm.ScalarMappable(norm=norm, cmap=cm.get_cmap('viridis'))
-    cluster_color = np.array([mapper.to_rgba(col) for col in df_reg['avg_ff_post_move']])
-    s = np.ones_like(df_reg['x']) * 2
-    s[df_reg['avg_ff_post_move'] < 1] = 6
-    scat = ax.scatter(df_reg['x'], df_reg['y'], df_reg['z'], c=cluster_color, marker='o', s=s)
-    cbar = fig.colorbar(cm.ScalarMappable(norm=norm, cmap='viridis'), ax=ax)
-    break
+# import matplotlib.pyplot as plt
+# from reproducible_ephys_functions import filter_recordings
+# concat_df_reg = filter_recordings(concat_df)
+# 
+# concat_df_reg = concat_df.groupby('region')
+# for reg in BRAIN_REGIONS:
+#     fig, ax = plt.subplots(2, 2)
+#     df_reg = concat_df_reg.get_group(reg)
+#     reg_idx = concat_df_reg.groups[reg]
+#     ffs_r_reg = all_ffs_r[reg_idx, :]
+#     frs_r_reg = all_frs_r[reg_idx, :]
+#     ffs_l_reg = all_ffs_l[reg_idx, :]
+#     frs_l_reg = all_frs_l[reg_idx, :]
+#     ax[0][0].plot(time_fr, np.nanmean(frs_r_reg, axis=0))
+#     ax[1][0].plot(time_ff, np.nanmean(ffs_r_reg, axis=0))
+#     ax[0][1].plot(time_fr, np.nanmean(frs_l_reg, axis=0))
+#     ax[1][1].plot(time_ff, np.nanmean(ffs_l_reg, axis=0))
+#     fig.suptitle(reg)
+#     
+# from matplotlib import cm, colors
+# for reg in BRAIN_REGIONS:
+#     fig = plt.figure()
+#     ax = fig.add_subplot(projection='3d')
+#     df_reg = concat_df_reg.get_group(reg)
+#     norm = colors.Normalize(vmin=np.nanmin(df_reg['avg_ff_post_move']), vmax=np.nanmax(df_reg['avg_ff_post_move']),
+#                                        clip=False)
+#     mapper = cm.ScalarMappable(norm=norm, cmap=cm.get_cmap('viridis'))
+#     cluster_color = np.array([mapper.to_rgba(col) for col in df_reg['avg_ff_post_move']])
+#     s = np.ones_like(df_reg['x']) * 2
+#     s[df_reg['avg_ff_post_move'] < 1] = 6
+#     scat = ax.scatter(df_reg['x'], df_reg['y'], df_reg['z'], c=cluster_color, marker='o', s=s)
+#     cbar = fig.colorbar(cm.ScalarMappable(norm=norm, cmap='viridis'), ax=ax)
+#     break

@@ -16,6 +16,7 @@ from iblutil.numerical import ismember
 from ibllib.atlas import AllenAtlas
 import brainbox.io.one as bbone
 from brainbox.metrics.single_units import quick_unit_metrics
+from brainbox.behavior import training
 
 
 logger = logging.getLogger('paper_reproducible_ephys')
@@ -105,11 +106,11 @@ def query(behavior=False, n_trials=400, resolved=True, min_regions=2, exclude_cr
 
 def get_insertions(level=2, recompute=False, as_dataframe=False, one=None):
     """
-    Find insertions used for analysis based in different exclusion levels
-    Level 0: minimum_regions = 0, resolved = True, behavior = False, n_trial >= 400, exclude_critical = True
+    Find insertions used for analysis based on different exclusion levels
+    Level 0: minimum_regions = 0, resolved = True, behavior = False, n_trial >= 0, exclude_critical = True
     Level 1: minimum_regions = 2, resolved = True, behavior = False, n_trial >= 400, exclude_critical = True
     Level 2: minimum_regions = 2, resolved = True, behavior = False, n_trial >= 400, exclude_critical = True,
-             max_ap_rms=40,  max_lfp_power=-140, mininumum_channels_per_region=5, min_neurons_per_channel=0.1
+             max_ap_rms=40,  max_lfp_power=-140, min_channels_per_region=5, min_neurons_per_channel=0.1
 
     :param level: exclusion level 0, 1 or 2
     :param recompute: whether to recompute the metrics dataframe that is used to exclude recordings at level=2
@@ -119,7 +120,7 @@ def get_insertions(level=2, recompute=False, as_dataframe=False, one=None):
     """
     one = one or ONE()
     if level == 0:
-        traj = query(min_regions=0, exclude_critical=False, one=one, as_dataframe=as_dataframe)
+        traj = query(min_regions=0, n_trials=0, behavior=False, exclude_critical=True, one=one, as_dataframe=as_dataframe)
 
         return traj
     if level == 1:
@@ -138,7 +139,8 @@ def get_insertions(level=2, recompute=False, as_dataframe=False, one=None):
                 logger.warning('Metrics dataframe for computing exclusion is not up to date. '
                                'To compute the latest metrics dataframe run get_insertions(level=2, recompute=True)')
 
-        traj = exclude_recordings(metrics, return_excluded=False)
+        traj = filter_recordings(min_neuron_region=0)
+        traj = traj[traj['include']]
 
         if not as_dataframe:
             isin, _ = ismember(pids_init, traj['pid'].unique())
@@ -301,33 +303,6 @@ def exclude_recordings(df, max_ap_rms=40, min_regions=3, min_channels_region=5, 
     else:
         return df, df_excluded
 
-
-def further_exclude_recordings(df, n_neuron_per_reg=5, n_rec_per_lab=4, n_lab_per_reg=3):
-
-    lab_number_map, institution_map, lab_colors = labs()
-    df['institute'] = df.lab.map(institution_map)
-    df['lab_number'] = df.lab.map(lab_number_map)
-
-    # Filter by the regions that have greater than n_neurons
-    df = df[df['neuron_yield'] >= n_neuron_per_reg]
-
-    # Find the number of regions per lab
-    rec_per_lab = df.groupby('region')['institute'].value_counts()
-
-    for reg in BRAIN_REGIONS:
-        lab_reg = rec_per_lab[reg]
-        n_labs = np.sum(lab_reg.values >= n_rec_per_lab)
-
-        if n_labs >= n_lab_per_reg:
-            for l in lab_reg.index.values:
-                if lab_reg[l] <= n_rec_per_lab:
-                    df = df[np.invert(np.logical_and(df['region'] == reg, df['institue'] == l))]
-        else:
-            df = df[df['region'] != reg]
-
-    return df
-
-
 def eid_list():
     """
     Static list of eids which pass the ADVANCED criterium to include for repeated site analysis
@@ -346,9 +321,27 @@ def eid_list_all():
     return eids
 
 
-def compute_metrics(trajectories, one=None, ba=None, spike_sorter='pykilosort'):
+
+def load_metrics():
+    if data_path().joinpath('insertion_metrics.csv').exists():
+        metrics = pd.read_csv(data_path().joinpath('insertion_metrics.csv'))
+    else:
+        metrics = None
+    return metrics
+
+def pid_list():
+    """
+    Static list of all repeated site eids
+    """
+    repo_dir = os.path.dirname(os.path.realpath(__file__))
+    pids = np.load(os.path.join(repo_dir, 'repeated_site_pids.npy'))
+    return pids
+
+
+def compute_metrics(trajectories, one=None, ba=None, spike_sorter='pykilosort', save=True):
     one = one or ONE()
     ba = ba or AllenAtlas()
+    _, institution_map, _ = labs()
     metrics = pd.DataFrame()
     LFP_BAND_HIGH = [20, 80]
 
@@ -359,8 +352,16 @@ def compute_metrics(trajectories, one=None, ba=None, spike_sorter='pykilosort'):
         date = traj['session']['start_time'][:10]
         pid = traj['probe_insertion']
         probe = traj['probe_name']
-
         collection = f'alf/{probe}/{spike_sorter}'
+
+        try:
+            trials = one.load_object(eid, 'trials', collection='alf', attribute=training.TRIALS_KEYS)
+            n_trials = trials["stimOn_times"].shape[0]
+            behav = training.criterion_delay(n_trials=n_trials, perf_easy=training.compute_performance_easy(trials)).astype(bool)
+        except Exception as err:
+            sess_details = one.alyx.rest('sessions', 'read', id=eid)
+            n_trials = sess_details['n_trials']
+            behav = bool(sess_details['extended_qc']['behavior'])
 
         try:
             ap = one.load_object(eid, 'ephysChannels', collection=f'raw_ephys_data/{probe}', attribute=['apRMS'])
@@ -414,32 +415,94 @@ def compute_metrics(trajectories, one=None, ba=None, spike_sorter='pykilosort'):
 
                 metrics = metrics.append(pd.DataFrame(
                     index=[metrics.shape[0] + 1], data={'pid': pid, 'eid': eid, 'probe': probe,
-                                                        'lab': lab, 'subject': nickname,
+                                                        'lab': lab, 'subject': nickname, 'institute': institution_map[lab],
                                                         'region': region, 'date': date,
                                                         'n_channels': region_chan.shape[0],
                                                         'neuron_yield': region_clusters.shape[0],
                                                         'lfp_power_high': lfp_high_region,
-                                                        'lfp_band_high': [LFP_BAND_HIGH],
-                                                        'rms_ap_p90': ap_rms}))
+                                                        'rms_ap_p90': ap_rms,
+                                                        'n_trials': n_trials,
+                                                        'behavior': behav}))
         except Exception as err:
             print(err)
 
-    metrics.to_csv(data_path().joinpath('insertion_metrics.csv'))
+    if save:
+        metrics.to_csv(data_path().joinpath('insertion_metrics.csv'))
 
     return metrics
 
 
-def load_metrics():
-    if data_path().joinpath('insertion_metrics.csv').exists():
-        metrics = pd.read_csv(data_path().joinpath('insertion_metrics.csv'))
+def filter_recordings(df=None, max_ap_rms=40, max_lfp_power=-140, min_neurons_per_channel=0.1, min_channels_region=5,
+                      min_regions=3, min_neuron_region=3, min_lab_region=3, n_trials=400, behavior=False):
+    """
+    Filter values in dataframe according to different exclusion criteria
+    :param df: pandas dataframe
+    :param max_ap_rms:
+    :param max_lfp_power:
+    :param min_neurons_per_channel:
+    :param min_channels_region:
+    :param min_regions:
+    :param min_neuron_region:
+    :param min_lab_reg:
+    :param n_trials:
+    :param behavior:
+    :return:
+    """
+
+    # Load in the insertion metrics
+    metrics = load_metrics()
+
+    if df is None:
+        df = metrics
+        df['original_index'] = df.index
     else:
-        metrics = None
-    return metrics
+        # make sure that all pids in the dataframe df are included in metrics otherwise recompute metrics
+        isin, _ = ismember(df['pid'].unique(), metrics['pid'].unique())
+        if ~np.all(isin):
+            metrics = compute_metrics(df['pid'].unique, save=True)
 
-def pid_list():
-    """
-    Static list of all repeated site eids
-    """
-    repo_dir = os.path.dirname(os.path.realpath(__file__))
-    pids = np.load(os.path.join(repo_dir, 'repeated_site_pids.npy'))
-    return pids
+        # merge the two dataframes
+        df['original_index'] = df.index
+        df = df.merge(metrics, on=['pid', 'region', 'subject', 'eid', 'probe', 'date', 'lab', 'institute'])
+
+    # Region Level
+    # no. of channels per region
+    df['region_hit'] = df['n_channels'] > min_channels_region
+    # no. of neurons per region
+    df['low_neurons'] = df['neuron_yield'] <= min_neuron_region
+
+    # PID level
+    df = df.groupby('pid').apply(lambda m: m.assign(high_noise=lambda m: m['rms_ap_p90'].median() > max_ap_rms)).droplevel(0)
+    df = df.groupby('pid').apply(lambda m: m.assign(high_lfp=lambda m: m['lfp_power_high'].median() > max_lfp_power)).droplevel(0)
+    df = df.groupby('pid').apply(lambda m: m.assign(low_yield=lambda m: (m['neuron_yield'].sum() / m['n_channels'].sum()) < min_neurons_per_channel)).droplevel(0)
+    df = df.groupby('pid').apply(lambda m: m.assign(missed_target=lambda m: m['region_hit'].sum() < min_regions)).droplevel(0)
+    df = df.groupby('pid').apply(lambda m: m.assign(low_trials=lambda m: m['n_trials'] < n_trials)).droplevel(0)
+
+    sum_metrics = df['high_noise'] + df['high_lfp'] + df['low_yield'] + df['missed_target'] + df['low_trials'] + df['low_neurons']
+
+    if behavior:
+        sum_metrics += ~df['behavior']
+
+    df['include'] = sum_metrics == 0
+    df['permute_include'] = 0
+
+    # For permutation tests need to have at least min_lab_reg after only considering sessions to include
+    labreg = {val: {reg: 0 for reg in df.region.unique()} for val in df.institute.unique()}
+    df_red = df[df['include']]
+    df_red = df_red.groupby(['institute', 'pid', 'region'])
+    for key in df_red.groups.keys():
+        df_k = df_red.get_group(key)
+        # needs to be based on the neuron_yield
+        if df_k.iloc[0]['neuron_yield'] > min_neuron_region:
+            labreg[key[0]][key[2]] += 1
+
+    for lab, regs in labreg.items():
+        for reg, count in regs.items():
+            if count > min_lab_region:
+                idx = df.loc[(df['region'] == reg) & (df['institute'] == lab)].index
+                df.loc[idx, 'permute_include'] = 1
+
+    # Sort the index so it is the same as the orignal frame that was passed in
+    df = df.sort_values('original_index').reset_index(drop=True)
+
+    return df
