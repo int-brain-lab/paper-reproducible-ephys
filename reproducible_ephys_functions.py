@@ -18,6 +18,7 @@ import brainbox.io.one as bbone
 from brainbox.metrics.single_units import quick_unit_metrics
 from brainbox.behavior import training
 
+from one.params import get_cache_dir
 
 logger = logging.getLogger('paper_reproducible_ephys')
 
@@ -320,15 +321,6 @@ def eid_list_all():
     eids = np.load(os.path.join(repo_dir, 'all_repeated_site_eids.npy'))
     return eids
 
-
-
-def load_metrics():
-    if data_path().joinpath('insertion_metrics.csv').exists():
-        metrics = pd.read_csv(data_path().joinpath('insertion_metrics.csv'))
-    else:
-        metrics = None
-    return metrics
-
 def pid_list():
     """
     Static list of all repeated site eids
@@ -336,6 +328,66 @@ def pid_list():
     repo_dir = os.path.dirname(os.path.realpath(__file__))
     pids = np.load(os.path.join(repo_dir, 'repeated_site_pids.npy'))
     return pids
+
+
+def load_metrics():
+    if save_data_path().joinpath('insertion_metrics.csv').exists():
+        metrics = pd.read_csv(data_path().joinpath('insertion_metrics.csv'))
+    else:
+        metrics = None
+    return metrics
+
+
+def save_data_path(figure=None):
+    """
+    Path to save data
+    :param figure: figure number e.g 'figure3'
+    :return:
+    """
+    try:
+        import reproducible_ephys_paths
+        defined_paths = dir(reproducible_ephys_paths)
+        if 'DATA_PATH' in defined_paths:
+            data_path = Path(reproducible_ephys_paths.DATA_PATH)
+        else:
+            data_path = Path(get_cache_dir()).joinpath('paper_repro_ephys')
+
+    except ModuleNotFoundError:
+        data_path = Path(get_cache_dir()).joinpath('paper_repro_ephys')
+
+    if figure is not None:
+        data_path = data_path.joinpath(str(figure))
+
+    data_path.mkdir(exist_ok=True, parents=True)
+
+    return data_path
+
+
+def save_figure_path(figure=None):
+    """
+    Path to save figures
+    :param figure: figure number e.g 'figure3'
+    :return:
+    """
+    try:
+        import reproducible_ephys_paths
+        defined_paths = dir(reproducible_ephys_paths)
+        if 'FIG_PATH' in defined_paths:
+            fig_path = Path(reproducible_ephys_paths.FIG_PATH)
+        else:
+            fig_path = Path(get_cache_dir()).joinpath('paper_repro_ephys')
+
+    except ModuleNotFoundError:
+        fig_path = Path(get_cache_dir()).joinpath('paper_repro_ephys')
+
+    if figure is not None:
+        fig_path = fig_path.joinpath(str(figure), 'figures')
+    else:
+        fig_path = fig_path.joinpath('figures')
+
+    fig_path.mkdir(exist_ok=True, parents=True)
+
+    return fig_path
 
 
 def compute_metrics(trajectories, one=None, ba=None, spike_sorter='pykilosort', save=True):
@@ -427,13 +479,13 @@ def compute_metrics(trajectories, one=None, ba=None, spike_sorter='pykilosort', 
             print(err)
 
     if save:
-        metrics.to_csv(data_path().joinpath('insertion_metrics.csv'))
+        metrics.to_csv(save_data_path().joinpath('insertion_metrics.csv'))
 
     return metrics
 
 
 def filter_recordings(df=None, max_ap_rms=40, max_lfp_power=-140, min_neurons_per_channel=0.1, min_channels_region=5,
-                      min_regions=3, min_neuron_region=3, min_lab_region=3, n_trials=400, behavior=False):
+                      min_regions=3, min_neuron_region=4, min_lab_region=4, n_trials=400, behavior=False, exclude_subject=['DY']):
     """
     Filter values in dataframe according to different exclusion criteria
     :param df: pandas dataframe
@@ -443,7 +495,7 @@ def filter_recordings(df=None, max_ap_rms=40, max_lfp_power=-140, min_neurons_pe
     :param min_channels_region:
     :param min_regions:
     :param min_neuron_region:
-    :param min_lab_reg:
+    :param min_lab_region:
     :param n_trials:
     :param behavior:
     :return:
@@ -459,7 +511,8 @@ def filter_recordings(df=None, max_ap_rms=40, max_lfp_power=-140, min_neurons_pe
         # make sure that all pids in the dataframe df are included in metrics otherwise recompute metrics
         isin, _ = ismember(df['pid'].unique(), metrics['pid'].unique())
         if ~np.all(isin):
-            metrics = compute_metrics(df['pid'].unique, save=True)
+            traj = ONE().alyx.rest('trajectories', 'list', provenance='Planned', django=f'probe_insertion__in,{list(df["pid"].unique())}')
+            metrics = compute_metrics(traj, save=True)
 
         # merge the two dataframes
         df['original_index'] = df.index
@@ -469,7 +522,7 @@ def filter_recordings(df=None, max_ap_rms=40, max_lfp_power=-140, min_neurons_pe
     # no. of channels per region
     df['region_hit'] = df['n_channels'] > min_channels_region
     # no. of neurons per region
-    df['low_neurons'] = df['neuron_yield'] <= min_neuron_region
+    df['low_neurons'] = df['neuron_yield'] < min_neuron_region
 
     # PID level
     df = df.groupby('pid').apply(lambda m: m.assign(high_noise=lambda m: m['rms_ap_p90'].median() > max_ap_rms)).droplevel(0)
@@ -498,8 +551,8 @@ def filter_recordings(df=None, max_ap_rms=40, max_lfp_power=-140, min_neurons_pe
 
     for lab, regs in labreg.items():
         for reg, count in regs.items():
-            if count > min_lab_region:
-                idx = df.loc[(df['region'] == reg) & (df['institute'] == lab)].index
+            if count >= min_lab_region:
+                idx = df.loc[(df['region'] == reg) & (df['institute'] == lab) & df['include'] == 1].index
                 df.loc[idx, 'permute_include'] = 1
 
     # Sort the index so it is the same as the orignal frame that was passed in
