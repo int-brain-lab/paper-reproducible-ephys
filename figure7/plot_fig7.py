@@ -36,6 +36,9 @@ from statsmodels.stats.multitest import multipletests
 from sklearn.cross_decomposition import CCA
 from sklearn.linear_model import Ridge
 
+from reproducible_ephys_functions import filter_recordings
+from figure7.figure7_load_data import load_dataframe, load_data
+
 T_BIN = 0.02  # time bin size in seconds
 one = ONE()
 
@@ -136,20 +139,25 @@ def all_panels(rm_unre=True, align='motion',split='RT',xyz_res=False,
 
 
     # load metainfo df, row per cell
-    concat_df = pd.read_csv('/home/mic/int-brain-lab/paper-reproducible-ephys/'
-                     'figure7/data/figure8/figure8_dataframe.csv')
-                     
+    #concat_df = pd.read_csv('/home/mic/int-brain-lab/paper-reproducible-ephys/'
+    #                 'figure7/data/figure8/figure8_dataframe.csv')
+    concat_df = load_dataframe()
     # load PSTHs, one per cell                 
-    all_frs = np.load('/home/mic/int-brain-lab/paper-reproducible-ephys/'
-                      'figure7/data/figure8/figure8_data_split_rt.npy')
+    #all_frs = np.load('/home/mic/int-brain-lab/paper-reproducible-ephys/'
+    #                  'figure7/data/figure8/figure8_data_split_rt.npy')
+    data = load_data()
+    all_frs = data['all_frs']
     
     # get colors and short lab names                   
     _,b,lab_cols = labs_maps()
     ts = 'fast|slow RT PSTH'
     
     # include has minimum number of clusters as being 3
-    all_frs = all_frs[concat_df['include'], :]
-    concat_df = concat_df[concat_df['include']].reset_index()
+    # should really be permute_include
+    concat_df = filter_recordings(concat_df)
+    all_frs = all_frs[concat_df['include'] == 1, :]
+    concat_df = concat_df[concat_df['include'] == 1].reset_index()
+
 
     if rm_unre:
         # restrict to responsive units
@@ -164,16 +172,16 @@ def all_panels(rm_unre=True, align='motion',split='RT',xyz_res=False,
 
     # exclude these labs
     lab3 = ['wittenlab','zadorlab','cortexlab','churchlandlab_ucla']
-    
+
     bad = []
-    for i in range(len(y)):                
+    for i in range(len(y)):
         if labs[i] in lab3:
-            bad.append(i)  
-                          
+            bad.append(i)
+
     y = np.delete(y,bad,axis=0)
     regs = np.delete(regs,bad,axis=0)
-    labs = np.delete(labs,bad,axis=0)  
-    xyz = np.delete(xyz,bad,axis=0)                    
+    labs = np.delete(labs,bad,axis=0)
+    xyz = np.delete(xyz,bad,axis=0)
 
     # PCA embedding 
     pca = PCA(n_components=2)

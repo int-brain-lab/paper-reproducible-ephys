@@ -1,9 +1,9 @@
 import matplotlib.pyplot as plt
-import pandas as pd
-from pathlib import Path
-from reproducible_ephys_functions import BRAIN_REGIONS, labs, figure_style
-from reproducible_ephys_paths import DATA_PATH
+from reproducible_ephys_functions import BRAIN_REGIONS, labs, filter_recordings, save_figure_path
+from permutation_test import permut_test
+from figure5.figure5_load_data import load_dataframe
 import numpy as np
+import pandas as pd
 
 _, _, lab_colors = labs()
 
@@ -17,13 +17,15 @@ tests = {'trial': 'Trial',
          'avg_ff_post_move': 'FanoFactor'}
 
 # load dataframe
-save_path = Path(DATA_PATH).joinpath('figure5')
-df = pd.read_csv(save_path.joinpath('figure5_figure6_dataframe'))
+df = load_dataframe()
+df_filt = filter_recordings(df)
+df_filt = df_filt[df_filt['include'] == 1]
+
+save_path = save_figure_path(figure='figure5')
+
 
 # Group data frame by region
-df_region = df.groupby('region')
-restriction = 'la'
-
+df_region = df_filt.groupby('region')
 
 # FIGURE 5c and supplementary figures
 for test in tests.keys():
@@ -41,14 +43,39 @@ for test in tests.keys():
         if i == 4:
             plt.xlabel('Mice')
     plt.suptitle(tests[test], size=22)
-    plt.savefig(save_path.joinpath(f"{test}_{restriction}"))
+    plt.savefig(save_path.joinpath(test))
     plt.close()
 
-min_recordings_per_lab = 4
-for i, br in enumerate(BRAIN_REGIONS):
 
-    df_br = df_region.get_group('CA1')
-    df_filt = df_br.groupby('institute').filter(lambda s: s['subject'].nunique() >= min_recordings_per_lab)
+# Figure 5d permutation tests
+df = load_dataframe()
+df_filt = filter_recordings(df)
+df_filt = df_filt[df_filt['permute_include'] == 1]
 
-    # etc etc
+n_permut = 10000
+df_filt_reg = df_filt.groupby('region')
+results = pd.DataFrame()
+for test in tests.keys():
+    for reg in BRAIN_REGIONS:
+        df_reg = df_filt_reg.get_group(reg)
+        vals = df_reg.groupby(['institute', 'subject'])[test].mean()
+        labs = vals.index.get_level_values('institute')
+        subjects = vals.index.get_level_values('subject')
+        data = vals.values
+
+        lab_names, this_n_labs = np.unique(labs, return_counts=True)
+
+        p = permut_test(data, metric=permut_dist, labels1=labs,
+                        labels2=subjects, n_permut=n_permut)
+        results = results.append(pd.DataFrame(index=[results.shape[0] + 1], data={
+             'test': test, 'region': reg, 'p_value_permut': p}))
+
+
+def permut_dist(data, labs, mice):
+    lab_means = []
+    for lab in np.unique(labs):
+        lab_means.append(np.mean(data[labs == lab]))
+    lab_means = np.array(lab_means)
+    return np.sum(np.abs(lab_means - np.mean(lab_means)))
+
 

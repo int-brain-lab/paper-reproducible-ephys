@@ -485,7 +485,8 @@ def compute_metrics(trajectories, one=None, ba=None, spike_sorter='pykilosort', 
 
 
 def filter_recordings(df=None, max_ap_rms=40, max_lfp_power=-140, min_neurons_per_channel=0.1, min_channels_region=5,
-                      min_regions=3, min_neuron_region=4, min_lab_region=4, n_trials=400, behavior=False, exclude_subject=['DY']):
+                      min_regions=3, min_neuron_region=4, min_lab_region=3, min_rec_lab=4, n_trials=400, behavior=False,
+                      exclude_subjects=['DY']):
     """
     Filter values in dataframe according to different exclusion criteria
     :param df: pandas dataframe
@@ -540,8 +541,15 @@ def filter_recordings(df=None, max_ap_rms=40, max_lfp_power=-140, min_neurons_pe
     df['permute_include'] = 0
 
     # For permutation tests need to have at least min_lab_reg after only considering sessions to include
-    labreg = {val: {reg: 0 for reg in df.region.unique()} for val in df.institute.unique()}
-    df_red = df[df['include']]
+    df_red = df[df['include'] == 1]
+
+    # Have minimum number of recordings per lab
+    inst_count = df_red.groupby(['institute']).pid.nunique()
+    institutes = [key for key, val in inst_count.items() if val >= min_rec_lab]
+    df_red = df_red[df_red['institute'].isin(institutes)]
+
+    # Minimum number of recordings per lab per region with enough good units
+    labreg = {val: {reg: 0 for reg in df.region.unique()} for val in institutes}
     df_red = df_red.groupby(['institute', 'pid', 'region'])
     for key in df_red.groups.keys():
         df_k = df_red.get_group(key)
