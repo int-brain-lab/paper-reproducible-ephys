@@ -1,10 +1,14 @@
-from reproducible_ephys_functions import filter_recordings, data_path, load_metrics, labs, BRAIN_REGIONS
+from reproducible_ephys_functions import filter_recordings, labs, BRAIN_REGIONS
 import pandas as pd
 import numpy as np
-from features_2D import get_brain_boundaries, plot_probe, get_brain_boundaries_interest
+from features_2D import get_brain_boundaries, plot_probe
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 import matplotlib.pyplot as plt
 from ibllib.atlas.regions import  BrainRegions
+from figure3.figure3_load_data import load_dataframe
+import seaborn as sns
+from permutation_test import permut_test, permut_dist
+from statsmodels.stats.multitest import multipletests
 
 br = BrainRegions()
 
@@ -13,10 +17,10 @@ lab_number_map, institution_map, lab_colors = labs()
 def panel_probe_lfp(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-2000, 2000],
                     normalize=False, clim=[-190, -150]):
 
-    df_chns = pd.read_csv(r'C:\Users\Mayo\iblenv\figure3\figure3_dataframe_chns.csv')
+    df_chns = load_dataframe(df_name='chns')
 
-    df_filt = filter_recordings(min_lab_region=n_rec_per_lab)
-    df_filt = df_filt[df_filt['permute_include'] == 1]
+    df_filt = filter_recordings(min_rec_lab=n_rec_per_lab)
+    df_filt = df_filt[df_filt['lab_include'] == 1]
     df_filt['lab_number'] = df_filt['lab'].map(lab_number_map)
     df_filt = df_filt.sort_values(by=['lab_number', 'subject']).reset_index(drop=True)
     df_filt = df_filt.drop_duplicates(subset='subject').reset_index()
@@ -67,11 +71,11 @@ def panel_probe_lfp(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-200
 
 def panel_probe_neurons(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-2000, 2000]):
 
-    df_chns = pd.read_csv(r'C:\Users\Mayo\iblenv\figure3\figure3_dataframe_chns.csv')
-    df_clust = pd.read_csv(r'C:\Users\Mayo\iblenv\figure3\figure3_dataframe_clust.csv')
+    df_chns = load_dataframe(df_name='chns')
+    df_clust = load_dataframe(df_name='clust')
 
-    df_filt = filter_recordings(min_lab_region=n_rec_per_lab)
-    df_filt = df_filt[df_filt['permute_include'] == 1]
+    df_filt = filter_recordings(min_rec_lab=n_rec_per_lab)
+    df_filt = df_filt[df_filt['lab_include'] == 1]
     df_filt['lab_number'] = df_filt['lab'].map(lab_number_map)
     df_filt = df_filt.sort_values(by=['lab_number', 'subject']).reset_index(drop=True)
     df_filt = df_filt.drop_duplicates(subset='subject').reset_index()
@@ -175,5 +179,99 @@ def panel_probe_neurons(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[
     cbar.set_label('Firing rate (spks/s)', rotation=270, labelpad=-2)
 
 
+def panel_example(ax, n_rec_per_lab=4, example_region='LP', example_metric='lfp_power_high',
+                  ylim=[-200, -150]):
 
+    fig, ax = plt.subplots(1, 1)
+    df_ins = load_dataframe(df_name='ins')
+    df_filt = filter_recordings(df_ins, min_rec_lab=n_rec_per_lab)
+    df_filt['lab_number'] = df_filt['lab'].map(lab_number_map)
+    data = df_filt[df_filt['permute_include'] == 1]
 
+    data_example = pd.DataFrame(data={
+        'institute': data.loc[data['region'] == example_region, 'institute'],
+        'lab_number': data.loc[data['region'] == example_region, 'lab_number'],
+        example_metric: data.loc[data['region'] == example_region, example_metric].values})
+
+    data_example = data_example.sort_values('lab_number')
+    cmap = []
+    for i, inst in enumerate(data_example['institute'].unique()):
+        cmap.append(lab_colors[inst])
+
+    sns.stripplot(data=data_example, x='institute', y=example_metric, palette=cmap, s=3, ax=ax)
+    ax_lines = sns.pointplot(x='institute', y=example_metric, data=data_example,
+                             ci=0, join=False, estimator=np.mean, color='k',
+                             markers="_", scale=1, ax=ax)
+    #plt.setp(ax_lines.collections, zorder=100, label="")
+    ax.plot(np.arange(data_example['institute'].unique().shape[0]),
+             [data_example[example_metric].mean()] * data_example['institute'].unique().shape[0],
+             color='r', lw=1)
+    ax.set(ylabel=f'LFP ratio in {example_region}\n(stim/baseline)', xlabel='',
+           xlim=[-.5, len(data['institute'].unique()) + .5], ylim=ylim,
+           yticks=np.arange(ylim[0], ylim[1]+1, 1))
+    ax.set_xticklabels(data_example['institute'].unique(), rotation=30, ha='right')
+    sns.despine(trim=True)
+
+def panel_permutation(ax, metrics, regions, labels, n_permut=10000, n_rec_per_lab=4,
+                      n_rec_per_region=3):
+
+    fig, ax = plt.subplots(1, 1)
+    df_ins = load_dataframe(df_name='ins')
+    df_filt = filter_recordings(df_ins, min_lab_region=n_rec_per_region, min_rec_lab=n_rec_per_lab)
+    data = df_filt[df_filt['permute_include'] == 1]
+    data['yield_per_channel'] = data['neuron_yield'] / data['n_channels']
+
+    results = pd.DataFrame()
+    for metric in metrics:
+        print(metric)
+        for region in regions:
+            # Select data for this region and metrics
+            this_data = data.loc[data['region'] == region, metric].values
+            this_labs = data.loc[data['region'] == region, 'institute'].values
+            this_subjects = data.loc[data['region'] == region, 'subject'].values
+            print(np.sum(np.isnan(this_data)))
+            this_labs = this_labs[~np.isnan(this_data)]
+            this_subjects = this_subjects[~np.isnan(this_data)]
+            this_data = this_data[~np.isnan(this_data)]
+
+            # Exclude data from labs that do not have enough recordings
+            lab_names, this_n_labs = np.unique(this_labs, return_counts=True)
+            excl_labs = lab_names[this_n_labs < n_rec_per_region]
+            print(region)
+            print(excl_labs)
+            this_data = this_data[~np.isin(this_labs, excl_labs)]
+            this_subjects = this_subjects[~np.isin(this_labs, excl_labs)]
+            this_labs = this_labs[~np.isin(this_labs, excl_labs)]
+
+            # Do permutation test
+            p = permut_test(this_data, metric=permut_dist, labels1=this_labs,
+                            labels2=this_subjects, n_permut=n_permut)
+            results = results.append(pd.DataFrame(index=[results.shape[0]+1], data={
+                'metric': metric, 'region': region, 'p_value_permut': p}))
+
+    for i, region in enumerate(regions):
+        results.loc[results['region'] == region, 'region_number'] = i
+
+    # Perform correction for multiple testing
+    _, results['p_value_permut'], _, _ = multipletests(results['p_value_permut'], 0.05, method='fdr_bh')
+
+    results_plot = results.pivot(index='region_number', columns='metric', values='p_value_permut')
+    results_plot = results_plot.reindex(columns=metrics)
+    results_plot = np.log10(results_plot)
+
+    axin = inset_axes(ax, width="5%", height="80%", loc='lower right', borderpad=0,
+                      bbox_to_anchor=(0.1, 0.1, 1, 1), bbox_transform=ax.transAxes)
+    #cmap = sns.color_palette('viridis_r', n_colors=20)
+    #cmap[0] = [1, 0, 0]
+    sns.heatmap(results_plot, cmap='RdYlGn', square=True,
+                cbar=True, cbar_ax=axin,
+                annot=False, annot_kws={"size": 5},
+                linewidths=.5, fmt='.2f', vmin=-1.5, vmax=np.log10(1), ax=ax)
+    cbar = ax.collections[0].colorbar
+    cbar.set_ticks(np.log10([0.05, 0.1, 0.2, 0.4, 0.8]))
+    cbar.set_ticklabels([0.05, 0.1, 0.2, 0.4, 0.8])
+    cbar.set_label('log p-value', rotation=270, labelpad=8)
+    ax.set(xlabel='', ylabel='')
+    ax.set_yticklabels(regions, va='center', rotation=0)
+    ax.set_xticklabels(labels, rotation=30, ha='right')
+    return results

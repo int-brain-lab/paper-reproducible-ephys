@@ -7,14 +7,13 @@ from brainbox.io.one import SpikeSortingLoader
 from iblutil.numerical import ismember
 from ibllib.atlas import AllenAtlas
 
-from reproducible_ephys_functions import combine_regions, BRAIN_REGIONS, labs, get_insertions, save_data_path
+from reproducible_ephys_functions import combine_regions, BRAIN_REGIONS, get_insertions, save_data_path
 from reproducible_ephys_processing import compute_psth
 from figure4.figure4_load_data import load_data, load_dataframe
 
 
 logger = logging.getLogger('paper_repro_ephys')
 ba = AllenAtlas()
-lab_number_map, institution_map, lab_colors = labs()
 
 # Defaults parameters for psth computation
 default_params = {'bin_size': 0.01,
@@ -111,7 +110,6 @@ def prepare_data(insertions, one, recompute=False, **kwargs):
         elif base_event == 'stim':
             eventBase = eventStim
 
-
         # Compute firing rates for left side events
         fr_l, fr_l_std, t = compute_psth(spikes['times'][spike_idx], spikes['clusters'][spike_idx], data['cluster_ids'],
                                          eventTimes[trial_l_idx], align_epoch=event_epoch, bin_size=bin_size,
@@ -136,8 +134,6 @@ def prepare_data(insertions, one, recompute=False, **kwargs):
         df['probe'] = ins['probe_name']
         df['date'] = ins['session']['start_time'][:10]
         df['lab'] = ins['session']['lab']
-        df['institute'] = df['lab'].map(institution_map)
-        df['lab_number'] = df['lab'].map(lab_number_map)
 
         all_df.append(df)
 

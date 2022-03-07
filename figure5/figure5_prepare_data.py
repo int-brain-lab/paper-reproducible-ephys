@@ -9,12 +9,11 @@ from brainbox.task.closed_loop import compute_comparison_statistics
 from brainbox.io.one import SpikeSortingLoader
 from iblutil.numerical import ismember
 
-from reproducible_ephys_functions import combine_regions, get_insertions, labs, BRAIN_REGIONS, save_data_path
+from reproducible_ephys_functions import combine_regions, get_insertions, BRAIN_REGIONS, save_data_path
 from reproducible_ephys_processing import compute_psth
 from figure5.figure5_load_data import load_dataframe
 
 ba = AllenAtlas()
-lab_number_map, institution_map, lab_colors = labs()
 
 default_params = {'fr_bin_size': 0.04,
                   'ff_bin_size': 0.1,
@@ -298,8 +297,6 @@ def prepare_data(insertions, one, figure='figure5', recompute=False, **kwargs):
         df['probe'] = ins['probe_name']
         df['date'] = ins['session']['start_time'][:10]
         df['lab'] = ins['session']['lab']
-        df['institute'] = df['lab'].map(institution_map)
-        df['lab_number'] = df['lab'].map(lab_number_map)
 
         all_df.append(df)
         print(time.time() - start)

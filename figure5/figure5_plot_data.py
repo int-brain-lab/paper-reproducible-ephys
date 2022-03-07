@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 from reproducible_ephys_functions import BRAIN_REGIONS, labs, filter_recordings, save_figure_path
-from permutation_test import permut_test
+from permutation_test import permut_test, permut_dist
 from figure5.figure5_load_data import load_dataframe
 import numpy as np
 import pandas as pd
@@ -70,12 +70,5 @@ for test in tests.keys():
         results = results.append(pd.DataFrame(index=[results.shape[0] + 1], data={
              'test': test, 'region': reg, 'p_value_permut': p}))
 
-
-def permut_dist(data, labs, mice):
-    lab_means = []
-    for lab in np.unique(labs):
-        lab_means.append(np.mean(data[labs == lab]))
-    lab_means = np.array(lab_means)
-    return np.sum(np.abs(lab_means - np.mean(lab_means)))
 
 

@@ -10,7 +10,11 @@ df = load_dataframe()
 data = load_data(event='move', norm='subtract', smoothing='kernel')
 
 df_filt = filter_recordings(df)
-df_filt = df_filt[df_filt['include'] == 1]
+all_frs_l = data['all_frs_l'][df_filt['include'] == 1]
+all_frs_r = data['all_frs_r'][df_filt['include'] == 1]
+all_frs_l_std = data['all_frs_l_std'][df_filt['include'] == 1]
+all_frs_r_std = data['all_frs_r_std'][df_filt['include'] == 1]
+df_filt = df_filt[df_filt['include'] == 1].reset_index()
 
 
 # Example to get similar plot to figure 4b

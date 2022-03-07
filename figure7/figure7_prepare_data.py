@@ -3,7 +3,7 @@ import numpy as np
 from brainbox.io.one import SpikeSortingLoader
 from ibllib.atlas import AllenAtlas
 from one.api import ONE, One
-from reproducible_ephys_functions import combine_regions, BRAIN_REGIONS, labs, get_insertions, save_data_path
+from reproducible_ephys_functions import combine_regions, BRAIN_REGIONS, get_insertions, save_data_path
 from reproducible_ephys_processing import compute_psth
 from brainbox.population.decode import get_spike_counts_in_bins
 from brainbox.task.closed_loop import compute_comparison_statistics
@@ -11,7 +11,6 @@ from figure7.figure7_load_data import load_dataframe, load_data
 from iblutil.numerical import ismember
 
 ba = AllenAtlas()
-lab_number_map, institution_map, lab_colors = labs()
 
 # Defaults parameters for psth computation
 default_params = {'bin_size': 0.02,
@@ -162,8 +161,6 @@ def prepare_data(insertions, one, recompute=False, **kwargs):
         df['probe'] = ins['probe_name']
         df['date'] = ins['session']['start_time'][:10]
         df['lab'] = ins['session']['lab']
-        df['institute'] = df['lab'].map(institution_map)
-        df['lab_number'] = df['lab'].map(lab_number_map)
 
         all_df.append(df)
         if iIns == 0:

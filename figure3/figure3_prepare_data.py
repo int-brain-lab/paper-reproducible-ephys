@@ -8,31 +8,33 @@ from ibllib.pipes.ephys_alignment import EphysAlignment
 import pandas as pd
 from reproducible_ephys_paths import DATA_PATH
 from pathlib import Path
-from one.alf.exceptions import ALFObjectNotFound
+from one.alf.exceptions import ALFObjectNotFound, ALFError
 
 one = ONE()
 ba = AllenAtlas()
-lab_number_map, institution_map, lab_colors = labs()
 
-
-
-insertions = get_insertions(level=2)
+insertions = get_insertions(level=0)
 download_waveforms = False
 LFP_BAND_HIGH = [20, 80]
 LFP_BAND_LOW = [2, 15]
 
 all_df_clust = []
 all_df_chns = []
-for iIns, ins in insertions:
+metrics = pd.DataFrame()
+for iIns, ins in enumerate(insertions):
 
     print(f'processing {iIns + 1}/{len(insertions)}')
     data_clust = {}
     data_chns = {}
     data_ins = {}
 
-    pid = ins['probe_insertion']
     eid = ins['session']['id']
+    lab = ins['session']['lab']
+    subject = ins['session']['subject']
+    date = ins['session']['start_time'][:10]
+    pid = ins['probe_insertion']
     probe = ins['probe_name']
+
     sl = SpikeSortingLoader(eid=eid, pname=probe, one=one, atlas=ba)
     spikes, clusters, channels = sl.load_spike_sorting(dataset_types=['clusters.amps', 'clusters.peakToTrough'])
     channels['rawInd'] = one.load_dataset(eid, dataset='channels.rawInd.npy', collection=sl.collection)
@@ -72,8 +74,6 @@ for iIns, ins in insertions:
     df_clust['probe'] = ins['probe_name']
     df_clust['date'] = ins['session']['start_time'][:10]
     df_clust['lab'] = ins['session']['lab']
-    df_clust['institute'] = df_clust['lab'].map(institution_map)
-    df_clust['lab_number'] = df_clust['lab'].map(lab_number_map)
 
     # Data for channel dataframe
     lfp = one.load_object(eid, 'ephysSpectralDensityLF', collection=f'raw_ephys_data/{probe}')
@@ -97,13 +97,106 @@ for iIns, ins in insertions:
     df_chns['probe'] = ins['probe_name']
     df_chns['date'] = ins['session']['start_time'][:10]
     df_chns['lab'] = ins['session']['lab']
-    df_chns['institute'] = df_chns['lab'].map(institution_map)
-    df_chns['lab_number'] = df_chns['lab'].map(lab_number_map)
-
-    # Now for the insertions (minus LFP at the moment)
 
     all_df_clust.append(df_clust)
     all_df_chns.append(df_chns)
+
+    # Data for insertion dataframe
+    rms_ap = one.load_object(eid, 'ephysTimeRmsAP', collection=f'raw_ephys_data/{probe}', attribute=['rms'])
+    rms_ap_data = rms_ap['rms'] * 1e6  # convert to uV
+    median = np.mean(np.apply_along_axis(lambda x: np.median(x), 1, rms_ap_data))
+    rms_ap_data_median = (np.apply_along_axis(lambda x: x - np.median(x), 1, rms_ap_data)
+                          + median)
+
+    wf_flag = True
+    if download_waveforms:
+        wfs = one.load_object(sl.eid, '_phy_spikes_subset', collection=sl.collection)
+    else:
+        try:
+            wfs = {}
+            wfs['waveforms'] = np.load(sl.session_path.joinpath(sl.collection, '_phy_spikes_subset.waveforms.npy'))
+            wfs['spikes'] = np.load(sl.session_path.joinpath(sl.collection, '_phy_spikes_subset.spikes.npy'))
+        except FileNotFoundError:
+            wf_flag = False
+
+    try:
+        for region in BRAIN_REGIONS:
+            region_clusters = np.where(np.bitwise_and(clusters['rep_site_acronym'] == region, clusters['label'] == 1))[0]
+            region_chan = channels['rawInd'][np.where(channels['rep_site_acronym'] == region)[0]]
+
+            if region_clusters.size == 0:
+                neuron_fr, spike_amp, spike_amp_90, pt_ratio, rp_slope = (
+                    np.nan, np.nan, np.nan, np.nan, np.nan)
+            else:
+                neuron_fr = np.empty(len(region_clusters))
+                spike_amp = np.empty(len(region_clusters))
+                pt_ratio = np.empty(len(region_clusters))
+                rp_slope = np.empty(len(region_clusters))
+                for n, neuron_id in enumerate(region_clusters):
+                    # Get firing rate
+                    neuron_fr[n] = (np.sum(spikes['clusters'] == neuron_id)
+                                    / np.max(spikes['times']))
+                    if not wf_flag:
+                        spike_amp[n], pt_ratio[n], rp_slope[n] = (np.nan, np.nan, np.nan)
+                    else:
+                        try:
+                            # Get mean waveform of channel with max amplitude
+                            mean_wf_ch = np.mean(wfs['waveforms'][spikes['clusters'][wfs['spikes']] == neuron_id],
+                                                 axis=0)
+                            mean_wf_ch = (mean_wf_ch
+                                          - np.tile(np.mean(mean_wf_ch, axis=0), (mean_wf_ch.shape[0], 1)))
+                            mean_wf = mean_wf_ch[:, np.argmin(np.min(mean_wf_ch, axis=0))] * 1e6
+                            spike_amp[n] = np.abs(np.min(mean_wf) - np.max(mean_wf))
+
+                            # Get peak-to-trough ration
+                            pt_ratio[n] = np.max(mean_wf) / np.abs(np.min(mean_wf))
+
+                            # Get repolarization slope
+                            if ((np.isnan(mean_wf[0])) or (np.argmin(mean_wf) > np.argmax(mean_wf))
+                                    or (np.abs(np.argmin(mean_wf) - np.argmax(mean_wf)) <= 2)):
+                                rp_slope[n] = np.nan
+                            else:
+                                rp_slope[n] = np.max(np.gradient(mean_wf[
+                                                                 np.argmin(mean_wf):np.argmax(mean_wf)]))
+                        except:
+                            spike_amp[n] = np.nan
+                            pt_ratio[n] = np.nan
+                            rp_slope[n] = np.nan
+
+                # Get mean and 90th percentile of spike amplitudes
+                if len(spike_amp) == 0:
+                    spike_amp_90 = np.nan
+                else:
+                    spike_amp_90 = np.percentile(spike_amp, 95)
+
+            # Get LFP power on low frequencies
+            freqs = ((lfp['freqs'] > LFP_BAND_LOW[0])
+                     & (lfp['freqs'] < LFP_BAND_LOW[1]))
+            chan_power = lfp['power'][:, region_chan]
+            lfp_low_region = np.median(10 * np.log(chan_power[freqs]))  # convert to dB
+
+            # Get AP band rms
+            rms_ap_region = np.median(rms_ap_data_median[:, region_chan])
+
+            metrics = metrics.append(pd.DataFrame(
+                index=[metrics.shape[0] + 1], data={'pid': pid, 'eid': eid, 'probe': probe,
+                                                    'lab': lab, 'subject': subject,
+                                                    'region': region, 'date': date,
+                                                    'median_firing_rate': np.median(neuron_fr),
+                                                    'mean_firing_rate': np.mean(neuron_fr),
+                                                    'spike_amp_mean': np.nanmean(spike_amp),
+                                                    'spike_amp_90': spike_amp_90,
+                                                    'pt_ratio': np.nanmean(pt_ratio),
+                                                    'rp_slope': np.nanmean(rp_slope),
+                                                    'lfp_power_low': lfp_low_region,
+                                                    'lfp_band_low': [LFP_BAND_LOW],
+                                                    'rms_ap': rms_ap_region}))
+
+    except Exception as err:
+        print(subject)
+        print(err)
+
+
 
 concat_df_clust = pd.concat(all_df_clust, ignore_index=True)
 concat_df_chns = pd.concat(all_df_chns, ignore_index=True)
@@ -111,41 +204,6 @@ save_path = Path(DATA_PATH).joinpath('figure3')
 save_path.mkdir(exist_ok=True, parents=True)
 concat_df_clust.to_csv(save_path.joinpath('figure3_dataframe_clust.csv'))
 concat_df_chns.to_csv(save_path.joinpath('figure3_dataframe_chns.csv'))
+metrics.to_csv(save_path.joinpath('figure3_dataframe_ins.csv'))
 
-
-
-
-
-
-
-
-
-
-    # lfp_power = lfp_power[:, chn_inds]
-#
-    # # Define a frequency range of interest
-    # freq_idx = np.where((lfp_freq >= freq_range[0]) &
-    #                     (lfp_freq < freq_range[1]))[0]
-#
-    # # Limit data to freq range of interest and also convert to dB
-    # lfp_spectrum_data = 10 * np.log(lfp_power[freq_idx, :])
-    # lfp_spectrum_data[np.isinf(lfp_spectrum_data)] = np.nan
-    # lfp_mean = np.mean(lfp_spectrum_data, axis=0)
-#
-#
-#
-#
-#
-#
-#
-    # channels['rep_site_acronym'] = combine_regions(channels['acronym'])
-    # channels['rep_site_acronym_alt'] = np.copy(channels['rep_site_acronym'])
-    # channels['rep_site_acronym_alt'][channels['rep_site_acronym_alt'] == 'PPC'] = 'VISa'
-    # channels['rep_site_id'] = ba.regions.acronym2id(channels['rep_site_acronym_alt'])
-    # channels['beryl_acronym'] = ba.regions.acronym2acronym(channels['acronym'], mapping='Beryl')
-    # channels['beryl_id'] = ba.regions.id2id(channels['atlas_id'], mapping='Beryl')
-#
-    # lfp = one.load_object(eid, 'ephysSpectralDensityLF', collection=f'raw_ephys_data/{probe}')
-#
-    # boundaries, colours, regions = get_brain_boundaries(channels['atlas_id'], channels['z'] * 1e6, ba.regions)
 

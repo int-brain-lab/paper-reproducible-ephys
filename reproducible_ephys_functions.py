@@ -393,14 +393,15 @@ def save_figure_path(figure=None):
 def compute_metrics(trajectories, one=None, ba=None, spike_sorter='pykilosort', save=True):
     one = one or ONE()
     ba = ba or AllenAtlas()
-    _, institution_map, _ = labs()
+    lab_number_map, institution_map, _ = labs()
     metrics = pd.DataFrame()
     LFP_BAND_HIGH = [20, 80]
+
 
     for i, traj in enumerate(trajectories):
         eid = traj['session']['id']
         lab = traj['session']['lab']
-        nickname = traj['session']['subject']
+        subject = traj['session']['subject']
         date = traj['session']['start_time'][:10]
         pid = traj['probe_insertion']
         probe = traj['probe_name']
@@ -417,9 +418,17 @@ def compute_metrics(trajectories, one=None, ba=None, spike_sorter='pykilosort', 
 
         try:
             ap = one.load_object(eid, 'ephysChannels', collection=f'raw_ephys_data/{probe}', attribute=['apRMS'])
+            if 'apRMS' not in ap.keys():
+                pid_qc = one.alyx.rest('insertions', 'list', id=pid)[0]['json']['extended_qc']
+                ap_val = pid_qc['apRms_p90_proc'] * 1e6 if 'apRms_p90_proc' in pid_qc.keys() else 0
         except ALFObjectNotFound:
             logger.warning(f'ephysChannels object not found for pid: {pid}')
             ap = {}
+            try:
+                pid_qc = one.alyx.rest('insertions', 'list', id=pid)[0]['json']['extended_qc']
+                ap_val = pid_qc['apRms_p90_proc'] * 1e6 if 'apRms_p90_proc' in pid_qc.keys() else 0
+            except Exception:
+                ap_val = np.nan
 
         try:
             lfp = one.load_object(eid, 'ephysSpectralDensityLF', collection=f'raw_ephys_data/{probe}')
@@ -462,12 +471,18 @@ def compute_metrics(trajectories, one=None, ba=None, spike_sorter='pykilosort', 
 
                 if 'apRMS' in ap.keys() and region_chan.shape[0] > 0:
                     ap_rms = np.percentile(ap['apRMS'][1, region_chan], 90) * 1e6
+                elif region_chan.shape[0] > 0:
+                    ap_rms = ap_val
                 else:
                     ap_rms = 0
-
+                # elif ~np.isnan(ap_val):
+                #     ap_rms = ap_val
+                # else:
+                #     ap_rms = 0
                 metrics = metrics.append(pd.DataFrame(
                     index=[metrics.shape[0] + 1], data={'pid': pid, 'eid': eid, 'probe': probe,
-                                                        'lab': lab, 'subject': nickname, 'institute': institution_map[lab],
+                                                        'lab': lab, 'subject': subject, 'institute': institution_map[lab],
+                                                        'lab_number': lab_number_map[lab],
                                                         'region': region, 'date': date,
                                                         'n_channels': region_chan.shape[0],
                                                         'neuron_yield': region_clusters.shape[0],
@@ -486,7 +501,7 @@ def compute_metrics(trajectories, one=None, ba=None, spike_sorter='pykilosort', 
 
 def filter_recordings(df=None, max_ap_rms=40, max_lfp_power=-140, min_neurons_per_channel=0.1, min_channels_region=5,
                       min_regions=3, min_neuron_region=4, min_lab_region=3, min_rec_lab=4, n_trials=400, behavior=False,
-                      exclude_subjects=['DY']):
+                      exclude_subjects=['DY013', 'ibl_witten_26']):
     """
     Filter values in dataframe according to different exclusion criteria
     :param df: pandas dataframe
@@ -517,7 +532,7 @@ def filter_recordings(df=None, max_ap_rms=40, max_lfp_power=-140, min_neurons_pe
 
         # merge the two dataframes
         df['original_index'] = df.index
-        df = df.merge(metrics, on=['pid', 'region', 'subject', 'eid', 'probe', 'date', 'lab', 'institute'])
+        df = df.merge(metrics, on=['pid', 'region', 'subject', 'eid', 'probe', 'date', 'lab'])
 
     # Region Level
     # no. of channels per region
@@ -538,14 +553,29 @@ def filter_recordings(df=None, max_ap_rms=40, max_lfp_power=-140, min_neurons_pe
         sum_metrics += ~df['behavior']
 
     df['include'] = sum_metrics == 0
-    df['permute_include'] = 0
 
-    # For permutation tests need to have at least min_lab_reg after only considering sessions to include
+    # Exclude subjects indicated to exclude from further analysis
+    df['artifacts'] = bool(0)
+    for subj in exclude_subjects:
+        idx = df.loc[(df['subject'] == subj)].index
+        df.loc[idx, 'include'] = False
+        df.loc[idx, 'artifacts'] = True
+
+    df['lab_include'] = bool(0)
+    df['permute_include'] = bool(0)
+
+    # For permutation tests
     df_red = df[df['include'] == 1]
 
     # Have minimum number of recordings per lab
     inst_count = df_red.groupby(['institute']).pid.nunique()
     institutes = [key for key, val in inst_count.items() if val >= min_rec_lab]
+
+    for lab in institutes:
+        idx = df.loc[(df['institute'] == lab) & df['include'] == 1].index
+        df.loc[idx, 'lab_include'] = True
+
+    # Now for permutation test
     df_red = df_red[df_red['institute'].isin(institutes)]
 
     # Minimum number of recordings per lab per region with enough good units
@@ -561,7 +591,7 @@ def filter_recordings(df=None, max_ap_rms=40, max_lfp_power=-140, min_neurons_pe
         for reg, count in regs.items():
             if count >= min_lab_region:
                 idx = df.loc[(df['region'] == reg) & (df['institute'] == lab) & df['include'] == 1].index
-                df.loc[idx, 'permute_include'] = 1
+                df.loc[idx, 'permute_include'] = True
 
     # Sort the index so it is the same as the orignal frame that was passed in
     df = df.sort_values('original_index').reset_index(drop=True)
