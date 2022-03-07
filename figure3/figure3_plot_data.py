@@ -5,7 +5,7 @@ from features_2D import get_brain_boundaries, plot_probe
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 import matplotlib.pyplot as plt
 from ibllib.atlas.regions import  BrainRegions
-from figure3.figure3_load_data import load_dataframe
+from figure3.figure3_load_data import load_dataframe, load_and_merge_dataframe
 import seaborn as sns
 from permutation_test import permut_test, permut_dist
 from statsmodels.stats.multitest import multipletests
@@ -81,7 +81,6 @@ def panel_probe_neurons(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[
     df_filt = df_filt.drop_duplicates(subset='subject').reset_index()
     rec_per_lab = df_filt.groupby('lab_number').size()
     df_filt['recording'] = np.concatenate([np.arange(i) for i in rec_per_lab.values])
-    fig, ax = plt.subplots(1, 32)
 
     for iR, data in df_filt.iterrows():
         df_ch = df_chns[df_chns['pid'] == data['pid']]
@@ -182,8 +181,7 @@ def panel_probe_neurons(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[
 def panel_example(ax, n_rec_per_lab=4, example_region='LP', example_metric='lfp_power_high',
                   ylim=[-200, -150]):
 
-    fig, ax = plt.subplots(1, 1)
-    df_ins = load_dataframe(df_name='ins')
+    df_ins = load_and_merge_dataframe()
     df_filt = filter_recordings(df_ins, min_rec_lab=n_rec_per_lab)
     df_filt['lab_number'] = df_filt['lab'].map(lab_number_map)
     data = df_filt[df_filt['permute_include'] == 1]
@@ -215,21 +213,19 @@ def panel_example(ax, n_rec_per_lab=4, example_region='LP', example_metric='lfp_
 def panel_permutation(ax, metrics, regions, labels, n_permut=10000, n_rec_per_lab=4,
                       n_rec_per_region=3):
 
-    fig, ax = plt.subplots(1, 1)
-    df_ins = load_dataframe(df_name='ins')
+    df_ins = load_and_merge_dataframe()
     df_filt = filter_recordings(df_ins, min_lab_region=n_rec_per_region, min_rec_lab=n_rec_per_lab)
     data = df_filt[df_filt['permute_include'] == 1]
     data['yield_per_channel'] = data['neuron_yield'] / data['n_channels']
+    data.loc[data['lfp_power_high'] < -100000, 'lfp_power_high'] = np.nan
 
     results = pd.DataFrame()
     for metric in metrics:
-        print(metric)
         for region in regions:
             # Select data for this region and metrics
             this_data = data.loc[data['region'] == region, metric].values
             this_labs = data.loc[data['region'] == region, 'institute'].values
             this_subjects = data.loc[data['region'] == region, 'subject'].values
-            print(np.sum(np.isnan(this_data)))
             this_labs = this_labs[~np.isnan(this_data)]
             this_subjects = this_subjects[~np.isnan(this_data)]
             this_data = this_data[~np.isnan(this_data)]
@@ -237,8 +233,6 @@ def panel_permutation(ax, metrics, regions, labels, n_permut=10000, n_rec_per_la
             # Exclude data from labs that do not have enough recordings
             lab_names, this_n_labs = np.unique(this_labs, return_counts=True)
             excl_labs = lab_names[this_n_labs < n_rec_per_region]
-            print(region)
-            print(excl_labs)
             this_data = this_data[~np.isin(this_labs, excl_labs)]
             this_subjects = this_subjects[~np.isin(this_labs, excl_labs)]
             this_labs = this_labs[~np.isin(this_labs, excl_labs)]

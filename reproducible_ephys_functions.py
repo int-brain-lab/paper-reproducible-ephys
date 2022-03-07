@@ -105,7 +105,7 @@ def query(behavior=False, n_trials=400, resolved=True, min_regions=2, exclude_cr
     return trajectories
 
 
-def get_insertions(level=2, recompute=False, as_dataframe=False, one=None):
+def get_insertions(level=2, as_dataframe=False, one=None):
     """
     Find insertions used for analysis based on different exclusion levels
     Level 0: minimum_regions = 0, resolved = True, behavior = False, n_trial >= 0, exclude_critical = True
@@ -121,33 +121,47 @@ def get_insertions(level=2, recompute=False, as_dataframe=False, one=None):
     """
     one = one or ONE()
     if level == 0:
-        traj = query(min_regions=0, n_trials=0, behavior=False, exclude_critical=True, one=one, as_dataframe=as_dataframe)
+        insertions = query(min_regions=0, n_trials=0, behavior=False, exclude_critical=True, one=one, as_dataframe=as_dataframe)
+        _ = recompute_metrics(insertions, one)
+        return insertions
 
-        return traj
     if level == 1:
-        traj = query(one=one, as_dataframe=as_dataframe)
+        insertions = query(one=one, as_dataframe=as_dataframe)
+        _ = recompute_metrics(insertions, one)
+        return insertions
 
-        return traj
     if level >= 2:
-        traj_init = query(one=one, as_dataframe=False)
-        pids_init = np.array([t['probe_insertion'] for t in traj_init])
-        metrics = load_metrics()
-        if (metrics is None) or recompute:
-            metrics = compute_metrics(traj_init, one=one)
-        else:
-            isin, _ = ismember(pids_init, metrics['pid'].unique())
-            if not np.all(isin):
-                logger.warning('Metrics dataframe for computing exclusion is not up to date. '
-                               'To compute the latest metrics dataframe run get_insertions(level=2, recompute=True)')
-
-        traj = filter_recordings(min_neuron_region=0)
-        traj = traj[traj['include']]
+        insertions = query(one=one, as_dataframe=False)
+        pids = np.array([ins['probe_insertion'] for ins in insertions])
+        _ = recompute_metrics(insertions, one)
+        ins = filter_recordings(min_neuron_region=0)
+        ins = ins[ins['include']]
 
         if not as_dataframe:
-            isin, _ = ismember(pids_init, traj['pid'].unique())
-            traj = [traj_init[i] for i, val in enumerate(isin) if val]
+            isin, _ = ismember(pids, ins['pid'].unique())
+            ins = [insertions[i] for i, val in enumerate(isin) if val]
 
-    return traj
+        return ins
+
+
+def recompute_metrics(insertions, one):
+    """
+    Determine whether metrics need to be recomputed or not for given list of insertions
+    :param insertions: list of insertions
+    :param one: ONE object
+    :return:
+    """
+
+    pids = np.array([ins['probe_insertion'] for ins in insertions])
+    metrics = load_metrics()
+    if metrics is None:
+        metrics = compute_metrics(insertions, one=one)
+    else:
+        isin, _ = ismember(pids, metrics['pid'].unique())
+        if not np.all(isin):
+            metrics = compute_metrics(insertions, one=one)
+
+    return metrics
 
 
 def query_histology():
@@ -390,21 +404,20 @@ def save_figure_path(figure=None):
     return fig_path
 
 
-def compute_metrics(trajectories, one=None, ba=None, spike_sorter='pykilosort', save=True):
+def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', save=True):
     one = one or ONE()
     ba = ba or AllenAtlas()
     lab_number_map, institution_map, _ = labs()
     metrics = pd.DataFrame()
     LFP_BAND_HIGH = [20, 80]
 
-
-    for i, traj in enumerate(trajectories):
-        eid = traj['session']['id']
-        lab = traj['session']['lab']
-        subject = traj['session']['subject']
-        date = traj['session']['start_time'][:10]
-        pid = traj['probe_insertion']
-        probe = traj['probe_name']
+    for i, ins in enumerate(insertions):
+        eid = ins['session']['id']
+        lab = ins['session']['lab']
+        subject = ins['session']['subject']
+        date = ins['session']['start_time'][:10]
+        pid = ins['probe_insertion']
+        probe = ins['probe_name']
         collection = f'alf/{probe}/{spike_sorter}'
 
         try:
@@ -475,10 +488,7 @@ def compute_metrics(trajectories, one=None, ba=None, spike_sorter='pykilosort', 
                     ap_rms = ap_val
                 else:
                     ap_rms = 0
-                # elif ~np.isnan(ap_val):
-                #     ap_rms = ap_val
-                # else:
-                #     ap_rms = 0
+
                 metrics = metrics.append(pd.DataFrame(
                     index=[metrics.shape[0] + 1], data={'pid': pid, 'eid': eid, 'probe': probe,
                                                         'lab': lab, 'subject': subject, 'institute': institution_map[lab],
@@ -527,8 +537,10 @@ def filter_recordings(df=None, max_ap_rms=40, max_lfp_power=-140, min_neurons_pe
         # make sure that all pids in the dataframe df are included in metrics otherwise recompute metrics
         isin, _ = ismember(df['pid'].unique(), metrics['pid'].unique())
         if ~np.all(isin):
-            traj = ONE().alyx.rest('trajectories', 'list', provenance='Planned', django=f'probe_insertion__in,{list(df["pid"].unique())}')
-            metrics = compute_metrics(traj, save=True)
+            one = ONE()
+            ins = one.alyx.rest('trajectories', 'list', provenance='Planned',
+                                django=f'probe_insertion__in,{list(df["pid"].unique())}')
+            metrics = compute_metrics(ins, one=one, save=True)
 
         # merge the two dataframes
         df['original_index'] = df.index
@@ -543,7 +555,8 @@ def filter_recordings(df=None, max_ap_rms=40, max_lfp_power=-140, min_neurons_pe
     # PID level
     df = df.groupby('pid').apply(lambda m: m.assign(high_noise=lambda m: m['rms_ap_p90'].median() > max_ap_rms)).droplevel(0)
     df = df.groupby('pid').apply(lambda m: m.assign(high_lfp=lambda m: m['lfp_power_high'].median() > max_lfp_power)).droplevel(0)
-    df = df.groupby('pid').apply(lambda m: m.assign(low_yield=lambda m: (m['neuron_yield'].sum() / m['n_channels'].sum()) < min_neurons_per_channel)).droplevel(0)
+    df = df.groupby('pid').apply(lambda m: m.assign(low_yield=lambda m: (m['neuron_yield'].sum() / m['n_channels'].sum())
+                                                                        < min_neurons_per_channel)).droplevel(0)
     df = df.groupby('pid').apply(lambda m: m.assign(missed_target=lambda m: m['region_hit'].sum() < min_regions)).droplevel(0)
     df = df.groupby('pid').apply(lambda m: m.assign(low_trials=lambda m: m['n_trials'] < n_trials)).droplevel(0)
 

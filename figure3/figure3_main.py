@@ -7,10 +7,12 @@ By: Guido Meijer
 
 import figrid as fg
 from os.path import join
-from figure3_functions import (plots_data, panel_probe_lfp, panel_probe_neurons, panel_example,
-                               panel_permutation, panel_sankey)
+#from figure3_functions import (plots_data, panel_probe_lfp, panel_probe_neurons, panel_example,
+#                               panel_permutation, panel_sankey)
+from figure3.figure3_plot_data import (panel_probe_lfp, panel_probe_neurons, panel_example,
+                                       panel_permutation)
 import matplotlib.pyplot as plt
-from reproducible_ephys_functions import figure_style
+from reproducible_ephys_functions import figure_style, filter_recordings, save_figure_path
 from reproducible_ephys_paths import FIG_PATH
 from one.api import ONE
 one = ONE()
@@ -30,8 +32,11 @@ N_PERMUT = 100000  # Amount of shuffles for permutation testing
 DPI = 150  # if the figure is too big on your screen, lower this number
 
 # Get amount of probe plots
-data, _ = plots_data(MIN_REC_PER_LAB)
+data = filter_recordings(min_rec_lab=MIN_REC_PER_LAB)
+data = data[data['lab_include'] == 1]
 n_columns = len(data['subject'].unique())
+# data, _ = plots_data(MIN_REC_PER_LAB)
+# n_columns = len(data['subject'].unique())
 
 # %%
 
@@ -60,14 +65,17 @@ labels = [{'label_text':'a', 'xpos':0, 'ypos':0, 'fontsize':10, 'weight': 'bold'
 fg.add_labels(fig, labels)
 
 # Call functions to plot panels
-panel_sankey(fig, ax['panel_A'])
-panel_probe_lfp(fig, ax['panel_B'], n_rec_per_lab=MIN_REC_PER_LAB, boundary_align=BOUNDARY, one=one)
-panel_probe_neurons(fig, ax['panel_C'], n_rec_per_lab=MIN_REC_PER_LAB, boundary_align=BOUNDARY, one=one)
+#panel_sankey(fig, ax['panel_A'])
+panel_probe_lfp(fig, ax['panel_B'], n_rec_per_lab=MIN_REC_PER_LAB, boundary_align=BOUNDARY)
+panel_probe_neurons(fig, ax['panel_C'], n_rec_per_lab=MIN_REC_PER_LAB, boundary_align=BOUNDARY)
 panel_example(ax['panel_D'], n_rec_per_lab=MIN_REC_PER_LAB, example_region=EXAMPLE_REGION,
               example_metric=EXAMPLE_METRIC, ylim=[0, 4])
 p_values = panel_permutation(ax['panel_E'], METRICS, REGIONS, LABELS, n_permut=N_PERMUT,
                              n_rec_per_lab=MIN_REC_PER_LAB)
 
 # Save figure
-plt.savefig(join(FIG_PATH, 'figure3.png'))
-plt.savefig(join(FIG_PATH, 'figure3.pdf'))
+#plt.savefig(join(FIG_PATH, 'figure3.png'))
+#plt.savefig(join(FIG_PATH, 'figure3.pdf'))
+plt.savefig(save_figure_path(figure='figure3').joinpath('figure3.png'))
+plt.savefig(save_figure_path(figure='figure3').joinpath('figure3.pdf'))
+

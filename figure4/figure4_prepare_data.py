@@ -170,4 +170,4 @@ if __name__ == '__main__':
     one_local = One()
     insertions = get_insertions(level=2, one=one)
 
-    prepare_data(insertions, one=one, **default_params, recompute=True)
+    prepare_data(insertions, one=one, **default_params)
