@@ -346,7 +346,7 @@ def pid_list():
 
 def load_metrics():
     if save_data_path().joinpath('insertion_metrics.csv').exists():
-        metrics = pd.read_csv(data_path().joinpath('insertion_metrics.csv'))
+        metrics = pd.read_csv(save_data_path().joinpath('insertion_metrics.csv'))
     else:
         metrics = None
     return metrics
