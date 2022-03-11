@@ -22,10 +22,8 @@ BOUNDARY = 'DG-TH'
 EXAMPLE_REGION = 'LP'
 EXAMPLE_METRIC = 'lfp_ratio'
 REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
-METRICS = ['yield_per_channel', 'median_firing_rate', 'lfp_ratio',
-           'rms_ap', 'spike_amp_mean']
-LABELS = ['Neuron yield', 'Firing rate', 'LFP ratio',
-          'AP band RMS', 'Spike amp.']
+METRICS = ['yield_per_channel', 'median_firing_rate', 'lfp_ratio', 'rms_ap', 'spike_amp_mean']
+LABELS = ['Neuron yield', 'Firing rate', 'LFP ratio', 'AP band RMS', 'Spike amp.']
 N_PERMUT = 100000  # Amount of shuffles for permutation testing
 DPI = 150  # if the figure is too big on your screen, lower this number
 
@@ -61,13 +59,13 @@ fg.add_labels(fig, labels)
 
 # Call functions to plot panels
 panel_sankey(fig, ax['panel_A'])
-panel_probe_lfp(fig, ax['panel_B'], n_rec_per_lab=MIN_REC_PER_LAB, boundary_align=BOUNDARY, one=one)
+#panel_probe_lfp(fig, ax['panel_B'], n_rec_per_lab=MIN_REC_PER_LAB, boundary_align=BOUNDARY, one=one)
 panel_probe_neurons(fig, ax['panel_C'], n_rec_per_lab=MIN_REC_PER_LAB, boundary_align=BOUNDARY, one=one)
-panel_example(ax['panel_D'], n_rec_per_lab=MIN_REC_PER_LAB, example_region=EXAMPLE_REGION,
-              example_metric=EXAMPLE_METRIC, ylim=[0, 4])
-p_values = panel_permutation(ax['panel_E'], METRICS, REGIONS, LABELS, n_permut=N_PERMUT,
-                             n_rec_per_lab=MIN_REC_PER_LAB)
+#panel_example(ax['panel_D'], n_rec_per_lab=MIN_REC_PER_LAB, example_region=EXAMPLE_REGION,
+#              example_metric=EXAMPLE_METRIC, ylim=[0, 4])
+#p_values = panel_permutation(ax['panel_E'], METRICS, REGIONS, LABELS, n_permut=N_PERMUT,
+#                             n_rec_per_lab=MIN_REC_PER_LAB)
 
 # Save figure
-plt.savefig(join(FIG_PATH, 'figure3.png'))
-plt.savefig(join(FIG_PATH, 'figure3.pdf'))
+#plt.savefig(join(FIG_PATH, 'figure3.png'))
+#plt.savefig(join(FIG_PATH, 'figure3.pdf'))
