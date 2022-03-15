@@ -553,12 +553,12 @@ def filter_recordings(df=None, max_ap_rms=40, max_lfp_power=-140, min_neurons_pe
     df['low_neurons'] = df['neuron_yield'] < min_neuron_region
 
     # PID level
-    df = df.groupby('pid').apply(lambda m: m.assign(high_noise=lambda m: m['rms_ap_p90'].median() > max_ap_rms)).droplevel(0)
-    df = df.groupby('pid').apply(lambda m: m.assign(high_lfp=lambda m: m['lfp_power_high'].median() > max_lfp_power)).droplevel(0)
+    df = df.groupby('pid').apply(lambda m: m.assign(high_noise=lambda m: m['rms_ap_p90'].median() > max_ap_rms))
+    df = df.groupby('pid').apply(lambda m: m.assign(high_lfp=lambda m: m['lfp_power_high'].median() > max_lfp_power))
     df = df.groupby('pid').apply(lambda m: m.assign(low_yield=lambda m: (m['neuron_yield'].sum() / m['n_channels'].sum())
-                                                                        < min_neurons_per_channel)).droplevel(0)
-    df = df.groupby('pid').apply(lambda m: m.assign(missed_target=lambda m: m['region_hit'].sum() < min_regions)).droplevel(0)
-    df = df.groupby('pid').apply(lambda m: m.assign(low_trials=lambda m: m['n_trials'] < n_trials)).droplevel(0)
+                                                                        < min_neurons_per_channel))
+    df = df.groupby('pid').apply(lambda m: m.assign(missed_target=lambda m: m['region_hit'].sum() < min_regions))
+    df = df.groupby('pid').apply(lambda m: m.assign(low_trials=lambda m: m['n_trials'] < n_trials))
 
     sum_metrics = df['high_noise'] + df['high_lfp'] + df['low_yield'] + df['missed_target'] + df['low_trials'] + df['low_neurons']
 
