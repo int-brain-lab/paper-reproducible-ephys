@@ -45,7 +45,8 @@ fig = plt.figure(figsize=(7, 9), dpi=DPI)  # full width figure is 7 inches
 #       'panel_E': fg.place_axes_on_grid(fig, xspan=[0.55, 1], yspan=[0.85, 1])}
 #
 #TODO remove GC print
-ax = {'panel_C': fg.place_axes_on_grid(fig, xspan=[0.1, 1], yspan=[0.55, 0.8])}
+ax = {'panel_C': fg.place_axes_on_grid(fig, xspan=[0.1, 1], yspan=[0.55, 0.8],
+                                       dim=[1, n_columns + 1], wspace=0.3)}
 
 # Add subplot labels
 labels = [{'label_text':'a', 'xpos':0, 'ypos':0, 'fontsize':10, 'weight': 'bold',

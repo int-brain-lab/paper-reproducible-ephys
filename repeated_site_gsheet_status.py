@@ -49,16 +49,6 @@ def update_rep_site():
     data = pd.DataFrame(rows.get('values'))
     data = data.rename(columns=data.iloc[0]).drop(data.index[0]).reset_index(drop=True)
 
-    # Get data from alignment sheet
-    read_spreadsheetID_align = '1nidCu7MjLrjaA8NHWYnJavLzQBjILZhCkYt0OdCUTxg'
-    read_spreadsheetRange_align = 'NEW_2'
-    rows_align = sheets.spreadsheets().values().get(spreadsheetId=read_spreadsheetID_align,
-                                                    range=read_spreadsheetRange_align).execute()
-
-    data_sheet_align = pd.DataFrame(rows_align.get('values'))
-    data_sheet_align = data_sheet_align.rename(columns=data_sheet_align.iloc[0]).drop(data_sheet_align.index[0]).reset_index(drop=True)
-
-
     # Clean up the data a bit
     subjects = data['Mouse ID'].values[1:]
     subjects[subjects == 'DY_010 (C)'] = 'DY_010'
@@ -199,14 +189,11 @@ def update_rep_site():
             status['missed_target'] = False
         del atest
         # Use ins_id to find who is assigned to do alignment
-        if data_sheet_align.loc[data_sheet_align['ins_id'] == ins_id].empty or \
-           data_sheet_align.loc[data_sheet_align['ins_id'] == ins_id].empty:
-            status['origin_lab'] = 'NOT FOUND'
+        status['origin_lab'] = ins['session_info']['lab']
+        if 'todo_alignment' not in ins['json'].keys():
             status['assign_lab'] = 'NOT FOUND'
-            print(f'Insertion {ins_id} NOT FOUND')
         else:
-            status['origin_lab'] = data_sheet_align.loc[data_sheet_align['ins_id'] == ins_id, 'origin_lab'].iloc[0]
-            status['assign_lab'] = data_sheet_align.loc[data_sheet_align['ins_id'] == ins_id, 'assign_lab'].iloc[0]
+            status['assign_lab'] = ins['json']['todo_alignment']
 
         # User note - requires trajectory
         trajs = one.alyx.rest('trajectories', 'list', provenance='Ephys aligned histology track',
