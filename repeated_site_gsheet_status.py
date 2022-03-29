@@ -1,5 +1,5 @@
 """
-Update G-sheet rep.site status
+Update G-sheet rep.site status (Version 2)
 Author: Mayo, Gaelle
 (turn into function for ease of call - GC)
 """
@@ -42,91 +42,24 @@ def update_rep_site():
     drive_service = build('drive', 'v3', http=credentials.authorize(Http()))
     sheets = build('sheets', 'v4', http=credentials.authorize(Http()))
 
-    read_spreadsheetID = '1uJqGuoPBzn1GlAmgcxilSR2gEUjHFYLyH3SKAMV0QwI'
-    read_spreadsheetRange = 'repeated site'
-    rows = sheets.spreadsheets().values().get(spreadsheetId=read_spreadsheetID,
-                                              range=read_spreadsheetRange).execute()
-    data = pd.DataFrame(rows.get('values'))
-    data = data.rename(columns=data.iloc[0]).drop(data.index[0]).reset_index(drop=True)
-
-    # Clean up the data a bit
-    subjects = data['Mouse ID'].values[1:]
-    subjects[subjects == 'DY_010 (C)'] = 'DY_010'
-    dates = data['Date'].values[1:]
-    probes = data['Probe ID'].values[1:]
-    probes = np.array(['probe0' + pr if 'probe0' not in pr else pr for pr in probes])
-
-    # For NYU and witten change from gsheet as they messed up!
-    probes[subjects == 'NYU-21'] = 'probe00'
-    # probes[subjects == 'ibl_witten_13'] = 'probe00'  # GC note: comment out as probe01 seems correct
-    probes[subjects == 'NYU-11'] = 'Probe00'
-
-    gsheet_list = [subj + '*' + date + '*' + probe for subj, date, probe in
-                   zip(subjects, dates, probes)]
-
-
+    # Get repeated sites
     trajectories = one.alyx.rest('trajectories', 'list', provenance='Planned',
                                  x=-2243, y=-2000,  # repeated site coordinate
-                                 project='ibl_neuropixel_brainwide_01',
-                                 django='probe_insertion__session__qc__lt,50')
-    alyx_list = [traj['session']['subject'] + '*' + traj['session']['start_time'][0:10] + '*' +
-                 traj['probe_name'] for traj in trajectories]
-
-    extra_list = np.setdiff1d(np.array(alyx_list), np.array(gsheet_list))
-    for ex in extra_list:
-        info = ex.split('*')
-        subjects = np.append(subjects, info[0])
-        dates = np.append(dates, info[1])
-        probes = np.append(probes, info[2])
-
-    probes[subjects == 'NYU-11'] = 'probe00'
-
-    df = pd.DataFrame(columns={'Subject', 'Date', 'Probe', 'ks2', 'raw_ephys_qc', 'trials', 'wheel',
-                               'dlc', 'passive', 'histology', 'insertion', 'planned', 'micro',
-                               'tracing', 'aligned', 'resolved', 'user_note', 'origin_lab', 'assign_lab'})
-
-    # get insertions used in analysis
-    q = query()
-    q_ins_id = [item['probe_insertion'] for item in q]
-    del q
-
-    # get insertions potentially good
-    q1 = one.alyx.rest('trajectories', 'list', django=STR_QUERY)
-    q_ins_potential = [item['probe_insertion'] for item in q1]
-    del q1
-
-    # get insertions that are potentially good but do not match traj coord
-    q = one.alyx.rest('trajectories', 'list', provenance='Planned',
-                                 x=-2243, y=-2000, theta=15,
                                  django=STR_QUERY)
-    # TODO should be equivalent to query(resolved=False, min_regions=0)
-    q_ins_coordcorrect = [item['probe_insertion'] for item in q]
-    del q
 
-    # get insertions that are passing L1 QC
-    q = one.alyx.rest('trajectories', 'list', provenance='Planned',
-                      django='probe_insertion__session__project__name__'
-                             'icontains,ibl_neuropixel_brainwide_01,'
-                             'probe_insertion__session__qc__lt,50,'  # TODO add insertion not CRITICAL
-                             'probe_insertion__session__extended_qc__behavior,1,'
-                             'probe_insertion__json__extended_qc__tracing_exists,True,'
-                             '~probe_insertion__session__extended_qc___task_stimOn_goCue_delays__lt,0.9,'
-                             '~probe_insertion__session__extended_qc___task_response_feedback_delays__lt,0.9,'
-                             '~probe_insertion__session__extended_qc___task_response_stimFreeze_delays__lt,0.9,'
-                             '~probe_insertion__session__extended_qc___task_wheel_move_before_feedback__lt,0.9,'
-                             '~probe_insertion__session__extended_qc___task_wheel_freeze_during_quiescence__lt,0.9,'
-                             '~probe_insertion__session__extended_qc___task_error_trial_event_sequence__lt,0.9,'
-                             '~probe_insertion__session__extended_qc___task_correct_trial_event_sequence__lt,0.9,'
-                             '~probe_insertion__session__extended_qc___task_n_trial_events__lt,0.9,'
-                             '~probe_insertion__session__extended_qc___task_reward_volumes__lt,0.9,'
-                             '~probe_insertion__session__extended_qc___task_reward_volume_set__lt,0.9,'
-                             '~probe_insertion__session__extended_qc___task_stimulus_move_before_goCue__lt,0.9,'
-                             '~probe_insertion__session__extended_qc___task_audio_pre_trial__lt,0.9')
-    q_ins_passl1 = [item['probe_insertion'] for item in q]
+    subjects = [traj['session']['subject'] for traj in trajectories]
+    dates = [traj['session']['start_time'][0:10] for traj in trajectories]
+    probes = [traj['probe_name'] for traj in trajectories]
 
     # Get reason for exclusion by additional criteria
     metrics = pd.read_csv(join(data_path(), 'metrics_region.csv'))
     _, excl_rec = exclude_recordings(metrics, return_excluded=True)
+
+    # Init dataframe
+    df = pd.DataFrame(columns={'Subject', 'Date', 'Probe', 'ks2', 'raw_ephys_qc', 'trials', 'wheel',
+                               'dlc', 'passive', 'histology', 'insertion', 'planned', 'micro',
+                               'tracing', 'aligned', 'resolved', 'user_note', 'origin_lab', 'assign_lab'})
+
 
     for subj, date, probe in zip(subjects, dates, probes):
         print(f'====== {subj}, {date}, {probe} ======')  # todo remove, for debugging
@@ -134,37 +67,9 @@ def update_rep_site():
 
         # Check if insertion is used in analysis as per query
         insertion = one.alyx.rest('insertions', 'list', subject=subj, date=date, name=probe)
-        if len(insertion) == 0:
-            is_used_analysis = False
-            is_potential = False
-            ins_id = "NaN"
-        else:
-            ins = insertion[0]
-            ins_id = ins['id']
-            if ins_id in q_ins_id:
-                is_used_analysis = True
-            else:
-                is_used_analysis = False
+        ins = insertion[0]
+        ins_id = ins['id']
 
-            if ins_id in q_ins_potential:
-                is_potential = True
-            else:
-                is_potential = False
-
-            if ins_id in q_ins_coordcorrect:
-                is_coordcorrect = True
-            else:
-                is_coordcorrect = False
-
-            if ins_id in q_ins_passl1:
-                is_passl1 = True
-            else:
-                is_passl1 = False
-
-        status['is_used_analysis'] = is_used_analysis
-        status['is_potential'] = is_potential
-        status['is_coordcorrect'] = is_coordcorrect
-        status['is_passl1'] = is_passl1
         status['ins_id'] = ins_id
 
         # Get excluded reasons
@@ -188,7 +93,8 @@ def update_rep_site():
         else:
             status['missed_target'] = False
         del atest
-        # Use ins_id to find who is assigned to do alignment
+
+        # Use ins to find who is assigned to do alignment
         status['origin_lab'] = ins['session_info']['lab']
         if 'todo_alignment' not in ins['json'].keys():
             status['assign_lab'] = 'NOT FOUND'
@@ -215,12 +121,12 @@ def update_rep_site():
                             status['usernote'] = str_note_all
 
         # append to DF
-        df = df.append(status, ignore_index=True)
-
+        # df = df.append(status, ignore_index=True)
+        df_status = pd.DataFrame(status, index=[0])
+        df = pd.concat((df, df_status), axis=0)
 
 
     df = df.reindex(columns=['ins_id', 'Subject', 'Date', 'Probe',
-                             'is_potential', 'is_coordcorrect',  'is_used_analysis', 'is_passl1',
                              'ks2', 'raw_ephys_qc', 'trials', 'wheel',
                              'dlc', 'passive', 'histology', 'insertion', 'planned', 'micro',
                              'tracing', 'aligned', 'resolved', 'high_noise', 'low_yield',
@@ -230,7 +136,7 @@ def update_rep_site():
     df = df.sort_values(by=['Subject', 'Date'], ascending=True)
 
     write_spreadsheetID = '1pRLFvyVgmIJfKSX4GqmmAFuNRTpU1NvMlYOijq7iNIA'
-    write_spreadsheetRange = 'Sheet1'
+    write_spreadsheetRange = 'Copy of Sheet1'
 
     write_data = sheets.spreadsheets().\
         values().update(spreadsheetId=write_spreadsheetID, valueInputOption='RAW',
