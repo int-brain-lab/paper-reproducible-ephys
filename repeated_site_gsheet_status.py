@@ -144,31 +144,31 @@ def update_rep_site():
                         body=dict(majorDimension='ROWS',
                                   values=df.T.reset_index().T.values.tolist())).execute()
     print('Sheet successfully Updated')
-
-    my_range = {
-        'sheetId': 0,
-        'startRowIndex': 1,
-        'endRowIndex': len(df) + 1,
-        'startColumnIndex': 8,
-        'endColumnIndex': 18  # len(df.columns),
-    }
-    requests = [{
-        'setDataValidation': {
-              "range": my_range,
-              "rule": {
-                "condition": {
-                  'type': 'BOOLEAN',
-                },
-                "inputMessage": 'la',
-                "strict": True,
-                "showCustomUi": False
-              }
-        }
-    }]
-    body = {
-        'requests': requests
-    }
-    response = sheets.spreadsheets() \
-        .batchUpdate(spreadsheetId=write_spreadsheetID, body=body).execute()
-
-    print('{0} cells updated.'.format(len(response.get('replies'))))
+    #
+    # my_range = {
+    #     'sheetId': 0,
+    #     'startRowIndex': 1,
+    #     'endRowIndex': len(df) + 1,
+    #     'startColumnIndex': 8,
+    #     'endColumnIndex': 18  # len(df.columns),
+    # }
+    # requests = [{
+    #     'setDataValidation': {
+    #           "range": my_range,
+    #           "rule": {
+    #             "condition": {
+    #               'type': 'BOOLEAN',
+    #             },
+    #             "inputMessage": 'la',
+    #             "strict": True,
+    #             "showCustomUi": False
+    #           }
+    #     }
+    # }]
+    # body = {
+    #     'requests': requests
+    # }
+    # response = sheets.spreadsheets() \
+    #     .batchUpdate(spreadsheetId=write_spreadsheetID, body=body).execute()
+    #
+    # print('{0} cells updated.'.format(len(response.get('replies'))))
