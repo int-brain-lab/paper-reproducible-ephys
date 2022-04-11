@@ -23,7 +23,7 @@ one = ONE()
 #BOUNDARY = None
 BOUNDARY = 'DG-TH'
 # BOUNDARY = 'VIS-HPF'
-MIN_REC_PER_LAB = 4
+MIN_REC_PER_LAB = 1
 """
 PLOTS = ['fr', 'psd', 'rms_ap', 'rms_lf', 'fr_alt', 'amp', 'regions_line',
          'distance', 'amp_scatter']
@@ -37,9 +37,12 @@ LABELS = ['Firing rate (spks/s)', 'Power spectral density', 'AP band RMS']
 """
 PLOTS = ['amp_scatter']
 LABELS = ['Firing rate (spks/s)']
-
-NICKNAMES = True
-YLIM = [-5000, 0]
+"""
+PLOTS = ['psd']
+LABELS = ['Power spectral density']
+"""
+NICKNAMES = False
+YLIM = [-2500, 2500]
 FIG_SIZE = (7, 3.5)
 
 # Load in recordings
@@ -78,7 +81,7 @@ for p, plot_name in enumerate(PLOTS):
 
         f, axs, cbar = plot_2D_features(data['subject'], data['date'], data['probe'], one=one,
                                         brain_atlas=brain_atlas, plot_type=plot_name,
-                                        freq_range=[20, 80], show_regions=True,
+                                        freq_range=[20, 80], show_regions=False,
                                         boundary_align=BOUNDARY, figsize=FIG_SIZE)
 
     for i, subject in enumerate(data['subject']):

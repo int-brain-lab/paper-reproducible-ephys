@@ -119,8 +119,10 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
 
         if plot_type == 'psd':
             data = psd_data(ephys_path, one, eid, chn_inds, freq_range)
-            levels = [-190, -150]
-            im = plot_probe(data, z, ax, clim=levels, normalize=False, cmap='viridis')
+            #levels = [-190, -150]
+            #im = plot_probe(data, z, ax, clim=levels, normalize=False, cmap='viridis')
+            levels = [0.1, 0.9]
+            im = plot_probe(data, z, ax, clim=levels, normalize=True, cmap='viridis')
 
         elif plot_type == 'rms_ap':
             data = rms_data(ephys_path, one, eid, chn_inds, 'AP')
@@ -163,7 +165,7 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
             if boundary_align is not None:
                 y = y - z_subtract
             levels = [0, 30]
-            im = ax.scatter(x, y, c=c, s=8, cmap='hot', vmin=levels[0], vmax=levels[1], zorder=1)
+            im = ax.scatter(x, y, c=c, s=5, cmap='hot', vmin=levels[0], vmax=levels[1], zorder=1)
             ax.images.append(im)
             ax.set_xlim(1.3, 3)
 
@@ -248,8 +250,6 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
             cbar.ax.set_yticklabels([f'{levels[0]} um', f'{levels[1]} um'])
         elif plot_type == 'amp_scatter':
             cbar.ax.set_yticklabels([f'{levels[0]} Hz', f'{levels[1]} Hz'])
-        elif plot_type == 'psd':
-            cbar.ax.set_yticklabels([f'{levels[0]} dB', f'{levels[1]} dB'])
         else:
             cbar.ax.set_yticklabels(['10th\nperc.', '90th\nperc'])
         return fig, axs, cbar
@@ -419,17 +419,14 @@ def get_brain_boundaries_interest(brain_regions, z, r=None):
     colours = []
     regions = []
 
-    br_acro = ['VISa1', 'VISam1', 'VISa', 'VISam', 'DG', 'CA1', 'LP', 'PO']
-    br_level = [8, 8, 7, 7, 7, 8, 7, 7]
+    br_acro = ['VISa', 'VISam', 'DG', 'CA1', 'LP', 'PO']
+    br_level = [7, 7, 7, 8, 7, 7]
     for acro, lev in zip(br_acro, br_level):
         acr = np.where(all_levels[f'level_{lev}'] == acro)[0]
         if len(acr) > 2:
             boundaries.append([z[acr[0]], z[acr[-1]]])
             idx = np.where(r.acronym == acro)[0]
-            if (acro == 'VISa1') | (acro == 'VISam1'):
-                rgb = np.array([225, 0, 0])
-            else:
-                rgb = r.rgb[idx[0]]
+            rgb = r.rgb[idx[0]]
             colours.append(rgb)
             regions.append(acro)
 

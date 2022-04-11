@@ -13,11 +13,10 @@ from figure3.figure3_load_data import load_dataframe
 
 ba = AllenAtlas()
 
-LFP_BAND_HIGH = [20, 80]
-LFP_BAND_LOW = [2, 15]
+LFP_BAND = [20, 80]
 
 
-def prepare_data(insertions, one, recompute=False, download_waveforms=False):
+def prepare_data(insertions, one, recompute=False):
 
     if not recompute:
         data_clust = load_dataframe(df_name='clust', exists_only=True)
@@ -51,6 +50,7 @@ def prepare_data(insertions, one, recompute=False, download_waveforms=False):
 
         sl = SpikeSortingLoader(eid=eid, pname=probe, one=one, atlas=ba)
         spikes, clusters, channels = sl.load_spike_sorting(dataset_types=['clusters.amps', 'clusters.peakToTrough'])
+
         channels['rawInd'] = one.load_dataset(eid, dataset='channels.rawInd.npy', collection=sl.collection)
         clusters = sl.merge_clusters(spikes, clusters, channels)
 
@@ -91,8 +91,8 @@ def prepare_data(insertions, one, recompute=False, download_waveforms=False):
 
         # Data for channel dataframe
         lfp = one.load_object(eid, 'ephysSpectralDensityLF', collection=f'raw_ephys_data/{probe}')
-        freqs = ((lfp['freqs'] > LFP_BAND_HIGH[0])
-                 & (lfp['freqs'] < LFP_BAND_HIGH[1]))
+        freqs = ((lfp['freqs'] > LFP_BAND[0])
+                 & (lfp['freqs'] < LFP_BAND[1]))
         power = lfp['power'][:, channels['rawInd']]
         lfp_power = np.nanmean(10 * np.log(power[freqs]), axis=0)
 
@@ -116,95 +116,51 @@ def prepare_data(insertions, one, recompute=False, download_waveforms=False):
         all_df_chns.append(df_chns)
 
         # Data for insertion dataframe
-        rms_ap = one.load_object(eid, 'ephysTimeRmsAP', collection=f'raw_ephys_data/{probe}', attribute=['rms'])
+        rms_ap = one.load_object(eid, 'ephysTimeRmsAP', collection=f'raw_ephys_data/{probe}',
+                                 attribute=['rms'])
         rms_ap_data = rms_ap['rms'] * 1e6  # convert to uV
         median = np.mean(np.apply_along_axis(lambda x: np.median(x), 1, rms_ap_data))
         rms_ap_data_median = (np.apply_along_axis(lambda x: x - np.median(x), 1, rms_ap_data)
                               + median)
 
-        wf_flag = True
-        if download_waveforms:
-            wfs = one.load_object(sl.eid, '_phy_spikes_subset', collection=sl.collection)
-        else:
-            try:
-                wfs = {}
-                wfs['waveforms'] = np.load(sl.session_path.joinpath(sl.collection, '_phy_spikes_subset.waveforms.npy'))
-                wfs['spikes'] = np.load(sl.session_path.joinpath(sl.collection, '_phy_spikes_subset.spikes.npy'))
-            except FileNotFoundError:
-                wf_flag = False
-
         try:
             for region in BRAIN_REGIONS:
-                region_clusters = np.where(np.bitwise_and(clusters['rep_site_acronym'] == region, clusters['label'] == 1))[0]
+                region_clusters = np.where(np.bitwise_and(clusters['rep_site_acronym'] == region,
+                                                          clusters['label'] == 1))[0]
                 region_chan = channels['rawInd'][np.where(channels['rep_site_acronym'] == region)[0]]
 
                 if region_clusters.size == 0:
-                    neuron_fr, spike_amp, spike_amp_90, pt_ratio, rp_slope = (
+                    neuron_fr, spike_amp, spike_amp_90 = (
                         np.nan, np.nan, np.nan, np.nan, np.nan)
                 else:
                     neuron_fr = np.empty(len(region_clusters))
                     spike_amp = np.empty(len(region_clusters))
-                    pt_ratio = np.empty(len(region_clusters))
-                    rp_slope = np.empty(len(region_clusters))
                     for n, neuron_id in enumerate(region_clusters):
                         # Get firing rate
-                        neuron_fr[n] = (np.sum(spikes['clusters'] == neuron_id)
-                                        / np.max(spikes['times']))
-                        if not wf_flag:
-                            spike_amp[n], pt_ratio[n], rp_slope[n] = (np.nan, np.nan, np.nan)
-                        else:
-                            try:
-                                # Get mean waveform of channel with max amplitude
-                                mean_wf_ch = np.mean(wfs['waveforms'][spikes['clusters'][wfs['spikes']] == neuron_id],
-                                                     axis=0)
-                                mean_wf_ch = (mean_wf_ch
-                                              - np.tile(np.mean(mean_wf_ch, axis=0), (mean_wf_ch.shape[0], 1)))
-                                mean_wf = mean_wf_ch[:, np.argmin(np.min(mean_wf_ch, axis=0))] * 1e6
-                                spike_amp[n] = np.abs(np.min(mean_wf) - np.max(mean_wf))
-
-                                # Get peak-to-trough ration
-                                pt_ratio[n] = np.max(mean_wf) / np.abs(np.min(mean_wf))
-
-                                # Get repolarization slope
-                                if ((np.isnan(mean_wf[0])) or (np.argmin(mean_wf) > np.argmax(mean_wf))
-                                        or (np.abs(np.argmin(mean_wf) - np.argmax(mean_wf)) <= 2)):
-                                    rp_slope[n] = np.nan
-                                else:
-                                    rp_slope[n] = np.max(np.gradient(mean_wf[
-                                                                     np.argmin(mean_wf):np.argmax(mean_wf)]))
-                            except:
-                                spike_amp[n] = np.nan
-                                pt_ratio[n] = np.nan
-                                rp_slope[n] = np.nan
-
-                    # Get mean and 90th percentile of spike amplitudes
-                    if len(spike_amp) == 0:
-                        spike_amp_90 = np.nan
-                    else:
-                        spike_amp_90 = np.percentile(spike_amp, 95)
-
+                        neuron_fr[n] = np.sum(spikes['clusters'] == neuron_id) / np.max(spikes['times'])
+                        spike_amp[n] = np.median(spikes.amps[spikes['clusters'] == neuron_id])
+                        
                 # Get LFP power on low frequencies
-                freqs = ((lfp['freqs'] > LFP_BAND_LOW[0])
-                         & (lfp['freqs'] < LFP_BAND_LOW[1]))
+                freqs = ((lfp['freqs'] > LFP_BAND[0])
+                         & (lfp['freqs'] < LFP_BAND[1]))
                 chan_power = lfp['power'][:, region_chan]
-                lfp_low_region = np.median(10 * np.log(chan_power[freqs]))  # convert to dB
+                lfp_region = np.median(10 * np.log(chan_power[freqs]))  # convert to dB
 
                 # Get AP band rms
                 rms_ap_region = np.median(rms_ap_data_median[:, region_chan])
 
-                metrics = metrics.append(pd.DataFrame(
+                metrics = pd.concat((metrics, pd.DataFrame(
                     index=[metrics.shape[0] + 1], data={'pid': pid, 'eid': eid, 'probe': probe,
                                                         'lab': lab, 'subject': subject,
                                                         'region': region, 'date': date,
                                                         'median_firing_rate': np.median(neuron_fr),
                                                         'mean_firing_rate': np.mean(neuron_fr),
                                                         'spike_amp_mean': np.nanmean(spike_amp),
-                                                        'spike_amp_90': spike_amp_90,
-                                                        'pt_ratio': np.nanmean(pt_ratio),
-                                                        'rp_slope': np.nanmean(rp_slope),
-                                                        'lfp_power_low': lfp_low_region,
-                                                        'lfp_band_low': [LFP_BAND_LOW],
-                                                        'rms_ap': rms_ap_region}))
+                                                        'spike_amp_median': np.nanmedian(spike_amp, 95),
+                                                        'spike_amp_90': np.percentile(spike_amp, 95),
+                                                        'lfp_power': lfp_region,
+                                                        'lfp_band': [LFP_BAND],
+                                                        'rms_ap': rms_ap_region})))
 
         except Exception as err:
             print(err)
@@ -220,8 +176,8 @@ def prepare_data(insertions, one, recompute=False, download_waveforms=False):
 
 
 if __name__ == '__main__':
-    one = ONE()
+    one=ONE(mode='remote')
     one_local = One()
-    insertions = get_insertions(level=0, one=one)
-
-    prepare_data(insertions, one=one, download_waveforms=False, recompute=True)
+    insertions = get_insertions(level=0, recompute=False, one=one)
+    
+    prepare_data(insertions, one=one, recompute=True)

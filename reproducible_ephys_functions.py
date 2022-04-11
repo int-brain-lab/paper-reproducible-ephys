@@ -105,7 +105,7 @@ def query(behavior=False, n_trials=400, resolved=True, min_regions=2, exclude_cr
     return trajectories
 
 
-def get_insertions(level=2, as_dataframe=False, one=None):
+def get_insertions(level=2, recompute=False, as_dataframe=False, one=None):
     """
     Find insertions used for analysis based on different exclusion levels
     Level 0: minimum_regions = 0, resolved = True, behavior = False, n_trial >= 0, exclude_critical = True
@@ -122,22 +122,23 @@ def get_insertions(level=2, as_dataframe=False, one=None):
     one = one or ONE()
     if level == 0:
         insertions = query(min_regions=0, n_trials=0, behavior=False, exclude_critical=True, one=one, as_dataframe=as_dataframe)
-        _ = recompute_metrics(insertions, one)
+        if recompute:
+            _ = recompute_metrics(insertions, one)
         return insertions
 
     if level == 1:
         insertions = query(one=one, as_dataframe=as_dataframe)
-        _ = recompute_metrics(insertions, one)
+        if recompute:
+            _ = recompute_metrics(insertions, one)
         return insertions
 
     if level >= 2:
         insertions = query(one=one, as_dataframe=False)
         pids = np.array([ins['probe_insertion'] for ins in insertions])
-        _ = recompute_metrics(insertions, one)
         ins = filter_recordings(min_neuron_region=0)
         ins = ins[ins['include']]
-
-        if not as_dataframe:
+        if recompute:
+            _ = recompute_metrics(insertions, one)
             isin, _ = ismember(pids, ins['pid'].unique())
             ins = [insertions[i] for i, val in enumerate(isin) if val]
 
@@ -409,7 +410,7 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
     ba = ba or AllenAtlas()
     lab_number_map, institution_map, _ = labs()
     metrics = pd.DataFrame()
-    LFP_BAND_HIGH = [20, 80]
+    LFP_BAND = [20, 80]
 
     for i, ins in enumerate(insertions):
         eid = ins['session']['id']
@@ -474,13 +475,12 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
                 region_chan = channels['rawInd'][np.where(channels['rep_site_acronym'] == region)[0]]
 
                 if 'power' in lfp.keys():
-                    freqs = ((lfp['freqs'] > LFP_BAND_HIGH[0])
-                             & (lfp['freqs'] < LFP_BAND_HIGH[1]))
+                    freqs = (lfp['freqs'] > LFP_BAND[0]) & (lfp['freqs'] < LFP_BAND[1])
                     chan_power = lfp['power'][:, region_chan]
-                    lfp_high_region = np.mean(10 * np.log(chan_power[freqs]))  # convert to dB
+                    lfp_region = np.mean(10 * np.log(chan_power[freqs]))  # convert to dB
                 else:
                     # TO DO SEE IF THIS IS LEGIT
-                    lfp_high_region = np.nan
+                    lfp_region = np.nan
 
                 if 'apRMS' in ap.keys() and region_chan.shape[0] > 0:
                     ap_rms = np.percentile(ap['apRMS'][1, region_chan], 90) * 1e6
@@ -489,17 +489,17 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
                 else:
                     ap_rms = 0
 
-                metrics = metrics.append(pd.DataFrame(
+                metrics = pd.concat((metrics, pd.DataFrame(
                     index=[metrics.shape[0] + 1], data={'pid': pid, 'eid': eid, 'probe': probe,
                                                         'lab': lab, 'subject': subject, 'institute': institution_map[lab],
                                                         'lab_number': lab_number_map[lab],
                                                         'region': region, 'date': date,
                                                         'n_channels': region_chan.shape[0],
                                                         'neuron_yield': region_clusters.shape[0],
-                                                        'lfp_power_high': lfp_high_region,
+                                                        'lfp_power': lfp_region,
                                                         'rms_ap_p90': ap_rms,
                                                         'n_trials': n_trials,
-                                                        'behavior': behav}))
+                                                        'behavior': behav})))
         except Exception as err:
             print(err)
 

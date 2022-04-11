@@ -98,7 +98,7 @@ def panel_probe_neurons(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[
 
         levels = [0, 30]
         im = ax[iR].scatter(np.log10(df_clu['amps'] * 1e6), df_clu['depths_aligned'] - z_subtract, c=df_clu['fr'], s=1,
-                            cmap='hot', vmin=levels[0], vmax=levels[1], zorder=1)
+                            cmap='hot', vmin=levels[0], vmax=levels[1], zorder=2)
         ax[iR].images.append(im)
         ax[iR].set_xlim(1.3, 3)
 
@@ -113,7 +113,8 @@ def panel_probe_neurons(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[
         for reg, col in zip(regions, region_colours):
             height = np.abs(reg[1] - reg[0])
             color = col / 255
-            ax[iR].bar(x=width/2, height=height, width=width, color=color, bottom=reg[0], edgecolor='w', alpha=0.5)
+            ax[iR].bar(x=width/2, height=height, width=width, color=color, bottom=reg[0],
+                       edgecolor='w', alpha=0.5, zorder=0)
 
         # Now for rep site
         region_info = br.get(df_ch['region_id_rep'].values)
@@ -132,7 +133,8 @@ def panel_probe_neurons(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[
                 alpha = 1
             else:
                 alpha = 0
-            ax[iR].bar(x=width/2, height=height, width=width, color=color, bottom=reg[0], edgecolor='k', alpha=alpha)
+            ax[iR].bar(x=width/2, height=height, width=width, color=color, bottom=reg[0],
+                       edgecolor='k', alpha=alpha, zorder=1)
 
         ax[iR].set_title(data['recording'] + 1,
                          color=lab_colors[data['institute']])
@@ -181,7 +183,7 @@ def panel_probe_neurons(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[
 def panel_example(ax, n_rec_per_lab=4, example_region='LP', example_metric='lfp_power_high',
                   ylim=[-200, -150]):
 
-    df_ins = load_and_merge_dataframe()
+    df_ins = load_dataframe()
     df_filt = filter_recordings(df_ins, min_rec_lab=n_rec_per_lab)
     df_filt['lab_number'] = df_filt['lab'].map(lab_number_map)
     data = df_filt[df_filt['permute_include'] == 1]
@@ -205,8 +207,7 @@ def panel_example(ax, n_rec_per_lab=4, example_region='LP', example_metric='lfp_
              [data_example[example_metric].mean()] * data_example['institute'].unique().shape[0],
              color='r', lw=1)
     ax.set(ylabel=f'LFP ratio in {example_region}\n(stim/baseline)', xlabel='',
-           xlim=[-.5, len(data['institute'].unique()) + .5], ylim=ylim,
-           yticks=np.arange(ylim[0], ylim[1]+1, 1))
+           xlim=[-.5, len(data['institute'].unique()) + .5], ylim=ylim)
     ax.set_xticklabels(data_example['institute'].unique(), rotation=30, ha='right')
     sns.despine(trim=True)
 
@@ -240,8 +241,8 @@ def panel_permutation(ax, metrics, regions, labels, n_permut=10000, n_rec_per_la
             # Do permutation test
             p = permut_test(this_data, metric=permut_dist, labels1=this_labs,
                             labels2=this_subjects, n_permut=n_permut)
-            results = results.append(pd.DataFrame(index=[results.shape[0]+1], data={
-                'metric': metric, 'region': region, 'p_value_permut': p}))
+            results = pd.concat((results, pd.DataFrame(index=[results.shape[0]+1], data={
+                'metric': metric, 'region': region, 'p_value_permut': p})))
 
     for i, region in enumerate(regions):
         results.loc[results['region'] == region, 'region_number'] = i
@@ -265,7 +266,7 @@ def panel_permutation(ax, metrics, regions, labels, n_permut=10000, n_rec_per_la
     cbar.set_ticks(np.log10([0.05, 0.1, 0.2, 0.4, 0.8]))
     cbar.set_ticklabels([0.05, 0.1, 0.2, 0.4, 0.8])
     cbar.set_label('log p-value', rotation=270, labelpad=8)
-    ax.set(xlabel='', ylabel='')
+    ax.set(xlabel='', ylabel='', xticks=np.arange(len(labels)), yticks=np.arange(len(regions)))
     ax.set_yticklabels(regions, va='center', rotation=0)
     ax.set_xticklabels(labels, rotation=30, ha='right')
     return results

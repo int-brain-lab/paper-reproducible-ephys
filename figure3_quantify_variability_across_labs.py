@@ -22,21 +22,22 @@ from reproducible_ephys_functions import data_path, labs, exclude_recordings, fi
 from reproducible_ephys_paths import FIG_PATH
 
 # Settings
-MIN_REC_LAB = 5
+MIN_REC_LAB = 4
 ANNOTATE = False
 COLORBAR = True
 N_PERMUT = 1000
 EXCL_REC = True
-#EXAMPLE_METRIC = 'rms_ap'
 EXAMPLE_METRIC = 'lfp_power_high'
-EXAMPLE_REGION = 'LP'
+EXAMPLE_REGION = 'CA1'
+YLABEL = f'Neuron yield in {EXAMPLE_REGION}\n(neurons/channel)'
+YLIM = [-200, -150]
 REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
 METRICS = ['yield_per_channel', 'median_firing_rate', 'lfp_power_high', 'rms_ap', 'spike_amp_mean']
 LABELS = ['Neuron yield', 'Firing rate', 'LFP power', 'AP band RMS', 'Spike amp.']
 lab_number_map, institution_map, lab_colors = labs()
 
 # Load in data
-data = pd.read_csv(join(data_path(), 'metrics_region_all.csv'))
+data = pd.read_csv(join(data_path(), 'metrics_region.csv'))
 data['institute'] = data['lab'].map(institution_map)
 
 # Exclude recordings
@@ -93,7 +94,7 @@ results_plot = results.pivot(index='region_number', columns='metric', values='p_
 results_plot = results_plot.reindex(columns=METRICS)
 results_plot = np.log10(results_plot)
 
-f, (ax1, ax2) = plt.subplots(1, 2, figsize=(5, 2), dpi=300)
+f, (ax1, ax2) = plt.subplots(1, 2, figsize=(4, 2), dpi=300)
 sns.heatmap(results_plot, cmap='viridis_r', square=True,
             cbar=COLORBAR, annot=ANNOTATE, annot_kws={"size": 12},
             linewidths=.5, fmt='.2f', vmin=-1.5, vmax=np.log10(0.5), ax=ax1)
@@ -120,8 +121,9 @@ ax_lines = sns.pointplot(x='institute', y=EXAMPLE_METRIC, data=data_example,
 ax2.plot(np.arange(data_example['institute'].unique().shape[0]),
          [data_example[EXAMPLE_METRIC].mean()] * data_example['institute'].unique().shape[0],
          color='r', lw=1)
-ax2.set(ylabel=f'LFP power in {EXAMPLE_REGION} (dB)', xlabel='',
-        xlim=[-.5, data_example['institute'].unique().shape[0] + .5])
+ax2.set(ylabel=YLABEL, xlabel='',
+        xlim=[-.5, data_example['institute'].unique().shape[0] + .5],
+        ylim=YLIM)
 ax2.set_xticklabels(data_example['institute'].unique(), rotation=30, ha='right')
 #ax1.figure.axes[-1].yaxis.label.set_size(12)
 
