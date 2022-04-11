@@ -156,7 +156,7 @@ def prepare_data(insertions, one, recompute=False):
                                                         'median_firing_rate': np.median(neuron_fr),
                                                         'mean_firing_rate': np.mean(neuron_fr),
                                                         'spike_amp_mean': np.nanmean(spike_amp),
-                                                        'spike_amp_median': np.nanmedian(spike_amp, 95),
+                                                        'spike_amp_median': np.nanmedian(spike_amp),
                                                         'spike_amp_90': np.percentile(spike_amp, 95),
                                                         'lfp_power': lfp_region,
                                                         'lfp_band': [LFP_BAND],
