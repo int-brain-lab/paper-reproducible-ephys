@@ -129,38 +129,49 @@ def prepare_data(insertions, one, recompute=False):
                                                           clusters['label'] == 1))[0]
                 region_chan = channels['rawInd'][np.where(channels['rep_site_acronym'] == region)[0]]
 
-                if region_clusters.size == 0:
-                    neuron_fr, spike_amp, spike_amp_90 = (
-                        np.nan, np.nan, np.nan, np.nan, np.nan)
-                else:
-                    neuron_fr = np.empty(len(region_clusters))
-                    spike_amp = np.empty(len(region_clusters))
-                    for n, neuron_id in enumerate(region_clusters):
-                        # Get firing rate
-                        neuron_fr[n] = np.sum(spikes['clusters'] == neuron_id) / np.max(spikes['times'])
-                        spike_amp[n] = np.median(spikes.amps[spikes['clusters'] == neuron_id])
-                        
                 # Get LFP power on low frequencies
                 freqs = ((lfp['freqs'] > LFP_BAND[0])
                          & (lfp['freqs'] < LFP_BAND[1]))
                 chan_power = lfp['power'][:, region_chan]
                 lfp_region = np.median(10 * np.log(chan_power[freqs]))  # convert to dB
-
+               
                 # Get AP band rms
                 rms_ap_region = np.median(rms_ap_data_median[:, region_chan])
 
-                metrics = pd.concat((metrics, pd.DataFrame(
-                    index=[metrics.shape[0] + 1], data={'pid': pid, 'eid': eid, 'probe': probe,
-                                                        'lab': lab, 'subject': subject,
-                                                        'region': region, 'date': date,
-                                                        'median_firing_rate': np.median(neuron_fr),
-                                                        'mean_firing_rate': np.mean(neuron_fr),
-                                                        'spike_amp_mean': np.nanmean(spike_amp),
-                                                        'spike_amp_median': np.nanmedian(spike_amp),
-                                                        'spike_amp_90': np.percentile(spike_amp, 95),
-                                                        'lfp_power': lfp_region,
-                                                        'lfp_band': [LFP_BAND],
-                                                        'rms_ap': rms_ap_region})))
+                if region_clusters.size == 0:
+                    metrics = pd.concat((metrics, pd.DataFrame(
+                        index=[metrics.shape[0] + 1], data={'pid': pid, 'eid': eid, 'probe': probe,
+                                                            'lab': lab, 'subject': subject,
+                                                            'region': region, 'date': date,
+                                                            'median_firing_rate': np.nan,
+                                                            'mean_firing_rate': np.nan,
+                                                            'spike_amp_mean': np.nan,
+                                                            'spike_amp_median': np.nan,
+                                                            'spike_amp_90': np.nan,
+                                                            'lfp_power': lfp_region,
+                                                            'lfp_band': [LFP_BAND],
+                                                            'rms_ap': rms_ap_region})))
+                else:
+                    # Get firing rate and spike amplitude
+                    neuron_fr = np.empty(len(region_clusters))
+                    spike_amp = np.empty(len(region_clusters))
+                    for n, neuron_id in enumerate(region_clusters):
+                        neuron_fr[n] = np.sum(spikes['clusters'] == neuron_id) / np.max(spikes['times'])
+                        spike_amp[n] = np.median(spikes.amps[spikes['clusters'] == neuron_id])
+                        
+                    # Add to dataframe
+                    metrics = pd.concat((metrics, pd.DataFrame(
+                        index=[metrics.shape[0] + 1], data={'pid': pid, 'eid': eid, 'probe': probe,
+                                                            'lab': lab, 'subject': subject,
+                                                            'region': region, 'date': date,
+                                                            'median_firing_rate': np.median(neuron_fr),
+                                                            'mean_firing_rate': np.mean(neuron_fr),
+                                                            'spike_amp_mean': np.nanmean(spike_amp),
+                                                            'spike_amp_median': np.nanmedian(spike_amp),
+                                                            'spike_amp_90': np.percentile(spike_amp, 95),
+                                                            'lfp_power': lfp_region,
+                                                            'lfp_band': [LFP_BAND],
+                                                            'rms_ap': rms_ap_region})))
 
         except Exception as err:
             print(err)
@@ -178,6 +189,6 @@ def prepare_data(insertions, one, recompute=False):
 if __name__ == '__main__':
     one=ONE(mode='remote')
     one_local = One()
-    insertions = get_insertions(level=0, recompute=False, one=one)
+    insertions = get_insertions(level=0, recompute=True, one=one)
     
-    prepare_data(insertions, one=one, recompute=True)
+    all_df_chns, all_df_clust, metrics = prepare_data(insertions, one=one, recompute=True)

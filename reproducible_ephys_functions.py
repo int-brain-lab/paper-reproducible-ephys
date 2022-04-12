@@ -129,7 +129,8 @@ def get_insertions(level=2, recompute=False, as_dataframe=False, one=None):
     if level == 1:
         insertions = query(one=one, as_dataframe=as_dataframe)
         if recompute:
-            _ = recompute_metrics(insertions, one)
+            ins = query(min_regions=0, n_trials=0, behavior=False, exclude_critical=True, one=one, as_dataframe=True)
+            _ = recompute_metrics(ins, one)
         return insertions
 
     if level >= 2:
@@ -155,7 +156,7 @@ def recompute_metrics(insertions, one):
 
     pids = np.array([ins['probe_insertion'] for ins in insertions])
     metrics = load_metrics()
-    if metrics is None:
+    if (metrics is None) or (metrics.shape[0] == 0):
         metrics = compute_metrics(insertions, one=one)
     else:
         isin, _ = ismember(pids, metrics['pid'].unique())
@@ -534,17 +535,12 @@ def filter_recordings(df=None, max_ap_rms=40, max_lfp_power=-140, min_neurons_pe
         df = metrics
         df['original_index'] = df.index
     else:
-        # make sure that all pids in the dataframe df are included in metrics otherwise recompute metrics
+        # make sure that all pids in the dataframe df are included in metrics 
         isin, _ = ismember(df['pid'].unique(), metrics['pid'].unique())
-        if ~np.all(isin):
-            one = ONE()
-            ins = one.alyx.rest('trajectories', 'list', provenance='Planned',
-                                django=f'probe_insertion__in,{list(df["pid"].unique())}')
-            metrics = compute_metrics(ins, one=one, save=True)
-
-        # merge the two dataframes
-        df['original_index'] = df.index
+        print(f'Warning: {np.sum(~isin)} recordings are missing metrics')
         df = df.merge(metrics, on=['pid', 'region', 'subject', 'eid', 'probe', 'date', 'lab'])
+        if 'lfp_power' not in df.keys():
+            df['lfp_power'] = df['lfp_power_x']  # CHECK WITH MAYO
 
     # Region Level
     # no. of channels per region
@@ -554,7 +550,7 @@ def filter_recordings(df=None, max_ap_rms=40, max_lfp_power=-140, min_neurons_pe
 
     # PID level
     df = df.groupby('pid').apply(lambda m: m.assign(high_noise=lambda m: m['rms_ap_p90'].median() > max_ap_rms))
-    df = df.groupby('pid').apply(lambda m: m.assign(high_lfp=lambda m: m['lfp_power_high'].median() > max_lfp_power))
+    df = df.groupby('pid').apply(lambda m: m.assign(high_lfp=lambda m: m['lfp_power'].median() > max_lfp_power))
     df = df.groupby('pid').apply(lambda m: m.assign(low_yield=lambda m: (m['neuron_yield'].sum() / m['n_channels'].sum())
                                                                         < min_neurons_per_channel))
     df = df.groupby('pid').apply(lambda m: m.assign(missed_target=lambda m: m['region_hit'].sum() < min_regions))
@@ -607,6 +603,6 @@ def filter_recordings(df=None, max_ap_rms=40, max_lfp_power=-140, min_neurons_pe
                 df.loc[idx, 'permute_include'] = True
 
     # Sort the index so it is the same as the orignal frame that was passed in
-    df = df.sort_values('original_index').reset_index(drop=True)
+    # df = df.sort_values('original_index').reset_index(drop=True)
 
     return df

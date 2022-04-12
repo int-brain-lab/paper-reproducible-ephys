@@ -214,11 +214,11 @@ def panel_example(ax, n_rec_per_lab=4, example_region='LP', example_metric='lfp_
 def panel_permutation(ax, metrics, regions, labels, n_permut=10000, n_rec_per_lab=4,
                       n_rec_per_region=3):
 
-    df_ins = load_and_merge_dataframe()
+    df_ins = load_dataframe(df_name='ins')
     df_filt = filter_recordings(df_ins, min_lab_region=n_rec_per_region, min_rec_lab=n_rec_per_lab)
     data = df_filt[df_filt['permute_include'] == 1]
     data['yield_per_channel'] = data['neuron_yield'] / data['n_channels']
-    data.loc[data['lfp_power_high'] < -100000, 'lfp_power_high'] = np.nan
+    data.loc[data['lfp_power'] < -100000, 'lfp_power'] = np.nan
 
     results = pd.DataFrame()
     for metric in metrics:
@@ -266,7 +266,7 @@ def panel_permutation(ax, metrics, regions, labels, n_permut=10000, n_rec_per_la
     cbar.set_ticks(np.log10([0.05, 0.1, 0.2, 0.4, 0.8]))
     cbar.set_ticklabels([0.05, 0.1, 0.2, 0.4, 0.8])
     cbar.set_label('log p-value', rotation=270, labelpad=8)
-    ax.set(xlabel='', ylabel='', xticks=np.arange(len(labels)), yticks=np.arange(len(regions)))
+    ax.set(xlabel='', ylabel='', xticks=np.arange(len(labels))+0.5, yticks=np.arange(len(regions))+0.5)
     ax.set_yticklabels(regions, va='center', rotation=0)
     ax.set_xticklabels(labels, rotation=30, ha='right')
     return results
