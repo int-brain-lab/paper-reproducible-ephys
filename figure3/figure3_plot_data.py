@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from figure3.figure3_functions import get_brain_boundaries, plot_probe
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
-from ibllib.atlas.regions import  BrainRegions
+from ibllib.atlas.regions import BrainRegions
 from figure3.figure3_load_data import load_dataframe, load_and_merge_dataframe
 import seaborn as sns
 from permutation_test import permut_test, permut_dist
@@ -18,7 +18,7 @@ def panel_probe_lfp(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-200
 
     df_chns = load_dataframe(df_name='chns')
 
-    df_filt = filter_recordings(min_rec_lab=n_rec_per_lab)
+    df_filt = filter_recordings(min_rec_lab=n_rec_per_lab, min_neuron_region=0)
     df_filt = df_filt[df_filt['lab_include'] == 1]
     df_filt['lab_number'] = df_filt['lab'].map(lab_number_map)
     df_filt = df_filt.sort_values(by=['lab_number', 'subject']).reset_index(drop=True)
@@ -73,7 +73,7 @@ def panel_probe_neurons(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[
     df_chns = load_dataframe(df_name='chns')
     df_clust = load_dataframe(df_name='clust')
 
-    df_filt = filter_recordings(min_rec_lab=n_rec_per_lab)
+    df_filt = filter_recordings(min_rec_lab=n_rec_per_lab, min_neuron_region=0)
     df_filt = df_filt[df_filt['lab_include'] == 1]
     df_filt['lab_number'] = df_filt['lab'].map(lab_number_map)
     df_filt = df_filt.sort_values(by=['lab_number', 'subject']).reset_index(drop=True)

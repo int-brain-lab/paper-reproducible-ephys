@@ -6,13 +6,9 @@ By: Guido Meijer
 """
 
 import figrid as fg
-from os.path import join
-from figure3_supp1_functions import plots_data, panel_a, panel_b
+from figure3.figure3_supp1_functions import plots_data, panel_a, panel_b
 import matplotlib.pyplot as plt
-from reproducible_ephys_functions import figure_style
-from reproducible_ephys_paths import FIG_PATH
-from one.api import ONE
-one = ONE()
+from reproducible_ephys_functions import figure_style, save_figure_path, filter_recordings
 
 # Settings
 #INCL_LABS = ['CCU', 'CSHL (C)', 'NYU', 'SWC', 'Berkeley', 'Princeton']
@@ -27,7 +23,8 @@ N_PERMUT = 1000  # Amount of shuffles for permutation testing
 DPI = 300  # if the figure is too big on your screen, lower this number
 
 # Get amount of probe plots
-data, _ = plots_data()
+
+data = filter_recordings()
 n_columns = len(data['subject'].unique())
 
 # Set up figure
@@ -39,8 +36,8 @@ ax = {'panel_A': fg.place_axes_on_grid(fig, xspan=[0.05, 1], yspan=[0.1, 0.5],
                                        dim=[1, n_columns], wspace=0.3)}
 
 # Call functions to plot panels
-panel_a(fig, ax['panel_A'], incl_labs=INCL_LABS, boundary_align=BOUNDARY, one=one)
-panel_b(fig, ax['panel_B'], incl_labs=INCL_LABS, boundary_align=BOUNDARY, one=one)
+panel_a(fig, ax['panel_A'], incl_labs=INCL_LABS, boundary_align=BOUNDARY)
+panel_b(fig, ax['panel_B'], incl_labs=INCL_LABS, boundary_align=BOUNDARY)
 #panel_c(ax['panel_C'], METRICS, REGIONS, LABELS, n_permut=N_PERMUT, incl_labs=INCL_LABS)
 
 # Add subplot labels
@@ -49,5 +46,5 @@ labels = [{'label_text':'a', 'xpos':0, 'ypos':0, 'fontsize':10, 'weight': 'bold'
 fg.add_labels(fig, labels)
 
 # Save figure
-plt.savefig(join(FIG_PATH, 'figure3_supp1.png'))
-plt.savefig(join(FIG_PATH, 'figure3_supp1.pdf'))
+plt.savefig(save_figure_path(figure='figure3').joinpath('figure3_supp1.png'))
+plt.savefig(save_figure_path(figure='figure3').joinpath('figure3_supp1.pdf'))

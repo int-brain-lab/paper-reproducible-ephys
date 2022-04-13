@@ -74,8 +74,6 @@ p_values = panel_permutation(ax['panel_E'], METRICS, REGIONS, LABELS, n_permut=N
                              n_rec_per_lab=MIN_REC_PER_LAB, n_rec_per_region=MIN_REC_PER_REGION)
 
 # Save figure
-#plt.savefig(join(FIG_PATH, 'figure3.png'))
-#plt.savefig(join(FIG_PATH, 'figure3.pdf'))
 plt.savefig(save_figure_path(figure='figure3').joinpath('figure3.png'))
 plt.savefig(save_figure_path(figure='figure3').joinpath('figure3.pdf'))
 

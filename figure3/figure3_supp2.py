@@ -16,7 +16,7 @@ lab_number_map, institution_map, lab_colors = labs()
 n_rec_per_lab = 4
 df_chns = load_dataframe(df_name='chns')
 
-df_filt = filter_recordings(min_rec_lab=n_rec_per_lab)
+df_filt = filter_recordings(min_rec_lab=n_rec_per_lab, min_neuron_region=0)
 df_filt = df_filt[df_filt['lab_include'] == 1]
 df_filt['lab_number'] = df_filt['lab'].map(lab_number_map)
 df_filt = df_filt.sort_values(by=['lab_number', 'subject']).reset_index(drop=True)
