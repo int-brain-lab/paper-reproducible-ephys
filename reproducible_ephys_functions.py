@@ -129,17 +129,18 @@ def get_insertions(level=2, recompute=False, as_dataframe=False, one=None):
     if level == 1:
         insertions = query(one=one, as_dataframe=as_dataframe)
         if recompute:
-            ins = query(min_regions=0, n_trials=0, behavior=False, exclude_critical=True, one=one, as_dataframe=True)
-            _ = recompute_metrics(ins, one)
+            _ = recompute_metrics(insertions, one)
         return insertions
 
     if level >= 2:
         insertions = query(one=one, as_dataframe=False)
         pids = np.array([ins['probe_insertion'] for ins in insertions])
-        ins = filter_recordings(min_neuron_region=0)
-        ins = ins[ins['include']]
         if recompute:
             _ = recompute_metrics(insertions, one)
+        ins = filter_recordings(min_neuron_region=0)
+        ins = ins[ins['include']]
+
+        if not as_dataframe:
             isin, _ = ismember(pids, ins['pid'].unique())
             ins = [insertions[i] for i, val in enumerate(isin) if val]
 
@@ -467,7 +468,7 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
             clusters['rep_site_acronym'] = channels['rep_site_acronym'][clusters['channels']]
 
         except Exception as err:
-            print(err)
+            logger.error(f'{pid}: {err}')
 
         try:
             for region in BRAIN_REGIONS:
@@ -475,7 +476,7 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
                                                           clusters['metrics']['label'] == 1))[0]
                 region_chan = channels['rawInd'][np.where(channels['rep_site_acronym'] == region)[0]]
 
-                if 'power' in lfp.keys():
+                if 'power' in lfp.keys() and region_chan.shape[0] > 0:
                     freqs = (lfp['freqs'] > LFP_BAND[0]) & (lfp['freqs'] < LFP_BAND[1])
                     chan_power = lfp['power'][:, region_chan]
                     lfp_region = np.mean(10 * np.log(chan_power[freqs]))  # convert to dB
@@ -502,7 +503,7 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
                                                         'n_trials': n_trials,
                                                         'behavior': behav})))
         except Exception as err:
-            print(err)
+            logger.error(f'{pid}: {err}')
 
     if save:
         metrics.to_csv(save_data_path().joinpath('insertion_metrics.csv'))
@@ -512,7 +513,7 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
 
 def filter_recordings(df=None, max_ap_rms=40, max_lfp_power=-140, min_neurons_per_channel=0.1, min_channels_region=5,
                       min_regions=3, min_neuron_region=4, min_lab_region=3, min_rec_lab=4, n_trials=400, behavior=False,
-                      exclude_subjects=['DY013', 'ibl_witten_26']):
+                      exclude_subjects=['DY013', 'ibl_witten_26'], recompute=True):
     """
     Filter values in dataframe according to different exclusion criteria
     :param df: pandas dataframe
@@ -538,10 +539,12 @@ def filter_recordings(df=None, max_ap_rms=40, max_lfp_power=-140, min_neurons_pe
         # make sure that all pids in the dataframe df are included in metrics otherwise recompute metrics
         isin, _ = ismember(df['pid'].unique(), metrics['pid'].unique())
         if ~np.all(isin):
-            one = ONE()
-            ins = one.alyx.rest('trajectories', 'list', provenance='Planned',
-                                django=f'probe_insertion__in,{list(df["pid"].unique())}')
-            metrics = compute_metrics(ins, one=one, save=True)
+            logger.warning(f'Warning: {np.sum(~isin)} recordings are missing metrics')
+            if recompute:
+                one = ONE()
+                ins = one.alyx.rest('trajectories', 'list', provenance='Planned',
+                                    django=f'probe_insertion__in,{list(df["pid"].unique())}')
+                metrics = compute_metrics(ins, one=one, save=True)
 
         # merge the two dataframes
         df['original_index'] = df.index

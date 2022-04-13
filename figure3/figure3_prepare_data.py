@@ -129,12 +129,6 @@ def prepare_data(insertions, one, recompute=False):
                                                           clusters['label'] == 1))[0]
                 region_chan = channels['rawInd'][np.where(channels['rep_site_acronym'] == region)[0]]
 
-                # Get LFP power on low frequencies
-                freqs = ((lfp['freqs'] > LFP_BAND[0])
-                         & (lfp['freqs'] < LFP_BAND[1]))
-                chan_power = lfp['power'][:, region_chan]
-                lfp_region = np.median(10 * np.log(chan_power[freqs]))  # convert to dB
-               
                 # Get AP band rms
                 rms_ap_region = np.median(rms_ap_data_median[:, region_chan])
 
@@ -148,8 +142,6 @@ def prepare_data(insertions, one, recompute=False):
                                                             'spike_amp_mean': np.nan,
                                                             'spike_amp_median': np.nan,
                                                             'spike_amp_90': np.nan,
-                                                            'lfp_power': lfp_region,
-                                                            'lfp_band': [LFP_BAND],
                                                             'rms_ap': rms_ap_region})))
                 else:
                     # Get firing rate and spike amplitude
@@ -169,8 +161,6 @@ def prepare_data(insertions, one, recompute=False):
                                                             'spike_amp_mean': np.nanmean(spike_amp),
                                                             'spike_amp_median': np.nanmedian(spike_amp),
                                                             'spike_amp_90': np.percentile(spike_amp, 95),
-                                                            'lfp_power': lfp_region,
-                                                            'lfp_band': [LFP_BAND],
                                                             'rms_ap': rms_ap_region})))
 
         except Exception as err:
@@ -189,6 +179,6 @@ def prepare_data(insertions, one, recompute=False):
 if __name__ == '__main__':
     one=ONE(mode='remote')
     one_local = One()
-    insertions = get_insertions(level=0, recompute=True, one=one)
+    insertions = get_insertions(level=0, recompute=False, one=one)
     
     all_df_chns, all_df_clust, metrics = prepare_data(insertions, one=one, recompute=True)
