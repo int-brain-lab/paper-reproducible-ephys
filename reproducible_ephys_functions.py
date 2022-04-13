@@ -535,12 +535,17 @@ def filter_recordings(df=None, max_ap_rms=40, max_lfp_power=-140, min_neurons_pe
         df = metrics
         df['original_index'] = df.index
     else:
-        # make sure that all pids in the dataframe df are included in metrics 
+        # make sure that all pids in the dataframe df are included in metrics otherwise recompute metrics
         isin, _ = ismember(df['pid'].unique(), metrics['pid'].unique())
-        print(f'Warning: {np.sum(~isin)} recordings are missing metrics')
+        if ~np.all(isin):
+            one = ONE()
+            ins = one.alyx.rest('trajectories', 'list', provenance='Planned',
+                                django=f'probe_insertion__in,{list(df["pid"].unique())}')
+            metrics = compute_metrics(ins, one=one, save=True)
+
+        # merge the two dataframes
+        df['original_index'] = df.index
         df = df.merge(metrics, on=['pid', 'region', 'subject', 'eid', 'probe', 'date', 'lab'])
-        if 'lfp_power' not in df.keys():
-            df['lfp_power'] = df['lfp_power_x']  # CHECK WITH MAYO
 
     # Region Level
     # no. of channels per region
@@ -603,6 +608,6 @@ def filter_recordings(df=None, max_ap_rms=40, max_lfp_power=-140, min_neurons_pe
                 df.loc[idx, 'permute_include'] = True
 
     # Sort the index so it is the same as the orignal frame that was passed in
-    # df = df.sort_values('original_index').reset_index(drop=True)
+    df = df.sort_values('original_index').reset_index(drop=True)
 
     return df

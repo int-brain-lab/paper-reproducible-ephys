@@ -1,9 +1,8 @@
 from reproducible_ephys_functions import filter_recordings, labs, BRAIN_REGIONS
 import pandas as pd
 import numpy as np
-from features_2D import get_brain_boundaries, plot_probe
+from figure3.figure3_functions import get_brain_boundaries, plot_probe
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
-import matplotlib.pyplot as plt
 from ibllib.atlas.regions import  BrainRegions
 from figure3.figure3_load_data import load_dataframe, load_and_merge_dataframe
 import seaborn as sns
