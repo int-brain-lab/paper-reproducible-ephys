@@ -1,4 +1,4 @@
-from figure3_functions import plots_data
+from scratch_scripts.GM.figure3_functions import plots_data
 from ibllib.atlas import AllenAtlas, Trajectory
 from one.api import ONE
 from ibllib.pipes.ephys_alignment import EphysAlignment

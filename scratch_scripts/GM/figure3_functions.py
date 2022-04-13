@@ -12,8 +12,8 @@ from ibllib.pipes.ephys_alignment import EphysAlignment
 from ibllib.atlas import atlas, BrainRegions
 from permutation_test import permut_test
 from statsmodels.stats.multitest import multipletests
-from features_2D import (psd_data, get_brain_boundaries, plot_probe, spike_amp_data,
-                         get_brain_boundaries_interest)
+from scratch_scripts.MF.features_2D import (psd_data, get_brain_boundaries, plot_probe, spike_amp_data,
+                                            get_brain_boundaries_interest)
 from reproducible_ephys_functions import labs, data_path, exclude_recordings
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from matplotlib.sankey import Sankey

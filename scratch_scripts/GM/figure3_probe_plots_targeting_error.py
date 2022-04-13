@@ -7,7 +7,7 @@ Created on Tue Dec 15 09:43:50 2020
 """
 
 from reproducible_ephys_functions import query, labs
-from features_2D import plot_2D_features
+from scratch_scripts.MF.features_2D import plot_2D_features
 from oneibl.one import ONE
 import numpy as np
 from os.path import join, isdir

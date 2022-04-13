@@ -8,9 +8,8 @@ Created on Tue Dec 15 09:43:50 2020
 
 import pandas as pd
 from reproducible_ephys_functions import labs, data_path, exclude_recordings, figure_style
-from features_2D import plot_2D_features
+from scratch_scripts.MF.features_2D import plot_2D_features
 from one.api import ONE
-import numpy as np
 from os.path import join, isdir
 from os import mkdir
 from reproducible_ephys_paths import FIG_PATH

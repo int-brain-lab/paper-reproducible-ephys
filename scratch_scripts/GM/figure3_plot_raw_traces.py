@@ -14,7 +14,7 @@ from pathlib import Path
 import brainbox.io.one as bbone
 from brainbox.lfp import butter_filter
 from ibllib.pipes.ephys_alignment import EphysAlignment
-from features_2D import get_brain_boundaries
+from scratch_scripts.MF.features_2D import get_brain_boundaries
 from ibllib.io import spikeglx
 from ibllib.atlas import atlas, BrainRegions
 from ibllib.ephys.neuropixel import SITES_COORDINATES

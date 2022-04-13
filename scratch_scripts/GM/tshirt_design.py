@@ -8,17 +8,14 @@ Created on Tue Dec 15 09:43:50 2020
 
 import pandas as pd
 from reproducible_ephys_functions import data_path
-from features_2D import rms_data, get_brain_boundaries, arrange_channels2banks, plot_probe, psd_data
-from matplotlib.image import NonUniformImage
+from scratch_scripts.MF.features_2D import rms_data, get_brain_boundaries, plot_probe, psd_data
 from one.api import ONE
 import numpy as np
 from os.path import join
-from ibllib.atlas import atlas, BrainRegions
+from ibllib.atlas import BrainRegions
 from ibllib.ephys.neuropixel import SITES_COORDINATES
 from ibllib.pipes.ephys_alignment import EphysAlignment
-from reproducible_ephys_paths import FIG_PATH
 import matplotlib.pyplot as plt
-import scipy as sp
 from ibllib.atlas import atlas
 brain_atlas = atlas.AllenAtlas(25)
 one = ONE()

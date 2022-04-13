@@ -176,7 +176,7 @@ def query_histology():
     List of histology subjs
 
     '''
-    import figure_hist_data as fhd
+    from figure_histology import figure_hist_data as fhd
 
     data = fhd.get_probe_data()
 

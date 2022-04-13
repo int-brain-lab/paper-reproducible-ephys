@@ -43,7 +43,7 @@ def plot_probe_surf_coord_micro_panel(output = 'figure_histology'):
     
     from pathlib import Path
     import os
-    import figure_hist_data as fhd
+    from figure_histology import figure_hist_data as fhd
     import svgutils.compose as sc # layout figure in svgutils
     
     # output DIR
@@ -98,7 +98,7 @@ def plot_probe_surf_coord_micro(probe_data, output='figure_histology'):
     '''
     from pathlib import Path
     import os
-    import figure_hist_data as fhd
+    from figure_histology import figure_hist_data as fhd
     import matplotlib.pyplot as plt
     #from one.api import ONE
     #from ibllib.atlas import Insertion
@@ -256,7 +256,7 @@ def plot_probe_distance_micro_all_lab(probe_data, output='figure_histology'):
     import seaborn as sns
     #import numpy as np
     import reproducible_ephys_functions as ref
-    import figure_hist_data as fhd
+    from figure_histology import figure_hist_data as fhd
     import math
     import statistics as stat
     
@@ -416,7 +416,7 @@ def plot_probe_distance_micro_all(probe_data, output='figure_histology'):
     import seaborn as sns
     #import numpy as np
     import reproducible_ephys_functions as ref
-    import figure_hist_data as fhd
+    from figure_histology import figure_hist_data as fhd
     import math
     
     ref.figure_style()
@@ -489,9 +489,8 @@ def plot_probe_distance_micro_lab(probe_data, output='figure_histology'):
     import os
     import matplotlib.pyplot as plt
     import seaborn as sns
-    import numpy as np
     import reproducible_ephys_functions as ref
-    import figure_hist_data as fhd
+    from figure_histology import figure_hist_data as fhd
     import math
     import statistics as stat
     
@@ -601,7 +600,7 @@ def plot_probe_surf_coord_histology_panel(output = 'figure_histology'):
     '''
     from pathlib import Path
     import os
-    import figure_hist_data as fhd
+    from figure_histology import figure_hist_data as fhd
     import svgutils.compose as sc # layout figure in svgutils
     
     # output DIR
@@ -660,8 +659,8 @@ def plot_probe_surf_coord_histology(probe_data, output='figure_histology'):
     import matplotlib.pyplot as plt
     import numpy as np
     import reproducible_ephys_functions as ref
-    import figure_hist_data as fhd
-    
+    from figure_histology import figure_hist_data as fhd
+
     ref.figure_style()
     
     # get probe data if necessary
@@ -819,7 +818,7 @@ def plot_probe_distance_histology_all_lab(probe_data, output='figure_histology')
     import seaborn as sns
     #import numpy as np
     import reproducible_ephys_functions as ref
-    import figure_hist_data as fhd
+    from figure_histology import figure_hist_data as fhd
     import math
     import statistics as stat
     
@@ -979,7 +978,7 @@ def plot_probe_distance_histology_all(probe_data, output='figure_histology'):
     import seaborn as sns
     #import numpy as np
     import reproducible_ephys_functions as ref
-    import figure_hist_data as fhd
+    from figure_histology import figure_hist_data as fhd
     import math
     
     ref.figure_style()
@@ -1054,7 +1053,7 @@ def plot_probe_distance_histology_lab(probe_data, output='figure_histology'):
     import matplotlib.pyplot as plt
     import seaborn as sns
     import reproducible_ephys_functions as ref
-    import figure_hist_data as fhd
+    from figure_histology import figure_hist_data as fhd
     import math
     import statistics as stat
     
@@ -1180,11 +1179,9 @@ def permutation_test_histology(probe_data, exclude_val = 4):
     None.
 
     '''
-    from pathlib import Path
-    import matplotlib.pyplot as plt
     import numpy as np
     import reproducible_ephys_functions as ref
-    import figure_hist_data as fhd
+    from figure_histology import figure_hist_data as fhd
     from permutation_test import permut_test
     import math
     
@@ -1237,11 +1234,9 @@ def permutation_test_micro(probe_data, exclude_val = 4):
     None.
 
     '''
-    from pathlib import Path
-    import matplotlib.pyplot as plt
     import numpy as np
     import reproducible_ephys_functions as ref
-    import figure_hist_data as fhd
+    from figure_histology import figure_hist_data as fhd
     from permutation_test import permut_test
     import math
     
@@ -1293,10 +1288,8 @@ def permutation_test_micro_old():
     None.
 
     '''
-    from pathlib import Path
-    import matplotlib.pyplot as plt
     import numpy as np
-    import figure_hist_data as fhd
+    from figure_histology import figure_hist_data as fhd
     from permutation_test import permut_test
     import math
     
@@ -1338,7 +1331,6 @@ def plot_probe_distance_histology_variance_labs(output='figure_histology'):
     from probe_geometry_analysis import probe_geometry_data as probe_geom_data
     import matplotlib.pyplot as plt
     import seaborn as sns
-    import numpy as np
     import reproducible_ephys_functions as ref
     
     # output DIR
@@ -1536,9 +1528,7 @@ def plot_trajs_cor_sag_hor(output='figure_histology'):
     from probe_geometry_analysis import probe_geometry_data as probe_geom_data
     import matplotlib.pyplot as plt
     from one.api import ONE
-    from ibllib.atlas import Insertion
     import numpy as np
-    import atlaselectrophysiology.load_histology as hist
     import ibllib.atlas as atlas
     
     # output DIR

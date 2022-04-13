@@ -41,7 +41,7 @@ def plot_probe_angle_histology_panel(output = 'figure_histology'):
     '''
     from pathlib import Path
     import os
-    import figure_hist_data as fhd
+    from figure_histology import figure_hist_data as fhd
     import svgutils.compose as sc # layout figure in svgutils
     
     # output DIR
@@ -98,12 +98,11 @@ def plot_probe_angle_histology(probe_data, output='figure_histology'):
     '''
     from pathlib import Path
     import os
-    import figure_hist_data as fhd
+    from figure_histology import figure_hist_data as fhd
     import matplotlib.pyplot as plt
     from one.api import ONE
     from ibllib.atlas import Insertion
     import numpy as np
-    import atlaselectrophysiology.load_histology as hist
     import ibllib.atlas as atlas
     import reproducible_ephys_functions as ref
     import math
@@ -359,10 +358,9 @@ def plot_probe_angle_histology_all_lab(probe_data, output='figure_histology'):
     from one.api import ONE
     from ibllib.atlas import Insertion
     import numpy as np
-    import atlaselectrophysiology.load_histology as hist
     import ibllib.atlas as atlas
     import reproducible_ephys_functions as ref
-    import figure_hist_data as fhd
+    from figure_histology import figure_hist_data as fhd
     import math
     import statistics as stat
     
@@ -613,10 +611,9 @@ def plot_probe_angle_histology_all(probe_data, output='figure_histology'):
     from one.api import ONE
     from ibllib.atlas import Insertion
     import numpy as np
-    import atlaselectrophysiology.load_histology as hist
     import ibllib.atlas as atlas
     import reproducible_ephys_functions as ref
-    import figure_hist_data as fhd
+    from figure_histology import figure_hist_data as fhd
     import math
     
     # set fig style to repo-ephys
@@ -811,10 +808,9 @@ def plot_probe_angle_histology_lab(probe_data, output='figure_histology'):
     from one.api import ONE
     from ibllib.atlas import Insertion
     import numpy as np
-    import atlaselectrophysiology.load_histology as hist
     import ibllib.atlas as atlas
     import reproducible_ephys_functions as ref
-    import figure_hist_data as fhd
+    from figure_histology import figure_hist_data as fhd
     import math
     import statistics as stat
     
@@ -1062,18 +1058,15 @@ def permutation_test_histology(passed_eids = None):
     None.
 
     '''
-    from pathlib import Path
-    import matplotlib.pyplot as plt
     import numpy as np
     import reproducible_ephys_functions as ref
-    import figure_hist_data as fhd
+    from figure_histology import figure_hist_data as fhd
     from permutation_test import permut_test
     import math
     from one.api import ONE
     from ibllib.atlas import Insertion
     import ibllib.atlas as atlas
-    import statistics as stat
-    
+
     # get probe data if necessary
     if 'probe_data' not in vars() or 'probe_data' not in globals():
         # get probe_data histology query
@@ -1343,9 +1336,7 @@ def plot_probe_surf_coord_histology(output='figure_histology'):
     from probe_geometry_analysis import probe_geometry_data as probe_geom_data
     import matplotlib.pyplot as plt
     from one.api import ONE
-    from ibllib.atlas import Insertion
     import numpy as np
-    import atlaselectrophysiology.load_histology as hist
     import ibllib.atlas as atlas
     import reproducible_ephys_functions as ref
     
@@ -1615,9 +1606,7 @@ def plot_trajs_cor_sag_hor(output='figure_histology'):
     from probe_geometry_analysis import probe_geometry_data as probe_geom_data
     import matplotlib.pyplot as plt
     from one.api import ONE
-    from ibllib.atlas import Insertion
     import numpy as np
-    import atlaselectrophysiology.load_histology as hist
     import ibllib.atlas as atlas
     
     # output DIR

@@ -26,7 +26,7 @@ def plot_all_channels(output='figure_histology_supp', colour='w'):
     '''
     from pathlib import Path
     import os
-    import figure_hist_data as fhd
+    from figure_histology import figure_hist_data as fhd
     import matplotlib.pyplot as plt
     from one.api import ONE
     from ibllib.atlas import Insertion
@@ -310,7 +310,7 @@ def plot_channels_n3(output='figure_histology', remove_axes=True, colour='w'):
     '''
     from pathlib import Path
     import os
-    import figure_hist_data as fhd
+    from figure_histology import figure_hist_data as fhd
     import matplotlib.pyplot as plt
     from one.api import ONE
     from ibllib.atlas import Insertion
@@ -653,7 +653,7 @@ def plot_channels_n1(output='figure_histology', remove_axes=True, colour='w'):
     '''
     from pathlib import Path
     import os
-    import figure_hist_data as fhd
+    from figure_histology import figure_hist_data as fhd
     import matplotlib.pyplot as plt
     from one.api import ONE
     from ibllib.atlas import Insertion
@@ -997,7 +997,7 @@ def plot_channels_per_lab(output='figure_histology'):
     '''
     from pathlib import Path
     import os
-    import figure_hist_data as fhd
+    from figure_histology import figure_hist_data as fhd
     import matplotlib.pyplot as plt
     from one.api import ONE
     from ibllib.atlas import Insertion

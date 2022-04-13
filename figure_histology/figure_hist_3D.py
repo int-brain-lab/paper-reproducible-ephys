@@ -14,7 +14,7 @@ def create_3d_traj_render(output = 'figure_histology_supp'):
     
     from pathlib import Path
     import os
-    import figure_hist_data as fhd
+    from figure_histology import figure_hist_data as fhd
     import matplotlib.pyplot as plt
     from one.api import ONE
     import numpy as np

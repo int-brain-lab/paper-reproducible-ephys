@@ -8,8 +8,8 @@ from oneibl.one import ONE
 from ibllib.atlas import atlas
 
 # Define paths to authentication details
-credentials_file_path = 'C:/Users/Mayo/iblenv/iblmayo/googleAPI/credentials/IBL/credentials.json'
-clientsecret_file_path = 'C:/Users/Mayo/iblenv/iblmayo/googleAPI/credentials/IBL/client_secret_IBL.json'
+credentials_file_path = '/iblmayo/googleAPI/credentials/IBL/credentials.json'
+clientsecret_file_path = '/iblmayo/googleAPI/credentials/IBL/client_secret_IBL.json'
 
 SCOPE = ['https://www.googleapis.com/auth/spreadsheets']
 # See if credentials exist

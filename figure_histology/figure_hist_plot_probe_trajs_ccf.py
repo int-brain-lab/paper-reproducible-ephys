@@ -23,7 +23,7 @@ def plot_trajs(probe_data, output='figure_histology',
     '''
     from pathlib import Path
     import os
-    import figure_hist_data as fhd
+    from figure_histology import figure_hist_data as fhd
     import matplotlib.pyplot as plt
     from one.api import ONE
     import numpy as np
@@ -224,9 +224,7 @@ def old_plot_trajs_cor_sag_hor(output='figure_histology'):
     from probe_geometry_analysis import probe_geometry_data as probe_geom_data
     import matplotlib.pyplot as plt
     from one.api import ONE
-    from ibllib.atlas import Insertion
     import numpy as np
-    import atlaselectrophysiology.load_histology as hist
     import ibllib.atlas as atlas
     
     # output DIR

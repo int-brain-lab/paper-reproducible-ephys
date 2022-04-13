@@ -50,11 +50,6 @@ FIGURE_6 = {'channels': ['brainLocationIds_ccf_2017', 'localCoordinates', 'mlapd
                        'firstMovement_times', 'stimOn_times']}
 
 
-
-def get_insertions(level=1, force_reload=False):
-    pass
-
-
 def download_spike_sorting_data(pid, one=None, brain_atlas=None):
     one = one or ONE()
     ba = brain_atlas or AllenAtlas()
@@ -73,10 +68,8 @@ def download_figure_data(pids, figure=1, one=None, brain_atlas=None):
 
     for pid in pids:
         # load spike sorting
-        _, _ _, = download_spike_sorting_data()
-        sl = SpikeSortingLoader(pid, one=one, atlas=ba)
-        spikes, clusters, channels = sl.load_spike_sorting()
-        clusters = sl.merge_clusters(spikes, clusters, channels, cache_dir=sl.spike_sorting_path)
+        _, _, _, = download_spike_sorting_data()
+
 
 
 
