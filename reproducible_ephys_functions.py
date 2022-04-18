@@ -146,6 +146,12 @@ def get_insertions(level=2, recompute=False, as_dataframe=False, one=None):
 
         return ins
 
+def get_histology_insertions(one=None):
+    one = one or ONE()
+
+    insertions = one.alyx.rest('trajectories', 'list', provenance='Planned', x=-2243, y=-2000, theta=15,
+                               project='ibl_neuropixel_brainwide_01')
+    return insertions
 
 def recompute_metrics(insertions, one):
     """

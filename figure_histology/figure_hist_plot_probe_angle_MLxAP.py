@@ -345,6 +345,7 @@ def plot_probe_angle_histology(probe_data, output='figure_histology'):
     #fig1.savefig( str(Path('figure_histology', 'probe-plots','micromanipulator_surface_error_plot.svg')), bbox_inches="tight" ) # tight ensures figure is in bounds of svg canvas!
     
 
+# MOVE ANGLE COMPUTATION INTO THE ACTUAL COMPUTATION BLAAAA
 
 
 def plot_probe_angle_histology_all_lab(probe_data, output='figure_histology'):

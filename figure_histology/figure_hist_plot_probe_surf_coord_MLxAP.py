@@ -11,6 +11,20 @@ of the histology track surface coords are coloured based on lab affiliation.
 @author: sjwest
 """
 
+from pathlib import Path
+import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
+
+from iblutil.numerical import ismember
+
+from reproducible_ephys_functions import figure_style, save_figure_path, labs, filter_recordings
+from figure_histology.figure2_load_data import load_dataframe
+from permutation_test import permut_test, permut_dist
+
+lab_number_map, institution_map, institution_colors = labs()
+
+
 def print_path():
     import os
     path = os.path.dirname(os.path.realpath(__file__))
@@ -56,11 +70,11 @@ def plot_probe_surf_coord_micro_panel(output = 'figure_histology'):
     
     
     # generate scatterplot in first axes
-    plot_probe_surf_coord_micro(probe_data, output=output) # saves as SVG to output
+    plot_probe_surf_coord(traj='micro') # saves as SVG to output
     
     # generate histogram/density plot of Euclidean distance at surface from 
     # planned to actual for all trajectories AND dotplots by lab
-    plot_probe_distance_micro_all_lab(probe_data, output=output)
+    plot_probe_distance_all_lab(traj='micro')
     
     # generate grouped boxplots of Euclidean distance at surface from 
     # planned to actual for all trajectories, by LAB
@@ -91,317 +105,175 @@ def plot_probe_surf_coord_micro_panel(output = 'figure_histology'):
 
 
 
-def plot_probe_surf_coord_micro(probe_data, output='figure_histology'):
+def plot_probe_surf_coord(traj='micro'):
     '''Plot the PLANNED surface coord at [0,0], VECTORS from planned surface to
     actual surface coord of histology tracks, histology track points coloured
     by lab affiliation.
     '''
-    from pathlib import Path
-    import os
-    from figure_histology import figure_hist_data as fhd
-    import matplotlib.pyplot as plt
-    #from one.api import ONE
-    #from ibllib.atlas import Insertion
-    import numpy as np
-    #import atlaselectrophysiology.load_histology as hist
-    #import ibllib.atlas as atlas
-    import reproducible_ephys_functions as ref
-    
+
+    # Load in data
+    probe_data = load_dataframe(df_name='traj')
+
     # use repo-ephys figure style
-    ref.figure_style()
-    
-    # get probe data if necessary
-    if 'probe_data' not in vars() or 'probe_data' not in globals():
-        # get probe_data histology query
-        probe_data = fhd.get_probe_data()
-    
-    # output DIR - generate output DIR for storing plots:
-    OUTPUT = Path(output)
-    if os.path.exists(OUTPUT) is False:
-        os.mkdir(OUTPUT)
-    
-    # get all trajectories at the REPEATED SITE
-     # for ibl brainwide map project
-     # repeated site location: x -2243 y -2000
-    #traj = one.alyx.rest('trajectories', 'list', provenance='Planned',
-    #                     x=-2243, y=-2000,  project='ibl_neuropixel_brainwide_01')
-    
-    # get eids, probe names and subject names from traj
-    #eids = [sess['session']['id'] for sess in traj]
-    #probes = [sess['probe_name'] for sess in traj]
-    
-    # Get the trajectory for the planned repeated site recording
-    #phi_eid = eids[0]
-    #phi_probe = probes[0]
-    #phi_traj = one.alyx.rest('trajectories', 'list', session=phi_eid,
-    #                         provenance='Planned', probe=phi_probe)[0]
-    # planned as insertion: includes XYZ and phi,theta,depth data
-    #ins_plan = atlas.Insertion.from_dict(phi_traj)
-    
-    # get new atlas for plotting
-    #brain_atlas = atlas.AllenAtlas(res_um=25)
-    
-    
+    figure_style()
     fig1, ax1 = plt.subplots()
+    fig1.set_size_inches(2.15, 2.15)
     
     # draw 0,0 lines
-    ax1.axhline(y=2243, color="grey", linestyle="--", linewidth = 0.5)
-    ax1.axvline(x=2000, color="grey", linestyle="--", linewidth = 0.5)
-    
-    # empty numpy arrays for storing the entry point of probe into brain
-     # and "exit point" i.e the probe tip!
-    all_ins_entry = np.empty((0, 3))
-    
-    # get institution map and colours
-    lab_number_map, institution_map, institution_colors = ref.labs()
-    
-    # plot line and points from planned insertion entry to actual histology entry
-    #for idx in range(len(probe_data)):
+    ax1.axvline(x=-2243, color="grey", linestyle="--", linewidth=0.5)
+    ax1.axhline(y=-2000, color="grey", linestyle="--", linewidth=0.5)
+
     for idx, row in probe_data.iterrows():
-        
-        phi_lab = row['lab']
-        all_ins_entry = np.vstack([all_ins_entry, 
-                                   np.array( ( abs(row['micro_x']/1e6), 
-                                              abs(row['micro_y']/1e6), 
-                                              abs(row['micro_z']/1e6)) )  ])
-        
-        ax1.plot( [ abs(row['micro_y']), abs(row['planned_y']) ], 
-                  [ abs(row['micro_x']), abs(row['planned_x']) ], 
-              color= institution_colors[institution_map[phi_lab]], 
-              linewidth = 0.2, alpha = 0.8 )
-        
-        ax1.plot( [ abs(row['micro_y'])], 
-                  [ abs(row['micro_x']) ], 
-              color= institution_colors[institution_map[phi_lab]], 
-              marker="o", markersize=1, alpha = 0.8)
-    
-    
-    # plot the planned insertion entry as large blue dot
-    #ax1.plot(probe_data['planned_y'][0], probe_data['planned_x'][0], 
-    #         color='darkblue', marker="o", markersize=3)
-    
-    # plot the mean micro coords
-    
+
+       ax1.plot([row[f'{traj}_x'], row['planned_x']], [row[f'{traj}_y'], row['planned_y']],
+                color=institution_colors[institution_map[row['lab']]], linewidth=0.2, alpha=0.8)
+
+       ax1.plot(row[f'{traj}_x'], row[f'{traj}_y'], color=institution_colors[institution_map[row['lab']]],
+                marker="o", markersize=1, alpha=0.8)
+
+    # Plot the mean micro coords
     # lab means
-    lab_mean_microx = probe_data.groupby('lab')['micro_x'].mean()
-    lab_mean_microy = probe_data.groupby('lab')['micro_y'].mean()
+    lab_mean_x = probe_data.groupby('lab')[f'{traj}_x'].mean()
+    lab_mean_y = probe_data.groupby('lab')[f'{traj}_y'].mean()
     
-    for x, y, k in zip(lab_mean_microx, lab_mean_microy, lab_mean_microx.keys()):
-        ax1.plot( [ abs(y) ], 
-                  [ abs(x) ], 
-              color= institution_colors[institution_map[k]], 
-              marker="+", markersize=5,
-              label = institution_map[k])
+    for x, y, k in zip(lab_mean_x, lab_mean_y, lab_mean_x.keys()):
+        ax1.plot(x, y, color=institution_colors[institution_map[k]], marker="+", markersize=5,
+                 label=institution_map[k])
     
     # overall mean (mean of labs)
-    mean_microx = probe_data['micro_x'].mean()
-    mean_microy = probe_data['micro_y'].mean()
+    mean_x = probe_data[f'{traj}_x'].mean()
+    mean_y = probe_data[f'{traj}_y'].mean()
     
-    ax1.plot( [ abs(mean_microy) ], 
-                  [ abs(mean_microx) ], 
-              color= 'k', marker="+", markersize=8,
-              label = "MEAN")
+    ax1.plot(mean_x, mean_y, color='k', marker="+", markersize=8, label="MEAN")
     
     # add legend
     ax1.legend(loc='lower right', prop={'size': 4})
     
     # Compute targeting error at surface of brain
-    error_top = all_ins_entry - np.array( ( abs(probe_data['planned_x'][0]/1e6), 
-                                              abs(probe_data['planned_y'][0]/1e6), 
-                                              abs(probe_data['planned_z'][0]/1e6)) )
-    distance_top = np.sqrt(np.sum(error_top ** 2, axis=1)) # distance between xyz coords
-    top_mean = np.mean(distance_top)*1e6
-    top_std = np.std(distance_top)*1e6
-    
-    rms_top = np.sqrt(np.mean(distance_top ** 2))*1e6
-    
+    # TODO to be consistent with other figure this should be 'micro_error_surface_xy'
+    top_mean = np.mean(probe_data[f'{traj}_error_surf_xy'].values)
+    top_std = np.std(probe_data[f'{traj}_error_surf_xy'].values)
+
     # set x/y axis labels
-    ax1.set_xlabel('micro-manipulator AP displacement (µm)', fontsize=6)
-    #ax1.tick_params(axis='x', labelsize=7)
-    ax1.set_ylabel('micro-manipulator ML displacement (µm)', fontsize=6)
-    #ax1.tick_params(axis='y', labelsize=7)
-    #ax1.yaxis.set_major_locator(plt.MaxNLocator(4))
-    
-    #ax1.set_ylim((1800,2600))
-    #ax1.set_xlim((1600,2300))
-    ax1.set_ylim((800,2800))
-    ax1.set_xlim((1000,3000))
+    if traj == 'micro':
+        ax1.set_xlabel('micro-manipulator ML displacement (µm)', fontsize=6)
+        ax1.set_ylabel('micro-manipulator AP displacement (µm)', fontsize=6)
+
+    ax1.set_xlim((-2800, -800))
+    ax1.set_ylim((-3000, -1000))
     ax1.xaxis.set_major_locator(plt.MaxNLocator(5))
     ax1.yaxis.set_major_locator(plt.MaxNLocator(5))
     
-    plt.tight_layout() # tighten layout around xlabel & ylabel
-    
-    fig1.set_size_inches(2.15, 2.15)
-    fig1.savefig( str(Path(OUTPUT, 'D_probe_surf_coord_micro.svg')), bbox_inches="tight" )
-    #fig1.savefig( str(Path('figure_histology', 'probe-plots','micro_surf_err_plot.svg')), bbox_inches="tight" ) # tight ensures figure is in bounds of svg canvas!
-    
-    # add mean trageting error distance to title
+    plt.tight_layout()  # tighten layout around xlabel & ylabel
+
+    fig_path = save_figure_path(figure='figure2')
+    fig1.savefig(fig_path.joinpath(f'D_probe_surf_coord_{traj}.svg'), bbox_inches="tight")
+
+    # add mean targetting error distance to title
     ax1.set_title('MICRO-MANIPULATOR: Mean (SD) distance \n' +
-                  str(np.around(top_mean, 1)) + ' ('+str(np.around(top_std, 2))+')'+ ' µm', fontsize=8)
+                  str(np.around(top_mean, 1)) + ' ('+str(np.around(top_std, 2))+')' + ' µm', fontsize=8)
     
-    fig1.savefig( str(Path(OUTPUT, 'D_probe_surf_coord_micro_label.svg')), bbox_inches="tight" )
-    #fig1.savefig( str(Path('figure_histology', 'probe-plots','micromanipulator_surface_error_plot.svg')), bbox_inches="tight" ) # tight ensures figure is in bounds of svg canvas!
+    fig1.savefig(fig_path.joinpath(f'D_probe_surf_coord_{traj}_label.svg'), bbox_inches="tight")
 
 
-
-def plot_probe_distance_micro_all_lab(probe_data, output='figure_histology'):
+def plot_probe_distance_all_lab(traj='micro', min_rec_per_lab=4):
     '''Plot the DISTANCES from planned to micro displacement, histogram plus
     density plot of ALL distances - to see its distribution shape.
     COMBINED with plot of distances, split by lab
     '''
-    from pathlib import Path
-    import os
-    #from probe_geometry_analysis import probe_geometry_data as probe_geom_data
-    import matplotlib.pyplot as plt
-    import seaborn as sns
-    #import numpy as np
-    import reproducible_ephys_functions as ref
-    from figure_histology import figure_hist_data as fhd
-    import math
-    import statistics as stat
-    
-    ref.figure_style()
-    
-    # get probe data if necessary
-    if 'probe_data' not in vars() or 'probe_data' not in globals():
-        # get probe_data histology query
-        probe_data = fhd.get_probe_data()
-    
-    # output DIR - generate output DIR for storing plots:
-    OUTPUT = Path(output)
-    if os.path.exists(OUTPUT) is False:
-        os.mkdir(OUTPUT)
-    
-    # get institution map and colours
-    lab_number_map, institution_map, institution_colors = ref.labs()
-    
+
+    # Load in data
+    probe_data = load_dataframe(df_name='traj')
+
+    # use repo-ephys figure style
+    figure_style()
+    fig, (ax1, ax2) = plt.subplots(2, gridspec_kw={'height_ratios': [1, 2]})
+    fig.set_size_inches(2.15, 2.8)
+
     # add institution col
-    probe_data['inst'] = probe_data['lab'].map(institution_map)
-    
-    # create boxplot with institution colours
-    #sns.boxplot(x='hist_error_surf', data=probe_data, 
-    #            color = 'white',  orient="h",
-    #            ax=ax1)
-    #sns.stripplot(x='hist_error_surf', data=probe_data, 
-    #              color = 'black', alpha = 0.8, size = 3, 
-    #               orient="h",
-    #              ax=ax1)
-    # density plot
-    
-    # compute the histology distance
-    x_dist = abs(abs(probe_data['micro_x']) - abs(probe_data['planned_x']))**2
-    y_dist = abs(abs(probe_data['micro_y']) - abs(probe_data['planned_y']))**2
-    sum_dist = x_dist + y_dist
-    dist_list = []
-    for s in sum_dist:
-        dist_list.append(math.sqrt( s ) )
-    
-    probe_data['micro_dist'] = dist_list
-    
+    probe_data['institute'] = probe_data['lab'].map(institution_map)
+
+    # get the histology distance
+    # TODO WHY NOW NOT CONSIDERING Z?
+
     # create new column to indicate if each row passes advanced query
-    passed_eids = ref.eid_list()
-    passed_adv = []
-    for p in probe_data['eid']:
-        if p in passed_eids:
-            passed_adv.append("PASS")
-        else:
-            passed_adv.append("FAIL")
-    
-    probe_data['passed_adv'] = passed_adv
-    
+    df = filter_recordings(min_neuron_region=0)
+    # Find the pids are that are passing the inclusion criteria
+    pids = df[df['include'] == 1]['pid'].unique()
+    isin, _ = ismember(probe_data.pid.values, pids)
+    probe_data['include'] = isin
+    probe_data['passed'] = np.full(len(probe_data), 'PASS')
+    probe_data['passed'][~probe_data['include']] = 'FAIL'
+
+    # Find the pids are that are passing the permuation test inclusion criteria
+    pids = df[df['permute_include'] == 1]['pid'].unique()
+    isin, _ = ismember(probe_data.pid.values, pids)
+    probe_data['permute_include'] = isin
+
     # Create an array with the colors you want to use
-    colors = ["#000000", "#FF0B04"] # BLACK AND RED
+    colors = ["#000000", "#FF0B04"]  # BLACK AND RED
     # Set your custom color palette
     sns.set_palette(sns.color_palette(colors))
-    
-    fig, (ax1, ax2) = plt.subplots(2, gridspec_kw={'height_ratios': [1, 2]})
-    
-    sns.histplot(probe_data['micro_dist'], kde=True, 
-                 color = 'grey',
-                 ax = ax1)
-    
-    #sns.kdeplot(x = 'micro_dist', data = probe_data, 
-    #             hue = 'passed_adv', 
-    #             ax = ax2)
-    
-    
+
+    sns.histplot(probe_data[f'{traj}_error_surf_xy'], kde=True, color='grey', ax=ax1)
     ax1.set_xlim(0, 1500)
-    #ax1.set_xlabel('Institution', fontsize=7)
     ax1.set_ylabel('count')
-    #ax1.set_xlabel('Histology distance (µm)')
     ax1.set_xlabel(None)
-    #ax1.get_legend().remove()
-    #ax1.tick_params(axis='x', labelrotation = 90)
-    
     ax1.xaxis.set_major_locator(plt.MaxNLocator(5))
-    #ax1.set_xticklabels(ax1.get_xticklabels(), rotation=90, ha='right')
     ax1.tick_params(axis='x', labelrotation=90)
     ax1.set(xticklabels=[])
     ax1.tick_params(bottom=False)
-    #ax1.set_axis_off()
-    
-    sns.stripplot(y='inst', x='micro_dist', data=probe_data, 
-                  hue = 'passed_adv', 
-                  size = 1.5, 
-                  orient="h", 
-                  ax=ax2)
+
+    sns.stripplot(y='institute', x=f'{traj}_error_surf_xy', data=probe_data, hue='passed', size=1.5, orient="h", ax=ax2)
     
     # plot the mean line
-    sns.boxplot(showmeans=True,
-            meanline=True,
-            meanprops={'color': 'gray', 'ls': '-', 'lw': 1},
-            medianprops={'visible': False},
-            whiskerprops={'visible': False},
-            zorder=10,
-            x="micro_dist",
-            y="inst",
-            data=probe_data,
-            showfliers=False,
-            showbox=False,
-            showcaps=False,
-            ax=ax2)
-    
-    #ax1.set_xlabel('Institution', fontsize=7)
+    sns.boxplot(showmeans=True, meanline=True, meanprops={'color': 'gray', 'ls': '-', 'lw': 1}, medianprops={'visible': False},
+                whiskerprops={'visible': False}, zorder=10, x=f'{traj}_error_surf_xy', y="institute", data=probe_data,
+                showfliers=False, showbox=False, showcaps=False, ax=ax2)
     ax2.set_ylabel(None)
     ax2.set_xlim(0, 1500)
     ax2.set_xlabel('Micromanipulator distance (µm)')
-    #ax2.get_legend().remove()
-    l = ax2.legend(fontsize=4, title='Advanced \n query', 
-               title_fontsize=6, 
-               loc='upper right',
-               markerscale = 0.2 )
-    plt.setp(l.get_title(), multialignment='center')
-    #leg.set_title('Passed adv. query',prop={'size':7})
-    
-    #ax1.tick_params(axis='x', labelrotation = 90)
-    
+    leg = ax2.legend(fontsize=4, title='Advanced \n query', title_fontsize=6, loc='upper right', markerscale=0.2)
+    plt.setp(leg.get_title(), multialignment='center')
     ax2.xaxis.set_major_locator(plt.MaxNLocator(5))
     ax2.tick_params(axis='x', labelrotation=90)
     
     # compute permutation testing - ALL DATA
-    p_m1 = permutation_test_micro(probe_data)
-    p_m2 = permutation_test_micro(probe_data)
-    p_m3 = permutation_test_micro(probe_data)
-    p_m = stat.mean([p_m1, p_m2, p_m3])
-    
+    # For this we need to limit to labs with min_rec_per_lab
+    inst_counts = probe_data['institute'].value_counts()
+    remove_inst = inst_counts.index[(inst_counts < min_rec_per_lab).values]
+    remove_inst = ~probe_data['institute'].isin(remove_inst).values
+
+    # TODO why 3 times?
+    probe_data_permute = probe_data[remove_inst]
+    p_m1 = permut_test(probe_data_permute[f'{traj}_error_surf_xy'].values, metric=permut_dist,
+                       labels1=probe_data_permute['lab'].values, labels2=probe_data_permute['subject'].values)
+    p_m2 = permut_test(probe_data_permute[f'{traj}_error_surf_xy'].values, metric=permut_dist,
+                       labels1=probe_data_permute['lab'].values, labels2=probe_data_permute['subject'].values)
+    p_m3 = permut_test(probe_data_permute[f'{traj}_error_surf_xy'].values, metric=permut_dist,
+                       labels1=probe_data_permute['lab'].values, labels2=probe_data_permute['subject'].values)
+    p_m = np.mean([p_m1, p_m2, p_m3])
+
     print("PERMUTATION TEST ALL : ", p_m)
+
     # permutation testing - PASS DATA ONLY
-    probe_data_passed = probe_data[probe_data.eid.isin(passed_eids)]
-    pp_m1 = permutation_test_micro(probe_data_passed)
-    pp_m2 = permutation_test_micro(probe_data_passed)
-    pp_m3 = permutation_test_micro(probe_data_passed)
-    pp_m = stat.mean([pp_m1, pp_m2, pp_m3])
+    probe_data_permute = probe_data[probe_data['permute_include'] == 1]
+    pp_m1 = permut_test(probe_data_permute[f'{traj}_error_surf_xy'].values, metric=permut_dist,
+                       labels1=probe_data_permute['lab'].values, labels2=probe_data_permute['subject'].values)
+    pp_m2 = permut_test(probe_data_permute[f'{traj}_error_surf_xy'].values, metric=permut_dist,
+                       labels1=probe_data_permute['lab'].values, labels2=probe_data_permute['subject'].values)
+    pp_m3 = permut_test(probe_data_permute[f'{traj}_error_surf_xy'].values, metric=permut_dist,
+                       labels1=probe_data_permute['lab'].values, labels2=probe_data_permute['subject'].values)
+    pp_m = np.mean([pp_m1, pp_m2, pp_m3])
+
     print("PERMUTATION TEST PASS : ", pp_m)
     
-    ax1.set_title('Permutation Test p-value: \n    ALL : ' 
-                    + str( round( p_m, 4) )
-                    + '    PASS : ' + str( round( pp_m, 4) ) )
+    ax1.set_title('Permutation Test p-value: \n    ALL : ' + str(round(p_m, 4)) + '    PASS : ' + str(round(pp_m, 4)))
     
-    plt.tight_layout() # tighten layout around xlabel & ylabel
-    
-    fig.set_size_inches(2.15, 2.8)
-    fig.savefig( str(Path(output, 'D_probe_dist_micro_all_lab.svg')), bbox_inches="tight" )
-    #fig1.savefig( str(Path('figure_histology', 'probe-plots','micro_surf_err_plot.svg')), bbox_inches="tight" ) # tight ensures figure is in bounds of svg canvas!
+    plt.tight_layout()  # tighten layout around xlabel & ylabel
+
+    fig_path = save_figure_path(figure='figure2')
+    fig.savefig(fig_path.joinpath('D_probe_dist_micro_all_lab.svg'), bbox_inches="tight")
 
 
 
@@ -1271,10 +1143,8 @@ def permutation_test_micro(probe_data, exclude_val = 4):
         probe_data.drop(index , inplace=True)
     
     # perform permutation test
-    p_hist = permut_test( np.array( list(probe_data['micro_dist']) ),
-                 metric=permut_dist,
-                 labels1 = np.array( list(probe_data['lab']) ),
-                 labels2 = np.array( list(probe_data['subject']) ) )
+    p_hist = permut_test(np.array( list(probe_data['micro_dist']) ),metric=permut_dist,
+                         labels1=np.array( list(probe_data['lab']) ), labels2=np.array( list(probe_data['subject']) ) )
     
     return p_hist
 

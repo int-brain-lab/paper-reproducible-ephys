@@ -10,124 +10,95 @@ trajectory.
 @author: sjwest
 """
 
+from pathlib import Path
+import os
+from figure_histology import figure_hist_data as fhd
+import matplotlib.pyplot as plt
+from one.api import ONE
+import numpy as np
+import ibllib.atlas as atlas
+from reproducible_ephys_functions import figure_style, labs, save_figure_path
+from figure_histology.figure2_load_data import load_dataframe
+from figure_histology.figure2_functions import df_to_traj_dict
+
+
 def print_path():
     import os
     path = os.path.dirname(os.path.realpath(__file__))
     print(path)
 
 
-def plot_trajs(probe_data, output='figure_histology', 
-               plan_colour='w', lab_colour=True):
+def plot_trajs(output=None, plan_colour='w', lab_colour=True):
     '''Plot CCF in coronal & sagittal tilted slices along planned rep site traj
     and add histology trajs projections onto this plot.
     '''
-    from pathlib import Path
-    import os
-    from figure_histology import figure_hist_data as fhd
-    import matplotlib.pyplot as plt
-    from one.api import ONE
-    import numpy as np
-    import ibllib.atlas as atlas
-    import reproducible_ephys_functions as ref
     
     # use repo-ephys figure style
-    ref.figure_style()
+    figure_style()
     
-    # get probe data if necessary
-    if 'probe_data' not in vars() or 'probe_data' not in globals():
-        # get probe_data histology query
-        probe_data = fhd.get_probe_data()
-    
-    traj_data = probe_data
-    
-    # output DIR - generate output DIR for storing plots:
-    OUTPUT = Path(output)
-    if os.path.exists(OUTPUT) is False:
-        os.mkdir(OUTPUT)
-    
-    # connect to ibl server
-    one = ONE()
-    
-    # get all trajectories at the REPEATED SITE
-     # for ibl brainwide map project
-     # repeated site location: x -2243 y -2000
-    traj = one.alyx.rest('trajectories', 'list', provenance='Planned',
-                         x=-2243, y=-2000,  project='ibl_neuropixel_brainwide_01')
-    
-    # get eids, probe names and subject names from traj
-    eids = [sess['session']['id'] for sess in traj]
-    probes = [sess['probe_name'] for sess in traj]
-    
-    # Get the trajectory for the planned repeated site recording
-    phi_eid = eids[0]
-    phi_probe = probes[0]
-    phi_traj = one.alyx.rest('trajectories', 'list', session=phi_eid,
-                             provenance='Planned', probe=phi_probe)[0]
-    # planned as insertion: includes XYZ and phi,theta,depth data
-    ins_plan = atlas.Insertion.from_dict(phi_traj)
-    
+    # load in data
+    traj_data = load_dataframe(df_name='traj')
+
+    ins_plan = atlas.Insertion.from_dict(df_to_traj_dict(traj_data.iloc[0], provenance='planned'))
+
     # get new atlas for plotting
     brain_atlas = atlas.AllenAtlas(res_um=25)
-    
-    
+
+    # use repo-ephys figure style
+    figure_style()
     fig1, ax1 = plt.subplots()
     fig2, ax2 = plt.subplots()
-    
     fig1.set_size_inches(1, 2.15)
     fig2.set_size_inches(1, 2.15)
     
     # set font sizes
-    #SMALL_SIZE = 7
-    #MEDIUM_SIZE = 8
-    #BIGGER_SIZE = 10
-    
-    #plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
-    #plt.rc('axes', titlesize=SMALL_SIZE)     # fontsize of the axes title
-    #plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
-    #plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
-    #plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
-    #plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
-    #plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
+    # SMALL_SIZE = 7
+    # MEDIUM_SIZE = 8
+    # BIGGER_SIZE = 10
+
+    # plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
+    # plt.rc('axes', titlesize=SMALL_SIZE)     # fontsize of the axes title
+    # plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
+    # plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+    # plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+    # plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
+    # plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
     
     
     # Compute mean & deviation in coronal plane
-    #alpha_mean = np.mean(np.abs(traj_data['planned_theta'] -
+    # alpha_mean = np.mean(np.abs(traj_data['planned_theta'] -
     #                            np.abs(traj_data['hist_coronal_angle'])))
-    #alpha_std = np.std(np.abs(traj_data['planned_theta'] -
+    # alpha_std = np.std(np.abs(traj_data['planned_theta'] -
     #                          np.abs(traj_data['hist_coronal_angle'])))
     
     # Compute mean & deviation in sagittal plane
-    #beta_mean = np.mean(np.abs(traj_data['hist_saggital_angle']))
-    #beta_std = np.std(np.abs(traj_data['hist_saggital_angle']))
+    # beta_mean = np.mean(np.abs(traj_data['hist_saggital_angle']))
+    # beta_std = np.std(np.abs(traj_data['hist_saggital_angle']))
     
     # empty numpy arrays for storing the entry point of probe into brain
     # and "exit point" i.e the probe tip!
     all_ins_entry = np.empty((0, 3))
     all_ins_exit = np.empty((0, 3))
     
-    # generate initial plot of brain atlas in each plane
-     # using ins_plan to take the correct tilted slice for PLANNED TRAJECTORY
+    # generate initial plot of brain atlas in each plane using ins_plan to take the correct tilted slice for PLANNED TRAJECTORY
     cax = brain_atlas.plot_tilted_slice(ins_plan.xyz, axis=1, ax=ax1)
     sax = brain_atlas.plot_tilted_slice(ins_plan.xyz, axis=0, ax=ax2)
     
     # get institution map and colours
-    lab_number_map, institution_map, institution_colors = ref.labs()
+    lab_number_map, institution_map, institution_colors = labs()
     
     # Compute trajectory for each repeated site recording and plot on slice figures
     for idx, row in traj_data.iterrows():
         
-        phi_eid = row['eid']
-        phi_probe = row['probe']
-        phi_subj = row['subject']
-        phi_lab = row['lab']
+        subj = row['subject']
+        lab = row['lab']
         
-        print(phi_subj)
-        print(phi_lab)
-        print(institution_map[phi_lab])
-        
-        phi_traj = one.alyx.rest('trajectories', 'list', session=phi_eid,
-                                 provenance='Histology track', probe=phi_probe)[0]
-        ins = atlas.Insertion.from_dict(phi_traj)
+        print(subj)
+        print(lab)
+        print(institution_map[lab])
+
+        traj = df_to_traj_dict(row, provenance='hist')
+        ins = atlas.Insertion.from_dict(traj)
     
         all_ins_entry = np.vstack([all_ins_entry, ins.xyz[0, :]])
         all_ins_exit = np.vstack([all_ins_exit, ins.xyz[1, :]])
@@ -137,26 +108,19 @@ def plot_trajs(probe_data, output='figure_histology',
         # Plot the trajectory for each repeated site recording
         # colour by institution_colors[institution_map[phi_lab]]
         if lab_colour:
-            cax.plot(ins.xyz[:, 0] * 1e6, ins.xyz[:, 2] * 1e6, 
-                     color= institution_colors[institution_map[phi_lab]],
-                     linewidth = 0.8)
-            sax.plot(ins.xyz[:, 1] * 1e6, ins.xyz[:, 2] * 1e6, 
-                     color= institution_colors[institution_map[phi_lab]],
-                     linewidth = 0.8)
+            color = institution_colors[institution_map[lab]]
+            cax.plot(ins.xyz[:, 0] * 1e6, ins.xyz[:, 2] * 1e6, color=color, linewidth = 0.8)
+            sax.plot(ins.xyz[:, 1] * 1e6, ins.xyz[:, 2] * 1e6, color=color,linewidth = 0.8)
         else:
             # OR plot all trajectories the same colour - deepskyblue
-            cax.plot(ins.xyz[:, 0] * 1e6, ins.xyz[:, 2] * 1e6, 
-                     color= 'deepskyblue',
-                     linewidth = 0.5, alpha = 0.5)
-            sax.plot(ins.xyz[:, 1] * 1e6, ins.xyz[:, 2] * 1e6, 
-                     color= 'deepskyblue',
-                     linewidth = 0.5, alpha=0.5)
-    
-    
+            cax.plot(ins.xyz[:, 0] * 1e6, ins.xyz[:, 2] * 1e6, color='deepskyblue', linewidth=0.5, alpha=0.5)
+            sax.plot(ins.xyz[:, 1] * 1e6, ins.xyz[:, 2] * 1e6, color='deepskyblue', linewidth=0.5, alpha=0.5)
+
+    # TODO check if we can remove
     # Compute the mean trajectory across all repeated site recordings
-    entry_mean = np.mean(all_ins_entry, axis=0)
-    exit_mean = np.mean(all_ins_exit, axis=0)
-    ins_mean = np.r_[[entry_mean], [exit_mean]]
+    # entry_mean = np.mean(all_ins_entry, axis=0)
+    # exit_mean = np.mean(all_ins_exit, axis=0)
+    # ins_mean = np.r_[[entry_mean], [exit_mean]]
     # Only consider deviation in ML and AP directions for this analysis
     # entry_std = np.std(all_ins_entry, axis=0)
     # entry_std[2]=0
@@ -166,8 +130,8 @@ def plot_trajs(probe_data, output='figure_histology',
     # ins_lower = np.r_[[entry_mean-entry_std], [exit_mean-exit_std]]
     
     # Plot the average track across all repeated site recordings, in RED
-    #cax.plot(ins_mean[:, 0] * 1e6, ins_mean[:, 2] * 1e6, 'orangered', linewidth=2)
-    #sax.plot(ins_mean[:, 1] * 1e6, ins_mean[:, 2] * 1e6, 'orangered', linewidth=2)
+    # cax.plot(ins_mean[:, 0] * 1e6, ins_mean[:, 2] * 1e6, 'orangered', linewidth=2)
+    # sax.plot(ins_mean[:, 1] * 1e6, ins_mean[:, 2] * 1e6, 'orangered', linewidth=2)
 
     # add planned insertion ON TOP of the actual insertions, in WHITE
     cax.plot(ins_plan.xyz[:, 0] * 1e6, ins_plan.xyz[:, 2] * 1e6, plan_colour, linewidth=2)
@@ -192,9 +156,7 @@ def plot_trajs(probe_data, output='figure_histology',
     #ax1.twinx().set_axis_off()
     #ax2.twinx().set_axis_off()
     
-    ax1.plot(  [-1250, -250], 
-               [ -5750, -5750 ], 
-               color= 'w', linewidth = 2)
+    ax1.plot([-1250, -250], [-5750, -5750], color='w', linewidth=2)
     #ax2.plot(  [-2750, -3750], 
     #           [ -5750, -5750 ], 
     #           color= 'w', linewidth = 2)
@@ -210,8 +172,13 @@ def plot_trajs(probe_data, output='figure_histology',
     
     #plt.axis('off')
     # save to output
-    fig1.savefig( str(Path(OUTPUT, 'C_probe_trajs_ccf_coronal.svg')), bbox_inches="tight" )
-    fig2.savefig( str(Path(OUTPUT, 'C_probe_trajs_ccf_sagittal.svg')), bbox_inches="tight" )
+    if output is None:
+        output = save_figure_path('figure2')
+    else:
+        output = Path(output)
+        output.mkdir(exist_ok=True, parents=True)
+    fig1.savefig(output.joinpath('C_probe_trajs_ccf_coronal.svg'), bbox_inches="tight")
+    fig2.savefig(output.joinpath('C_probe_trajs_ccf_sagittal.svg'), bbox_inches="tight")
     
 
 

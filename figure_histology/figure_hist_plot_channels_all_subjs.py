@@ -10,10 +10,29 @@ probe channels onto this histology data.
 @author: sjwest
 """
 
+from pathlib import Path
+import os
+from figure_histology import figure_hist_data as fhd
+import matplotlib.pyplot as plt
+from one.api import ONE
+from ibllib.atlas import Insertion
+import numpy as np
+import atlaselectrophysiology.load_histology as hist
+import ibllib.atlas as atlas
+
+
+
 def print_path():
     import os
     path = os.path.dirname(os.path.realpath(__file__))
     print(path)
+
+
+
+
+def plot_channels():
+
+
 
 
 def plot_all_channels(output='figure_histology_supp', colour='w'):
@@ -24,16 +43,7 @@ def plot_all_channels(output='figure_histology_supp', colour='w'):
     
     Plots all coronal and all sagittal data in one large figure.
     '''
-    from pathlib import Path
-    import os
-    from figure_histology import figure_hist_data as fhd
-    import matplotlib.pyplot as plt
-    from one.api import ONE
-    from ibllib.atlas import Insertion
-    import numpy as np
-    import atlaselectrophysiology.load_histology as hist
-    import ibllib.atlas as atlas
-    
+
     # output DIR
     OUTPUT = Path(output)
     
@@ -308,22 +318,15 @@ def plot_channels_n3(output='figure_histology', remove_axes=True, colour='w'):
     
     Plots all coronal and all sagittal data in one large figure.
     '''
-    from pathlib import Path
-    import os
-    from figure_histology import figure_hist_data as fhd
-    import matplotlib.pyplot as plt
-    from one.api import ONE
-    from ibllib.atlas import Insertion
-    import numpy as np
-    import atlaselectrophysiology.load_histology as hist
-    import ibllib.atlas as atlas
-    
+
     # output DIR
     OUTPUT = Path(output)
     
     # generate output DIR for storing plots:
     if os.path.exists(OUTPUT) is False:
         os.mkdir(OUTPUT)
+
+
     
     # connect to ibl server
     one = ONE()
