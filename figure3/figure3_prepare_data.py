@@ -8,7 +8,7 @@ from iblutil.numerical import ismember
 from brainbox.processing import compute_cluster_average
 from brainbox.io.one import SpikeSortingLoader
 
-from reproducible_ephys_functions import get_insertions, combine_regions, BRAIN_REGIONS, save_data_path
+from reproducible_ephys_functions import get_insertions, combine_regions, BRAIN_REGIONS, save_data_path, save_dataset_info
 from figure3.figure3_load_data import load_dataframe
 
 ba = AllenAtlas()
@@ -179,8 +179,8 @@ def prepare_data(insertions, one, recompute=False):
 
 
 if __name__ == '__main__':
-    one=ONE(mode='remote')
-    one_local = One()
-    insertions = get_insertions(level=0, recompute=False, one=one)
-    
+    one = ONE()
+    one.record_loaded = True
+    insertions = get_insertions(level=0, recompute=True, one=one)
     all_df_chns, all_df_clust, metrics = prepare_data(insertions, one=one, recompute=True)
+    save_dataset_info(one, figure='figure3')

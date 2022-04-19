@@ -9,7 +9,7 @@ from brainbox.task.closed_loop import compute_comparison_statistics
 from brainbox.io.one import SpikeSortingLoader
 from iblutil.numerical import ismember
 
-from reproducible_ephys_functions import combine_regions, get_insertions, BRAIN_REGIONS, save_data_path
+from reproducible_ephys_functions import combine_regions, get_insertions, BRAIN_REGIONS, save_data_path, save_dataset_info
 from reproducible_ephys_processing import compute_psth
 from figure5.figure5_load_data import load_dataframe
 
@@ -326,7 +326,7 @@ def prepare_data(insertions, one, figure='figure5', recompute=False, **kwargs):
 
 if __name__ == '__main__':
     one = ONE()
-    one_local = One()
+    one.record_loaded = True
     insertions = get_insertions(level=2, one=one)
-
-    prepare_data(insertions, one=one, **default_params)
+    prepare_data(insertions, one=one, **default_params, recompute=True)
+    save_dataset_info(one, figure='figure5')

@@ -9,6 +9,7 @@ import matplotlib
 import numpy as np
 import logging
 from pathlib import Path
+import shutil
 
 from one.api import ONE
 from one.alf.exceptions import ALFObjectNotFound
@@ -373,10 +374,10 @@ def save_data_path(figure=None):
         if 'DATA_PATH' in defined_paths:
             data_path = Path(reproducible_ephys_paths.DATA_PATH)
         else:
-            data_path = Path(get_cache_dir()).joinpath('paper_repro_ephys')
+            data_path = Path(get_cache_dir()).joinpath('paper_repro_ephys_data')
 
     except ModuleNotFoundError:
-        data_path = Path(get_cache_dir()).joinpath('paper_repro_ephys')
+        data_path = Path(get_cache_dir()).joinpath('paper_repro_ephys_data')
 
     if figure is not None:
         data_path = data_path.joinpath(str(figure))
@@ -398,10 +399,10 @@ def save_figure_path(figure=None):
         if 'FIG_PATH' in defined_paths:
             fig_path = Path(reproducible_ephys_paths.FIG_PATH)
         else:
-            fig_path = Path(get_cache_dir()).joinpath('paper_repro_ephys')
+            fig_path = Path(get_cache_dir()).joinpath('paper_repro_ephys_data')
 
     except ModuleNotFoundError:
-        fig_path = Path(get_cache_dir()).joinpath('paper_repro_ephys')
+        fig_path = Path(get_cache_dir()).joinpath('paper_repro_ephys_data')
 
     if figure is not None:
         fig_path = fig_path.joinpath(str(figure), 'figures')
@@ -554,7 +555,7 @@ def filter_recordings(df=None, max_ap_rms=40, max_lfp_power=-140, min_neurons_pe
 
         # merge the two dataframes
         df['original_index'] = df.index
-        df = df.merge(metrics, on=['pid', 'region', 'subject', 'eid', 'probe', 'date', 'lab'])
+        df = df.merge(metrics, on=['pid', 'region', 'subject', 'eid', 'probe', 'date', 'lab', 'institute'])
 
     # Region Level
     # no. of channels per region
@@ -627,3 +628,16 @@ def repo_path():
     :return:
     """
     return Path(__file__).parent.resolve()
+
+
+def save_dataset_info(one, figure):
+
+    uuid_path = save_data_path(figure=figure).joinpath('one_uuids')
+    uuid_path.mkdir(exist_ok=True, parents=True)
+
+    _, filename = one.save_loaded_ids(clear_list=False)
+    shutil.move(filename, uuid_path.joinpath(f'{figure}_dataset_uuids.csv'))
+
+    # Save the session IDs
+    _, filename = one.save_loaded_ids(sessions_only=True)
+    shutil.move(filename, uuid_path.joinpath(f'{figure}_session_uuids.csv'))

@@ -7,7 +7,7 @@ from brainbox.io.one import SpikeSortingLoader
 from iblutil.numerical import ismember
 from ibllib.atlas import AllenAtlas
 
-from reproducible_ephys_functions import combine_regions, BRAIN_REGIONS, get_insertions, save_data_path
+from reproducible_ephys_functions import combine_regions, BRAIN_REGIONS, get_insertions, save_data_path, save_dataset_info
 from reproducible_ephys_processing import compute_psth
 from figure4.figure4_load_data import load_data, load_dataframe
 
@@ -167,7 +167,7 @@ def prepare_data(insertions, one, recompute=False, **kwargs):
 
 if __name__ == '__main__':
     one = ONE()
-    one_local = One()
+    one.load_recorded = True
     insertions = get_insertions(level=2, one=one)
-
     prepare_data(insertions, one=one, **default_params)
+    save_dataset_info(one, figure='figure4')

@@ -3,7 +3,7 @@ import numpy as np
 from brainbox.io.one import SpikeSortingLoader
 from ibllib.atlas import AllenAtlas
 from one.api import ONE, One
-from reproducible_ephys_functions import combine_regions, BRAIN_REGIONS, get_insertions, save_data_path
+from reproducible_ephys_functions import combine_regions, BRAIN_REGIONS, get_insertions, save_data_path, save_dataset_info
 from reproducible_ephys_processing import compute_psth
 from brainbox.population.decode import get_spike_counts_in_bins
 from brainbox.task.closed_loop import compute_comparison_statistics
@@ -180,60 +180,8 @@ def prepare_data(insertions, one, recompute=False, **kwargs):
 
 if __name__ == '__main__':
     one = ONE()
-    one_local = One()
+    one.record_loaded = True
     insertions = get_insertions(level=2, one=one)
 
     prepare_data(insertions, one=one, **default_params)
-
-### TEMP from here down####
-# Filter out recordings that have less than n_thresh units per region
-# all_frs = all_frs[concat_df['include'], :]
-# concat_df = concat_df[concat_df['include']].reset_index()
-#
-# # Embedding with 2 PCA components on all responsive units
-# # Find responsive units
-# pca = PCA(n_components=2)
-# pca.fit(all_frs[concat_df['responsive']])
-# emb = pca.transform(all_frs[concat_df['responsive']])
-# concat_df['emb1'] = np.nan
-# concat_df['emb2'] = np.nan
-# concat_df.loc[concat_df['responsive'], 'emb1'] = emb[:, 0]
-# concat_df.loc[concat_df['responsive'], 'emb2'] = emb[:, 1]
-#
-# # For each region show how to find the reconstructed PCA
-# concat_df_reg = concat_df.groupby('region')
-# for reg in BRAIN_REGIONS:
-#     df_reg = concat_df_reg.get_group(reg)
-#     reg_idx = concat_df_reg.groups[reg]
-#     frs_reg = all_frs[reg_idx, :]
-#
-#     pca = PCA()
-#     pca.fit(frs_reg)
-#     u, s, vh = np.linalg.svd(frs_reg)
-#     print('comps:', pca.n_components_, 'features:', pca.n_features_)
-#     print(pca.explained_variance_ratio_[:3])
-#     S_star = np.zeros(frs_reg.shape)
-#     for i in range(2):
-#         S_star[i, i] = s[i]
-#     Y_re_star = np.matrix(u) * np.matrix(S_star) * np.matrix(vh)
-#
-#
-# # For each region show how to make some of the plots
-# import matplotlib.pyplot as plt
-# concat_df_resp = concat_df[concat_df['responsive']]
-# concat_df_reg = concat_df_resp.groupby('region')
-# fig, ax = plt.subplots()
-# for reg in BRAIN_REGIONS:
-#     df_reg = concat_df_reg.get_group(reg)
-#     reg_idx = concat_df_reg.groups[reg]
-#     frs_reg = all_frs[reg_idx, :]
-#     ax.plot(np.mean(frs_reg, axis=0) / bin_size)
-#
-#
-#     fig_reg, ax_reg = plt.subplots()
-#     df_lab = df_reg.groupby('institute')
-#     for lab in df_lab.groups.keys():
-#
-#         lab_idx = df_lab.groups[lab]
-#         frs_lab = all_frs[lab_idx, :]
-#         ax_reg.plot(np.mean(frs_lab, axis=0) / bin_size)
+    save_dataset_info(one, figure='figure7')

@@ -2,7 +2,7 @@ from figure5.figure5_prepare_data import prepare_data as prepare_data_fig5
 from figure6.figure6_load_data import load_dataframe, load_data
 from iblutil.numerical import ismember
 from one.api import ONE, One
-from reproducible_ephys_functions import get_insertions
+from reproducible_ephys_functions import get_insertions, save_dataset_info
 
 import numpy as np
 
@@ -40,7 +40,7 @@ def prepare_data(insertions, one, recompute=False, **kwargs):
 
 if __name__ == '__main__':
     one = ONE()
-    one_local = One()
+    one.record_loaded = True
     insertions = get_insertions(level=2, one=one)
-
     prepare_data(insertions, one=one, **default_params)
+    save_dataset_info(one, figure='figure6')

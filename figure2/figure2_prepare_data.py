@@ -58,7 +58,7 @@ micro manipulator, planned - the first is always returned.
 from one.api import ONE
 from ibllib.atlas import Insertion, AllenAtlas
 from brainbox.io.one import load_channel_locations
-from reproducible_ephys_functions import save_data_path, get_histology_insertions
+from reproducible_ephys_functions import save_data_path, get_histology_insertions, save_dataset_info
 
 import numpy as np
 import pandas as pd
@@ -313,6 +313,7 @@ def prepare_data(insertions, one=None, brain_atlas=None, recompute=False):
 
 if __name__ == '__main__':
     one = ONE()
+    one.record_loaded = True
     insertions = get_histology_insertions(one=one)
-
     all_df_chns, all_df_traj = prepare_data(insertions, one=one, recompute=True)
+    save_dataset_info(one, figure='figure2')
