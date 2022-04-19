@@ -19,7 +19,7 @@ import svgutils.compose as sc  # layout figure in svgutils
 from iblutil.numerical import ismember
 
 from reproducible_ephys_functions import figure_style, save_figure_path, labs, filter_recordings
-from figure_histology.figure2_load_data import load_dataframe
+from figure2.figure2_load_data import load_dataframe
 from permutation_test import permut_test, permut_dist
 
 lab_number_map, institution_map, institution_colors = labs()
@@ -57,7 +57,7 @@ def plot_probe_angle_histology_panel():
     fig_path = save_figure_path(figure='figure2')
     fig = sc.Figure("66mm", "140mm",
                     sc.Panel(sc.SVG(fig_path.joinpath('E_probe_angle_hist_label.svg')).scale(0.35)),
-                    sc.Panel(sc.SVG(fig_path.joinpath('E_probe_angle_hist_all_lab.svg')).scale(0.35).move(0, 64)))
+                    sc.Panel(sc.SVG(fig_path.joinpath('E_probe_angle_hist_all_lab.svg')).scale(0.35).move(0, 68)))
     fig.save(fig_path.joinpath("angle_histology_panel.svg"))
 
 
@@ -81,9 +81,9 @@ def plot_probe_angle_histology():
     for idx, row in probe_data.iterrows():
 
        ax1.plot([row['angle_ml'], 0], [row['angle_ap'], 0],
-                color=institution_colors[institution_map[row['lab']]], linewidth=0.2, alpha=0.8)
+                color=institution_colors[institution_map[row['lab']]], linewidth=0.15, alpha=0.8)
        ax1.plot(row['angle_ml'], row['angle_ap'], color=institution_colors[institution_map[row['lab']]],
-                marker="o", markersize=1, alpha=0.8)
+                marker="o", markersize=0.5, alpha=0.8, markeredgewidth = 0.5)
 
     # Plot the mean micro coords
     # lab means
@@ -91,13 +91,14 @@ def plot_probe_angle_histology():
     lab_mean_ap = probe_data.groupby('lab')['angle_ap'].mean()
     
     for ml, ap, k in zip(lab_mean_ml, lab_mean_ap, lab_mean_ml.keys()):
-        ax1.plot(ml, ap, color= institution_colors[institution_map[k]], marker="+", markersize=5, label=institution_map[k])
+        ax1.plot(ml, ap, color=institution_colors[institution_map[k]], marker="+", markersize=3, alpha=0.5,
+                 label=institution_map[k])
     
     # overall mean (mean of labs)
     mean_ml = probe_data['angle_ml'].mean()
     mean_ap = probe_data['angle_ap'].mean()
 
-    ax1.plot(mean_ml, mean_ap, color='k', marker="+", markersize=8, label="MEAN")
+    ax1.plot(mean_ml, mean_ap, color='k', marker="+", markersize=6, alpha=0.7, label="MEAN")
 
     df = filter_recordings(min_neuron_region=0)
     # Find the pids are that are passing the inclusion criteria
@@ -113,8 +114,8 @@ def plot_probe_angle_histology():
 
 
     # set x/y axis labels
-    ax1.set_xlabel('histology ML angle (degrees)', fontsize=7)
-    ax1.set_ylabel('histology AP angle (degrees)', fontsize=7)
+    ax1.set_xlabel('histology ML angle (degrees)', fontsize=6)
+    ax1.set_ylabel('histology AP angle (degrees)', fontsize=6)
     # add mean trageting error distance to title
     ax1.set_title('Mean (SD) angle \n' +
                   'ALL : ' + str(np.around(angle_mean_all, 1)) + ' (' + str(np.around(angle_std_all, 2)) + ')' + ' degrees \n' +
@@ -128,7 +129,22 @@ def plot_probe_angle_histology():
     ax1.set_xlim(-20, 10)
 
     plt.tight_layout()  # tighten layout around xlabel & ylabel
-    
+
+    # add a subplot INSIDE the fig1 ax1
+    axav = fig1.add_axes([0.1, 0.12, 0.28, 0.28])
+    axav.xaxis.tick_top()
+    axav.yaxis.tick_right()
+    axav.tick_params(axis='both', labelsize=3, pad=1)
+    axav.axhline(y=0, color="grey", linestyle="--", linewidth=0.5)
+    axav.axvline(x=0, color="grey", linestyle="--", linewidth=0.5)
+    axav.set_xlim((-10, 5))
+    axav.set_ylim((-10, 5))
+
+    for ml, ap, k in zip(lab_mean_ml, lab_mean_ap, lab_mean_ml.keys()):
+        axav.plot(ml, ap, color=institution_colors[institution_map[k]], marker="+", markersize=5, alpha=0.7,
+                 label=institution_map[k])
+    axav.plot(mean_ml, mean_ap, color='k', marker="+", markersize=8, alpha=0.7, label="MEAN")
+
     fig_path = save_figure_path(figure='figure2')
     fig1.savefig(fig_path.joinpath('E_probe_angle_hist_label.svg'), bbox_inches="tight")
 
@@ -169,7 +185,6 @@ def plot_probe_angle_histology_all_lab(min_rec_per_lab=4):
     # Set your custom color palette
     sns.set_palette(sns.color_palette(colors))
 
-
     sns.histplot(probe_data['angle'], kde=True, color='grey', ax=ax1)
     ax1.set_xlim(0, 20)
     ax1.set_ylabel('count')
@@ -179,7 +194,7 @@ def plot_probe_angle_histology_all_lab(min_rec_per_lab=4):
     ax1.set(xticklabels=[])
     ax1.tick_params(bottom=False)
 
-    sns.stripplot(y='institute', x='angle', data=probe_data, hue='passed', size=1.5, orient="h", ax=ax2)
+    sns.stripplot(y='institute', x='angle', data=probe_data, hue='passed', size=1.5, alpha=0.8, orient="h", ax=ax2)
     
     # plot the mean line
     sns.boxplot(showmeans=True, meanline=True, meanprops={'color': 'gray', 'ls': '-', 'lw': 1}, medianprops={'visible': False},

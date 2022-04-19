@@ -10,16 +10,13 @@ trajectory.
 @author: sjwest
 """
 
-from pathlib import Path
-import os
-from figure_histology import figure_hist_data as fhd
+
 import matplotlib.pyplot as plt
-from one.api import ONE
 import numpy as np
 import ibllib.atlas as atlas
 from reproducible_ephys_functions import figure_style, labs, save_figure_path
-from figure_histology.figure2_load_data import load_dataframe
-from figure_histology.figure2_functions import df_to_traj_dict
+from figure2.figure2_load_data import load_dataframe
+from figure2.figure2_functions import df_to_traj_dict
 
 
 def plot_trajs(plan_colour='w', lab_colour=True):
@@ -81,35 +78,17 @@ def plot_trajs(plan_colour='w', lab_colour=True):
             cax.plot(ins.xyz[:, 0] * 1e6, ins.xyz[:, 2] * 1e6, color='deepskyblue', linewidth=0.5, alpha=0.5)
             sax.plot(ins.xyz[:, 1] * 1e6, ins.xyz[:, 2] * 1e6, color='deepskyblue', linewidth=0.5, alpha=0.5)
 
-    # TODO check if we can remove
-    # Compute the mean trajectory across all repeated site recordings
-    # entry_mean = np.mean(all_ins_entry, axis=0)
-    # exit_mean = np.mean(all_ins_exit, axis=0)
-    # ins_mean = np.r_[[entry_mean], [exit_mean]]
-    # Only consider deviation in ML and AP directions for this analysis
-    # entry_std = np.std(all_ins_entry, axis=0)
-    # entry_std[2]=0
-    # exit_std = np.std(all_ins_exit, axis=0)
-    # exit_std[2]=0
-    # ins_upper = np.r_[[entry_mean+entry_std], [exit_mean+exit_std]]
-    # ins_lower = np.r_[[entry_mean-entry_std], [exit_mean-exit_std]]
-    
-    # Plot the average track across all repeated site recordings, in RED
-    # cax.plot(ins_mean[:, 0] * 1e6, ins_mean[:, 2] * 1e6, 'orangered', linewidth=2)
-    # sax.plot(ins_mean[:, 1] * 1e6, ins_mean[:, 2] * 1e6, 'orangered', linewidth=2)
-
     # add planned insertion ON TOP of the actual insertions, in WHITE
     cax.plot(ins_plan.xyz[:, 0] * 1e6, ins_plan.xyz[:, 2] * 1e6, plan_colour, linewidth=2)
     sax.plot(ins_plan.xyz[:, 1] * 1e6, ins_plan.xyz[:, 2] * 1e6, plan_colour, linewidth=2)
     
-    ax1.set_ylim((-6000,500))
-    ax1.set_xlim((-3000,0))
+    ax1.set_ylim((-6000, 500))
+    ax1.set_xlim((-3000, 0))
+    ax2.set_ylim((-6000, 500))
+    ax2.set_xlim((-1000, -4000))
     
-    ax2.set_ylim((-6000,500))
-    ax2.set_xlim((-1000,-4000))
-    
-    ax1.tick_params(axis='x', labelrotation = 90)
-    ax2.tick_params(axis='x', labelrotation = 90)
+    ax1.tick_params(axis='x', labelrotation=90)
+    ax2.tick_params(axis='x', labelrotation=90)
     
     # hide the axes
     ax1.set_axis_off()
@@ -118,6 +97,9 @@ def plot_trajs(plan_colour='w', lab_colour=True):
     ax2.get_children()[len(ax1.get_children())-2].set_axis_off()
 
     ax1.plot([-1250, -250], [-5750, -5750], color='w', linewidth=2)
+
+    ax1.text(-2900, -5700, 'Coronal', style='italic', color='w')
+    ax2.text(-1100, -5700, 'Sagittal', style='italic', color='w')
 
     fig1.tight_layout()
     fig2.tight_layout()

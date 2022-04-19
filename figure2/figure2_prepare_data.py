@@ -63,7 +63,7 @@ from reproducible_ephys_functions import save_data_path, get_histology_insertion
 import numpy as np
 import pandas as pd
 
-
+# TODO remove duplicates on insertions
 def prepare_data(insertions, one=None, brain_atlas=None, recompute=False):
     """Download channels geometry data for all given probes in a given project
     at the planned insertion coord [x,y] from Alyx.
@@ -128,8 +128,6 @@ def prepare_data(insertions, one=None, brain_atlas=None, recompute=False):
             continue
 
         data_traj = {}
-
-        # NEED TO ADD STEVENS ANGLE COMPUTATION AND THE DISTANCE IN XY ON THE SURFACE OF CORTEX
 
         # Add in all info
         data_traj['eid'] = eid
@@ -260,36 +258,6 @@ def prepare_data(insertions, one=None, brain_atlas=None, recompute=False):
         data_traj['angle_ml'] = angle_ml
         data_traj['angle_ap'] = angle_ap
 
-
-        # # Using phi and theta calculate angle in SAGITTAL plane (beta)
-        # x = np.sin(data_traj['hist_theta'] * np.pi / 180.) * \
-        #     np.sin(data_traj['hist_phi'] * np.pi / 180.)
-        # y = np.cos(data_traj['hist_theta'] * np.pi / 180.)
-        # # add this data to the list:
-        # data_traj['hist_saggital_angle'] = np.arctan2(x, y) * 180 / np.pi  # hist_beta
-        #
-        # # Using phi and theta calculate angle in coronal plane (alpha)
-        # x = np.sin(data_traj['hist_theta'] * np.pi / 180.) * \
-        #     np.cos(data_traj['hist_phi'] * np.pi / 180.)
-        # y = np.cos(data_traj['hist_theta'] * np.pi / 180.)
-        # # add this data to the list:
-        # data_traj['hist_coronal_angle'] = np.arctan2(x, y) * 180 / np.pi  # hist_alpha
-        #
-        # # MICRO MANIPULATOR DATA:
-        # # Using phi and theta calculate angle in sagittal plane (beta)
-        # x = np.sin(data_traj['micro_theta'] * np.pi / 180.) * \
-        #     np.sin(data_traj['micro_phi'] * np.pi / 180.)
-        # y = np.cos(data_traj['micro_theta'] * np.pi / 180.)
-        # # add this data to the list:
-        # data_traj['micro_saggital_angle'] = np.arctan2(x, y) * 180 / np.pi  # micro_beta
-        #
-        # # Using phi and theta calculate angle in coronal plane (alpha)
-        # x = np.sin(data_traj['micro_theta'] * np.pi / 180.) * \
-        #     np.cos(data_traj['micro_phi'] * np.pi / 180.)
-        # y = np.cos(data_traj['micro_theta'] * np.pi / 180.)
-        # # add this data to the list:
-        # data_traj['micro_coronal_angle'] = np.arctan2(x, y) * 180 / np.pi  # micro_alpha
-
         # Get subject weight at time of recording and date of birth
         weight = one.alyx.rest('weighings', 'list', nickname=subject, django=f'date_time__icontains,{date}')[0]
         data_traj['mouse_recording_weight'] = weight['weight']
@@ -316,12 +284,12 @@ def prepare_data(insertions, one=None, brain_atlas=None, recompute=False):
         # planned_orth_proj - xyz coord of orthogonal line from chan_loc to planned proj
         # dist - the 3D distance between chan_loc xyz and planned_orth_proj xyz
         data_chns = {}
-        data_chns['chan_loc_x'] = ch_loc[0]
-        data_chns['chan_loc_y'] = ch_loc[1]
-        data_chns['chan_loc_z'] = ch_loc[2]
-        data_chns['planned_orth_proj_x'] = proj[0]
-        data_chns['planned_orth_proj_y'] = proj[1]
-        data_chns['planned_orth_proj_z'] = proj[2]
+        data_chns['chan_loc_x'] = ch_loc[:, 0]
+        data_chns['chan_loc_y'] = ch_loc[:, 1]
+        data_chns['chan_loc_z'] = ch_loc[:, 2]
+        data_chns['planned_orth_proj_x'] = proj[:, 0]
+        data_chns['planned_orth_proj_y'] = proj[:, 1]
+        data_chns['planned_orth_proj_z'] = proj[:, 2]
         data_chns['dist'] = dist
 
         df_chns = pd.DataFrame.from_dict(data_chns)
@@ -337,7 +305,7 @@ def prepare_data(insertions, one=None, brain_atlas=None, recompute=False):
     save_path = save_data_path(figure='figure2')
     concat_df_chns = pd.concat(all_df_chns, ignore_index=True)
     concat_df_traj = pd.concat(all_df_traj, ignore_index=True)
-    concat_df_chns.to_csv(save_path.joinpath('figure2_dataframe_chs.csv'))
+    concat_df_chns.to_csv(save_path.joinpath('figure2_dataframe_chns.csv'))
     concat_df_traj.to_csv(save_path.joinpath('figure2_dataframe_traj.csv'))
 
     return concat_df_chns, concat_df_traj
