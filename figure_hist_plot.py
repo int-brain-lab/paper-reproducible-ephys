@@ -74,7 +74,7 @@ def plot_hist_figure(output_dir='figure_histology',
     
     font_size = 3
     # compose figure with svgutils
-    fig = sc.Figure("200mm", "188mm", 
+    fig = sc.Figure("200mm", "190mm", 
         
         sc.Panel(
             
@@ -94,27 +94,27 @@ def plot_hist_figure(output_dir='figure_histology',
         
         ).move(90, 0),
         
-        #sc.Panel(
-        #        sc.Text("c", 0, 2.5, size=font_size, weight='bold'),
-        #        
-        #        sc.SVG(input_dir + os.path.sep + 'C_probe_trajs_ccf_coronal.svg'
-        #             ).scale(0.34),
-        #        
-        #        sc.SVG(input_dir + os.path.sep + 'C_probe_trajs_ccf_sagittal.svg'
-        #             ).scale(0.34).move(22, 0),
-        #        
-        #        ).move(153, 0),
-        
-        
         sc.Panel(
+                sc.Text("c", 0, 2.5, size=font_size, weight='bold'),
                 
-            sc.Text("c", 0, 2.5, size=font_size, weight='bold'),
-            
-                sc.Image(50, 50, 
-                         input_dir + os.path.sep + 'C_probe_traj_ccf_3D.png'
-                         ).scale(0.8).move(2,5)
+                sc.SVG(input_dir + os.path.sep + 'C_probe_trajs_ccf_coronal.svg'
+                     ).scale(0.34),
                 
-                ).move(152, 0),
+                sc.SVG(input_dir + os.path.sep + 'C_probe_trajs_ccf_sagittal.svg'
+                     ).scale(0.34).move(22, 0),
+                
+                ).move(153, 0),
+        
+        
+        #sc.Panel(
+        #        
+        #    sc.Text("c", 0, 2.5, size=font_size, weight='bold'),
+        #    
+        #        sc.Image(50, 50, 
+        #                 input_dir + os.path.sep + 'C_probe_traj_ccf_3D.png'
+        #                 ).scale(0.8).move(2,5)
+        #        
+        #        ).move(152, 0),
         
         
         sc.Panel(
@@ -123,7 +123,7 @@ def plot_hist_figure(output_dir='figure_histology',
                 sc.SVG(input_dir + os.path.sep + 'surf_coord_micro_panel.svg'
                      ).scale(1.0),
                      
-            ).move(0, 48),
+            ).move(0, 47),
         
         
         sc.Panel(
@@ -132,7 +132,7 @@ def plot_hist_figure(output_dir='figure_histology',
                 sc.SVG(input_dir + os.path.sep + 'surf_coord_histology_panel.svg'
                      ).scale(1.0),
                      
-            ).move(67, 48),
+            ).move(67, 47),
         
         
         sc.Panel(
@@ -141,7 +141,7 @@ def plot_hist_figure(output_dir='figure_histology',
                 sc.SVG(input_dir + os.path.sep + 'angle_histology_panel.svg'
                      ).scale(1.0),
                      
-            ).move(133, 48),
+            ).move(133, 47),
         
         #sc.Grid(20,20)
         

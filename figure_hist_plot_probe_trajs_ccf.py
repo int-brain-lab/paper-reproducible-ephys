@@ -205,6 +205,9 @@ def plot_trajs(probe_data, output='figure_histology',
     #start, end = ax2.get_xlim()
     #ax2.xaxis.set_ticks(np.arange(start, end, -1000)) # ticks every 1000um
     
+    ax1.text(-2900, -5700, 'Coronal', style='italic', color = 'w')
+    ax2.text(-1100, -5700, 'Sagittal', style='italic', color = 'w')
+    
     fig1.tight_layout()
     fig2.tight_layout()
     

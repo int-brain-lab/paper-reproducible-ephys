@@ -80,7 +80,7 @@ def plot_probe_surf_coord_micro_panel(output = 'figure_histology'):
         sc.Panel(
             sc.SVG(output+os.path.sep+'D_probe_dist_micro_all_lab.svg'
                 ).scale(0.35
-                ).move(0, 64)
+                ).move(0, 68)
             ),
         
         #sc.Grid(20, 20)
@@ -120,6 +120,11 @@ def plot_probe_surf_coord_micro(probe_data, output='figure_histology'):
     if os.path.exists(OUTPUT) is False:
         os.mkdir(OUTPUT)
     
+    # create new column to indicate if each row passes advanced query
+    passed_eids = ref.eid_list()
+    # permutation testing - PASS DATA ONLY
+    probe_data_passed = probe_data[probe_data.eid.isin(passed_eids)]
+    
     # get all trajectories at the REPEATED SITE
      # for ibl brainwide map project
      # repeated site location: x -2243 y -2000
@@ -141,16 +146,26 @@ def plot_probe_surf_coord_micro(probe_data, output='figure_histology'):
     # get new atlas for plotting
     #brain_atlas = atlas.AllenAtlas(res_um=25)
     
-    
+    # main panel figure
     fig1, ax1 = plt.subplots()
     
     # draw 0,0 lines
-    ax1.axhline(y=2243, color="grey", linestyle="--", linewidth = 0.5)
-    ax1.axvline(x=2000, color="grey", linestyle="--", linewidth = 0.5)
+    ax1.axhline(y=-2000, color="grey", linestyle="--", linewidth = 0.5)
+    ax1.axvline(x=-2243, color="grey", linestyle="--", linewidth = 0.5)
     
     # empty numpy arrays for storing the entry point of probe into brain
      # and "exit point" i.e the probe tip!
     all_ins_entry = np.empty((0, 3))
+    
+    # FIRST just get all ins entry for PASSED probes to compute mean(SD) distance
+    all_ins_entry_pass = np.empty((0, 3))
+    
+    for idx, row in probe_data_passed.iterrows():
+        phi_lab = row['lab']
+        all_ins_entry_pass = np.vstack([all_ins_entry_pass, 
+                                   np.array( ( abs(row['micro_x']/1e6), 
+                                              abs(row['micro_y']/1e6), 
+                                              abs(row['micro_z']/1e6)) )  ])
     
     # get institution map and colours
     lab_number_map, institution_map, institution_colors = ref.labs()
@@ -165,15 +180,16 @@ def plot_probe_surf_coord_micro(probe_data, output='figure_histology'):
                                               abs(row['micro_y']/1e6), 
                                               abs(row['micro_z']/1e6)) )  ])
         
-        ax1.plot( [ abs(row['micro_y']), abs(row['planned_y']) ], 
-                  [ abs(row['micro_x']), abs(row['planned_x']) ], 
+        # plot x(ML) and y (AP) on x and y axes
+        ax1.plot( [ row['micro_x'], row['planned_x'] ], 
+                  [ row['micro_y'], row['planned_y'] ], 
               color= institution_colors[institution_map[phi_lab]], 
-              linewidth = 0.2, alpha = 0.8 )
+              linewidth = 0.15, alpha = 0.8 )
         
-        ax1.plot( [ abs(row['micro_y'])], 
-                  [ abs(row['micro_x']) ], 
+        ax1.plot( [ row['micro_x']], 
+                  [ row['micro_y'] ], 
               color= institution_colors[institution_map[phi_lab]], 
-              marker="o", markersize=1, alpha = 0.8)
+              marker="o", markersize=0.5, alpha = 0.8,  markeredgewidth = 0.5)
     
     
     # plot the planned insertion entry as large blue dot
@@ -187,23 +203,23 @@ def plot_probe_surf_coord_micro(probe_data, output='figure_histology'):
     lab_mean_microy = probe_data.groupby('lab')['micro_y'].mean()
     
     for x, y, k in zip(lab_mean_microx, lab_mean_microy, lab_mean_microx.keys()):
-        ax1.plot( [ abs(y) ], 
-                  [ abs(x) ], 
+        ax1.plot( [ x ], 
+                  [ y ], 
               color= institution_colors[institution_map[k]], 
-              marker="+", markersize=5,
+              marker="+", markersize=3, alpha = 0.5,
               label = institution_map[k])
     
     # overall mean (mean of labs)
     mean_microx = probe_data['micro_x'].mean()
     mean_microy = probe_data['micro_y'].mean()
     
-    ax1.plot( [ abs(mean_microy) ], 
-                  [ abs(mean_microx) ], 
-              color= 'k', marker="+", markersize=8,
+    ax1.plot( [ mean_microx ], 
+                  [ mean_microy ], 
+              color= 'k', marker="+", markersize=6, alpha = 0.7,
               label = "MEAN")
     
     # add legend
-    ax1.legend(loc='lower right', prop={'size': 4})
+    ax1.legend(loc='upper right', prop={'size': 3.5})
     
     # Compute targeting error at surface of brain
     error_top = all_ins_entry - np.array( ( abs(probe_data['planned_x'][0]/1e6), 
@@ -215,29 +231,69 @@ def plot_probe_surf_coord_micro(probe_data, output='figure_histology'):
     
     rms_top = np.sqrt(np.mean(distance_top ** 2))*1e6
     
+    # error for PASSING probes only
+    error_top_pass = all_ins_entry_pass - np.array( ( abs(probe_data_passed['planned_x'][0]/1e6), 
+                                              abs(probe_data_passed['planned_y'][0]/1e6), 
+                                              abs(probe_data_passed['planned_z'][0]/1e6)) )
+    distance_top_pass = np.sqrt(np.sum(error_top_pass ** 2, axis=1)) # distance between xyz coords
+    top_mean_pass = np.mean(distance_top_pass)*1e6
+    top_std_pass = np.std(distance_top_pass)*1e6
+    
+    rms_top_pass = np.sqrt(np.mean(distance_top_pass ** 2))*1e6
+    
     # set x/y axis labels
-    ax1.set_xlabel('micro-manipulator AP displacement (µm)', fontsize=6)
+    ax1.set_xlabel('micro-manipulator ML displacement (µm)', fontsize=6)
     #ax1.tick_params(axis='x', labelsize=7)
-    ax1.set_ylabel('micro-manipulator ML displacement (µm)', fontsize=6)
+    ax1.set_ylabel('micro-manipulator AP displacement (µm)', fontsize=6)
     #ax1.tick_params(axis='y', labelsize=7)
     #ax1.yaxis.set_major_locator(plt.MaxNLocator(4))
     
     #ax1.set_ylim((1800,2600))
     #ax1.set_xlim((1600,2300))
-    ax1.set_ylim((800,2800))
-    ax1.set_xlim((1000,3000))
+    ax1.set_xlim((-2800,-800))
+    ax1.set_ylim((-3000,-1000))
     ax1.xaxis.set_major_locator(plt.MaxNLocator(5))
     ax1.yaxis.set_major_locator(plt.MaxNLocator(5))
     
     plt.tight_layout() # tighten layout around xlabel & ylabel
     
     fig1.set_size_inches(2.15, 2.15)
+    
+    # add a subplot INSIDE the fig1 ax1
+    axav = fig1.add_axes([0.66,0.12,0.28,0.28])
+    
+    #axav.axes.xaxis.set_ticks([])
+    #axav.axes.yaxis.set_ticks([])
+    axav.xaxis.tick_top()
+    axav.tick_params(axis='both', labelsize=3, pad = 1)
+    
+    axav.axhline(y=-2000, color="grey", linestyle="--", linewidth = 0.5)
+    axav.axvline(x=-2243, color="grey", linestyle="--", linewidth = 0.5)
+    axav.set_xlim((-2350,-2000))
+    axav.set_ylim((-2100,-1850))
+    
+    for x, y, k in zip(lab_mean_microx, lab_mean_microy, lab_mean_microx.keys()):
+        axav.plot( [ x ], 
+                  [ y ], 
+              color= institution_colors[institution_map[k]], 
+              marker="+", markersize=5, alpha = 0.7,
+              label = institution_map[k])
+    
+    axav.plot( [ mean_microx ], 
+                  [ mean_microy ], 
+              color= 'k', marker="+", markersize=8, alpha = 0.7,
+              label = "MEAN")
+    
+    #axav.tight_layout()
+    
     fig1.savefig( str(Path(OUTPUT, 'D_probe_surf_coord_micro.svg')), bbox_inches="tight" )
     #fig1.savefig( str(Path('figure_histology', 'probe-plots','micro_surf_err_plot.svg')), bbox_inches="tight" ) # tight ensures figure is in bounds of svg canvas!
     
     # add mean trageting error distance to title
     ax1.set_title('MICRO-MANIPULATOR: Mean (SD) distance \n' +
-                  str(np.around(top_mean, 1)) + ' ('+str(np.around(top_std, 2))+')'+ ' µm', fontsize=8)
+                  str(np.around(top_mean, 1)) + ' ('+str(np.around(top_std, 2))+')'+ ' µm\n' +
+                  'PASSED: ' +str(np.around(top_mean_pass, 0)) + 
+                  ' ('+str(np.around(top_std_pass, 0))+')' + ' µm', fontsize=8)
     
     fig1.savefig( str(Path(OUTPUT, 'D_probe_surf_coord_micro_label.svg')), bbox_inches="tight" )
     #fig1.savefig( str(Path('figure_histology', 'probe-plots','micromanipulator_surface_error_plot.svg')), bbox_inches="tight" ) # tight ensures figure is in bounds of svg canvas!
@@ -638,7 +694,7 @@ def plot_probe_surf_coord_histology_panel(output = 'figure_histology'):
         sc.Panel(
             sc.SVG(output+os.path.sep+'D_probe_dist_hist_all_lab.svg'
                 ).scale(0.35
-                ).move(0,64)
+                ).move(0,68)
             ),
         
         #sc.Grid(20, 20)
@@ -674,16 +730,31 @@ def plot_probe_surf_coord_histology(probe_data, output='figure_histology'):
     if os.path.exists(OUTPUT) is False:
         os.mkdir(OUTPUT)
     
+    # create new column to indicate if each row passes advanced query
+    passed_eids = ref.eid_list()
+    # permutation testing - PASS DATA ONLY
+    probe_data_passed = probe_data[probe_data.eid.isin(passed_eids)]
+    
     # generate figure and axes
     fig, ax = plt.subplots()
     
     # draw 0,0 lines
-    ax.axhline(y=2243, color="grey", linestyle="--", linewidth = 0.5)
-    ax.axvline(x=2000, color="grey", linestyle="--", linewidth = 0.5)
+    ax.axhline(y=-2000, color="grey", linestyle="--", linewidth = 0.5)
+    ax.axvline(x=-2243, color="grey", linestyle="--", linewidth = 0.5)
     
     # empty numpy arrays for storing the entry point of probe into brain
      # and "exit point" i.e the probe tip!
     all_ins_entry = np.empty((0, 3))
+    
+    # FIRST just get all ins entry for PASSED probes to compute mean(SD) distance
+    all_ins_entry_pass = np.empty((0, 3))
+    
+    for idx, row in probe_data_passed.iterrows():
+        phi_lab = row['lab']
+        all_ins_entry_pass = np.vstack([all_ins_entry_pass, 
+                                   np.array( ( abs(row['hist_x']/1e6), 
+                                              abs(row['hist_y']/1e6), 
+                                              abs(row['hist_z']/1e6)) )  ])
     
     # get institution map and colours
     lab_number_map, institution_map, institution_colors = ref.labs()
@@ -708,14 +779,14 @@ def plot_probe_surf_coord_histology(probe_data, output='figure_histology'):
                                               abs(row['hist_y']/1e6), 
                                               abs(row['hist_z']/1e6)) )  ])
         
-        ax.plot( [ abs(row['hist_y']), abs(row['planned_y']) ], 
-                  [ abs(row['hist_x']), abs(row['planned_x']) ], 
+        ax.plot( [ row['hist_x'], row['planned_x'] ], 
+                  [ row['hist_y'], row['planned_y'] ], 
               color= institution_colors[institution_map[phi_lab]], 
-              linewidth = 0.2, alpha = 0.8)
-        ax.plot( [ abs(row['hist_y']) ], 
-              [ abs(row['hist_x']) ], 
+              linewidth = 0.15, alpha = 0.8)
+        ax.plot( [ row['hist_x'] ], 
+              [ row['hist_y'] ], 
           color= institution_colors[institution_map[phi_lab]], 
-          marker="o", markersize=0.5, alpha = 0.8)
+          marker="o", markersize=0.5, alpha = 0.8, markeredgewidth = 0.5)
         
         # removing legend per subject - adding it with MEAN PLOTS
         #if labs_legend[labs.index(phi_lab)]:
@@ -750,19 +821,19 @@ def plot_probe_surf_coord_histology(probe_data, output='figure_histology'):
     lab_mean_histy = probe_data.groupby('lab')['hist_y'].mean()
     
     for x, y, k in zip(lab_mean_histx, lab_mean_histy, lab_mean_histx.keys()):
-        ax.plot( [ abs(y) ], 
-                  [ abs(x) ], 
+        ax.plot( [ x ], 
+                  [ y ], 
               color= institution_colors[institution_map[k]], 
-              marker="+", markersize=5,
+              marker="+", markersize=3, alpha = 0.5,
               label = institution_map[k])
     
     # overall mean (mean of labs)
     mean_histx = probe_data['hist_x'].mean()
     mean_histy = probe_data['hist_y'].mean()
     
-    ax.plot( [ abs(mean_histy) ], 
-                  [ abs(mean_histx) ], 
-              color= 'k', marker="+", markersize=8,
+    ax.plot( [ mean_histx ], 
+                  [ mean_histy ], 
+              color= 'k', marker="+", markersize=6, alpha = 0.7,
               label = "MEAN")
     
     
@@ -774,12 +845,20 @@ def plot_probe_surf_coord_histology(probe_data, output='figure_histology'):
     top_mean = np.mean(distance_top)*1e6
     top_std = np.std(distance_top)*1e6
     
-    rms_top = np.sqrt(np.mean(distance_top ** 2))*1e6
+    # error for PASSING probes only
+    error_top_pass = all_ins_entry_pass - np.array( ( abs(probe_data_passed['planned_x'][0]/1e6), 
+                                              abs(probe_data_passed['planned_y'][0]/1e6), 
+                                              abs(probe_data_passed['planned_z'][0]/1e6)) )
+    distance_top_pass = np.sqrt(np.sum(error_top_pass ** 2, axis=1)) # distance between xyz coords
+    top_mean_pass = np.mean(distance_top_pass)*1e6
+    top_std_pass = np.std(distance_top_pass)*1e6
+    
+    rms_top_pass = np.sqrt(np.mean(distance_top_pass ** 2))*1e6
     
     # set x/y axis labels
-    ax.set_xlabel('histology AP displacement (µm)', fontsize=7)
+    ax.set_xlabel('histology ML displacement (µm)', fontsize=6)
     #ax1.tick_params(axis='x', labelsize=7)
-    ax.set_ylabel('histology ML displacement (µm)', fontsize=7)
+    ax.set_ylabel('histology AP displacement (µm)', fontsize=6)
     #ax1.tick_params(axis='y', labelsize=7)
     #ax1.yaxis.set_major_locator(plt.MaxNLocator(4))
     
@@ -787,20 +866,51 @@ def plot_probe_surf_coord_histology(probe_data, output='figure_histology'):
     #ax1.set_xlim((-1000,-3500))
     #ax1.set_ylim((-3000,-500))
     #ax1.set_xlim((-500,-3500))
-    ax.set_ylim((800,2800))
-    ax.set_xlim((1000,3000))
+    ax.set_xlim((-2800,-800))
+    ax.set_ylim((-3000,-1000))
     ax.xaxis.set_major_locator(plt.MaxNLocator(5))
     ax.yaxis.set_major_locator(plt.MaxNLocator(5))
     
     plt.tight_layout() # tighten layout around xlabel & ylabel
     
     fig.set_size_inches(2.15, 2.15)
+    
+    # add a subplot INSIDE the fig1 ax1
+    axav = fig.add_axes([0.66,0.12,0.28,0.28])
+    
+    #axav.axes.xaxis.set_ticks([])
+    #axav.axes.yaxis.set_ticks([])
+    axav.xaxis.tick_top()
+    axav.tick_params(axis='both', labelsize=3, pad = 1)
+    #axav.xaxis.labelpad = 1
+    #axav.yaxis.labelpad = 1
+    
+    axav.axhline(y=-2000, color="grey", linestyle="--", linewidth = 0.5)
+    axav.axvline(x=-2243, color="grey", linestyle="--", linewidth = 0.5)
+    axav.set_xlim((-2500,-1650))
+    axav.set_ylim((-2400,-1550))
+    
+    for x, y, k in zip(lab_mean_histx, lab_mean_histy, lab_mean_histx.keys()):
+        axav.plot( [ x ], 
+                  [ y ], 
+              color= institution_colors[institution_map[k]], 
+              marker="+", markersize=5, alpha = 0.7,
+              label = institution_map[k])
+    
+    axav.plot( [ mean_histx ], 
+                  [ mean_histy ],
+              color= 'k', marker="+", markersize=8, alpha = 0.7,
+              label = "MEAN")
+    
     fig.savefig( str(Path(output, 'D_probe_surf_coord_hist.svg')), bbox_inches="tight" )
     #fig1.savefig( str(Path('figure_histology', 'probe-plots','micro_surf_err_plot.svg')), bbox_inches="tight" ) # tight ensures figure is in bounds of svg canvas!
     
     # add mean trageting error distance to title
     ax.set_title('HISTOLOGY: Mean (SD) distance \n' +
-                  str(np.around(top_mean, 1)) + ' ('+str(np.around(top_std, 2))+')'+ ' µm', fontsize=8)
+                  'ALL: ' +str(np.around(top_mean, 0)) + 
+                  ' ('+str(np.around(top_std, 0))+')'+ ' µm\n' +
+                  'PASSED: ' +str(np.around(top_mean_pass, 0)) + 
+                  ' ('+str(np.around(top_std_pass, 0))+')' + ' µm', fontsize=8)
     
     fig.savefig( str(Path(OUTPUT, 'D_probe_surf_coord_hist_label.svg')), bbox_inches="tight" )
     #fig1.savefig( str(Path('figure_histology', 'probe-plots','micromanipulator_surface_error_plot.svg')), bbox_inches="tight" ) # tight ensures figure is in bounds of svg canvas!
