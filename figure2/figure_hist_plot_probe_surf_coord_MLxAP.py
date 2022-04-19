@@ -132,7 +132,7 @@ def plot_probe_surf_coord_histology_panel():
     fig_path = save_figure_path(figure='figure2')
     fig = sc.Figure("66mm", "140mm",
                     sc.Panel(sc.SVG(fig_path.joinpath('D_probe_surf_coord_hist_label.svg')).scale(0.35)),
-                    sc.Panel(sc.SVG(fig_path.joinpath('D_probe_dist_hist_all_lab.svg')).scale(0.35).move(0, 68)))
+                    sc.Panel(sc.SVG(fig_path.joinpath('D_probe_dist_hist_all_lab.svg')).scale(0.35).move(0, 64)))
 
     fig.save(fig_path.joinpath("surf_coord_histology_panel.svg"))
 
@@ -149,8 +149,7 @@ def plot_probe_surf_coord(traj='micro'):
     # use repo-ephys figure style
     figure_style()
     fig1, ax1 = plt.subplots()
-    fig1.set_size_inches(2.15, 2.15)
-    
+
     # draw 0,0 lines
     ax1.axvline(x=-2243, color="grey", linestyle="--", linewidth=0.5)
     ax1.axhline(y=-2000, color="grey", linestyle="--", linewidth=0.5)
@@ -215,18 +214,24 @@ def plot_probe_surf_coord(traj='micro'):
     ax1.set_ylim((-3000, -1000))
     ax1.xaxis.set_major_locator(plt.MaxNLocator(5))
     ax1.yaxis.set_major_locator(plt.MaxNLocator(5))
-    
+
     plt.tight_layout()  # tighten layout around xlabel & ylabel
+    fig1.set_size_inches(2.15, 2.15)
 
     # add a subplot INSIDE the fig1 ax1
     axav = fig1.add_axes([0.66, 0.12, 0.28, 0.28])
     axav.xaxis.tick_top()
-    axav.tick_params(axis='both', labelsize=3, pad = 1)
+    axav.tick_params(axis='both', labelsize=3, pad=1)
 
-    axav.axhline(y=-2000, color="grey", linestyle="--", linewidth = 0.5)
-    axav.axvline(x=-2243, color="grey", linestyle="--", linewidth = 0.5)
-    axav.set_xlim((-2350,-2000))
-    axav.set_ylim((-2100,-1850))
+    axav.axhline(y=-2000, color="grey", linestyle="--", linewidth=0.5)
+    axav.axvline(x=-2243, color="grey", linestyle="--", linewidth=0.5)
+
+    if traj == 'micro':
+        axav.set_xlim((-2350, -2000))
+        axav.set_ylim((-2100, -1850))
+    else:
+        axav.set_xlim((-2500, -1650))
+        axav.set_ylim((-2400, -1550))
 
     for x, y, k in zip(lab_mean_x, lab_mean_y, lab_mean_x.keys()):
         axav.plot(x, y, color=institution_colors[institution_map[k]], marker="+", markersize=5, alpha=0.7,
@@ -250,7 +255,6 @@ def plot_probe_distance_all_lab(traj='micro', min_rec_per_lab=4):
     # use repo-ephys figure style
     figure_style()
     fig, (ax1, ax2) = plt.subplots(2, gridspec_kw={'height_ratios': [1, 2]})
-    fig.set_size_inches(2.15, 2.8)
 
     # add institution col
     probe_data['institute'] = probe_data['lab'].map(institution_map)
@@ -295,8 +299,6 @@ def plot_probe_distance_all_lab(traj='micro', min_rec_per_lab=4):
                 showfliers=False, showbox=False, showcaps=False, ax=ax2)
     ax2.set_ylabel(None)
     ax2.set_xlim(0, 1500)
-    ax2.xaxis.set_major_locator(plt.MaxNLocator(5))
-    ax2.tick_params(axis='x', labelrotation=90)
     if traj == 'micro':
         ax2.set_xlabel('Micromanipulator distance (µm)')
         leg = ax2.legend(fontsize=4, title='Advanced \n query', title_fontsize=6, loc='upper right', markerscale=0.2)
@@ -304,6 +306,9 @@ def plot_probe_distance_all_lab(traj='micro', min_rec_per_lab=4):
     else:
         ax2.set_xlabel('Histology distance (µm)')
         ax2.get_legend().remove()
+
+    ax2.xaxis.set_major_locator(plt.MaxNLocator(5))
+    ax2.tick_params(axis='x', labelrotation=90)
 
     # compute permutation testing - ALL DATA
     # For this we need to limit to labs with min_rec_per_lab
@@ -337,8 +342,10 @@ def plot_probe_distance_all_lab(traj='micro', min_rec_per_lab=4):
     print("PERMUTATION TEST PASS : ", pp_m)
     
     ax1.set_title('Permutation Test p-value: \n    ALL : ' + str(round(p_m, 4)) + '    PASS : ' + str(round(pp_m, 4)))
-    
+
     plt.tight_layout()  # tighten layout around xlabel & ylabel
+
+    fig.set_size_inches(2.15, 2.8)
 
     fig_path = save_figure_path(figure='figure2')
     fig.savefig(fig_path.joinpath(f'D_probe_dist_{traj}_all_lab.svg'), bbox_inches="tight")

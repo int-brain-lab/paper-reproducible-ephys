@@ -57,7 +57,7 @@ def plot_probe_angle_histology_panel():
     fig_path = save_figure_path(figure='figure2')
     fig = sc.Figure("66mm", "140mm",
                     sc.Panel(sc.SVG(fig_path.joinpath('E_probe_angle_hist_label.svg')).scale(0.35)),
-                    sc.Panel(sc.SVG(fig_path.joinpath('E_probe_angle_hist_all_lab.svg')).scale(0.35).move(0, 68)))
+                    sc.Panel(sc.SVG(fig_path.joinpath('E_probe_angle_hist_all_lab.svg')).scale(0.35).move(0, 64)))
     fig.save(fig_path.joinpath("angle_histology_panel.svg"))
 
 
@@ -72,7 +72,6 @@ def plot_probe_angle_histology():
 
     figure_style()
     fig1, ax1 = plt.subplots()
-    fig1.set_size_inches(2.15, 2.15)
 
     # draw 0,0 lines
     ax1.axhline(y=0, color="grey", linestyle="--", linewidth=0.5)
@@ -128,7 +127,7 @@ def plot_probe_angle_histology():
     ax1.set_ylim(-20, 10)
     ax1.set_xlim(-20, 10)
 
-    plt.tight_layout()  # tighten layout around xlabel & ylabel
+    # plt.tight_layout()  # tighten layout around xlabel & ylabel
 
     # add a subplot INSIDE the fig1 ax1
     axav = fig1.add_axes([0.1, 0.12, 0.28, 0.28])
@@ -145,6 +144,9 @@ def plot_probe_angle_histology():
                  label=institution_map[k])
     axav.plot(mean_ml, mean_ap, color='k', marker="+", markersize=8, alpha=0.7, label="MEAN")
 
+    plt.tight_layout()
+    fig1.set_size_inches(2.15, 2.15)
+
     fig_path = save_figure_path(figure='figure2')
     fig1.savefig(fig_path.joinpath('E_probe_angle_hist_label.svg'), bbox_inches="tight")
 
@@ -160,7 +162,6 @@ def plot_probe_angle_histology_all_lab(min_rec_per_lab=4):
     # use repo-ephys figure style
     figure_style()
     fig, (ax1, ax2) = plt.subplots(2, gridspec_kw={'height_ratios': [1, 2]})
-    fig.set_size_inches(2.15, 2.8)
 
     # add institution column
     probe_data['institute'] = probe_data['lab'].map(institution_map)
@@ -240,6 +241,7 @@ def plot_probe_angle_histology_all_lab(min_rec_per_lab=4):
     ax1.set_title('Permutation Test p-value: \n    ALL : ' + str(round(p_m, 4)) + '    PASS : ' + str(round(pp_m, 4)))
 
     plt.tight_layout()  # tighten layout around xlabel & ylabel
+    fig.set_size_inches(2.15, 2.8)
 
     fig_path = save_figure_path(figure='figure2')
     fig.savefig(fig_path.joinpath('E_probe_angle_hist_all_lab.svg'), bbox_inches="tight")
