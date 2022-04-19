@@ -88,11 +88,11 @@ def query_histology():
 
     '''
     import figure_hist_data as fhd
-    
+
     data = fhd.get_probe_data()
-    
+
     return list(data['subject'])
-    
+
 
 
 def data_path():
@@ -234,7 +234,8 @@ def eid_list():
     """
     Static list of eids which pass the ADVANCED criterium to include for repeated site analysis
     """
-    eids = np.load('repeated_site_eids.npy')
+    repo_dir = os.path.dirname(os.path.realpath(__file__))
+    eids = np.load(os.path.join(repo_dir, 'repeated_site_eids.npy'))
     return eids
 
 
@@ -242,5 +243,15 @@ def eid_list_all():
     """
     Static list of all repeated site eids
     """
-    eids = np.load('all_repeated_site_eids.npy')
+    repo_dir = os.path.dirname(os.path.realpath(__file__))
+    eids = np.load(os.path.join(repo_dir, 'all_repeated_site_eids.npy'))
     return eids
+
+
+def pid_list():
+    """
+    Static list of pids which pass the ADVANCED criterium to include for repeated site analysis
+    """
+    repo_dir = os.path.dirname(os.path.realpath(__file__))
+    pids = np.load(os.path.join(repo_dir, 'repeated_site_pids.npy'))
+    return pids

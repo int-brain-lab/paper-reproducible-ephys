@@ -163,7 +163,7 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
             if boundary_align is not None:
                 y = y - z_subtract
             levels = [0, 30]
-            im = ax.scatter(x, y, c=c, s=8, cmap='hot', vmin=levels[0], vmax=levels[1])
+            im = ax.scatter(x, y, c=c, s=8, cmap='hot', vmin=levels[0], vmax=levels[1], zorder=1)
             ax.images.append(im)
             ax.set_xlim(1.3, 3)
 
@@ -219,13 +219,13 @@ def plot_2D_features(subjects, dates, probes, one=None, brain_atlas=None, freq_r
 
         if show_regions:
             for reg, co, reg_name in zip(bound_reg, col_reg, reg_name):
-                
+
                 height = np.abs(reg[1] - reg[0])
                 color = co / 255
                 width = ax.get_xlim()[1]
-                
+
                 ax.bar(x=width/2, height=height, width=width, color=color, bottom=reg[0],
-                       edgecolor='k', alpha=0.5)
+                       edgecolor='k', alpha=0.5, zorder=0)
                 """
                 ax.text(x=width/2, y=reg[0] + height / 2, s=lab, fontdict=None, fontsize=10,
                         color='w', fontweight='bold')
@@ -419,14 +419,17 @@ def get_brain_boundaries_interest(brain_regions, z, r=None):
     colours = []
     regions = []
 
-    br_acro = ['VISa', 'VISam', 'DG', 'CA1', 'LP', 'PO']
-    br_level = [7, 7, 7, 8, 7, 7]
+    br_acro = ['VISa1', 'VISam1', 'VISa', 'VISam', 'DG', 'CA1', 'LP', 'PO']
+    br_level = [8, 8, 7, 7, 7, 8, 7, 7]
     for acro, lev in zip(br_acro, br_level):
         acr = np.where(all_levels[f'level_{lev}'] == acro)[0]
         if len(acr) > 2:
             boundaries.append([z[acr[0]], z[acr[-1]]])
             idx = np.where(r.acronym == acro)[0]
-            rgb = r.rgb[idx[0]]
+            if (acro == 'VISa1') | (acro == 'VISam1'):
+                rgb = np.array([225, 0, 0])
+            else:
+                rgb = r.rgb[idx[0]]
             colours.append(rgb)
             regions.append(acro)
 
