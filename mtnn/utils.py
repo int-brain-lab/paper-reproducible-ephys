@@ -4,7 +4,9 @@ functions for getting/processing features for training MTNN
 
 import numpy as np
 from one.api import ONE
-from reproducible_ephys_functions import query
+import sys 
+sys.path.append('..')
+from reproducible_ephys_functions import query, eid_list
 from tqdm import notebook
 import brainbox as bb
 import brainbox.io.one as bbone
@@ -23,33 +25,58 @@ from models.expSmoothing_prevAction import expSmoothing_prevAction as exp_prevAc
 from models import utils
 
 lab_offset = 1
-session_offset = 5
-xyz_offset = 9
-max_ptp_offset = 12
-wf_width_offset = 13
-paw_offset = 14
-nose_offset = 15
-pupil_offset = 16
-left_me_offset = 17
-stimOnOff_offset = 18
-contrast_offset = 19
+session_offset = 6
+xyz_offset = 10
+max_ptp_offset = 13
+wf_width_offset = 14
+paw_offset = 15
+nose_offset = 16
+pupil_offset = 17
+left_me_offset = 18
+stimulus_offset = 19
 goCue_offset = 21
 choice_offset = 22
-reward_offset = 25
-wheel_offset = 27
-pLeft_offset = 28
-lick_offset = 29
-glmhmm_offset = 30 # change to k=4 model?
-# add noise offset?
-active_offset = 33
-acronym_offset = 34
+reward_offset = 24
+wheel_offset = 26
+pLeft_offset = 27
+lick_offset = 28
+glmhmm_offset = 29 # changed to k=4 model
+acronym_offset = 33
+noise_offset = 38
+
+static_idx = np.asarray([1,2,3,4,5,6,7,8,9,10,11,12,13,14,27,29,30,31,32,33,34,35,36,37]) - 1
+static_bool = np.zeros(noise_offset).astype(bool)
+static_bool[static_idx] = True
+
+cov_idx_dict = {'lab': (1,6),
+               'session': (6,10),
+               'x': (10,11),
+               'y': (11,12),
+               'z': (12,13),
+               'waveform amplitude': (13,14),
+               'waveform width': (14,15),
+               'paw speed': (15,16),
+               'nose speed': (16,17),
+               'pupil diameter': (17,18),
+               'motion energy': (18,19),
+               'stimuli': (19,21),
+               'go cue': (21,22),
+               'choice': (22,24),
+               'reward': (24,26),
+               'wheel velocity': (26,27),
+               'mouse prior': (27,28),
+               'lick': (28,29),
+               'decision strategy (GLM-HMM)': (29,33),
+               'brain region': (33,38),
+               'noise': (38,39),
+               'all': (1,39)}
 
 def check_mtnn_criteria(one=None):
     if one is None:
         one = ONE()
     
     mtnn_criteria = defaultdict(dict)
-    repeated_site_eids = np.load('../repeated_site_eids.npy')
+    repeated_site_eids = eid_list()
     print('total number of repeated site eids: {}'.format(len(repeated_site_eids)))
     
     for eid in repeated_site_eids:
@@ -57,6 +84,7 @@ def check_mtnn_criteria(one=None):
         video_qc = []
         var_sess = one.get_details(eid, full=True)
         ext_qc = var_sess['extended_qc']
+        #print(ext_qc)
         criteria = [[x,ext_qc[x]] for x in ext_qc if 'dlcLeft' in x]
         for c in range(len(criteria)):
             if criteria[c][1] == False:
@@ -157,32 +185,35 @@ def get_acronym_dict():
     acronym_dict = {'LP':0, 'CA1':1, 'DG':2, 'PPC':3, 'PO':4}
     return acronym_dict
 
+def get_acronym_dict_reverse():
+    acronym_dict_reverse = {0:'LP', 1:'CA1', 2:'DG', 3:'PPC', 4:'PO'}
+    return acronym_dict_reverse
+
 def get_mtnn_eids():
-    mtnn_eids = {'56b57c38-2699-4091-90a8-aba35103155e': 0}#,
-#                 '72cb5550-43b4-4ef0-add5-e4adfdfb5e02': 0,
+    mtnn_eids = {'56b57c38-2699-4091-90a8-aba35103155e': 0,
+                '72cb5550-43b4-4ef0-add5-e4adfdfb5e02': 0,
 #                 '746d1902-fa59-4cab-b0aa-013be36060d5': 2,
-#                 'dac3a4c1-b666-4de0-87e8-8c514483cacf': 0,
-#                 '6f09ba7e-e3ce-44b0-932b-c003fb44fb89': 0,
-#                 'f312aaec-3b6f-44b3-86b4-3a0c119c0438': 3,
-#                 'dda5fc59-f09a-4256-9fb5-66c67667a466': 2,
-#                 'ee40aece-cffd-4edb-a4b6-155f158c666a': 3,
-#                 'ecb5520d-1358-434c-95ec-93687ecd1396': 3,
-#                 '54238fd6-d2d0-4408-b1a9-d19d24fd29ce': 0,
-#                 '51e53aff-1d5d-4182-a684-aba783d50ae5': 0,
-#                 'c51f34d8-42f6-4c9c-bb5b-669fd9c42cd9': 0,
+                'dac3a4c1-b666-4de0-87e8-8c514483cacf': 0,
+                '6f09ba7e-e3ce-44b0-932b-c003fb44fb89': 0,
+                'f312aaec-3b6f-44b3-86b4-3a0c119c0438': 3,
+                'dda5fc59-f09a-4256-9fb5-66c67667a466': 2,
+                'ee40aece-cffd-4edb-a4b6-155f158c666a': 3,
+                'ecb5520d-1358-434c-95ec-93687ecd1396': 3,
+                '54238fd6-d2d0-4408-b1a9-d19d24fd29ce': 0,
+                '51e53aff-1d5d-4182-a684-aba783d50ae5': 0,
+                'c51f34d8-42f6-4c9c-bb5b-669fd9c42cd9': 0,
 #                 '0802ced5-33a3-405e-8336-b65ebc5cb07c': 0,
-#                 'db4df448-e449-4a6f-a0e7-288711e7a75a': 2,
-#                 '30c4e2ab-dffc-499d-aae4-e51d6b3218c2': 0,
-#                 '4a45c8ba-db6f-4f11-9403-56e06a33dfa4': 0,
-#                 '7af49c00-63dd-4fed-b2e0-1b3bd945b20b': 0,
-#                 '4b00df29-3769-43be-bb40-128b1cba6d35': 0,
-#                 'f140a2ec-fd49-4814-994a-fe3476f14e66': 0,
-#                 '862ade13-53cd-4221-a3fa-dda8643641f2': 0,
-#                 '3638d102-e8b6-4230-8742-e548cd87a949': 0,
-#                 'c7248e09-8c0d-40f2-9eb4-700a8973d8c8': 1,
+                'db4df448-e449-4a6f-a0e7-288711e7a75a': 2,
+                '30c4e2ab-dffc-499d-aae4-e51d6b3218c2': 0,
+                '4a45c8ba-db6f-4f11-9403-56e06a33dfa4': 0,
+                '7af49c00-63dd-4fed-b2e0-1b3bd945b20b': 0,
+                '4b00df29-3769-43be-bb40-128b1cba6d35': 0,
+                'f140a2ec-fd49-4814-994a-fe3476f14e66': 0,
+                '862ade13-53cd-4221-a3fa-dda8643641f2': 0,
+                'c7248e09-8c0d-40f2-9eb4-700a8973d8c8': 1,
 #                 '88224abb-5746-431f-9c17-17d7ef806e6a': 0,
 #                 'd0ea3148-948d-4817-94f8-dcaf2342bbbe': 0,
-#                 'd23a44ef-1402-4ed7-97f5-47e9a7a504d9': 0}
+                'd23a44ef-1402-4ed7-97f5-47e9a7a504d9': 0}
     
     return mtnn_eids
 
@@ -219,10 +250,10 @@ def get_dlc_XYs(dlc):
     XYs = {}
     for point in points:
         x = np.ma.masked_where(
-            dlc[point + '_likelihood'] < 0.9, dlc[point + '_x'])
+            dlc[point + '_likelihood'] < 0., dlc[point + '_x']) # don't fill with nans
         x = x.filled(np.nan)
         y = np.ma.masked_where(
-            dlc[point + '_likelihood'] < 0.9, dlc[point + '_y'])
+            dlc[point + '_likelihood'] < 0., dlc[point + '_y']) # don't fill with nans
         y = y.filled(np.nan)
         XYs[point] = np.array(
             [x, y])    
@@ -246,199 +277,157 @@ def get_relevant_columns(data):
     return np.asarray(relevant_columns)
 
 # main function
-def featurize(i, trajectory, one, session_counter, bin_size=0.05):
+def featurize(i, trajectory, one, session_counter, 
+              bin_size=0.05, align_event='movement_onset',
+              t_before=0.5, t_after=1.0):
     lab_number_map = get_lab_number_map()
     acronym_dict = get_acronym_dict()
     mtnn_eids = get_mtnn_eids()
-    
-    try: # download relevant info
-        eid = trajectory['session']['id']
-        subject = trajectory['session']['subject']
-        probe = trajectory['probe_name']
-        print('processing {}: {}'.format(subject, eid))
-        lab_id = lab_number_map[trajectory['session']['lab']]
-        for key in session_counter.keys():
-            if trajectory['session']['lab'] in key:
-                session_id = session_counter[key]
-    #     spikes = one.load_object(eid, 'spikes', collection='alf/{}/pykilosort'.format(probe))
-    #     clusters = one.load_object(eid, 'clusters', collection='alf/{}/pykilosort'.format(probe))
-    #     channels = one.load_object(eid, 'channels', collection='alf/{}/pykilosort'.format(probe))
-    #     clusters = bbone.merge_clusters_channels(dic_clus={probe: clusters}, channels=channels)[probe]
-        spikes, clusters, channels = bbone.load_spike_sorting_with_channel(eid, 
-                                                                         one=one, 
-                                                                         probe=probe, 
-                                                                         spike_sorter='pykilosort')
-        spikes = spikes[probe]
-        clusters = clusters[probe]
-        channels = channels[probe]
-        print('spikes retrieved')
 
-        print('loading motion energy and dlc')
-        left_me = one.load_dataset(eid, 'leftCamera.ROIMotionEnergy.npy')
-        left_dlc = one.load_dataset(eid, '_ibl_leftCamera.dlc.pqt')
-        left_dlc_times = one.load_dataset(eid, '_ibl_leftCamera.times.npy')
-        if left_dlc_times.shape[0] != left_dlc.shape[0]:
-            left_offset = mtnn_eids[eid]
-            left_dlc_times = left_dlc_times[abs(left_offset):abs(left_offset)+left_dlc.shape[0]]
-        assert(left_dlc_times.shape[0] == left_dlc.shape[0])
-        print('motion energy + dlc retrieved')
-
-        stimOn_times = one.load_dataset(eid, '_ibl_trials.stimOn_times.npy')
-        firstMovement_times = one.load_dataset(eid, '_ibl_trials.firstMovement_times.npy')
-
-        contrastLeft = one.load_dataset(eid, '_ibl_trials.contrastLeft.npy')
-        contrastRight = one.load_dataset(eid, '_ibl_trials.contrastRight.npy')
-
-        goCue_times = one.load_dataset(eid, '_ibl_trials.goCue_times.npy')
-
-        choice = one.load_dataset(eid, '_ibl_trials.choice.npy')
-        response_times = one.load_dataset(eid, '_ibl_trials.response_times.npy')
-
-        feedbackType = one.load_dataset(eid, '_ibl_trials.feedbackType.npy')
-        feedback_times = one.load_dataset(eid, '_ibl_trials.feedback_times.npy')
-
-        stimOff_times = one.load_dataset(eid, '_ibl_trials.stimOff_times.npy')
-
-        wheel_positions = one.load_dataset(eid, '_ibl_wheel.position.npy')
-        wheel_timestamps = one.load_dataset(eid, '_ibl_wheel.timestamps.npy')
-
-        # load pLeft (Charles's model's output)
-        print('loading pLeft')
-        pLeft = np.load('./priors/prior_{}.npy'.format(eid))
-
-    #         print('loading glm hmm')
-    #         glm_hmm = np.load('glm_hmm/posterior_probs_valuessession_{}.npz'.format(subject))
-    #         for item in glm_hmm.files:
-    #             glm_hmm_states = glm_hmm[item]
-
-        choice_filter = np.where(choice!=0)
-
-        stimOn_times = stimOn_times[choice_filter]
-        firstMovement_times = firstMovement_times[choice_filter]
-        contrastLeft = contrastLeft[choice_filter]
-        contrastRight = contrastRight[choice_filter]
-        goCue_times = goCue_times[choice_filter]
-        response_times = response_times[choice_filter]
-        choice = choice[choice_filter]
-        feedbackType = feedbackType[choice_filter]
-        feedback_times = feedback_times[choice_filter]
-        stimOff_times = stimOff_times[choice_filter]
-        pLeft = pLeft[choice_filter]
-
-        assert(stimOff_times.shape[0] == feedback_times.shape[0])
-        assert(stimOff_times.shape[0] == contrastLeft.shape[0])
-        assert(stimOff_times.shape[0] == contrastRight.shape[0])
-        assert(stimOff_times.shape[0] == goCue_times.shape[0])
-        assert(stimOff_times.shape[0] == choice.shape[0])
-        assert(stimOff_times.shape[0] == response_times.shape[0])
-        assert(stimOff_times.shape[0] == feedbackType.shape[0])
-        assert(stimOff_times.shape[0] == pLeft.shape[0])
-
-        nan_idx = set()
-        nan_idx.update(np.where(np.isnan(stimOn_times))[0].tolist())
-        nan_idx.update(np.where(np.isnan(firstMovement_times))[0].tolist())
-        nan_idx.update(np.where(np.isnan(goCue_times))[0].tolist())
-        nan_idx.update(np.where(np.isnan(response_times))[0].tolist())
-        nan_idx.update(np.where(np.isnan(feedback_times))[0].tolist())
-        nan_idx.update(np.where(np.isnan(stimOff_times))[0].tolist())
-        nan_idx.update(np.where(np.isnan(pLeft))[0].tolist())
-        nan_idx = list(nan_idx)
-
-        kept_idx = np.ones(stimOn_times.shape[0]).astype(bool)
-        kept_idx[nan_idx] = False
-
-        stimOn_times = stimOn_times[kept_idx]
-        firstMovement_times = firstMovement_times[kept_idx]
-        contrastLeft = contrastLeft[kept_idx]
-        contrastRight = contrastRight[kept_idx]
-        goCue_times = goCue_times[kept_idx]
-        response_times = response_times[kept_idx]
-        choice = choice[kept_idx]
-        feedbackType = feedbackType[kept_idx]
-        feedback_times = feedback_times[kept_idx]
-        stimOff_times = stimOff_times[kept_idx]
-        pLeft = pLeft[kept_idx]
-    #         glm_hmm_states = glm_hmm_states[kept_idx]
-        print('trial info retrieved')
-
-        # load passive data
-        passive_vis_stim = one.load_dataset(eid, '_ibl_passiveGabor.table.csv')
-        passive_stim = one.load_dataset(eid, '_ibl_passiveStims.table.csv')
-        print('passive data loaded')
-
-    except: # relevant info not available
-        return 0, 0, 0, 0, 0, False
-    
-    for key in session_counter:
+    eid = trajectory['session']['id']
+    subject = trajectory['session']['subject']
+    probe = trajectory['probe_name']
+    date_number = trajectory['session']['start_time'].split('T')[0]+'-00'+str(trajectory['session']['number'])
+    print('processing {}: {}'.format(subject, eid))
+    lab_id = lab_number_map[trajectory['session']['lab']]
+    for key in session_counter.keys():
         if trajectory['session']['lab'] in key:
+            session_id = session_counter[key]
             session_counter[key] += 1
-            
-    # ALIGN TO MOVEMENT ONSET? HOW TO MAKE SURE I INCLUDE STIM ONSET TIME and FEEDBACK TIME?
-    # WHAT TO DO WHEN MOVEMENT ONSET TIME IS BEFORE STIMULUS ONSET TIME?
-    
-    lower_limit = 0
-    upper_limit = 10
-    trimmed_len = 2
-    # padding
-    pre_padding = 0.5
-    post_padding = 0.
-    padding_length = pre_padding + post_padding
-    
-    # select trials with length between lower_limit ~ upper_limit seconds
-    stim_diff = stimOff_times - stimOn_times
-    selected1 = np.logical_and(stim_diff >= lower_limit, stim_diff <= upper_limit)
-    
-    feedback_diff = feedback_times - stimOn_times
-    selected2 = np.logical_and(feedback_diff >= lower_limit, feedback_diff <= trimmed_len)
-    
-    selected = np.logical_and(selected1, selected2)
-    
-    stim_diff = stim_diff[selected]
-    
-    stimOn_times = stimOn_times[selected]
-    firstMovement_times = firstMovement_times[selected]
-    stimOff_times = stimOff_times[selected]
-    contrastLeft = contrastLeft[selected]
-    contrastRight = contrastRight[selected]
-    goCue_times = goCue_times[selected]
-    choice = choice[selected]
-    response_times = response_times[selected]
-    feedbackType = feedbackType[selected]
-    feedback_times = feedback_times[selected]
-    pLeft = pLeft[selected]
-#     glm_hmm_states = glm_hmm_states[selected]
-    
-    # use 0.5 + 0.3 seconds of passive data
-    trimmed_len_passive = 0.3
-    # padding
-    pre_padding_passive = 0.5
-    post_padding_passive = 0.
-    padding_length_passive = pre_padding_passive + post_padding_passive
+#     spikes = one.load_object(eid, 'spikes', collection='alf/{}/pykilosort'.format(probe))
+#     clusters = one.load_object(eid, 'clusters', collection='alf/{}/pykilosort'.format(probe))
+#     channels = one.load_object(eid, 'channels', collection='alf/{}/pykilosort'.format(probe))
+#     clusters = bbone.merge_clusters_channels(dic_clus={probe: clusters}, channels=channels)[probe]
+    spikes, clusters, channels = bbone.load_spike_sorting_with_channel(eid, 
+                                                                     one=one, 
+                                                                     probe=probe, 
+                                                                     spike_sorter='pykilosort')
+    spikes = spikes[probe]
+    clusters = clusters[probe]
+    channels = channels[probe]
+    print('spikes retrieved')
 
-    stimOn_times_passive = np.asarray(passive_vis_stim['start'].tolist())
-    stimOff_times_passive = np.asarray(passive_vis_stim['stop'].tolist())
-    contrast_position_passive = np.asarray(passive_vis_stim['position'].tolist())
-    contrast_passive = np.asarray(passive_vis_stim['contrast'].tolist())
+    print('loading motion energy and dlc')
+    left_me = one.load_dataset(eid, 'leftCamera.ROIMotionEnergy.npy')
+    left_dlc = one.load_dataset(eid, '_ibl_leftCamera.dlc.pqt')
+    left_dlc_times = one.load_dataset(eid, '_ibl_leftCamera.times.npy')
+    if left_dlc_times.shape[0] != left_dlc.shape[0]:
+        left_offset = mtnn_eids[eid]
+        left_dlc_times = left_dlc_times[abs(left_offset):abs(left_offset)+left_dlc.shape[0]]
+    assert(left_dlc_times.shape[0] == left_dlc.shape[0])
+    print('motion energy + dlc retrieved')
 
-    positive_rewardOn_passive = np.asarray(passive_stim['valveOn'].tolist())
-    positive_rewardOff_passive = np.asarray(passive_stim['valveOff'].tolist())
-    goCueOn_passive = np.asarray(passive_stim['toneOn'].tolist())
-    goCueOff_passive = np.asarray(passive_stim['toneOff'].tolist())
-    negative_rewardOn_passive = np.asarray(passive_stim['noiseOn'].tolist())
-    negative_rewardOff_passive = np.asarray(passive_stim['noiseOff'].tolist())
+    stimOn_times = one.load_dataset(eid, '_ibl_trials.stimOn_times.npy')
+    trial_numbers = np.arange(stimOn_times.shape[0])
+    firstMovement_times = one.load_dataset(eid, '_ibl_trials.firstMovement_times.npy')
+
+    contrastLeft = one.load_dataset(eid, '_ibl_trials.contrastLeft.npy')
+    contrastRight = one.load_dataset(eid, '_ibl_trials.contrastRight.npy')
+
+    goCue_times = one.load_dataset(eid, '_ibl_trials.goCue_times.npy')
+
+    choice = one.load_dataset(eid, '_ibl_trials.choice.npy')
+    response_times = one.load_dataset(eid, '_ibl_trials.response_times.npy')
+
+    feedbackType = one.load_dataset(eid, '_ibl_trials.feedbackType.npy')
+    feedback_times = one.load_dataset(eid, '_ibl_trials.feedback_times.npy')
+
+    stimOff_times = one.load_dataset(eid, '_ibl_trials.stimOff_times.npy')
+
+    wheel_positions = one.load_dataset(eid, '_ibl_wheel.position.npy')
+    wheel_timestamps = one.load_dataset(eid, '_ibl_wheel.timestamps.npy')
+
+    # load pLeft (Charles's model's output)
+    print('loading pLeft')
+    pLeft = np.load('./priors/prior_{}.npy'.format(eid))
+
+    print('loading glm hmm')
+    glm_hmm = np.load('glm_hmm/k=4/posterior_probs_valuessession_{}-{}.npz'.format(subject,date_number))
+    for item in glm_hmm.files:
+        glm_hmm_states = glm_hmm[item]
+
+    choice_filter = np.where(choice!=0)
+
+    stimOn_times = stimOn_times[choice_filter]
+    firstMovement_times = firstMovement_times[choice_filter]
+    contrastLeft = contrastLeft[choice_filter]
+    contrastRight = contrastRight[choice_filter]
+    goCue_times = goCue_times[choice_filter]
+    response_times = response_times[choice_filter]
+    choice = choice[choice_filter]
+    feedbackType = feedbackType[choice_filter]
+    feedback_times = feedback_times[choice_filter]
+    stimOff_times = stimOff_times[choice_filter]
+    pLeft = pLeft[choice_filter]
+    trial_numbers = trial_numbers[choice_filter]
+
+    assert(stimOff_times.shape[0] == feedback_times.shape[0])
+    assert(stimOff_times.shape[0] == firstMovement_times.shape[0])
+    assert(stimOff_times.shape[0] == contrastLeft.shape[0])
+    assert(stimOff_times.shape[0] == contrastRight.shape[0])
+    assert(stimOff_times.shape[0] == goCue_times.shape[0])
+    assert(stimOff_times.shape[0] == choice.shape[0])
+    assert(stimOff_times.shape[0] == response_times.shape[0])
+    assert(stimOff_times.shape[0] == feedbackType.shape[0])
+    assert(stimOff_times.shape[0] == pLeft.shape[0])
+
+    nan_idx = set()
+    nan_idx.update(np.where(np.isnan(stimOn_times))[0].tolist())
+    nan_idx.update(np.where(np.isnan(firstMovement_times))[0].tolist())
+    nan_idx.update(np.where(np.isnan(goCue_times))[0].tolist())
+    nan_idx.update(np.where(np.isnan(response_times))[0].tolist())
+    nan_idx.update(np.where(np.isnan(feedback_times))[0].tolist())
+    nan_idx.update(np.where(np.isnan(stimOff_times))[0].tolist())
+    nan_idx.update(np.where(np.isnan(pLeft))[0].tolist())
+    nan_idx = list(nan_idx)
+
+    kept_idx = np.ones(stimOn_times.shape[0]).astype(bool)
+    kept_idx[nan_idx] = False
+
+    stimOn_times = stimOn_times[kept_idx]
+    firstMovement_times = firstMovement_times[kept_idx]
+    contrastLeft = contrastLeft[kept_idx]
+    contrastRight = contrastRight[kept_idx]
+    goCue_times = goCue_times[kept_idx]
+    response_times = response_times[kept_idx]
+    choice = choice[kept_idx]
+    feedbackType = feedbackType[kept_idx]
+    feedback_times = feedback_times[kept_idx]
+    stimOff_times = stimOff_times[kept_idx]
+    pLeft = pLeft[kept_idx]
+    glm_hmm_states = glm_hmm_states[kept_idx]
+    trial_numbers = trial_numbers[kept_idx]
+    print('trial info retrieved')
+
+    # select trials
+    if align_event == 'movement_onset':
+        ref_event = firstMovement_times
+        diff1 = ref_event - stimOn_times
+        diff2 = feedback_times - ref_event
+        t_select1 = np.logical_and(diff1 > 0.0, diff1 < t_before-0.1)
+        t_select2 = np.logical_and(diff2 > 0.0, diff2 < t_after-0.1)
+        t_select = np.logical_and(t_select1, t_select2)
+        
+    stimOn_times = stimOn_times[t_select]
+    firstMovement_times = firstMovement_times[t_select]
+    contrastLeft = contrastLeft[t_select]
+    contrastRight = contrastRight[t_select]
+    goCue_times = goCue_times[t_select]
+    response_times = response_times[t_select]
+    choice = choice[t_select]
+    feedbackType = feedbackType[t_select]
+    feedback_times = feedback_times[t_select]
+    stimOff_times = stimOff_times[t_select]
+    pLeft = pLeft[t_select]
+    glm_hmm_states = glm_hmm_states[t_select]
+    trial_numbers = trial_numbers[t_select]
+    ref_event = ref_event[t_select]
+        
+    n_active_trials = ref_event.shape[0]
     
     # n_trials
-    n_trials = stim_diff.shape[0]
-    trial_length = int((trimmed_len+padding_length)/bin_size)
-    
-    n_trials_passive = stimOn_times_passive.shape[0]
-    trial_length_passive = int((trimmed_len_passive + padding_length_passive)/bin_size)
-
-    print('number of trials found: {} (active: {}, passive: {})'.format(n_trials + n_trials_passive, 
-                                                                        n_trials, n_trials_passive))
-    
-    trial_length_array = (np.ones_like(stim_diff) * trial_length).astype(int)
-    trial_length_array = np.concatenate((trial_length_array, np.ones(n_trials_passive) * trial_length_passive))
+    n_trials = n_active_trials
+    print('number of trials found: {} (active: {})'.format(n_trials,n_active_trials))
     
     # get XYs
     left_XYs = get_dlc_XYs(left_dlc.copy())
@@ -485,29 +474,31 @@ def featurize(i, trajectory, one, session_counter, bin_size=0.05):
     rs_regions, idx = combine_regions(acronyms)
     rs_regions = rs_regions[idx]
     good_clusters = good_clusters[idx]
-    print("all brain region counts: ", Counter(rs_regions))
+    print("repeated site brain region counts: ", Counter(rs_regions))
+    print("number of good clusters: ", good_clusters.shape[0])
 
-    # skip this part to get all clusters? we can filter for good clusters later on
-    good_clusters_fr = clusters['metrics']['firing_rate'].to_numpy()[good_clusters]
-    good_clusters_high_fr_idx = good_clusters_fr.argsort()[::-1][:40]
-    good_clusters = good_clusters[good_clusters_high_fr_idx]
-    rs_regions = rs_regions[good_clusters_high_fr_idx]
-    good_clusters_pr = clusters['metrics']['presence_ratio'].to_numpy()[good_clusters]
-    good_clusters_high_pr_idx = good_clusters_pr.argsort()[::-1][:10]
-    good_clusters = good_clusters[good_clusters_high_pr_idx]
-    rs_regions = rs_regions[good_clusters_high_pr_idx]
-    print("good cluster id: ", good_clusters)
-    print("selected brain region counts: ", Counter(rs_regions))
+    # skip this part to get all clusters. we can filter for better clusters later on
+#     good_clusters_fr = clusters['metrics']['firing_rate'].to_numpy()[good_clusters]
+#     print(good_clusters_fr)
+#     good_clusters_high_fr_idx = good_clusters_fr.argsort()[::-1][:40]
+#     good_clusters = good_clusters[good_clusters_high_fr_idx]
+#     rs_regions = rs_regions[good_clusters_high_fr_idx]
+#     good_clusters_pr = clusters['metrics']['presence_ratio'].to_numpy()[good_clusters]
+#     good_clusters_high_pr_idx = good_clusters_pr.argsort()[::-1][:10]
+#     good_clusters = good_clusters[good_clusters_high_pr_idx]
+#     rs_regions = rs_regions[good_clusters_high_pr_idx]
+#     print("good cluster id: ", good_clusters)
+#     print("selected brain region counts: ", Counter(rs_regions))
     
     # load spike amps + spike wf width
-    #amps = clusters['amps'][good_clusters]
-    #ptt = clusters['peakToTrough'][good_clusters]
     amps = one.load_dataset(eid, 'clusters.amps.npy', collection='alf/{}/pykilosort'.format(probe))
     ptt = one.load_dataset(eid, 'clusters.peakToTrough.npy', collection='alf/{}/pykilosort'.format(probe))
     
     n_clusters = good_clusters.shape[0]
-    feature = np.zeros((n_clusters, n_trials+n_trials_passive, trial_length, acronym_offset+5))
-    output = np.zeros((n_clusters, n_trials+n_trials_passive, trial_length))
+    n_tbins = int((t_after+t_before)/bin_size)
+    feature = np.zeros((n_clusters, n_trials, n_tbins, noise_offset+1))
+    output = np.zeros((n_clusters, n_trials, n_tbins))
+    print("feature tensor size: {}".format(feature.shape))
     
     # session specific
     feature[:,:,:,session_offset+session_id] = 1
@@ -525,34 +516,15 @@ def featurize(i, trajectory, one, session_counter, bin_size=0.05):
         spike_array = spikes['times'][spikes['clusters'] == cluster]
         
         # iterate through each trial (active)
-        for k in range(n_trials):
-            trial_start = stimOn_times[k] - pre_padding
-            trial_end = stimOn_times[k] + trimmed_len + post_padding
-            # iterate through the trial
-            #bin_loc = np.arange(trial_start, trial_start+upper_limit+post_padding, bin_size)
-            bin_loc = np.arange(trial_start, trial_end, bin_size)
-            if bin_loc.shape[0] > trial_length:
-                bin_loc = bin_loc[:trial_length]
+        for k in range(n_active_trials):
+            ref_t = ref_event[k]
+            start_t = ref_t-t_before
+            bin_loc = start_t+np.arange(n_tbins)*bin_size
             for idx, i in enumerate(bin_loc):
                 spike_num = spike_array[np.logical_and(spike_array >= i, 
                                                        spike_array < i + bin_size)].shape[0]
             
                 output[j,k,idx] = spike_num / bin_size
-                
-        # iterate through each trial (passive)
-        for k in range(n_trials_passive):
-            trial_start = stimOn_times_passive[k] - pre_padding_passive
-            trial_end = stimOn_times_passive[k] + trimmed_len_passive + post_padding_passive
-            # iterate through the trial
-            #bin_loc = np.arange(trial_start, trial_start+upper_limit+post_padding, bin_size)
-            bin_loc = np.arange(trial_start, trial_end, bin_size)
-            if bin_loc.shape[0] > trial_length_passive:
-                bin_loc = bin_loc[:trial_length_passive]
-            for idx, i in enumerate(bin_loc):
-                spike_num = spike_array[np.logical_and(spike_array >= i, 
-                                                       spike_array < i + bin_size)].shape[0]
-
-                output[j,k+n_trials,idx] = spike_num / bin_size
 
         x = xs[cluster]
         y = ys[cluster]
@@ -577,14 +549,9 @@ def featurize(i, trajectory, one, session_counter, bin_size=0.05):
         feature[j,:,:,wf_width_offset] = ptt[j]
         
     # trial specific
-    for k in notebook.tqdm(range(n_trials)):
-        feature[:,k,:,active_offset] = 1
-        
+    for k in notebook.tqdm(range(n_active_trials)):
         stimOn_times_k = stimOn_times[k]
         stimOff_times_k = stimOff_times[k]
-        trial_start = stimOn_times_k - pre_padding
-        trial_end = stimOn_times_k + trimmed_len + post_padding
-        stim_diff_k = stim_diff[k]
         contrastLeft_k = contrastLeft[k]
         contrastRight_k = contrastRight[k]
         goCue_times_k = goCue_times[k]
@@ -593,12 +560,11 @@ def featurize(i, trajectory, one, session_counter, bin_size=0.05):
         feedbackType_k = feedbackType[k]
         feedback_times_k = feedback_times[k]
         pLeft_k = pLeft[k]
-        #glm_hmm_states_k = glm_hmm_states[k]
+        glm_hmm_states_k = glm_hmm_states[k]
         
-        bin_loc = np.arange(trial_start, trial_end, bin_size)
-        if bin_loc.shape[0] > trial_length:
-            bin_loc = bin_loc[:trial_length]
-            
+        ref_t = ref_event[k]
+        start_t = ref_t-t_before
+        bin_loc = start_t+np.arange(n_tbins)*bin_size
         for idx, i in enumerate(bin_loc):
             left_in_range = np.logical_and(left_dlc_times >= i, 
                                            left_dlc_times < i + bin_size)
@@ -619,6 +585,11 @@ def featurize(i, trajectory, one, session_counter, bin_size=0.05):
                 feature[:,k,idx,nose_offset] = nose_speed_k
                 feature[:,k,idx,pupil_offset] = pupil_diameter_k
                 feature[:,k,idx,left_me_offset] = left_me_k
+            else:
+                feature[:,k,idx,paw_offset] = feature[:,k,idx-1,paw_offset]
+                feature[:,k,idx,nose_offset] = feature[:,k,idx-1,nose_offset]
+                feature[:,k,idx,pupil_offset] = feature[:,k,idx-1,pupil_offset]
+                feature[:,k,idx,left_me_offset] = feature[:,k,idx-1,left_me_offset]
 
             # goCue
             if np.logical_and(goCue_times >= i, goCue_times < i+bin_size).astype(int).sum() != 0:
@@ -626,14 +597,11 @@ def featurize(i, trajectory, one, session_counter, bin_size=0.05):
 
             # choice
             if np.logical_and(response_times >= i, response_times < i+bin_size).astype(int).sum() != 0:
-                try:
-                    choice_k = choice[np.logical_and(response_times >= i, response_times < i+bin_size)]
-                    chosen = choice_k + 1
-                    feature[:,k,idx,choice_offset+chosen]=1
-                    #feature[:,k,idx,glmhmm_offset:active_offset]=glm_hmm_states_k
-                except:
-                    print('error in trial {}'.format(k))
-                    pass
+                choice_k = choice[np.logical_and(response_times >= i, response_times < i+bin_size)]
+                if choice_k == -1:
+                    feature[:,k,idx,choice_offset]=1
+                elif choice_k == 1:
+                    feature[:,k,idx,choice_offset+1]=1
 
             # reward
             if np.logical_and(feedback_times >= i, feedback_times < i+bin_size).astype(int).sum() != 0:
@@ -656,101 +624,14 @@ def featurize(i, trajectory, one, session_counter, bin_size=0.05):
             if lick_idx.shape[0] != 0:
                 feature[:,k,idx,lick_offset] = 1 #lick_idx.shape[0]
             
-        trial_offset = 0
-        while k + trial_offset < stimOn_times.shape[0] and stimOn_times[k + trial_offset] < trial_end:
-            cur_idx = k + trial_offset
-            stimOn_bin = int(np.floor((stimOn_times[cur_idx] - trial_start) / bin_size))
-            stimOff_bin = int(np.ceil((stimOff_times[cur_idx] - trial_start) / bin_size))
-            if stimOff_bin > trial_length:
-                stimOff_bin = trial_length
-            
-            contrastLeft_k = contrastLeft[cur_idx]
-            contrastRight_k = contrastRight[cur_idx]
-            pLeft_k = pLeft[cur_idx]
-            
-            feature[:,k,stimOn_bin:stimOff_bin,stimOnOff_offset] = 1
-            feature[:,k,stimOn_bin:stimOff_bin,pLeft_offset] = pLeft_k
-            if contrastLeft_k != 0 and not np.isnan(contrastLeft_k):
-                feature[:,k,stimOn_bin:stimOff_bin,contrast_offset] = contrastLeft_k
-            elif contrastRight_k != 0 and not np.isnan(contrastRight_k):
-                feature[:,k,stimOn_bin:stimOff_bin,contrast_offset+1] = contrastRight_k
-            
-            trial_offset += 1
+        # mouse prior
+        feature[:,k,:,pLeft_offset] = pLeft_k
+        
+        # stimulus
+        stimOn_bin = np.floor((stimOn_times_k - start_t) / bin_size).astype(int)
+        if contrastLeft_k != 0 and not np.isnan(contrastLeft_k):
+            feature[:,k,stimOn_bin,stimulus_offset] = contrastLeft_k
+        elif contrastRight_k != 0 and not np.isnan(contrastRight_k):
+            feature[:,k,stimOn_bin,stimulus_offset+1] = contrastRight_k
 
-    # passive trial specific
-    for k in notebook.tqdm(range(n_trials_passive)):
-
-        stimOn_times_k = stimOn_times_passive[k]
-        stimOff_times_k = stimOff_times_passive[k]
-        trial_start = stimOn_times_k - pre_padding_passive
-        trial_end = stimOn_times_k + trimmed_len_passive + post_padding_passive
-
-        contrast_position_k = contrast_position_passive[k]
-        contrast_k = contrast_passive[k]
-
-        bin_loc = np.arange(trial_start, trial_end, bin_size)
-        if bin_loc.shape[0] > trial_length_passive:
-            bin_loc = bin_loc[:trial_length_passive]
-
-        for idx, i in enumerate(bin_loc):
-            left_in_range = np.logical_and(left_dlc_times >= i, 
-                                           left_dlc_times < i + bin_size)
-
-            left_me_k = left_me[left_in_range]
-            paw_speed_k = paw_speed[left_in_range]
-            nose_speed_k = nose_speed[left_in_range]
-            pupil_diameter_k = pupil_diameter[left_in_range]
-
-            if left_in_range.astype(int).sum() > 1:
-                left_me_k = left_me_k.mean()
-                paw_speed_k = paw_speed_k.mean()
-                nose_speed_k = nose_speed_k.mean()
-                pupil_diameter_k = pupil_diameter_k.mean()
-
-            if left_in_range.astype(int).sum() > 0:   
-                feature[:,k+n_trials,idx,paw_offset] = paw_speed_k
-                feature[:,k+n_trials,idx,nose_offset] = nose_speed_k
-                feature[:,k+n_trials,idx,pupil_offset] = pupil_diameter_k
-                feature[:,k+n_trials,idx,left_me_offset] = left_me_k
-
-            # goCue
-            if np.logical_and(goCueOn_passive >= i, goCueOn_passive < i+bin_size).astype(int).sum() != 0 or np.logical_and(goCueOff_passive >= i, goCueOff_passive < i+bin_size).astype(int).sum():
-                feature[:,k+n_trials,idx,goCue_offset] = 1
-
-            # reward
-            if np.logical_and(negative_rewardOn_passive >= i, negative_rewardOn_passive < i+bin_size).astype(int).sum() != 0 or np.logical_and(negative_rewardOff_passive >= i, negative_rewardOff_passive < i+bin_size).astype(int).sum() != 0:
-                feature[:,k+n_trials,idx,reward_offset] = 1
-            if np.logical_and(positive_rewardOn_passive >= i, positive_rewardOn_passive < i+bin_size).astype(int).sum() != 0 or np.logical_and(positive_rewardOff_passive >= i, positive_rewardOff_passive < i+bin_size).astype(int).sum() != 0:
-                feature[:,k+n_trials,idx,reward_offset+1] = 1
-
-            # wheel velocity
-            w_vel_idx = np.logical_and(wheel_timestamps >= i, wheel_timestamps < i+bin_size)
-            if w_vel_idx.astype(int).sum() > 1:
-                feature[:,k+n_trials,idx,wheel_offset] = np.mean(vel[w_vel_idx])
-            elif w_vel_idx.astype(int).sum() == 1:
-                feature[:,k+n_trials,idx,wheel_offset] = vel[w_vel_idx]
-
-            # lick
-            lick_idx = lick_times[np.logical_and(lick_times >= i, lick_times < i+bin_size)]
-            if lick_idx.shape[0] != 0:
-                feature[:,k+n_trials,idx,lick_offset] = 1 #lick_idx.shape[0]
-
-        trial_offset = 0
-        while k + trial_offset < stimOn_times_passive.shape[0] and stimOn_times_passive[k + trial_offset] < trial_end:
-            cur_idx = k + trial_offset
-            stimOn_bin = int(np.floor((stimOn_times_passive[cur_idx] - trial_start) / bin_size))
-            stimOff_bin = int(np.ceil((stimOff_times_passive[cur_idx] - trial_start) / bin_size))
-            if stimOff_bin > trial_length_passive:
-                stimOff_bin = trial_length_passive
-
-            feature[:,k+n_trials,stimOn_bin:stimOff_bin,stimOnOff_offset] = 1
-            if contrast_position_k == -35: # left
-                feature[:,k+n_trials,stimOn_bin:stimOff_bin,contrast_offset] = contrast_k
-            elif contrast_position_k == 35: # right
-                feature[:,k+n_trials,stimOn_bin:stimOff_bin,contrast_offset+1] = contrast_k
-
-            trial_offset += 1
-    return feature, output, trial_length_array, good_clusters, nan_idx, True
-
-
-
+    return feature, output, good_clusters, trial_numbers

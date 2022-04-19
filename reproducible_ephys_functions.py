@@ -347,7 +347,7 @@ def eid_list_all():
 
 def pid_list():
     """
-    Static list of all repeated site eids
+    Static list of pids which pass the ADVANCED criterium to include for repeated site analysis
     """
     repo_dir = os.path.dirname(os.path.realpath(__file__))
     pids = np.load(os.path.join(repo_dir, 'repeated_site_pids.npy'))

@@ -45,12 +45,12 @@ def panel_sankey(fig, ax):
                pathlengths=[0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.4],
                facecolor = sns.color_palette('Pastel1')[1])
     diagrams = sankey.finish()
-    
+
     #text font and positioning
     for text in diagrams[0].texts:
             text.set_fontsize('7')
 
-    
+
     text = diagrams[0].texts[0]
     xy = text.get_position()
     text.set_position((xy[0] - 0.2, xy[1]))
@@ -80,7 +80,7 @@ def panel_sankey(fig, ax):
     text = diagrams[0].texts[5]
     xy = text.get_position()
     text.set_position((xy[0], xy[1]+0.1))
-    
+
 
 
 def panel_probe_lfp(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-2000, 2000],
@@ -159,7 +159,7 @@ def panel_probe_lfp(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-200
     else:
         cbar.ax.set_yticklabels([f'{clim[0]}', f'{clim[1]}'])
     cbar.set_label('Power spectral density (dB)', rotation=270, labelpad=-5)
-    
+
 
 def panel_probe_neurons(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-2000, 2000],
                         one=None):
@@ -201,13 +201,14 @@ def panel_probe_neurons(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[
                                     brain_atlas=brain_atlas)
         xyz_channels = ephysalign.get_channel_locations(feature, track)
         z = xyz_channels[:, 2] * 1e6
+
+        # Center probe plots at specified brain region boundary
         brain_regions = ephysalign.get_brain_locations(xyz_channels)
         boundaries, colours, regions = get_brain_boundaries(brain_regions, z, r)
-        bound_reg, col_reg, reg_name = get_brain_boundaries_interest(brain_regions, z, r)
-
         z_subtract = boundaries[np.where(np.array(regions) == boundary_align)[0][0] + 1]
         z = z - z_subtract
-        boundaries, colours, regions = get_brain_boundaries(brain_regions, z, r)
+
+        # Get brain regions and boundaries
         bound_reg, col_reg, reg_name = get_brain_boundaries_interest(brain_regions, z, r)
 
         # Get spike amp data
@@ -215,16 +216,25 @@ def panel_probe_neurons(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[
         y = ephysalign.get_channel_locations(feature, track, y / 1e6)[:, 2] * 1e6
         y = y - z_subtract
         levels = [0, 30]
-        im = ax[iR].scatter(x, y, c=c, s=1, cmap='hot', vmin=levels[0], vmax=levels[1], zorder=1)
+        im = ax[iR].scatter(x, y, c=c, s=1, cmap='hot', vmin=levels[0], vmax=levels[1], zorder=2)
         ax[iR].images.append(im)
         ax[iR].set_xlim(1.3, 3)
 
-        for reg, co in zip(bound_reg, col_reg):
-            height = np.abs(reg[1] - reg[0])
-            color = co / 255
-            width = ax[iR].get_xlim()[1]
-            ax[iR].bar(x=width/2, height=height, width=width, color=color, bottom=reg[0],
+        # Add rectangles for non-target brain regions
+        width = ax[iR].get_xlim()[1]
+        all_boundaries = np.concatenate(([0], np.where(np.diff(brain_regions['id']) > 0)[0],
+                                         [brain_regions['id'].shape[0] - 1]))
+        for i, bound in enumerate(all_boundaries[:-1]):
+            ax[iR].bar(x=width/2, height=z[all_boundaries[i+1]] - z[bound], width=width,
+                       bottom=z[all_boundaries[i+1]],
+                       color=brain_regions['rgb'][i] / 255,
                        edgecolor='k', linewidth=1, alpha=0.5, zorder=0)
+
+        # Add colored rectangles for brain regions of interest
+        for reg, co in zip(bound_reg, col_reg):
+            ax[iR].bar(x=width/2, height=np.abs(reg[1] - reg[0]), width=width,
+                       color=co / 255, bottom=reg[0],
+                       edgecolor='k', linewidth=1, alpha=0.5, zorder=1)
 
         ax[iR].set_title(data.loc[iR, 'recording'] + 1,
                          color=lab_colors[data.loc[iR, 'institute']])
