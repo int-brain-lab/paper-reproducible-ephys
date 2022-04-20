@@ -4,7 +4,7 @@ import brainbox.behavior.wheel as wh
 from brainbox.behavior.dlc import get_speed_for_features, get_licks, get_sniffs
 from brainbox.task.trials import get_event_aligned_raster, filter_trials
 import matplotlib.pyplot as plt
-
+from copy import deepcopy
 
 def plot_psth_raster(ax, t, psth, raster, title=None, ylabel=None, 
                      xlabel='time (sec)', 
@@ -14,7 +14,7 @@ def plot_psth_raster(ax, t, psth, raster, title=None, ylabel=None,
     if clevels is None:
         clevels = [np.nanmin(raster['vals'].ravel()), np.nanmax(raster['vals'].ravel())]
      
-    ax.set_title(title, fontdict={'fontsize': 21})
+    ax.set_title(title, fontdict={'fontsize': 27})
     ax.imshow(raster['vals'], aspect='auto', origin='lower',
               extent=np.r_[np.min(t), np.max(t), 0, raster['vals'].shape[0]], cmap=cmap,
               vmin=clevels[0], vmax=clevels[1], interpolation='none')
@@ -24,14 +24,14 @@ def plot_psth_raster(ax, t, psth, raster, title=None, ylabel=None,
     ax.vlines(0, *ax.get_ylim(), color='k', linestyle='dashed')
 
     if xlabel is not None:
-        ax.set_xlabel(xlabel, fontsize=21)
+        ax.set_xlabel(xlabel, fontsize=26)
     else:
         ax.set_xticks([])
         
     ax.set_yticks([])
         
     if stim_dir=="left":
-        ax.set_ylabel('trials', fontsize=21)
+        ax.set_ylabel('trials', fontsize=26)
 
 def get_dlc_everything_skip_threshold(dlc_cam, camera):
     """
@@ -59,7 +59,7 @@ def get_dlc_everything_skip_threshold(dlc_cam, camera):
 
 def normalize(raster):
     r = raster['vals']
-    raster['vals'] = (r-r.min())/(r.max()-r.min())
+    raster['vals'] = 2*(r-r.min())/(r.max()-r.min())-1
     return raster
 
 def plot_neural_behav_raster(eid, probe, trial_idx, stim_dir='left', camera='left',
@@ -86,6 +86,7 @@ def plot_neural_behav_raster(eid, probe, trial_idx, stim_dir='left', camera='lef
     wheel = one.load_object(eid, 'wheel', collection='alf',)
     me = one.load_dataset(eid, 'leftCamera.ROIMotionEnergy.npy')
     trials = one.load_object(eid, 'trials')
+    trials_all = deepcopy(trials)
     if trial_idx is not None:
         for key in trials.keys():
             trials[key] = trials[key][trial_idx]
@@ -102,61 +103,92 @@ def plot_neural_behav_raster(eid, probe, trial_idx, stim_dir='left', camera='lef
     # Spike
     spike_raster, t = get_event_aligned_raster(spikes.times[spikes.clusters == clust_id],
                                                trials[align_event], tbin=tbin, epoch=epoch)
-
     spike_raster_sorted, spike_psth = filter_trials(trials, spike_raster, align_event, 
                                                     order=order, sort=sort)
-
-    spike_raster_sorted = normalize(spike_raster_sorted)
+    spike_raster_all, _ = get_event_aligned_raster(spikes.times[spikes.clusters == clust_id],
+                                               trials_all[align_event], tbin=tbin, epoch=epoch)
+    spike_raster_all_sorted, _ = filter_trials(trials_all, spike_raster_all, align_event, 
+                                                    order=order, sort=sort)
+    spike_raster_clevels = np.percentile(spike_raster_all_sorted['vals'], [0.01,99.9])
+#     spike_raster_sorted = normalize(spike_raster_sorted)
     plot_psth_raster(axs[0][0], t, spike_psth, spike_raster_sorted,
                      title='firing rate', 
                      ylabel=None, stim_dir=stim_dir,
-                     cmap='binary', tbin=tbin, xlabel=None)
+                     cmap='binary', tbin=tbin, xlabel=None, clevels=spike_raster_clevels)
 
     # Wheel
     wheel_velocity = wh.velocity(wheel.timestamps, wheel.position)
     wheel_raster, t = get_event_aligned_raster(wheel.timestamps, trials[align_event],
-                                                      values=wheel_velocity, tbin=tbin, epoch=epoch)
+                                               values=wheel_velocity, tbin=tbin, epoch=epoch)
     wheel_raster_sorted, wheel_psth = filter_trials(trials, wheel_raster, align_event, 
                                                     order=order, sort=sort)
-    wheel_raster_sorted = normalize(wheel_raster_sorted)
+    wheel_raster_all, _ = get_event_aligned_raster(wheel.timestamps, trials_all[align_event],
+                                               values=wheel_velocity, tbin=tbin, epoch=epoch)
+    wheel_raster_all_sorted, _ = filter_trials(trials_all, wheel_raster_all, align_event, 
+                                                    order=order, sort=sort)
+#     wheel_raster_sorted = normalize(wheel_raster_sorted)
+    wheel_clevels = np.percentile(wheel_raster_all_sorted['vals'], [0.1,99.8])
     plot_psth_raster(axs[0][1], t, wheel_psth, wheel_raster_sorted,
                      title=f'behavioral variable\nraster plots ({stim_dir} stimulus)\n\nwheel velocity',
-                     ylabel='rad/s', cmap='binary', xlabel=None)
+                     ylabel='rad/s', cmap='binary', xlabel=None, clevels=wheel_clevels)
 
     # Right paw
     paw_r_raster, t = get_event_aligned_raster(dlc_all.times, trials[align_event],
                                                 values=dlc_all.dlc.paw_r_speed, tbin=tbin, epoch=epoch)
     paw_r_raster_sorted, paw_r_psth = filter_trials(trials, paw_r_raster, align_event,
                                                     order=order, sort=sort)
-    paw_r_raster_sorted = normalize(paw_r_raster_sorted)
+    paw_r_raster_all, _ = get_event_aligned_raster(dlc_all.times, trials_all[align_event],
+                                               values=dlc_all.dlc.paw_r_speed, tbin=tbin, epoch=epoch)
+    paw_r_raster_all_sorted, _ = filter_trials(trials_all, paw_r_raster_all, align_event, 
+                                                    order=order, sort=sort)
+    paw_r_clevels = np.percentile(paw_r_raster_all_sorted['vals'], [0.01,99.9])
+#     paw_r_raster_sorted = normalize(paw_r_raster_sorted)
     plot_psth_raster(axs[0][2], t, paw_r_psth, paw_r_raster_sorted,
-                     title='right paw speed', ylabel='px/s', cmap='binary', xlabel=None)
+                     title='right paw speed', ylabel='px/s', cmap='binary', 
+                     xlabel=None, clevels=paw_r_clevels)
     
     # Motion energy
     me_raster, t = get_event_aligned_raster(dlc_all.times, trials[align_event],
                                                 values=me, tbin=tbin, epoch=epoch)
     me_raster_sorted, me_psth = filter_trials(trials, me_raster, align_event, 
                                               order=order, sort=sort)
-    me_raster_sorted = normalize(me_raster_sorted)
+    me_raster_all, _ = get_event_aligned_raster(dlc_all.times, trials_all[align_event],
+                                               values=me, tbin=tbin, epoch=epoch)
+    me_raster_all_sorted, _ = filter_trials(trials_all, me_raster_all, align_event, 
+                                                    order=order, sort=sort)
+    me_clevels = np.percentile(me_raster_all_sorted['vals'], [0.01,99.9])
+#     me_raster_sorted = normalize(me_raster_sorted)
     plot_psth_raster(axs[1][0], t, me_psth, me_raster_sorted,
-                     title='motion energy', ylabel=None, cmap='binary', stim_dir=stim_dir)
+                     title='motion energy', ylabel=None, cmap='binary', 
+                     stim_dir=stim_dir, clevels=me_clevels)
 
     # Nose top
     nose_raster, t = get_event_aligned_raster(dlc_all.times, trials[align_event],
                                               values=dlc_all.dlc.nose_tip_speed, tbin=tbin, epoch=epoch)
     nose_raster_sorted, nose_psth = filter_trials(trials, nose_raster, align_event, 
                                                   order=order, sort=sort)
-    nose_raster_sorted = normalize(nose_raster_sorted)
+    nose_raster_all, _ = get_event_aligned_raster(dlc_all.times, trials_all[align_event],
+                                               values=dlc_all.dlc.nose_tip_speed, tbin=tbin, epoch=epoch)
+    nose_raster_all_sorted, _ = filter_trials(trials_all, nose_raster_all, align_event, 
+                                                    order=order, sort=sort)
+    nose_clevels = np.percentile(nose_raster_all_sorted['vals'], [0.01,99.9])
+#     nose_raster_sorted = normalize(nose_raster_sorted)
     plot_psth_raster(axs[1][1], t, nose_psth, nose_raster_sorted,
-                     title='nose tip speed', ylabel='px/s', cmap='binary')
+                     title='nose tip speed', ylabel='px/s', cmap='binary',
+                     clevels=nose_clevels)
 
     # Licks
     lick_raster, t = get_event_aligned_raster(dlc_all.licks, trials[align_event], tbin=tbin, epoch=epoch)
     lick_raster_sorted, lick_psth = filter_trials(trials, lick_raster, align_event,
                                                   order=order, sort=sort)
-    lick_raster_sorted = normalize(lick_raster_sorted)
+    lick_raster_all, _ = get_event_aligned_raster(dlc_all.licks, trials_all[align_event],
+                                                  tbin=tbin, epoch=epoch)
+    lick_raster_all_sorted, _ = filter_trials(trials_all, lick_raster_all, align_event, 
+                                                    order=order, sort=sort)
+#     lick_clevels = np.percentile(lick_raster_all_sorted['vals'], [0.01,99.9])
+#     lick_raster_sorted = normalize(lick_raster_sorted)
     plot_psth_raster(axs[1][2], t, lick_psth, lick_raster_sorted,
-                     title='licks', ylabel='px/s', cmap='binary')
+                     title='licks', ylabel='px/s', cmap='binary')#, clevels=lick_clevels)
     
     return fig
 

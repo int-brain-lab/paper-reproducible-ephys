@@ -13,14 +13,18 @@ import sys, os
 sys.path.append('..')
 from neural_and_behav_rasters import plot_neural_behav_raster
 
+# remove this later
+from sklearn.metrics import r2_score
+
 from utils import *
+from mtnn import *
 
 def split_by_stimulus(feature):
     
     stim = feature[0,:,:,cov_idx_dict['stimuli'][0]:cov_idx_dict['stimuli'][1]].sum(1)
     left_idx = np.nonzero(stim[:,0])
     right_idx = np.nonzero(stim[:,1])
-    
+
     contrast_left = np.zeros(feature.shape[1]).astype(bool)
     contrast_left[left_idx] = True
                    
@@ -140,8 +144,8 @@ def get_ticks(feature):
 
 def make_fig_ax():
     
-    xsplit = ([0,0.46], [0.51,0.97], [0.98,1])
-    ysplit = ([0.05,0.22], [0.23,0.40], [0.41,0.58], [0.73, 1], [0.23, 0.58])
+    xsplit = ([0,0.475], [0.495,0.97], [0.98,1])
+    ysplit = ([0.05,0.22], [0.23,0.40], [0.41,0.58], [0.745, 1], [0.23, 0.58])
     
     fig = plt.figure(figsize=(30,20))
     ax = {'panel_A': fg.place_axes_on_grid(fig, xspan=xsplit[0], yspan=ysplit[0]),
@@ -157,9 +161,9 @@ def make_fig_ax():
           'panel_I': fg.place_axes_on_grid(fig, xspan=xsplit[2], yspan=ysplit[4])}
     
     # Add subplot labels
-    labels = [{'label_text':'a', 'xpos':0, 'ypos':0.02, 'fontsize':30, 'weight': 'bold',
+    labels = [{'label_text':'a', 'xpos':0, 'ypos':0.02, 'fontsize':45, 'weight': 'bold',
                'ha': 'right', 'va': 'bottom'},
-              {'label_text':'b', 'xpos':0, 'ypos':0.65, 'fontsize':30, 'weight': 'bold',
+              {'label_text':'b', 'xpos':0, 'ypos':0.65, 'fontsize':45, 'weight': 'bold',
                'ha': 'right', 'va': 'bottom'}]
     
     return fig, ax, labels
@@ -202,7 +206,8 @@ def figure_style(return_colors=False):
                 'RS2': sns.color_palette('Set2')[3]}
 
 def generate_figure_9(feature_list, pred_list, obs_list, neu_list, sess_list, trial_list,
-                      bin_size=0.05, which_sess=None, savefig=False, plot_subsample_ratio=0.2):
+                      bin_size=0.05, which_sess=None, savefig=False, 
+                      plot_subsample_ratio=0.2, plot_neurons = None, subdir=None):
     '''
     which_sess: list
     '''
@@ -214,8 +219,9 @@ def generate_figure_9(feature_list, pred_list, obs_list, neu_list, sess_list, tr
     acronym_dict_reverse = get_acronym_dict_reverse()
         
     for i in which_sess:
-        sess_info = sess_list[i]
+        sess_info = sess_list[i].tolist()
         eid = sess_info['session']['id']
+        subject = sess_info['session']['subject']
         probe = sess_info['probe_name']
         
         feature = feature_list[i]
@@ -228,12 +234,15 @@ def generate_figure_9(feature_list, pred_list, obs_list, neu_list, sess_list, tr
         left_ticks, right_ticks= get_ticks(left[0]), get_ticks(right[0])
         left_trial_idx, right_trial_idx = left[3], right[3]
         
+        n_neurons = neu.shape[0]
         if plot_subsample_ratio < 1.0:
-            n_neurons = neu.shape[0]
             n_samples = int(n_neurons*plot_subsample_ratio)
             selected_neurons = np.random.choice(np.arange(n_neurons), size=n_samples, replace=False)
         else:
             selected_neurons = np.arange(n_neurons)
+            
+        if plot_neurons is not None:
+            selected_neurons = selected_neurons[plot_neurons]
 
         for j, neuron in notebook.tqdm(enumerate(neu)):
             if j not in selected_neurons:
@@ -246,6 +255,13 @@ def generate_figure_9(feature_list, pred_list, obs_list, neu_list, sess_list, tr
 
             region_idx = np.nonzero(left[0][j,0,0,acronym_offset:noise_offset])[0][0]
             region = acronym_dict_reverse[region_idx]
+            print(f'eid: {eid}, brain region: {region}')
+            r2_psth = r2_score(np.concatenate([left_obs_j,right_obs_j], axis=0).mean(0), 
+                           np.concatenate([left_pred_j,right_pred_j], axis=0).mean(0), 
+                           multioutput='raw_values')[0]
+            r2 = r2_score(np.concatenate([left_obs_j,right_obs_j], axis=0).flatten(), 
+                           np.concatenate([left_pred_j,right_pred_j], axis=0).flatten(), 
+                           multioutput='raw_values')[0]
             
             max_fr = max([left_pred_j.max(), left_obs_j.max(), 
                           right_pred_j.max(), right_obs_j.max()])
@@ -258,30 +274,32 @@ def generate_figure_9(feature_list, pred_list, obs_list, neu_list, sess_list, tr
             ax['panel_A'].plot(left_obs_j.mean(0), color='k', lw=3, label='observed')
             ax['panel_A'].set_ylim(0, max_psth*1.2)
             ax['panel_A'].set_xlim(-0.5,pred.shape[-1]-0.5)
-            ax['panel_A'].axvline(10.5, color='k', linestyle='--')
+            ax['panel_A'].axvline(10.5, color='k', linestyle='--', lw=3)
             ax['panel_A'].set_xticks([])
-            ax['panel_A'].set_title('left stimulus')
-            ax['panel_A'].set_ylabel('firing rate (Hz)')
-            ax['panel_A'].legend(fontsize=20)
-            
+            ax['panel_A'].set_title('left stimulus', fontsize=28)
+            ax['panel_A'].set_ylabel('firing rate (Hz)', fontsize=26)
+            ax['panel_A'].set_yticks(np.arange(0,80,20))
+            ax['panel_A'].set_yticklabels(np.arange(0,80,20), fontsize=22)
+            ax['panel_A'].legend(fontsize=26)
+
             ax['panel_B'].plot(right_pred_j.mean(0), color='r', lw=3, label='predicted')
             ax['panel_B'].plot(right_obs_j.mean(0), color='k', lw=3, label='observed')
             ax['panel_B'].set_ylim(0, max_psth*1.2)
             ax['panel_B'].set_xlim(-0.5,pred.shape[-1]-0.5)
-            ax['panel_B'].axvline(10.5, color='k', linestyle='--')
+            ax['panel_B'].axvline(10.5, color='k', linestyle='--', lw=3)
             ax['panel_B'].set_yticks([])
             ax['panel_B'].set_xticks([])
-            ax['panel_B'].set_title('right stimulus')
-            ax['panel_B'].legend(fontsize=20)
-            
+            ax['panel_B'].set_title('right stimulus', fontsize=28)
+            ax['panel_B'].legend(fontsize=26)
+
             ax['panel_C'].imshow(left_obs_j, aspect='auto', vmin=0, vmax=max_fr, 
                                  cmap=plt.get_cmap('binary'), interpolation='none')
             if left[-1] > 0:
-                ax['panel_C'].axhline(left[-1]-0.5, color='k', linestyle='--')
-            ax['panel_C'].axvline(10.5, color='k', linestyle='--')
+                ax['panel_C'].axhline(left[-1]-0.5, color='k', linestyle='--', lw=3)
+            ax['panel_C'].axvline(10.5, color='k', linestyle='--', lw=3)
             ax['panel_C'].set_xticks([])
             ax['panel_C'].set_yticks([])
-            ax['panel_C'].set_ylabel('observed\nraster plot\ntrials')
+            ax['panel_C'].set_ylabel('observed\nraster plot\ntrials', fontsize=26)
             for k in range(left_trial_idx.shape[0]):
                 ax['panel_C'].plot([left_ticks['stimOn'][k]+0.5,left_ticks['stimOn'][k]+0.5],
                                    [k-0.5,k+0.5], color='b', lw=2)
@@ -291,12 +309,13 @@ def generate_figure_9(feature_list, pred_list, obs_list, neu_list, sess_list, tr
             ax['panel_D'].imshow(right_obs_j, aspect='auto', vmin=0, vmax=max_fr,
                                  cmap=plt.get_cmap('binary'), interpolation='none')
             if right[-1] > 0:
-                ax['panel_D'].axhline(right[-1]-0.5, color='k', linestyle='--')
-            ax['panel_D'].axvline(10.5, color='k', linestyle='--')
+                ax['panel_D'].axhline(right[-1]-0.5, color='k', linestyle='--', lw=3)
+            ax['panel_D'].axvline(10.5, color='k', linestyle='--', lw=3)
             ax['panel_D'].set_yticks([])
             ax['panel_D'].set_xticks([])
             for k in range(right_trial_idx.shape[0]):
                 ax['panel_D'].plot([right_ticks['stimOn'][k]+0.5,right_ticks['stimOn'][k]+0.5],
+                                   
                                    [k-0.5,k+0.5], color='b', lw=2)
                 ax['panel_D'].plot([right_ticks['feedback'][k]+0.5,right_ticks['feedback'][k]+0.5],
                                    [k-0.5,k+0.5], color='g', lw=2)
@@ -304,36 +323,36 @@ def generate_figure_9(feature_list, pred_list, obs_list, neu_list, sess_list, tr
             ax['panel_E'].imshow(left_pred_j, aspect='auto', vmin=0, vmax=max_fr, 
                                  cmap=plt.get_cmap('binary'), interpolation='none')
             if left[-1] > 0:
-                ax['panel_E'].axhline(left[-1]-0.5, color='k', linestyle='--')
-            ax['panel_E'].axvline(10.5, color='k', linestyle='--')
+                ax['panel_E'].axhline(left[-1]-0.5, color='k', linestyle='--', lw=3)
+            ax['panel_E'].axvline(10.5, color='k', linestyle='--', lw=3)
             ax['panel_E'].set_xlabel('time (sec)')
             ax['panel_E'].set_yticks([])
-            ax['panel_E'].set_ylabel('predicted\nraster plot\ntrials')
+            ax['panel_E'].set_ylabel('predicted\nraster plot\ntrials', fontsize=26)
             ax['panel_E'].set_xticks([0.5, 10.5, 20.5, 29.5])
-            ax['panel_E'].set_xticklabels(np.arange(-0.5,1.1,0.5))
+            ax['panel_E'].set_xticklabels(np.arange(-0.5,1.1,0.5), fontsize=22)
             for k in range(left_trial_idx.shape[0]):
                 ax['panel_E'].plot([left_ticks['stimOn'][k]+0.5,left_ticks['stimOn'][k]+0.5],
-                                   [k-0.5,k+0.5], color='b', lw=2)
+                                   [k-0.5,k+0.5], color='b', lw=3)
                 ax['panel_E'].plot([left_ticks['feedback'][k]+0.5,left_ticks['feedback'][k]+0.5],
-                                   [k-0.5,k+0.5], color='g', lw=2)
+                                   [k-0.5,k+0.5], color='g', lw=3)
             
             ax['panel_F'].imshow(right_pred_j, aspect='auto', vmin=0, vmax=max_fr, 
                                  cmap=plt.get_cmap('binary'), interpolation='none')
             if right[-1] > 0:
-                ax['panel_F'].axhline(right[-1]-0.5, color='k', linestyle='--')
-            ax['panel_F'].axvline(10.5, color='k', linestyle='--')
+                ax['panel_F'].axhline(right[-1]-0.5, color='k', linestyle='--', lw=3)
+            ax['panel_F'].axvline(10.5, color='k', linestyle='--', lw=3)
             ax['panel_F'].set_yticks([])
             ax['panel_F'].set_xlabel('time (sec)')
             ax['panel_F'].set_xticks([0.5, 10.5, 20.5, 29.5])
-            ax['panel_F'].set_xticklabels(np.arange(-0.5,1.1,0.5))
+            ax['panel_F'].set_xticklabels(np.arange(-0.5,1.1,0.5), fontsize=22)
             for k in range(right_trial_idx.shape[0]):
                 ax['panel_F'].plot([right_ticks['stimOn'][k]+0.5,right_ticks['stimOn'][k]+0.5],
-                                   [k-0.5,k+0.5], color='b', lw=2, 
+                                   [k-0.5,k+0.5], color='b', lw=3, 
                                    label='stim onset' if k==0 else None)
                 ax['panel_F'].plot([right_ticks['feedback'][k]+0.5,right_ticks['feedback'][k]+0.5],
-                                   [k-0.5,k+0.5], color='g', lw=2, 
+                                   [k-0.5,k+0.5], color='g', lw=3, 
                                    label='feedback' if k==0 else None)
-            ax['panel_F'].legend(fontsize=20)
+            ax['panel_F'].legend(fontsize=26)
 
             plot_neural_behav_raster(eid, probe, trial_idx=left_trial_idx,
                                      fig=fig, axs=ax['panel_G'], clust_id=neuron, stim_dir='left')
@@ -347,16 +366,234 @@ def generate_figure_9(feature_list, pred_list, obs_list, neu_list, sess_list, tr
             divider = make_axes_locatable(ax['panel_I'])
             colorbar_axes = divider.append_axes("right", size="100%", pad=0.1)
             cbar = fig.colorbar(img, cax=colorbar_axes, orientation='vertical')
-            cbar.ax.tick_params(labelsize=18)
-            cbar.ax.set_xlabel('spikes/sec', fontsize=20, labelpad=32.0)
+            cbar.ax.tick_params(labelsize=20)
+            cbar.ax.set_xlabel('spikes/sec', fontsize=24, labelpad=32.0)
+            
+#             plt.suptitle('R2: {:.3f}, R2 on PETH: {:.3f}\nsubject={}, region={}'.format(r2, r2_psth, subject, region), fontsize=24, y=0.92)
 
             fg.add_labels(fig, labels)
             
             if savefig:
-                savedir = f'plots/figure9/{eid}'
+                savedir = f'plots/figure9/main'
+                if subdir is not None:
+                    savedir = os.path.join(savedir, subdir)
                 if not os.path.exists(savedir):
                     os.makedirs(savedir)
-                figname = os.path.join(savedir, f'{region}_id={neuron}.png')
+                figname = os.path.join(savedir, f'{subject}_{region}_id={neuron}.png')
                 plt.savefig(figname,bbox_inches='tight', facecolor='white')
             
             plt.show()
+            
+
+def generate_figure9_supplement1(model_config, alpha=0.6, s=30,
+                                 xlims=[0.0,50.0], ylims=[-0.2,1.0], savefig=False):
+    
+    color_names = ["windows blue",
+                   "red",
+                   "amber",
+                   "faded green",
+                   "dusty purple",
+                   "orange",
+                   "clay",
+                   "pink",
+                   "greyish",
+                   "mint",
+                   "cyan",
+                   "steel blue",
+                   "forest green",
+                   "pastel purple",
+                   "salmon",
+                   "dark brown"]
+
+    colors = sns.xkcd_palette(color_names)
+    shapes = ['o', 's', '^', '+']
+
+    preds_shape = np.load('mtnn_data/test/shape.npy')
+    obs = np.load('mtnn_data/test/output.npy')
+    test_feature = np.load('mtnn_data/test/feature.npy')
+    sess_list = np.load('mtnn_data/session_info.npy', allow_pickle=True).tolist()
+    mean_frs = compute_mean_frs()
+    
+    obs_list = []
+    feature_list = []
+    idx = 0
+    for sh in preds_shape:
+        n = sh[0]*sh[1]
+        obs_list.append(obs[idx:idx+n].reshape(sh[:-1]))
+        feature_list.append(test_feature[idx:idx+n].reshape(sh))
+        idx += n
+ 
+    baseline_score = load_test_model(model_config, None, None, obs_list, preds_shape, use_psth=False)
+    baseline_score_psth = load_test_model(model_config, None, None, obs_list, preds_shape, use_psth=True)
+    
+    reshaped_score = reshape_flattened(baseline_score, preds_shape, trim=3)
+    reshaped_score_psth = reshape_flattened(baseline_score_psth, preds_shape, trim=3)
+    reshaped_frs = reshape_flattened(mean_frs, preds_shape, trim=3)
+
+    fig, axs = plt.subplots(1,2, sharey=True, figsize=(20,10))
+    plt.subplots_adjust(wspace=0.02)
+    for i, sess in enumerate(sess_list):
+        lab_id = np.where(feature_list[i][0,0,0,lab_offset:session_offset] == 1)[0][0]
+        session_id = np.where(feature_list[i][0,0,0,session_offset:xyz_offset] == 1)[0][0]
+        sess = sess.tolist()
+        
+        axs[0].scatter(reshaped_frs[i][0], reshaped_score[i][0], s=s,
+                       color=colors[lab_id], marker=shapes[session_id], alpha=alpha,
+                       label=sess['session']['subject'])
+        axs[1].scatter(reshaped_frs[i][0], reshaped_score_psth[i][0], s=s,
+                       color=colors[lab_id], marker=shapes[session_id], alpha=alpha,
+                       label=sess['session']['subject'])
+        
+        axs[0].scatter(reshaped_frs[i][1:], reshaped_score[i][1:], s=s,
+                       color=colors[lab_id], marker=shapes[session_id],
+                       alpha=alpha)
+        axs[1].scatter(reshaped_frs[i][1:], reshaped_score_psth[i][1:], s=s,
+                       color=colors[lab_id], marker=shapes[session_id],
+                       alpha=alpha)
+    axs[0].set_ylabel('R2', fontsize=24)
+    axs[0].set_xlabel('Mean Firing Rate (spikes/sec)', fontsize=24)
+    axs[0].set_title('Held-out test trials', fontsize=24)
+    
+    axs[1].set_xlabel('Mean Firing Rate (spikes/sec)', fontsize=24)
+    axs[1].set_title('PETHs of Held-out test trials', fontsize=24)
+    
+    axs[0].legend(fontsize=16)
+    axs[1].legend(fontsize=16)
+    
+    axs[0].set_xlim(xlims[0],xlims[1])
+    axs[0].set_ylim(ylims[0],ylims[1])
+    axs[1].set_xlim(xlims[0],xlims[1])
+    axs[1].set_ylim(ylims[0],ylims[1])
+    
+    plt.suptitle('MTNN Prediction Quality vs. Firing Rate', fontsize=32)
+    
+    if savefig:
+        savedir = f'plots/figure9/'
+        if not os.path.exists(savedir):
+            os.makedirs(savedir)
+        figname = os.path.join(savedir, f'fig9_supplement1.png')
+        plt.savefig(figname,bbox_inches='tight', facecolor='white')
+    
+    plt.show()
+    
+    
+def get_session_order(feature_list):
+
+    order = []
+    for feature in feature_list:
+        lab_id = np.where(feature[0,0,0,lab_offset:session_offset] == 1)[0][0]
+        session_id = np.where(feature[0,0,0,session_offset:xyz_offset] == 1)[0][0]
+        order.append((xyz_offset-session_offset)*lab_id+session_id)
+        
+    return np.array(order)
+    
+def generate_figure9_supplement3(model_config, savefig=False):
+    
+    preds_shape = np.load('mtnn_data/test/shape.npy')
+    obs = np.load('mtnn_data/test/output.npy')
+    test_feature = np.load('mtnn_data/test/feature.npy')
+    sess_list = np.load('mtnn_data/session_info.npy', allow_pickle=True).tolist()
+    
+    model = initialize_mtnn(n_neurons=model_config['n_neurons'], 
+                            input_size_static=model_config['input_size_static'], 
+                            input_size_dynamic=model_config['input_size_dynamic'],
+                            hidden_dim_static=model_config['hidden_size_static'], 
+                            hidden_dim_dynamic=model_config['hidden_size_dynamic'], 
+                            static_bias=model_config['dynamic_bias'],
+                            dynamic_bias=model_config['static_bias'],
+                            n_layers=model_config['n_layers'])
+    model.load_state_dict(torch.load(f'trained_models/state_dict_rem=None_keep=None.pt'))
+    preds, loss = run_eval(model,f'mtnn_data/test/feature.npy',
+                           f'mtnn_data/test/output.npy')
+    
+    obs_list = []
+    feature_list = []
+    pred_list = []
+    idx = 0
+    n_neurons = 0
+    trial_len = obs.shape[-1]
+    for sh in preds_shape:
+        n = sh[0]*sh[1]
+        obs_list.append(obs[idx:idx+n].reshape(sh[:-1]))
+        feature_list.append(test_feature[idx:idx+n].reshape(sh))
+        pred_list.append(preds[idx:idx+n].reshape(sh[:-1]))
+        idx += n
+        n_neurons += sh[0]
+
+    session_order = get_session_order(feature_list)
+    
+    curr_idx = 0
+    heatmap=np.zeros((n_neurons,4*trial_len))
+    n_neurons_list = []
+    for i in range(len(session_order)):
+        session = np.where(session_order == i)[0][0]
+        feature_i = feature_list[session]
+        pred_i = pred_list[session]
+        obs_i = obs_list[session]
+#         print(sess_list[session])
+
+        left_bool = feature_i[0,:,:,stimulus_offset].sum(1)!=0
+        right_bool = feature_i[0,:,:,stimulus_offset+1].sum(1)!=0
+        for j in range(obs_i.shape[0]):
+            unit = curr_idx+j
+            heatmap[unit,:trial_len] = obs_i[j,left_bool].mean(0)
+            heatmap[unit,trial_len:2*trial_len] = obs_i[j,right_bool].mean(0)
+            heatmap[unit,2*trial_len:3*trial_len] = pred_i[j,left_bool].mean(0)
+            heatmap[unit,3*trial_len:] = pred_i[j,right_bool].mean(0)
+        curr_idx += obs_i.shape[0]
+        n_neurons_list.append(obs_i.shape[0])
+        
+    
+    plt.figure(figsize=(12,24))
+    
+    vlim = np.percentile(heatmap, [0,99.7])
+    plt.imshow(heatmap, aspect='auto', cmap='Greys', interpolation='none', vmin=vlim[0], vmax=vlim[1])
+    plt.axvline(x=[trial_len], linewidth=2, linestyle='-', 
+                                       c='k',label='separate left and right')
+    plt.axvline(x=[3*trial_len], linewidth=2, linestyle='-', 
+                                       c='k',label='separate left and right')
+    plt.axvline(x=[2*trial_len], linewidth=3, linestyle='-', 
+                                       c='k',label='separate Y and Y_pred')
+    for i in [trial_len//3,trial_len+trial_len//3,2*trial_len+trial_len//3,3*trial_len+trial_len//3]:
+        plt.axvline(x=[i], linewidth=2, linestyle='--', 
+                                           c='green', label='movement onset')
+
+    session_boundary = np.cumsum(n_neurons_list)
+    for i in session_boundary[:-2]:
+        plt.axhline(y=[i-0.5], linewidth=2, linestyle='--', 
+                                           c='red', label='session boundary')
+    for idx, i in enumerate(session_boundary[:-1]):
+        if (idx+1)%4 != 0:
+            continue
+        plt.axhline(y=[i-0.5], linewidth=3, linestyle='-', 
+                                           c='blue', label='lab boundary')
+        
+    plt.text(trial_len-6, session_boundary[11]-5, 
+             'separate left and right choice PETHs',rotation=90,color='k',fontsize=22)
+    plt.text(3*trial_len-6, session_boundary[11]-5, 
+             'separate left and right choice MTNN prediction PETHs',rotation=90,color='k',fontsize=22)
+    
+    plt.text(10-5, 0.3*n_neurons, 'movement onset',rotation=90,color='green',fontsize=20)
+    plt.text(trial_len*4-33, session_boundary[0]-1, 'session boundary', color='red',fontsize=20)
+    plt.text(trial_len*4-25, session_boundary[3]-1, 'lab boundary', color='blue',fontsize=20)
+    plt.text(10-9, 0-2, 'CCU', color='k',fontsize=20)
+    plt.text(10-9, session_boundary[3]-2, 'CSHL (C)', color='k',fontsize=20)
+    plt.text(10-9, session_boundary[7]-2, 'SWC', color='k',fontsize=20)
+    plt.text(10-9, session_boundary[11]-2, 'Berkeley', color='k',fontsize=20)
+    plt.text(10-9, session_boundary[15]-2, 'NYU', color='k',fontsize=20)
+    
+    plt.ylabel('neurons', fontsize=18)
+    plt.xlabel('time (sec)', fontsize=18)
+    plt.xticks([0,10,30],labels=['-0.5','0.0','1.0'], fontsize=14)
+    plt.yticks(fontsize=14)
+    
+    plt.title('Observed and MTNN-predicted PETHs on held-out trials', fontsize=24, y=1.03)
+    
+    if savefig:
+        savedir = f'plots/figure9/'
+        if not os.path.exists(savedir):
+            os.makedirs(savedir)
+        figname = os.path.join(savedir, f'fig9_supplement3.png')
+        plt.savefig(figname,bbox_inches='tight', facecolor='white')
+    
+    plt.show()
