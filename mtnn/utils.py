@@ -24,6 +24,9 @@ import os
 from models.expSmoothing_prevAction import expSmoothing_prevAction as exp_prevAction
 from models import utils
 
+from brainbox.population.decode import get_spike_counts_in_bins
+from brainbox.task.closed_loop import compute_comparison_statistics
+
 lab_offset = 1
 session_offset = 6
 xyz_offset = 10
@@ -35,41 +38,74 @@ pupil_offset = 17
 left_me_offset = 18
 stimulus_offset = 19
 goCue_offset = 21
-choice_offset = 22
-reward_offset = 24
-wheel_offset = 26
-pLeft_offset = 27
-lick_offset = 28
-glmhmm_offset = 29 # changed to k=4 model
-acronym_offset = 33
-noise_offset = 38
+firstMovement_offset = 22
+choice_offset = 23
+reward_offset = 25
+wheel_offset = 27
+pLeft_offset = 28
+pLeft_last_offset = 29
+lick_offset = 30
+glmhmm_offset = 31 # changed to k=4 model
+acronym_offset = 35
+noise_offset = 40
 
-static_idx = np.asarray([1,2,3,4,5,6,7,8,9,10,11,12,13,14,27,29,30,31,32,33,34,35,36,37]) - 1
+static_idx = np.asarray([1,2,3,4,5,6,7,8,9,10,11,12,13,14,28,29,31,32,33,34,35,36,37,38,39]) - 1
 static_bool = np.zeros(noise_offset).astype(bool)
 static_bool[static_idx] = True
 
-cov_idx_dict = {'lab': (1,6),
-               'session': (6,10),
-               'x': (10,11),
-               'y': (11,12),
-               'z': (12,13),
-               'waveform amplitude': (13,14),
-               'waveform width': (14,15),
-               'paw speed': (15,16),
-               'nose speed': (16,17),
-               'pupil diameter': (17,18),
-               'motion energy': (18,19),
-               'stimuli': (19,21),
-               'go cue': (21,22),
-               'choice': (22,24),
-               'reward': (24,26),
-               'wheel velocity': (26,27),
-               'mouse prior': (27,28),
-               'lick': (28,29),
-               'decision strategy (GLM-HMM)': (29,33),
-               'brain region': (33,38),
-               'noise': (38,39),
-               'all': (1,39)}
+cov_idx_dict = {'lab': (lab_offset,session_offset),
+               'session': (session_offset,xyz_offset),
+               'x': (xyz_offset,xyz_offset+1),
+               'y': (xyz_offset+1,xyz_offset+2),
+               'z': (xyz_offset+2,max_ptp_offset),
+               'waveform amplitude': (max_ptp_offset,wf_width_offset),
+               'waveform width': (wf_width_offset,paw_offset),
+               'paw speed': (paw_offset,nose_offset),
+               'nose speed': (nose_offset,pupil_offset),
+               'pupil diameter': (pupil_offset,left_me_offset),
+               'motion energy': (left_me_offset,stimulus_offset),
+               'stimuli': (stimulus_offset,goCue_offset),
+               'go cue': (goCue_offset,firstMovement_offset),
+               'first movement': (firstMovement_offset,choice_offset),
+               'choice': (choice_offset,reward_offset),
+               'reward': (reward_offset,wheel_offset),
+               'wheel velocity': (wheel_offset,pLeft_offset),
+               'mouse prior': (pLeft_offset,pLeft_last_offset),
+               'last mouse prior': (pLeft_last_offset,lick_offset),
+               'lick': (lick_offset,glmhmm_offset),
+               'decision strategy (GLM-HMM)': (glmhmm_offset,acronym_offset),
+               'brain region': (acronym_offset,noise_offset),
+               'noise': (noise_offset,noise_offset+1),
+               'all': (1,noise_offset+1)}
+
+glm_leave_one_out_cov_idx = (cov_idx_dict['lab'],
+                             cov_idx_dict['session'],
+                             cov_idx_dict['x'],
+                             cov_idx_dict['y'],
+                             cov_idx_dict['z'],
+                             cov_idx_dict['waveform amplitude'],
+                             cov_idx_dict['waveform width'],
+                             cov_idx_dict['paw speed'],
+                             cov_idx_dict['nose speed'],
+                             cov_idx_dict['pupil diameter'],
+                             cov_idx_dict['motion energy'],
+                             cov_idx_dict['go cue'],
+                             cov_idx_dict['choice'], 
+                             cov_idx_dict['lick'],
+                             cov_idx_dict['decision strategy (GLM-HMM)'],
+                             cov_idx_dict['brain region'],
+                             cov_idx_dict['noise'])
+
+grouped_cov_idx_dict = {'lab': ('lab',),
+                        'session': ('session',),
+                        'ephys': ('x','y','z','waveform amplitude','waveform width','brain region',),
+                        'task': ('stimuli','go cue','choice','reward',),
+                        'behavioral': ('paw speed','nose speed','pupil diameter',
+                                       'lick','motion energy','wheel velocity','first movement'),
+                        'mouse prior': ('mouse prior','last mouse prior'), 
+                        'decision strategy (GLM-HMM)': ('decision strategy (GLM-HMM)',),
+                        'noise': ('noise',),
+                        'all': ('all',)}
 
 def check_mtnn_criteria(one=None):
     if one is None:
@@ -176,9 +212,8 @@ def combine_regions(regions):
     return regions, idx
 
 def get_lab_number_map():
-    lab_number_map = {'mainenlab': 0, 'churchlandlab': 1, 
-                  'hoferlab': 2, 'mrsicflogellab': 2, 
-                  'danlab': 3, 'angelakilab':4}
+    lab_number_map = {'angelakilab':0, 'hoferlab': 1, 'mrsicflogellab': 1, 
+                      'mainenlab': 2, 'churchlandlab': 3, 'danlab': 4}
     return lab_number_map
 
 def get_acronym_dict():
@@ -189,40 +224,68 @@ def get_acronym_dict_reverse():
     acronym_dict_reverse = {0:'LP', 1:'CA1', 2:'DG', 3:'PPC', 4:'PO'}
     return acronym_dict_reverse
 
+def get_region_colors():
+    region_colors = {'LP':'k', 'CA1':'b', 'DG':'r', 'PPC':'g', 'PO':'y'}
+    return region_colors
+
 def get_mtnn_eids():
-    mtnn_eids = {'56b57c38-2699-4091-90a8-aba35103155e': 0,
-                '72cb5550-43b4-4ef0-add5-e4adfdfb5e02': 0,
-#                 '746d1902-fa59-4cab-b0aa-013be36060d5': 2,
-                'dac3a4c1-b666-4de0-87e8-8c514483cacf': 0,
-                '6f09ba7e-e3ce-44b0-932b-c003fb44fb89': 0,
-                'f312aaec-3b6f-44b3-86b4-3a0c119c0438': 3,
-                'dda5fc59-f09a-4256-9fb5-66c67667a466': 2,
-                'ee40aece-cffd-4edb-a4b6-155f158c666a': 3,
-                'ecb5520d-1358-434c-95ec-93687ecd1396': 3,
-                '54238fd6-d2d0-4408-b1a9-d19d24fd29ce': 0,
-                '51e53aff-1d5d-4182-a684-aba783d50ae5': 0,
-                'c51f34d8-42f6-4c9c-bb5b-669fd9c42cd9': 0,
-#                 '0802ced5-33a3-405e-8336-b65ebc5cb07c': 0,
-                'db4df448-e449-4a6f-a0e7-288711e7a75a': 2,
-                '30c4e2ab-dffc-499d-aae4-e51d6b3218c2': 0,
-                '4a45c8ba-db6f-4f11-9403-56e06a33dfa4': 0,
-                '7af49c00-63dd-4fed-b2e0-1b3bd945b20b': 0,
-                '4b00df29-3769-43be-bb40-128b1cba6d35': 0,
-                'f140a2ec-fd49-4814-994a-fe3476f14e66': 0,
-                '862ade13-53cd-4221-a3fa-dda8643641f2': 0,
-                'c7248e09-8c0d-40f2-9eb4-700a8973d8c8': 1,
-#                 '88224abb-5746-431f-9c17-17d7ef806e6a': 0,
-#                 'd0ea3148-948d-4817-94f8-dcaf2342bbbe': 0,
-                'd23a44ef-1402-4ed7-97f5-47e9a7a504d9': 0}
+#     mtnn_eids = {'56b57c38-2699-4091-90a8-aba35103155e': 0,
+#                 '72cb5550-43b4-4ef0-add5-e4adfdfb5e02': 0,
+# #                 '746d1902-fa59-4cab-b0aa-013be36060d5': 2,
+#                 'dac3a4c1-b666-4de0-87e8-8c514483cacf': 0,
+#                 '6f09ba7e-e3ce-44b0-932b-c003fb44fb89': 0,
+#                 'f312aaec-3b6f-44b3-86b4-3a0c119c0438': 3,
+#                 'dda5fc59-f09a-4256-9fb5-66c67667a466': 2,
+#                 'ee40aece-cffd-4edb-a4b6-155f158c666a': 3,
+#                 'ecb5520d-1358-434c-95ec-93687ecd1396': 3,
+#                 '54238fd6-d2d0-4408-b1a9-d19d24fd29ce': 0,
+#                 '51e53aff-1d5d-4182-a684-aba783d50ae5': 0,
+#                 'c51f34d8-42f6-4c9c-bb5b-669fd9c42cd9': 0,
+# #                 '0802ced5-33a3-405e-8336-b65ebc5cb07c': 0,
+#                 'db4df448-e449-4a6f-a0e7-288711e7a75a': 2,
+#                 '30c4e2ab-dffc-499d-aae4-e51d6b3218c2': 0,
+#                 '4a45c8ba-db6f-4f11-9403-56e06a33dfa4': 0,
+#                 '7af49c00-63dd-4fed-b2e0-1b3bd945b20b': 0,
+#                 '4b00df29-3769-43be-bb40-128b1cba6d35': 0,
+#                 'f140a2ec-fd49-4814-994a-fe3476f14e66': 0,
+#                 '862ade13-53cd-4221-a3fa-dda8643641f2': 0,
+#                 'c7248e09-8c0d-40f2-9eb4-700a8973d8c8': 1,
+# #                 '88224abb-5746-431f-9c17-17d7ef806e6a': 0,
+# #                 'd0ea3148-948d-4817-94f8-dcaf2342bbbe': 0,
+#                 'd23a44ef-1402-4ed7-97f5-47e9a7a504d9': 0}
+
+    mtnn_eids = {'51e53aff-1d5d-4182-a684-aba783d50ae5': 0,
+                 'c51f34d8-42f6-4c9c-bb5b-669fd9c42cd9': 0,
+                 '7af49c00-63dd-4fed-b2e0-1b3bd945b20b': 0,
+                 'f140a2ec-fd49-4814-994a-fe3476f14e66': 0,
+                 '56b57c38-2699-4091-90a8-aba35103155e': 0,
+                 'dac3a4c1-b666-4de0-87e8-8c514483cacf': 0,
+                 '6f09ba7e-e3ce-44b0-932b-c003fb44fb89': 0,
+                 '862ade13-53cd-4221-a3fa-dda8643641f2': 0,
+                 '72cb5550-43b4-4ef0-add5-e4adfdfb5e02': 0,
+                 'ee40aece-cffd-4edb-a4b6-155f158c666a': 3,
+                 '30c4e2ab-dffc-499d-aae4-e51d6b3218c2': 0,
+                 'c7248e09-8c0d-40f2-9eb4-700a8973d8c8': 1,
+                 'f312aaec-3b6f-44b3-86b4-3a0c119c0438': 3,
+                 'dda5fc59-f09a-4256-9fb5-66c67667a466': 2,
+                 'ecb5520d-1358-434c-95ec-93687ecd1396': 3,
+                 '4b00df29-3769-43be-bb40-128b1cba6d35': 0,
+                 '54238fd6-d2d0-4408-b1a9-d19d24fd29ce': 0,
+                 'db4df448-e449-4a6f-a0e7-288711e7a75a': 2,
+                 '4a45c8ba-db6f-4f11-9403-56e06a33dfa4': 0,
+                 'd23a44ef-1402-4ed7-97f5-47e9a7a504d9': 0,
+                }
     
     return mtnn_eids
 
 def get_traj(eids):
     traj = query()
     tmp = []
-    for t in traj:
-        if t['session']['id'] in eids:
-            tmp.append(t)
+    for eid in eids:
+        for t in traj:
+            if t['session']['id'] == eid:
+                tmp.append(t)
+                break
     traj = tmp
     
     return traj
@@ -305,9 +368,9 @@ def featurize(i, trajectory, one, session_counter,
     spikes = spikes[probe]
     clusters = clusters[probe]
     channels = channels[probe]
-    print('spikes retrieved')
+    #print('spikes retrieved')
 
-    print('loading motion energy and dlc')
+    #print('loading motion energy and dlc')
     left_me = one.load_dataset(eid, 'leftCamera.ROIMotionEnergy.npy')
     left_dlc = one.load_dataset(eid, '_ibl_leftCamera.dlc.pqt')
     left_dlc_times = one.load_dataset(eid, '_ibl_leftCamera.times.npy')
@@ -315,7 +378,7 @@ def featurize(i, trajectory, one, session_counter,
         left_offset = mtnn_eids[eid]
         left_dlc_times = left_dlc_times[abs(left_offset):abs(left_offset)+left_dlc.shape[0]]
     assert(left_dlc_times.shape[0] == left_dlc.shape[0])
-    print('motion energy + dlc retrieved')
+    #print('motion energy + dlc retrieved')
 
     stimOn_times = one.load_dataset(eid, '_ibl_trials.stimOn_times.npy')
     trial_numbers = np.arange(stimOn_times.shape[0])
@@ -338,14 +401,15 @@ def featurize(i, trajectory, one, session_counter,
     wheel_timestamps = one.load_dataset(eid, '_ibl_wheel.timestamps.npy')
 
     # load pLeft (Charles's model's output)
-    print('loading pLeft')
+    #print('loading pLeft')
     pLeft = np.load('./priors/prior_{}.npy'.format(eid))
 
-    print('loading glm hmm')
+    #print('loading glm hmm')
     glm_hmm = np.load('glm_hmm/k=4/posterior_probs_valuessession_{}-{}.npz'.format(subject,date_number))
     for item in glm_hmm.files:
         glm_hmm_states = glm_hmm[item]
 
+    # filter out trials with no choice
     choice_filter = np.where(choice!=0)
 
     stimOn_times = stimOn_times[choice_filter]
@@ -360,6 +424,25 @@ def featurize(i, trajectory, one, session_counter,
     stimOff_times = stimOff_times[choice_filter]
     pLeft = pLeft[choice_filter]
     trial_numbers = trial_numbers[choice_filter]
+    
+    # filter out trials with no contrast
+    contrast_filter1 = np.logical_and(np.isnan(contrastLeft), contrastRight==0)
+    contrast_filter2 = np.logical_and(contrastLeft==0, np.isnan(contrastRight))
+    contrast_filter = ~np.logical_or(contrast_filter1,contrast_filter2)
+    
+    stimOn_times = stimOn_times[contrast_filter]
+    firstMovement_times = firstMovement_times[contrast_filter]
+    contrastLeft = contrastLeft[contrast_filter]
+    contrastRight = contrastRight[contrast_filter]
+    goCue_times = goCue_times[contrast_filter]
+    response_times = response_times[contrast_filter]
+    choice = choice[contrast_filter]
+    feedbackType = feedbackType[contrast_filter]
+    feedback_times = feedback_times[contrast_filter]
+    stimOff_times = stimOff_times[contrast_filter]
+    pLeft = pLeft[contrast_filter]
+    trial_numbers = trial_numbers[contrast_filter]
+    glm_hmm_states = glm_hmm_states[contrast_filter]
 
     assert(stimOff_times.shape[0] == feedback_times.shape[0])
     assert(stimOff_times.shape[0] == firstMovement_times.shape[0])
@@ -397,7 +480,7 @@ def featurize(i, trajectory, one, session_counter,
     pLeft = pLeft[kept_idx]
     glm_hmm_states = glm_hmm_states[kept_idx]
     trial_numbers = trial_numbers[kept_idx]
-    print('trial info retrieved')
+    #print('trial info retrieved')
 
     # select trials
     if align_event == 'movement_onset':
@@ -419,6 +502,7 @@ def featurize(i, trajectory, one, session_counter,
     feedback_times = feedback_times[t_select]
     stimOff_times = stimOff_times[t_select]
     pLeft = pLeft[t_select]
+    pLeft_last = np.roll(pLeft, 1)
     glm_hmm_states = glm_hmm_states[t_select]
     trial_numbers = trial_numbers[t_select]
     ref_event = ref_event[t_select]
@@ -432,14 +516,14 @@ def featurize(i, trajectory, one, session_counter,
     # get XYs
     left_XYs = get_dlc_XYs(left_dlc.copy())
 
-    print('getting lick times')
+    #print('getting lick times')
     # get licks
     lick_times = []
     lick_times.append(left_dlc_times[get_licks(left_XYs)])
     lick_times = np.asarray(sorted(np.concatenate(lick_times)))
     
     fs = 60
-    print('getting paw speed')
+    #print('getting paw speed')
     # get right paw speed (closer to camera)
     x = left_XYs['paw_r'][0]/2
     y = left_XYs['paw_r'][1]/2 
@@ -448,7 +532,7 @@ def featurize(i, trajectory, one, session_counter,
     paw_speed = ((np.diff(x)**2 + np.diff(y)**2)**.5)*fs
     paw_speed = np.append(paw_speed, paw_speed[-1])
     
-    print('getting nose speed')
+    #print('getting nose speed')
     # get nose speed
     x = left_XYs['nose_tip'][0]/2
     y = left_XYs['nose_tip'][1]/2 
@@ -457,13 +541,13 @@ def featurize(i, trajectory, one, session_counter,
     nose_speed = ((np.diff(x)**2 + np.diff(y)**2)**.5)*fs
     nose_speed = np.append(nose_speed, nose_speed[-1])
     
-    print('getting pupil diameter')
+    #print('getting pupil diameter')
     # get pupil diameter
     #pupil_diameter = get_pupil_diameter(left_XYs)
     raw_pupil_diameter = get_pupil_diameter(left_dlc.copy())
     pupil_diameter = get_smooth_pupil_diameter(raw_pupil_diameter, 'left')
     
-    print('getting wheel velocity')
+    #print('getting wheel velocity')
     # get wheel velocity
     vel = wh.velocity(wheel_timestamps,wheel_positions)
     wheel_timestamps = wheel_timestamps[~np.isnan(vel)]
@@ -476,6 +560,35 @@ def featurize(i, trajectory, one, session_counter,
     good_clusters = good_clusters[idx]
     print("repeated site brain region counts: ", Counter(rs_regions))
     print("number of good clusters: ", good_clusters.shape[0])
+    
+    good_spike_idx = np.isin(spikes['clusters'], good_clusters)
+    spk_times = spikes['times'][good_spike_idx]
+    spk_clusters = spikes['clusters'][good_spike_idx]
+#     significant_units, _, _, _ = responsive_units(spk_times,spk_clusters,firstMovement_times, 
+#                                              pre_time=[0.2,0], post_time=[0.05,0.2], use_fr=True)
+#     responsive_idx = np.isin(good_clusters, significant_units)
+#     rs_regions = rs_regions[responsive_idx]
+#     good_clusters = good_clusters[responsive_idx]
+
+    # Find responsive neurons
+    cluster_ids = np.unique(spk_clusters)
+    # Baseline firing rate
+    intervals = np.c_[stimOn_times - 0.2, stimOn_times]
+    counts, cluster_ids = get_spike_counts_in_bins(spk_times, spk_clusters, intervals)
+    fr_base = counts / (intervals[:, 1] - intervals[:, 0])
+
+    # Post-move firing rate
+    intervals = np.c_[firstMovement_times - 0.05, firstMovement_times + 0.2]
+    counts, cluster_ids = get_spike_counts_in_bins(spk_times, spk_clusters, intervals)
+    fr_post_move = counts / (intervals[:, 1] - intervals[:, 0])
+
+    sig_units, _, _ = compute_comparison_statistics(fr_base, fr_post_move, test='signrank')
+    significant_units = cluster_ids[sig_units]
+    responsive_idx = np.isin(good_clusters, significant_units)
+    rs_regions = rs_regions[responsive_idx]
+    good_clusters = good_clusters[responsive_idx]
+    print("(responsive) repeated site brain region counts: ", Counter(rs_regions))
+    print("(responsive) number of good clusters: ", good_clusters.shape[0])
 
     # skip this part to get all clusters. we can filter for better clusters later on
 #     good_clusters_fr = clusters['metrics']['firing_rate'].to_numpy()[good_clusters]
@@ -555,11 +668,13 @@ def featurize(i, trajectory, one, session_counter,
         contrastLeft_k = contrastLeft[k]
         contrastRight_k = contrastRight[k]
         goCue_times_k = goCue_times[k]
+        firstMovement_times_k = firstMovement_times[k]
         choice_k = choice[k]
         response_times_k = response_times[k]
         feedbackType_k = feedbackType[k]
         feedback_times_k = feedback_times[k]
         pLeft_k = pLeft[k]
+        pLeft_last_k = pLeft_last[k]
         glm_hmm_states_k = glm_hmm_states[k]
         
         ref_t = ref_event[k]
@@ -594,6 +709,10 @@ def featurize(i, trajectory, one, session_counter,
             # goCue
             if np.logical_and(goCue_times >= i, goCue_times < i+bin_size).astype(int).sum() != 0:
                 feature[:,k,idx,goCue_offset] = 1
+                
+            # firstMovement
+            if np.logical_and(firstMovement_times >= i, firstMovement_times < i+bin_size).astype(int).sum() != 0:
+                feature[:,k,idx,firstMovement_offset] = 1
 
             # choice
             if np.logical_and(response_times >= i, response_times < i+bin_size).astype(int).sum() != 0:
@@ -626,6 +745,10 @@ def featurize(i, trajectory, one, session_counter,
             
         # mouse prior
         feature[:,k,:,pLeft_offset] = pLeft_k
+        feature[:,k,:,pLeft_last_offset] = pLeft_last_k
+        
+        # decision strategy
+        feature[:,k,:,glmhmm_offset:acronym_offset] = glm_hmm_states_k
         
         # stimulus
         stimOn_bin = np.floor((stimOn_times_k - start_t) / bin_size).astype(int)
@@ -635,3 +758,43 @@ def featurize(i, trajectory, one, session_counter,
             feature[:,k,stimOn_bin,stimulus_offset+1] = contrastRight_k
 
     return feature, output, good_clusters, trial_numbers
+
+
+def reshape_flattened(flattened, shape, trim=0):
+    reshaped = []
+    idx = 0
+    for sh in shape:
+        if trim > 0:
+            sh2 = sh[:-trim]
+        else:
+            sh2 = sh
+        n = np.prod(np.asarray(sh2))
+        reshaped.append(flattened[idx:idx+n].reshape(sh2))
+        idx += n
+    
+    return reshaped
+
+def load_original(eids):
+    feature_list, output_list, cluster_number_list, session_list, trial_number_list = [], [], [], [], []
+    for eid in eids:
+        feature_list.append(np.load(f'./original_data/{eid}_feature.npy'))
+        output_list.append(np.load(f'./original_data/{eid}_output.npy'))
+        cluster_number_list.append(np.load(f'./original_data/{eid}_clusters.npy'))
+        session_list.append(np.load(f'./original_data/{eid}_session_info.npy', allow_pickle=True))
+        trial_number_list.append(np.load(f'./original_data/{eid}_trials.npy'))
+        
+    return feature_list, output_list, cluster_number_list, session_list, trial_number_list
+
+def compute_mean_frs(shape_path='mtnn_data/train/shape.npy', obs_path='mtnn_data/train/output.npy'):
+    
+    shape = np.load(shape_path)
+    obs = np.load(obs_path)
+    
+    mean_fr_list = []
+    idx = 0
+    for sh in shape:
+        n = sh[0]*sh[1]
+        mean_fr_list.extend(list(obs[idx:idx+n].reshape(sh[:-1]).mean(1).mean(1)))
+        idx += n
+    
+    return np.asarray(mean_fr_list)
