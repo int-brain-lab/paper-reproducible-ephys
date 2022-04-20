@@ -656,10 +656,10 @@ def featurize(i, trajectory, one, session_counter,
         feature[j,:,:,acronym_offset+acronym_idx] = 1
         
         # spike max ptp
-        feature[j,:,:,max_ptp_offset] = amps[j]
+        feature[j,:,:,max_ptp_offset] = amps[cluster]
         
         # spike wf width
-        feature[j,:,:,wf_width_offset] = ptt[j]
+        feature[j,:,:,wf_width_offset] = ptt[cluster]
         
     # trial specific
     for k in notebook.tqdm(range(n_active_trials)):
