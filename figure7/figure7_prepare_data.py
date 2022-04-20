@@ -60,113 +60,115 @@ def prepare_data(insertions, one, recompute=False, **kwargs):
 
     all_df = []
     for iIns, ins in enumerate(insertions):
+        try:
+            print(f'processing {iIns + 1}/{len(insertions)}')
+            eid = ins['session']['id']
+            probe = ins['probe_name']
+            pid = ins['probe_insertion']
 
-        print(f'processing {iIns + 1}/{len(insertions)}')
-        eid = ins['session']['id']
-        probe = ins['probe_name']
-        pid = ins['probe_insertion']
+            data = {}
 
-        data = {}
+            # Load in spikesorting
+            sl = SpikeSortingLoader(eid=eid, pname=probe, one=one, atlas=ba)
+            spikes, clusters, channels = sl.load_spike_sorting()
+            clusters = sl.merge_clusters(spikes, clusters, channels)
+            clusters['rep_site_acronym'] = combine_regions(clusters['acronym'])
+            # Find clusters that are in the repeated site brain regions and that have been labelled as good
+            cluster_idx = np.sort(np.where(np.bitwise_and(np.isin(clusters['rep_site_acronym'], BRAIN_REGIONS),
+                                                          clusters['label'] == 1))[0])
+            data['cluster_ids'] = clusters['cluster_id'][cluster_idx]
 
-        # Load in spikesorting
-        sl = SpikeSortingLoader(eid=eid, pname=probe, one=one, atlas=ba)
-        spikes, clusters, channels = sl.load_spike_sorting()
-        clusters = sl.merge_clusters(spikes, clusters, channels)
-        clusters['rep_site_acronym'] = combine_regions(clusters['acronym'])
-        # Find clusters that are in the repeated site brain regions and that have been labelled as good
-        cluster_idx = np.sort(np.where(np.bitwise_and(np.isin(clusters['rep_site_acronym'], BRAIN_REGIONS),
-                                                      clusters['label'] == 1))[0])
-        data['cluster_ids'] = clusters['cluster_id'][cluster_idx]
+            print(len(data['cluster_ids']))
 
-        print(len(data['cluster_ids']))
+            # Find spikes that are from the clusterIDs
+            spike_idx = np.isin(spikes['clusters'], data['cluster_ids'])
+            if np.sum(spike_idx) == 0:
+                continue
 
-        # Find spikes that are from the clusterIDs
-        spike_idx = np.isin(spikes['clusters'], data['cluster_ids'])
-        if np.sum(spike_idx) == 0:
-            continue
+            # Load in trials data
+            trials = one.load_object(eid, 'trials', collection='alf')
+            # For this computation we use correct, non zero contrast trials
+            trial_idx = np.bitwise_and(trials['feedbackType'] == 1,
+                                       np.bitwise_or(trials['contrastLeft'] > 0, trials['contrastRight'] > 0))
+            # Find nan trials
+            nan_trials = np.bitwise_or(np.isnan(trials['stimOn_times']), np.isnan(trials['firstMovement_times']))
 
-        # Load in trials data
-        trials = one.load_object(eid, 'trials', collection='alf')
-        # For this computation we use correct, non zero contrast trials
-        trial_idx = np.bitwise_and(trials['feedbackType'] == 1,
-                                   np.bitwise_or(trials['contrastLeft'] > 0, trials['contrastRight'] > 0))
-        # Find nan trials
-        nan_trials = np.bitwise_or(np.isnan(trials['stimOn_times']), np.isnan(trials['firstMovement_times']))
+            # Find trials that are too long
+            stim_diff = trials['feedback_times'] - trials['stimOn_times']
+            rm_trials = stim_diff > 10
+            # Remove these trials from trials object
+            rm_trials = np.bitwise_or(rm_trials, nan_trials)
 
-        # Find trials that are too long
-        stim_diff = trials['feedback_times'] - trials['stimOn_times']
-        rm_trials = stim_diff > 10
-        # Remove these trials from trials object
-        rm_trials = np.bitwise_or(rm_trials, nan_trials)
+            eventMove = trials['firstMovement_times'][np.bitwise_and(trial_idx, ~rm_trials)]
+            eventStim = trials['stimOn_times'][np.bitwise_and(trial_idx, ~rm_trials)]
 
-        eventMove = trials['firstMovement_times'][np.bitwise_and(trial_idx, ~rm_trials)]
-        eventStim = trials['stimOn_times'][np.bitwise_and(trial_idx, ~rm_trials)]
+            if split == 'choice':
+                trial_l_idx = np.where(trials['choice'][np.bitwise_and(trial_idx, ~rm_trials)] == 1)[0]
+                trial_r_idx = np.where(trials['choice'][np.bitwise_and(trial_idx, ~rm_trials)] == -1)[0]
+            elif split == 'block':
+                trial_l_idx = np.where(trials['probabilityLeft'][np.bitwise_and(trial_idx, ~rm_trials)] == 0.2)[0]
+                trial_r_idx = np.where(trials['probabilityLeft'][np.bitwise_and(trial_idx, ~rm_trials)] == 0.8)[0]
+            elif split == 'rt':
+                rt = eventMove - eventStim
+                trial_l_idx = np.where(rt < 0.1)[0]
+                trial_r_idx = np.where(rt > 0.2)[0]
 
-        if split == 'choice':
-            trial_l_idx = np.where(trials['choice'][np.bitwise_and(trial_idx, ~rm_trials)] == 1)[0]
-            trial_r_idx = np.where(trials['choice'][np.bitwise_and(trial_idx, ~rm_trials)] == -1)[0]
-        elif split == 'block':
-            trial_l_idx = np.where(trials['probabilityLeft'][np.bitwise_and(trial_idx, ~rm_trials)] == 0.2)[0]
-            trial_r_idx = np.where(trials['probabilityLeft'][np.bitwise_and(trial_idx, ~rm_trials)] == 0.8)[0]
-        elif split == 'rt':
-            rt = eventMove - eventStim
-            trial_l_idx = np.where(rt < 0.1)[0]
-            trial_r_idx = np.where(rt > 0.2)[0]
+            if align_event == 'move':
+                eventTimes = eventMove
+            elif align_event == 'stim':
+                eventTimes = eventStim
 
-        if align_event == 'move':
-            eventTimes = eventMove
-        elif align_event == 'stim':
-            eventTimes = eventStim
+            if base_event == 'move':
+                eventBase = eventMove
+            elif base_event == 'stim':
+                eventBase = eventStim
 
-        if base_event == 'move':
-            eventBase = eventMove
-        elif base_event == 'stim':
-            eventBase = eventStim
+            # Compute firing rate
+            fr_l, _, t = compute_psth(spikes['times'][spike_idx], spikes['clusters'][spike_idx], data['cluster_ids'],
+                                      eventTimes[trial_l_idx], align_epoch=event_epoch, bin_size=bin_size,
+                                      baseline_events=eventBase[trial_l_idx], base_epoch=base_epoch,
+                                      smoothing=smoothing, norm=norm)
+            fr_r, _, t = compute_psth(spikes['times'][spike_idx], spikes['clusters'][spike_idx], data['cluster_ids'],
+                                      eventTimes[trial_r_idx], align_epoch=event_epoch, bin_size=bin_size,
+                                      baseline_events=eventBase[trial_r_idx], base_epoch=base_epoch,
+                                      smoothing=smoothing, norm=norm)
+            frs = np.c_[fr_l, fr_r]
 
-        # Compute firing rate
-        fr_l, _, t = compute_psth(spikes['times'][spike_idx], spikes['clusters'][spike_idx], data['cluster_ids'],
-                                  eventTimes[trial_l_idx], align_epoch=event_epoch, bin_size=bin_size,
-                                  baseline_events=eventBase[trial_l_idx], base_epoch=base_epoch,
-                                  smoothing=smoothing, norm=norm)
-        fr_r, _, t = compute_psth(spikes['times'][spike_idx], spikes['clusters'][spike_idx], data['cluster_ids'],
-                                  eventTimes[trial_r_idx], align_epoch=event_epoch, bin_size=bin_size,
-                                  baseline_events=eventBase[trial_r_idx], base_epoch=base_epoch,
-                                  smoothing=smoothing, norm=norm)
-        frs = np.c_[fr_l, fr_r]
+            # Find responsive neurons
+            # Baseline firing rate
+            intervals = np.c_[eventStim - 0.2, eventStim]
+            counts, cluster_ids = get_spike_counts_in_bins(spikes.times[spike_idx], spikes.clusters[spike_idx], intervals)
+            fr_base = counts / (intervals[:, 1] - intervals[:, 0])
 
-        # Find responsive neurons
-        # Baseline firing rate
-        intervals = np.c_[eventStim - 0.2, eventStim]
-        counts, cluster_ids = get_spike_counts_in_bins(spikes.times[spike_idx], spikes.clusters[spike_idx], intervals)
-        fr_base = counts / (intervals[:, 1] - intervals[:, 0])
+            # Post-move firing rate
+            intervals = np.c_[eventMove - 0.05, eventMove + 0.2]
+            counts, cluster_ids = get_spike_counts_in_bins(spikes.times[spike_idx], spikes.clusters[spike_idx], intervals)
+            fr_post_move = counts / (intervals[:, 1] - intervals[:, 0])
 
-        # Post-move firing rate
-        intervals = np.c_[eventMove - 0.05, eventMove + 0.2]
-        counts, cluster_ids = get_spike_counts_in_bins(spikes.times[spike_idx], spikes.clusters[spike_idx], intervals)
-        fr_post_move = counts / (intervals[:, 1] - intervals[:, 0])
+            data['responsive'], data['p_responsive'], _ = \
+                compute_comparison_statistics(fr_base, fr_post_move, test='signrank')
 
-        data['responsive'], data['p_responsive'], _ = \
-            compute_comparison_statistics(fr_base, fr_post_move, test='signrank')
+            # Add other cluster information
+            data['region'] = clusters['rep_site_acronym'][cluster_idx]
+            data['x'] = clusters['x'][cluster_idx]
+            data['y'] = clusters['y'][cluster_idx]
+            data['z'] = clusters['z'][cluster_idx]
 
-        # Add other cluster information
-        data['region'] = clusters['rep_site_acronym'][cluster_idx]
-        data['x'] = clusters['x'][cluster_idx]
-        data['y'] = clusters['y'][cluster_idx]
-        data['z'] = clusters['z'][cluster_idx]
+            df = pd.DataFrame.from_dict(data)
+            df['eid'] = eid
+            df['pid'] = pid
+            df['subject'] = ins['session']['subject']
+            df['probe'] = ins['probe_name']
+            df['date'] = ins['session']['start_time'][:10]
+            df['lab'] = ins['session']['lab']
 
-        df = pd.DataFrame.from_dict(data)
-        df['eid'] = eid
-        df['pid'] = pid
-        df['subject'] = ins['session']['subject']
-        df['probe'] = ins['probe_name']
-        df['date'] = ins['session']['start_time'][:10]
-        df['lab'] = ins['session']['lab']
-
-        all_df.append(df)
-        if iIns == 0:
-            all_frs = frs
-        else:
-            all_frs = np.r_[all_frs, frs]
+            all_df.append(df)
+            if iIns == 0:
+                all_frs = frs
+            else:
+                all_frs = np.r_[all_frs, frs]
+        except Exception as err:
+            print(f'{pid} errored: {err}')
 
     concat_df = pd.concat(all_df, ignore_index=True)
     data = {'all_frs': all_frs, 'time': t, 'params': params}
@@ -182,6 +184,5 @@ if __name__ == '__main__':
     one = ONE()
     one.record_loaded = True
     insertions = get_insertions(level=2, one=one)
-
     prepare_data(insertions, one=one, **default_params)
     save_dataset_info(one, figure='figure7')

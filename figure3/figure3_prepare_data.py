@@ -181,6 +181,6 @@ def prepare_data(insertions, one, recompute=False):
 if __name__ == '__main__':
     one = ONE()
     one.record_loaded = True
-    insertions = get_insertions(level=0, recompute=True, one=one)
-    all_df_chns, all_df_clust, metrics = prepare_data(insertions, one=one, recompute=True)
+    insertions = get_insertions(level=0, one=one)
+    all_df_chns, all_df_clust, metrics = prepare_data(insertions, one=one)
     save_dataset_info(one, figure='figure3')
