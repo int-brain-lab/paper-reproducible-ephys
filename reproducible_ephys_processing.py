@@ -47,6 +47,14 @@ def bin_spikes2D(spike_times, spike_clusters, cluster_ids, align_times, pre_time
     return bins, tscale
 
 
+def bin_norm(times, events, pre_time, post_time, bin_size, weights):
+    bin_vals, t = bin_spikes(times, events, pre_time, post_time, bin_size, weights=weights)
+    bin_count, _ = bin_spikes(times, events, pre_time, post_time, bin_size)
+    bin_count[bin_count == 0] = 1
+    bin_vals = bin_vals / bin_count
+
+    return bin_vals, t
+
 def normalise_fr(bin_mean, bin_base, bin_size, method='subtract'):
 
     base = np.mean(bin_base, axis=1)[:, np.newaxis]
