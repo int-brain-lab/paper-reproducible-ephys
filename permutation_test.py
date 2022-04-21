@@ -103,6 +103,14 @@ def example_metric(data, labels1, labels2):
     return np.var(means, ddof=1)
 
 
+def permut_dist(data, labs, mice):
+    lab_means = []
+    for lab in np.unique(labs):
+        lab_means.append(np.mean(data[labs == lab]))
+    lab_means = np.array(lab_means)
+    return np.sum(np.abs(lab_means - np.mean(lab_means)))
+
+
 if __name__ == '__main__':
     rng = np.random.RandomState(2)
     data = rng.normal(0, 1, 25)
