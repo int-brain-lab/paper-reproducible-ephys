@@ -541,6 +541,9 @@ def filter_recordings(df=None, max_ap_rms=40, max_lfp_power=-140, min_neurons_pe
 
     if df is None:
         df = metrics
+        if df is None:
+            ins = get_insertions(level=0, recompute=False)
+            df = recompute_metrics(ins, ONE())
         df['original_index'] = df.index
     else:
         # make sure that all pids in the dataframe df are included in metrics otherwise recompute metrics
@@ -555,7 +558,7 @@ def filter_recordings(df=None, max_ap_rms=40, max_lfp_power=-140, min_neurons_pe
 
         # merge the two dataframes
         df['original_index'] = df.index
-        df = df.merge(metrics, on=['pid', 'region', 'subject', 'eid', 'probe', 'date', 'lab', 'institute'])
+        df = df.merge(metrics, on=['pid', 'region', 'subject', 'eid', 'probe', 'date', 'lab'])
 
     # Region Level
     # no. of channels per region

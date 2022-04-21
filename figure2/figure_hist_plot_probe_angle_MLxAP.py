@@ -82,7 +82,7 @@ def plot_probe_angle_histology():
        ax1.plot([row['angle_ml'], 0], [row['angle_ap'], 0],
                 color=institution_colors[institution_map[row['lab']]], linewidth=0.15, alpha=0.8)
        ax1.plot(row['angle_ml'], row['angle_ap'], color=institution_colors[institution_map[row['lab']]],
-                marker="o", markersize=0.5, alpha=0.8, markeredgewidth = 0.5)
+                marker="o", markersize=0.5, alpha=0.8, markeredgewidth=0.5)
 
     # Plot the mean micro coords
     # lab means
@@ -176,7 +176,7 @@ def plot_probe_angle_histology_all_lab(min_rec_per_lab=4):
     probe_data.loc[~probe_data['include'], 'passed'] = 'FAIL'
     # probe_data['passed'][~probe_data['include']] = 'FAIL'
 
-    # Find the pids are that are passing the permuation test inclusion criteria
+    # Find the pids are that are passing the permutation test inclusion criteria
     pids = df[df['permute_include'] == 1]['pid'].unique()
     isin, _ = ismember(probe_data.pid.values, pids)
     probe_data['permute_include'] = isin

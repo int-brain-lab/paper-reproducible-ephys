@@ -305,6 +305,7 @@ def prepare_data(insertions, one=None, brain_atlas=None, recompute=False):
     save_path = save_data_path(figure='figure2')
     concat_df_chns = pd.concat(all_df_chns, ignore_index=True)
     concat_df_traj = pd.concat(all_df_traj, ignore_index=True)
+    concat_df_traj = concat_df_traj.drop_duplicates(subset='subject')
     concat_df_chns.to_csv(save_path.joinpath('figure2_dataframe_chns.csv'))
     concat_df_traj.to_csv(save_path.joinpath('figure2_dataframe_traj.csv'))
 

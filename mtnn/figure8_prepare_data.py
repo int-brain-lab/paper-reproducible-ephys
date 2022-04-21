@@ -1,11 +1,12 @@
 from mtnn.utils import get_mtnn_eids, get_traj, featurize
-from reproducible_ephys_functions import save_data_path
+from reproducible_ephys_functions import save_data_path, save_dataset_info
 from one.api import ONE
 from ibllib.atlas import AllenAtlas
 import tqdm
 import numpy as np
 
 one = ONE()
+one.record_loaded = True
 ba = AllenAtlas()
 mtnn_eids = get_mtnn_eids()
 traj = get_traj(mtnn_eids)
@@ -28,7 +29,7 @@ for i in range(len(traj)):
     session_list.append(traj[i])
     trial_number_list.append(trial_numbers)
 
-
+save_dataset_info(one, figure='figure8')
 
 save_path = save_data_path(figure='figure8').joinpath('original_data')
 save_path.mkdir(exist_ok=True, parents=True)
