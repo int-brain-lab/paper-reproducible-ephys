@@ -33,11 +33,10 @@ def plot_hist_figure(output_dir='figure_histology',
     # I have installed this package to iblenv LOCALLY
     
     import figure_hist_plot_channels_all_subjs as cas
-    import figure_hist_plot_probe_trajs_ccf as ptc
-    import figure_hist_plot_probe_surf_coord_MLxAP as psc
-    import figure_hist_plot_probe_angle_MLxAP as ppa
-    
-    
+    from scratch_scripts.SW import figure_hist_plot_probe_trajs_ccf as ptc
+    from scratch_scripts.SW import figure_hist_plot_probe_surf_coord_MLxAP as psc
+    from scratch_scripts.SW import figure_hist_plot_probe_angle_MLxAP as ppa
+
     print('')
     print('PLOT HISTOLOGY FIGURE')
     print('=====================')
