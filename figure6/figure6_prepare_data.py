@@ -175,6 +175,8 @@ def prepare_data(insertions, one, recompute=False, **kwargs):
 
     save_path = save_data_path(figure='figure6')
     concat_df.to_csv(save_path.joinpath('figure6_dataframe.csv'))
+    smoothing = smoothing or 'none'
+    norm = norm or 'none'
     np.savez(save_path.joinpath(f'figure6_data_event_{align_event}_split_{split}_smoothing_{smoothing}_norm_{norm}.npz'), **data)
 
     return concat_df, data
