@@ -36,8 +36,6 @@ from statsmodels.stats.multitest import multipletests
 from sklearn.cross_decomposition import CCA
 from sklearn.linear_model import Ridge
 
-import statsmodels.api as sm
-import statsmodels.formula.api as smf
 
 
 T_BIN = 0.02  # time bin size in seconds
@@ -436,12 +434,12 @@ def all_panels(rm_unre=True, align='motion',split='rt',xyz_res=False,
         ste = ste[:len(xs)]
         
         
-        axs['D'].plot(xs,ms,color=Dc[reg])
-        axs['D'].fill_between(xs, ms + ste, ms - ste, 
+        axs['D'].plot(xs-0.5,ms,color=Dc[reg])
+        axs['D'].fill_between(xs-0.5, ms + ste, ms - ste, 
                               color=Dc[reg],alpha=0.2)
         
     for x in np.array([25])*T_BIN:
-        axs['D'].axvline(x=x, linewidth=0.5, linestyle='--', 
+        axs['D'].axvline(x=0, linewidth=0.5, linestyle='--', 
                                c='g',label='motion start')
                                
 #    axs['D'].axvline(x=75*T_BIN, lw=2, linestyle='-', 
@@ -481,12 +479,12 @@ def all_panels(rm_unre=True, align='motion',split='rt',xyz_res=False,
        
     for k in range(len(idxs)):
 
-        axs[ms[k]].plot(xs,y[idxs[k]][:len(xs)]/T_BIN,c='k',label='PETH')
-        axs[ms[k]].plot(xs,y_res[2][idxs[k]][:len(xs)]/T_BIN,
+        axs[ms[k]].plot(xs-0.5,y[idxs[k]][:len(xs)]/T_BIN,c='k',label='PETH')
+        axs[ms[k]].plot(xs-0.5,y_res[2][idxs[k]][:len(xs)]/T_BIN,
                         c='r',ls='--',label='2-PC-fit')
 
         for x in np.array([25])*T_BIN:
-            axs[ms[k]].axvline(x=x, linewidth=0.5, linestyle='--', 
+            axs[ms[k]].axvline(x=0, linewidth=0.5, linestyle='--', 
                                    c='g',label='motion start')
 #        axs[ms[k]].axvline(x=75*T_BIN, lw=2, linestyle='-', 
 #                               c='cyan',label='trial cut')               
@@ -623,8 +621,10 @@ def all_panels(rm_unre=True, align='motion',split='rt',xyz_res=False,
         axs3[ms[k]].set_title(reg,loc = 'left' if reg == 'PO' else 'center')
         axs3[ms[k]].set_xlabel('embedding dim 1')
         axs3[ms[k]].set_ylabel('embedding dim 2')
-        axs3[ms[k]].text(-0.1, 1.30, panel_n3[ms[k]], transform=axs3[ms[k]].transAxes,
-          fontsize=16,  va='top', ha='right', weight='bold')
+        axs3[ms[k]].text(-0.1, 1.30, panel_n3[ms[k]],
+                         transform=axs3[ms[k]].transAxes,
+                         fontsize=16,  va='top', 
+                         ha='right', weight='bold')
           
 
         
@@ -644,15 +644,15 @@ def all_panels(rm_unre=True, align='motion',split='rt',xyz_res=False,
             mes = mes[:len(xs)]
             ste = ste[:len(xs)]
             
-            axs3[ms2[k]].plot(xs,mes,color=lab_cols[b[lab]])
-            axs3[ms2[k]].fill_between(xs, mes + ste, mes - ste, 
+            axs3[ms2[k]].plot(xs-0.5,mes,color=lab_cols[b[lab]])
+            axs3[ms2[k]].fill_between(xs-0.5, mes + ste, mes - ste, 
                                   color=lab_cols[b[lab]],alpha=0.2)
                                   
         axs3[ms2[k]].set_title(reg)
         axs3[ms2[k]].set_xlabel('time [sec]')
         axs3[ms2[k]].set_ylabel('firing rate [Hz]')    
         for x in np.array([25])*T_BIN:
-            axs3[ms2[k]].axvline(x=x, lw=0.5, linestyle='--', 
+            axs3[ms2[k]].axvline(x=0, lw=0.5, linestyle='--', 
                                    c='g',label='motion start')
                                    
 #        axs3[ms2[k]].axvline(x=75*T_BIN, lw=2, linestyle='-', 
