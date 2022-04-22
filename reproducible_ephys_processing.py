@@ -124,7 +124,6 @@ def compute_psth(spike_times, spike_clusters, cluster_ids, align_events, align_e
         else:
             fr_mean = bins_mean / bin_size
 
-
     if return_ff:
         return fr_mean, fr_std, ff, t
     else:

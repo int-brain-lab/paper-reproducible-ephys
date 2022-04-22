@@ -6,17 +6,21 @@ from figure4.figure4_load_data import load_data, load_dataframe
 from figure4.figure4_plot_functions import plot_raster_and_psth
 
 lab_number_map, institution_map, lab_colors = labs()
-
+fig_path = save_figure_path(figure='figure4')
 
 def plot_panel_single_neuron():
+    # Code to plot figure similar to figure 4a
     pid = 'f26a6ab1-7e37-4f8d-bb50-295c056e1062'
     neuron = 386
-    plot_raster_and_psth(pid, neuron, align_event='move', side='left', figure='figure4')
+    align_event = 'move'
+    fig, ax = plot_raster_and_psth(pid, neuron, align_event=align_event, side='left')
+    plt.savefig(fig_path.joinpath(f'figure4_{pid}_neuron{neuron}_align_{align_event}.png'))
 
 
 def plot_panel_single_subject(event='move', norm='subtract', smoothing='kernel'):
+    # Code to plot figure similar to figure 4b
     df = load_dataframe()
-    data = load_data(event='move', norm='subtract', smoothing='kernel')
+    data = load_data(event=event, norm=norm, smoothing=smoothing)
 
     df_filt = filter_recordings(df)
     all_frs_l = data['all_frs_l'][df_filt['include'] == 1]
@@ -39,14 +43,11 @@ def plot_panel_single_subject(event='move', norm='subtract', smoothing='kernel')
     fr_std = np.std(all_frs_l[idx], axis=0)
     ax.plot(time, fr_mean, 'g')
 
-    fig_path = save_figure_path(figure='figure4')
     plt.savefig(fig_path.joinpath('figure4_example_subject.png'))
 
 
-
-
-def plot_panel_all():
-
+def plot_panel_all_subjects():
+    # Code to plot figure similar to figure 4c
     df = load_dataframe()
     data = load_data(event='move', norm='subtract', smoothing='kernel')
 
@@ -70,7 +71,6 @@ def plot_panel_all():
             frs_subj = all_frs_l[subj_idx, :]
             ax[iR].plot(np.mean(frs_subj, axis=0), c=lab_colors[df_subj.iloc[0]['institute']])
 
-    fig_path = save_figure_path(figure='figure4')
     plt.savefig(fig_path.joinpath('figure4_all_subjects.png'))
 
 

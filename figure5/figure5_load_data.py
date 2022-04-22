@@ -1,9 +1,3 @@
-FIGURE_5 = {'channels': ['brainLocationIds_ccf_2017', 'localCoordinates', 'mlapdv', 'rawInd'],
-            'clusters': ['amps', 'channels', 'metrics', 'peak2trough'],
-            'spikes': ['amps', 'clusters', 'depths', 'times'],
-            'trials': ['choice', 'contrastLeft', 'contrastRight', 'feedbackType', 'feedback_times',
-                       'firstMovement_times', 'stimOn_times']}
-
 import pandas as pd
 from reproducible_ephys_functions import save_data_path
 

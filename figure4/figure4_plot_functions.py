@@ -21,13 +21,13 @@ default_params = {'fr_bin_size': 0.01,
                   'base_epoch': None,
                   'norm': None,
                   'smoothing': None,
-                  'slide_kwargs_ff': {'n_win': 5, 'causal': 1},
+                  'slide_kwargs_ff': {'n_win': 3, 'causal': 1},
                   'slide_kwargs_fr': {'n_win': 2, 'causal': 1},
                   'kernel_kwargs': {'kernel': None}}
 
 
 def plot_raster_and_psth(pid, neuron, contrasts=(1, 0.25, 0.125, 0.0625, 0), side='all', feedback='all',
-                         one=None, ba=None, plot_ff=False, figure='figure4', **kwargs):
+                         one=None, ba=None, plot_ff=False, **kwargs):
 
     one = one or ONE()
     ba = ba or AllenAtlas()
@@ -169,5 +169,5 @@ def plot_raster_and_psth(pid, neuron, contrasts=(1, 0.25, 0.125, 0.0625, 0), sid
         else:
             ax[1].set_xlabel("Time from stimulus onset (s)", size=labelsize + 3)
 
-    fig_path = save_figure_path(figure=figure)
-    plt.savefig(fig_path.joinpath(f'{figure}_{pid}_neuron{neuron}_align_{align_event}.png'))
+
+    return fig, ax
