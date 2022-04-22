@@ -1,17 +1,116 @@
-from reproducible_ephys_functions import filter_recordings, labs, BRAIN_REGIONS
+from reproducible_ephys_functions import filter_recordings, labs, BRAIN_REGIONS, query
 import pandas as pd
 import numpy as np
 from figure3.figure3_functions import get_brain_boundaries, plot_probe
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from ibllib.atlas.regions import BrainRegions
-from figure3.figure3_load_data import load_dataframe, load_and_merge_dataframe
+from figure3.figure3_load_data import load_dataframe
 import seaborn as sns
+from matplotlib.sankey import Sankey
 from permutation_test import permut_test, permut_dist
 from statsmodels.stats.multitest import multipletests
+from one.api import ONE
 
 br = BrainRegions()
 
 lab_number_map, institution_map, lab_colors = labs()
+
+
+def panel_sankey(fig, ax):
+    one = ONE()
+
+    # Get total number of insertions
+    all_ins = len(query(behavior=False, n_trials=0, resolved=False, min_regions=0,
+                    exclude_critical=False, one=one))
+
+    # Dropout due to to critical
+    crit = all_ins - len(query(behavior=False, n_trials=0, resolved=False, min_regions=0,
+                               exclude_critical=True, one=one))
+
+    # Dropout due to histology
+    hist = all_ins - crit -  len(query(behavior=False, n_trials=0, resolved=True, min_regions=0,
+                                       exclude_critical=True, one=one))
+
+    # Dropout due to targeting
+    target = all_ins -hist - crit - len(query(behavior=False, n_trials=0, resolved=True,
+                                              min_regions=2, exclude_critical=True, one=one))
+
+    # Dropout due to behavior
+    behav = all_ins - hist - crit - target - len(query(behavior=False, n_trials=400, resolved=True,
+                                                       min_regions=2, exclude_critical=True, one=one))
+
+    # Get secondary QC
+    df_filt = filter_recordings(min_rec_lab=0, min_neuron_region=0)
+    df_filt = df_filt.drop_duplicates(subset='subject').reset_index()
+    low_yield = df_filt['low_yield'].sum()
+    noise = (df_filt[df_filt['high_lfp'] & ~df_filt['low_yield']].shape[0]
+             + df_filt[df_filt['high_noise'] & ~df_filt['low_yield']].shape[0])
+    artifacts = df_filt[(df_filt['artifacts'] & ~df_filt['low_yield'] & ~df_filt['high_noise']
+                        & ~df_filt['high_lfp'])].shape[0]
+
+    # Recordigns left
+    rec_left = all_ins - hist - crit - target - behav - low_yield - noise - artifacts
+
+    #fig, ax = plt.subplots(1, 1, figsize=(6, 3), dpi=400)
+    ax.axis('off')
+
+    #currently hardcoded to match Steven & Guido analyses;
+    #todo: finalize numbers and match with above code
+    num_trajectories = [92, -crit, -hist, -target, -behav, -low_yield, -(noise+artifacts), -rec_left]
+
+    # Sankey plot
+    sankey = Sankey(ax=ax, scale=0.0015, offset=0.1, head_angle=90, shoulder=0.025, gap=0.5, radius=0.05)
+    sankey.add(flows=num_trajectories,
+               labels=['All sessions',
+                       'Recording failure',
+                       'Alignment unresolved',
+                       'Off target',
+                       'Too few trials',
+                       'Low yield',
+                       'Noise/artifacts',
+                       'Data analysis'],
+               trunklength=0.8,
+               orientations=[0, 1, 1, 1, 1, 1, 1, 0],
+               pathlengths=[0.08, 0.4, 0.3, 0.2, 0.15, 0.1, 0.08, 0.4],
+               facecolor = sns.color_palette('Pastel1')[1])
+    diagrams = sankey.finish()
+
+    #text font and positioning
+    for text in diagrams[0].texts:
+            text.set_fontsize('7')
+
+
+    text = diagrams[0].texts[0]
+    xy = text.get_position()
+    text.set_position((xy[0] - 0.3, xy[1]))
+    text.set_weight('bold')
+
+    text = diagrams[0].texts[-1]
+    xy = text.get_position()
+    text.set_position((xy[0] + 0.2, xy[1]))
+    text.set_weight('bold')
+    """
+    text = diagrams[0].texts[1]
+    xy = text.get_position()
+    text.set_position((xy[0], xy[1] - 0.1))
+
+    text = diagrams[0].texts[2]
+    xy = text.get_position()
+    text.set_position((xy[0] + 0.2, xy[1]-0.2))
+
+    text = diagrams[0].texts[3]
+    xy = text.get_position()
+    text.set_position((xy[0] + 0.06, xy[1]+0.1))
+
+    text = diagrams[0].texts[4]
+    xy = text.get_position()
+    text.set_position((xy[0], xy[1]+0.1))
+
+    text = diagrams[0].texts[5]
+    xy = text.get_position()
+    text.set_position((xy[0], xy[1]+0.1))
+    """
+
 
 def panel_probe_lfp(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-2000, 2000],
                     normalize=False, clim=[-190, -150]):
@@ -21,9 +120,9 @@ def panel_probe_lfp(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-200
     df_filt = filter_recordings(min_rec_lab=n_rec_per_lab, min_neuron_region=0)
     df_filt = df_filt[df_filt['lab_include'] == 1]
     df_filt['lab_number'] = df_filt['lab'].map(lab_number_map)
-    df_filt = df_filt.sort_values(by=['lab_number', 'subject']).reset_index(drop=True)
+    df_filt = df_filt.sort_values(by=['institute', 'subject']).reset_index(drop=True)
     df_filt = df_filt.drop_duplicates(subset='subject').reset_index()
-    rec_per_lab = df_filt.groupby('lab_number').size()
+    rec_per_lab = df_filt.groupby('institute').size()
     df_filt['recording'] = np.concatenate([np.arange(i) for i in rec_per_lab.values])
 
     for iR, data in df_filt.iterrows():
@@ -76,9 +175,9 @@ def panel_probe_neurons(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[
     df_filt = filter_recordings(min_rec_lab=n_rec_per_lab, min_neuron_region=0)
     df_filt = df_filt[df_filt['lab_include'] == 1]
     df_filt['lab_number'] = df_filt['lab'].map(lab_number_map)
-    df_filt = df_filt.sort_values(by=['lab_number', 'subject']).reset_index(drop=True)
+    df_filt = df_filt.sort_values(by=['institute', 'subject']).reset_index(drop=True)
     df_filt = df_filt.drop_duplicates(subset='subject').reset_index()
-    rec_per_lab = df_filt.groupby('lab_number').size()
+    rec_per_lab = df_filt.groupby('institute').size()
     df_filt['recording'] = np.concatenate([np.arange(i) for i in rec_per_lab.values])
 
     for iR, data in df_filt.iterrows():
@@ -112,7 +211,7 @@ def panel_probe_neurons(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[
         for reg, col in zip(regions, region_colours):
             height = np.abs(reg[1] - reg[0])
             color = col / 255
-            ax[iR].bar(x=width/2, height=height, width=width, color=color, bottom=reg[0],
+            ax[iR].bar(x=width/2, height=height, width=width, color='grey', bottom=reg[0],
                        edgecolor='w', alpha=0.5, zorder=0)
 
         # Now for rep site
@@ -127,11 +226,12 @@ def panel_probe_neurons(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[
 #
         for i, (reg, col, lab) in enumerate(zip(regions, region_colours, region_labels)):
             height = np.abs(reg[1] - reg[0])
-            color = col / 255
             if np.isin(i, reg_idx):
                 alpha = 1
+                color = col / 255
             else:
                 alpha = 0
+                color = 'grey'
             ax[iR].bar(x=width/2, height=height, width=width, color=color, bottom=reg[0],
                        edgecolor='k', alpha=alpha, zorder=1)
 
@@ -182,7 +282,7 @@ def panel_probe_neurons(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[
 def panel_example(ax, n_rec_per_lab=4, example_region='LP', example_metric='lfp_power_high',
                   ylim=[-200, -150]):
 
-    df_ins = load_dataframe()
+    df_ins = load_dataframe(df_name='ins')
     df_filt = filter_recordings(df_ins, min_rec_lab=n_rec_per_lab)
     df_filt['lab_number'] = df_filt['lab'].map(lab_number_map)
     data = df_filt[df_filt['permute_include'] == 1]
@@ -205,7 +305,7 @@ def panel_example(ax, n_rec_per_lab=4, example_region='LP', example_metric='lfp_
     ax.plot(np.arange(data_example['institute'].unique().shape[0]),
              [data_example[example_metric].mean()] * data_example['institute'].unique().shape[0],
              color='r', lw=1)
-    ax.set(ylabel=f'LFP ratio in {example_region}\n(stim/baseline)', xlabel='',
+    ax.set(ylabel=f'LFP power in {example_region} (dB)', xlabel='',
            xlim=[-.5, len(data['institute'].unique()) + .5], ylim=ylim)
     ax.set_xticklabels(data_example['institute'].unique(), rotation=30, ha='right')
     sns.despine(trim=True)
