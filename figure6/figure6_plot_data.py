@@ -24,7 +24,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.patches import Patch
 from ipywidgets import interact
 from sklearn.metrics import r2_score
-#import umap
+# import umap
 from sklearn.manifold import TSNE
 from matplotlib.lines import Line2D
 from mpl_toolkits.mplot3d import Axes3D
@@ -137,35 +137,32 @@ def confidence_ellipse(x, y, ax, n_std=3.0, facecolor='none', **kwargs):
 
 
 
-def all_panels(rm_unre=True, align='motion',split='rt',xyz_res=False,
-               re_rank=2, fdr=True):
-
+def all_panels(rm_unre=True, align='move', split='rt',xyz_res=False, re_rank=2, fdr=True):
 
     # load metainfo df, row per cell
     concat_df = load_dataframe()
     # load PSTHs, one per cell                 
-    data = load_data(smoothing='None')
+    data = load_data(event=align, split=split)
     all_frs = data['all_frs']
     
     # get colors and short lab names                   
-    _,b,lab_cols = labs_maps()
+    _, b, lab_cols = labs_maps()
     ts = 'fast|slow RT PETH'
     
     # include has minimum number of clusters as being 3
     concat_df = filter_recordings(concat_df)
-    all_frs = all_frs[concat_df['include'] == 1, :]
-    concat_df = concat_df[concat_df['include'] == 1].reset_index()
+    all_frs = all_frs[concat_df['permute_include'] == 1, :]
+    concat_df = concat_df[concat_df['permute_include'] == 1].reset_index()
 
     if rm_unre:
         # restrict to responsive units
         all_frs = all_frs[concat_df['responsive']]
         concat_df = concat_df[concat_df["responsive"]]
 
-
     y = all_frs
     regs = concat_df['region'].values
     labs = concat_df['lab'].values
-    xyz = np.array([concat_df[g].values for g in ['x','y','z']]).T
+    xyz = np.array([concat_df[g].values for g in ['x', 'y', 'z']]).T
 
     # PCA embedding 
     pca = PCA(n_components=2)
@@ -178,13 +175,12 @@ def all_panels(rm_unre=True, align='motion',split='rt',xyz_res=False,
         emb_p = clf.predict(xyz)
         res = emb_p - emb        
         emb = res
-        
 
     # get reproduction using serveral first PCs
     u, s, vh = np.linalg.svd(y)
     y_res = {}
     
-    for re_rank in [1,2,3]:#,30,100]:
+    for re_rank in [1, 2, 3]:
         S_star = np.zeros(y.shape)
         for i in range(re_rank):
             S_star[i, i] = s[i]
@@ -210,10 +206,9 @@ def all_panels(rm_unre=True, align='motion',split='rt',xyz_res=False,
 
     sess = np.array(sess)
     
-    fig = plt.figure(figsize=(8,7))
-    figs = plt.figure(figsize=(8,9))
-    
-    
+    fig = plt.figure(figsize=(8, 7))
+    figs = plt.figure(figsize=(8, 9))
+
     inner = [['Ea'],
              ['Eb']]
 
@@ -221,7 +216,6 @@ def all_panels(rm_unre=True, align='motion',split='rt',xyz_res=False,
               ['B','D'],
               ['G','Ga']]
 
-              
     mosaic_supp = [['Ha','H'],
                    ['Ia','I'],
                    ['Ja','J'],
@@ -230,11 +224,11 @@ def all_panels(rm_unre=True, align='motion',split='rt',xyz_res=False,
    
     ms2 = ['Ga','Ha','Ia','Ja','Ka']
     
-    mf = np.array(mosaic,dtype=object).flatten()
+    mf = np.array(mosaic, dtype=object).flatten()
     mf[0] = 'Ea'
     panel_n = dict(zip(mf, string.ascii_lowercase))
     
-    mfs = np.array(mosaic_supp,dtype=object).flatten()
+    mfs = np.array(mosaic_supp, dtype=object).flatten()
     panel_ns = dict(zip(mfs, string.ascii_lowercase))    
     
     axs = fig.subplot_mosaic(mosaic)
@@ -245,13 +239,10 @@ def all_panels(rm_unre=True, align='motion',split='rt',xyz_res=False,
 
     labs_ = Counter(labs)
 
-
-
     # Euclidean distance of points for permutation test
-    def distE(x,y):    
+    def distE(x,y):
         return np.sqrt(np.dot(x, x) - 2 * np.dot(x, y) + np.dot(y, y))    
      
-
 
     le = [Patch(facecolor=lab_cols[b[lab]], 
            edgecolor=lab_cols[b[lab]],
@@ -268,7 +259,7 @@ def all_panels(rm_unre=True, align='motion',split='rt',xyz_res=False,
     regs_ = Counter(regs)
     cents = {}
     for reg in regs_:
-        cents[reg] = np.mean(emb[regs == reg],axis=0)
+        cents[reg] = np.mean(emb[regs == reg], axis=0)
 
 
     # shuffle test
@@ -577,11 +568,10 @@ def all_panels(rm_unre=True, align='motion',split='rt',xyz_res=False,
     axs['D'].set_xlim([-0.2, 0.8])
     axs['D'].set_ylim([-3.1, 8.5])
     
-    
 
     fig.tight_layout()
     figs.tight_layout()
+
     fig_path = save_figure_path(figure='figure6')
-    fig.savefig(save_figure_path().joinpath('figure6.png'))
-    figs.savefig(save_figure_path().joinpath('figure6_supp1.png'))
-    
+    fig.savefig(fig_path.joinpath('figure6.png'))
+    figs.savefig(fig_path.joinpath('figure6_supp1.png'))
