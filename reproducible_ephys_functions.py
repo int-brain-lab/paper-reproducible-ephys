@@ -550,8 +550,10 @@ def save_dataset_info(one, figure):
     uuid_path.mkdir(exist_ok=True, parents=True)
 
     _, filename = one.save_loaded_ids(clear_list=False)
-    shutil.move(filename, uuid_path.joinpath(f'{figure}_dataset_uuids.csv'))
+    if filename:
+        shutil.move(filename, uuid_path.joinpath(f'{figure}_dataset_uuids.csv'))
 
     # Save the session IDs
     _, filename = one.save_loaded_ids(sessions_only=True)
-    shutil.move(filename, uuid_path.joinpath(f'{figure}_session_uuids.csv'))
+    if filename:
+        shutil.move(filename, uuid_path.joinpath(f'{figure}_session_uuids.csv'))
