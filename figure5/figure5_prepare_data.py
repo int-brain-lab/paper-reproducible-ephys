@@ -331,6 +331,6 @@ def prepare_data(insertions, one, figure='figure5', recompute=False, **kwargs):
 if __name__ == '__main__':
     one = ONE()
     one.record_loaded = True
-    insertions = get_insertions(level=2, one=one)
+    insertions = get_insertions(level=2, one=one, freeze='biorxiv_2022_05')
     prepare_data(insertions, one=one, **default_params)
     save_dataset_info(one, figure='figure5')

@@ -315,6 +315,6 @@ def prepare_data(insertions, one=None, brain_atlas=None, recompute=False):
 if __name__ == '__main__':
     one = ONE()
     one.record_loaded = True
-    insertions = get_histology_insertions(one=one)
+    insertions = get_histology_insertions(one=one, freeze='biorxiv_2022_05')
     all_df_chns, all_df_traj = prepare_data(insertions, one=one)
     save_dataset_info(one, figure='figure2')

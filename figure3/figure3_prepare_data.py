@@ -181,6 +181,6 @@ def prepare_data(insertions, one, recompute=False):
 if __name__ == '__main__':
     one = ONE()
     one.record_loaded = True
-    insertions = get_insertions(level=0, one=one)
+    insertions = get_insertions(level=0, one=one, freeze='biorxiv_2022_05')
     all_df_chns, all_df_clust, metrics = prepare_data(insertions, one=one)
     save_dataset_info(one, figure='figure3')
