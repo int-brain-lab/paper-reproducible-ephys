@@ -58,7 +58,8 @@ def labs_maps():
                        'mrsicflogellab': 'SWC',
                        'danlab': 'Berkeley', 'steinmetzlab': 'UW', 
                        'churchlandlab_ucla': 'UCLA'}
-    colors = np.concatenate([sns.color_palette("Set1")[0:4], sns.color_palette("Set1")[6:],
+    colors = np.concatenate([sns.color_palette("Set1")[0:4],
+                             sns.color_palette("Set1")[6:],
                              [[0, 0, 0]], [sns.color_palette("Dark2")[3]],
                              [sns.color_palette("Set2")[0]]])
     institutions = ['UCL', 'CCU', 'CSHL (Z)', 'CSHL (C)', 'NYU', 'Princeton', 
@@ -67,6 +68,7 @@ def labs_maps():
     for i, inst in enumerate(institutions):
         institution_colors[inst] = colors[i]
     return lab_number_map, institution_map, institution_colors
+
 
 def reg_cols():
     
@@ -142,7 +144,7 @@ def all_panels(rm_unre=True, align='motion',split='rt',xyz_res=False,
     # load metainfo df, row per cell
     concat_df = load_dataframe()
     # load PSTHs, one per cell                 
-    data = load_data()
+    data = load_data(smoothing='None')
     all_frs = data['all_frs']
     
     # get colors and short lab names                   
@@ -164,19 +166,6 @@ def all_panels(rm_unre=True, align='motion',split='rt',xyz_res=False,
     regs = concat_df['region'].values
     labs = concat_df['lab'].values
     xyz = np.array([concat_df[g].values for g in ['x','y','z']]).T
-
-    # exclude these labs
-    # lab3 = ['wittenlab','zadorlab','cortexlab','churchlandlab_ucla']
-    #
-    # bad = []
-    # for i in range(len(y)):
-    #     if labs[i] in lab3:
-    #         bad.append(i)
-    #
-    # y = np.delete(y,bad,axis=0)
-    # regs = np.delete(regs,bad,axis=0)
-    # labs = np.delete(labs,bad,axis=0)
-    # xyz = np.delete(xyz,bad,axis=0)
 
     # PCA embedding 
     pca = PCA(n_components=2)
@@ -220,16 +209,6 @@ def all_panels(rm_unre=True, align='motion',split='rt',xyz_res=False,
         sess.append(k)
 
     sess = np.array(sess)
-#    r = []
-#    for i in range(len(labs)):
-#        r.append([labs[i], sess[i], regs[i]])
-
-#    dfm = pd.DataFrame(data=r, columns=["lab", "session", "region"])    
-
-
-#    md = smf.mixedlm("session ~ lab", dfm, groups=dfm["region"])        
-#    mdf = md.fit() 
-
     
     fig = plt.figure(figsize=(8,7))
     figs = plt.figure(figsize=(8,9))
@@ -237,12 +216,6 @@ def all_panels(rm_unre=True, align='motion',split='rt',xyz_res=False,
     
     inner = [['Ea'],
              ['Eb']]
-
-#    mosaic = [[inner,'Ga','G'],
-#              ['F','Ha','H'],
-#              ['B','Ia','I'],
-#              ['D','Ja','J'],
-#              ['L','Ka','K']]
 
     mosaic = [[inner,'F'],
               ['B','D'],
@@ -253,11 +226,7 @@ def all_panels(rm_unre=True, align='motion',split='rt',xyz_res=False,
                    ['Ia','I'],
                    ['Ja','J'],
                    ['Ka','K']]
-              
-#    mosaic = [['C','A','Ia','I','R'],
-#              ['Ga','G','Ja','J','Cr'],
-#              ['Ha','H','Ka','K','Cl'],
-#              ['D','B','L',inner,'F']]
+
    
     ms2 = ['Ga','Ha','Ia','Ja','Ka']
     
@@ -273,24 +242,10 @@ def all_panels(rm_unre=True, align='motion',split='rt',xyz_res=False,
     
     
     cols_lab = [lab_cols[b[x]] for x in labs]                       
-#    axs['A'].scatter(emb[:,0],emb[:,1],marker='o',c=cols_lab, s=2)
 
     labs_ = Counter(labs)
 
-#    cents = {}
-#    for lab in labs_:
-#        cents[lab] = np.mean(emb[labs == lab],axis=0)
 
-#    # plot means
-#    for lab in cents:
-#        axs['A'].scatter(cents[lab][0],cents[lab][1],
-#                      s=800,marker='x',color=lab_cols[b[lab]])      
-
-#    # plot confidence ellipses
-#    for lab in labs_:
-#        x = emb[labs == lab]
-#        confidence_ellipse(x[:,0], x[:,1], axs['A'], n_std=1.0,
-#                           edgecolor=lab_cols[b[lab]])
 
     # Euclidean distance of points for permutation test
     def distE(x,y):    
@@ -304,41 +259,6 @@ def all_panels(rm_unre=True, align='motion',split='rt',xyz_res=False,
                
     axs['G'].legend(handles=le,loc='lower left', bbox_to_anchor=(0.1,1),
                     ncol=3, prop={'size': 8}).set_draggable(True)
-#           
-#    axs['A'].set_title('all cells')
-#    axs['A'].set_xlabel('embedding dim 1')
-#    axs['A'].set_ylabel('embedding dim 2')
-#    axs['A'].text(-0.1, 1.30, 'A', transform=axs['A'].transAxes,
-#      fontsize=16,  va='top', ha='right', weight='bold')
-            
-    
-#    # plot average PSTHs across labs
-#    for lab in labs_:     
-#        ms = np.mean((y[labs == lab])/T_BIN,axis=0)
-#        ste = np.std((y[labs == lab])/T_BIN,axis=0)/np.sqrt(len(y[labs == lab]))
-#        
-#        axs['C'].plot(xs,ms,color=lab_cols[b[lab]])
-#        axs['C'].fill_between(xs, ms + ste, ms - ste, 
-#                              color=lab_cols[b[lab]],alpha=0.2)
-#       
-#    axs['C'].set_title(ts)
-#    axs['C'].set_xlabel('time [sec]')
-#    axs['C'].set_ylabel('firing rate [Hz]')    
-#    for x in np.array([25, 100])*T_BIN:
-#        axs['C'].axvline(x=x, lw=0.5, linestyle='--', 
-#                               c='g',label='motion start')
-#                               
-#    axs['C'].axvline(x=75*T_BIN, lw=2, linestyle='-', 
-#                           c='cyan',label='trial cut')                               
-#                               
-#    axs['C'].text(-0.1, 1.30, 'C', transform=axs['C'].transAxes,
-#      fontsize=16,  va='top', ha='right', weight='bold')
-#    
-#    le = [Line2D([0], [0], color='g', lw=0.5, ls='--', label='motion start'),
-#          Line2D([0], [0], color='cyan', lw=2, ls='-', label='trial cut')] 
-#               
-#    axs['C'].legend(handles=le,
-#     loc='lower right', ncol=1, prop={'size': 6}).set_draggable(True)  
                                     
     Dc = reg_cols()
     regs_ = Counter(regs)    
@@ -362,21 +282,6 @@ def all_panels(rm_unre=True, align='motion',split='rt',xyz_res=False,
             cenr[reg] = np.mean(emb[regsr == reg],axis=0)            
         centsr.append(cenr)
 
-    
-#    ps = {}
-#    for reg in cents:
-#        cs = np.mean([cents[l] for l in cents if l!=reg],axis=0)
-#        dist = distE(cents[reg],cs)
-#         
-#        null_d = [distE(cenr[reg],
-#                  np.mean([cenr[l] for l in cenr if l!=reg],axis=0)) 
-#                  for cenr in centsr]         
-#        p = 1 - (0.01 * percentileofscore(null_d,dist))
-#        ps[reg] = np.round(p,3) 
-
-#    pvals = [ps[reg] for reg in ps]
-#    _, pvals_c, _, _ = multipletests(pvals, 0.05, method='fdr_bh')
-#    ps = dict(zip(list(ps.keys()),pvals_c))
 
     # Guido's permutation test
     cs = np.mean([cents[l] for l in cents],axis=0)
@@ -385,6 +290,7 @@ def all_panels(rm_unre=True, align='motion',split='rt',xyz_res=False,
     null_d = [sum([distE(cenr[reg],
               np.mean([cenr[l] for l in cenr],axis=0)) for reg in cenr]) 
               for cenr in centsr]
+              
     p = 1 - (0.01 * percentileofscore(null_d,dist))
     p = np.round(p,3) 
 
@@ -414,10 +320,13 @@ def all_panels(rm_unre=True, align='motion',split='rt',xyz_res=False,
     axs['B'].text(-0.1, 1.30, panel_n['B'], transform=axs['B'].transAxes,
       fontsize=16,  va='top', ha='right', weight='bold')
     
+
     axs['B'].sharex(axss['H'])
     axs['B'].sharey(axss['H']) 
     axs['D'].sharex(axs['Ga'])
     axs['D'].sharey(axs['Ga']) 
+    
+    
     
     # plot average PSTHs
     for reg in regs_:   
@@ -442,21 +351,16 @@ def all_panels(rm_unre=True, align='motion',split='rt',xyz_res=False,
     for x in np.array([25])*T_BIN:
         axs['D'].axvline(x=0, linewidth=0.5, linestyle='--', 
                                c='g',label='motion start')
-                               
-#    axs['D'].axvline(x=75*T_BIN, lw=2, linestyle='-', 
-#                           c='cyan',label='trial cut') 
-            
-    #axs['D'].set_title(ts)
+
     axs['D'].set_xlabel('time [sec]')
     axs['D'].set_ylabel('firing rate [Hz]')        
     axs['D'].text(-0.1, 1.30, panel_n['D'], transform=axs['D'].transAxes,
       fontsize=16,  va='top', ha='right', weight='bold')
       
     le = [Line2D([0], [0], color='g', lw=0.5, ls='--', label='motion start')]
-          #Line2D([0], [0], color='cyan', lw=2, ls='-', label='trial cut')] 
                
-    axs['D'].legend(handles=le,
-     loc='upper left', ncol=1, prop={'size': 7}).set_draggable(True)
+    axs['D'].legend(handles=le, bbox_to_anchor=(0.3,1),
+     loc='lower left', ncol=1, prop={'size': 7}).set_draggable(True)
   
     # illustrate example cells
     # 1 with great, 1 with bad reconstruction     
@@ -471,7 +375,7 @@ def all_panels(rm_unre=True, align='motion',split='rt',xyz_res=False,
         r2s_[re_rank] = r2s
         if re_rank == 2:
             t = np.argsort(r2s)   
-            t_ = np.concatenate([t[170:171],t[-4:-3]])#,t[len(t)//2:len(t)//2 +1]
+            t_ = np.concatenate([t[170:171],t[-4:-3]])
             idxs = [iex[j] for j in t_]
         
     
@@ -487,10 +391,9 @@ def all_panels(rm_unre=True, align='motion',split='rt',xyz_res=False,
         for x in np.array([25])*T_BIN:
             axs[ms[k]].axvline(x=0, linewidth=0.5, linestyle='--', 
                                    c='g',label='motion start')
-#        axs[ms[k]].axvline(x=75*T_BIN, lw=2, linestyle='-', 
-#                               c='cyan',label='trial cut')               
+              
         axs[ms[k]].set_ylabel('firing rate \n [Hz]')
-        axs[ms[k]].text(0.7, 1, 
+        axs[ms[k]].text(0.2, 1, 
             rf'$r^2$={np.round(r2_score(y[idxs[k]],y_res[2][idxs[k]]),2)}',
             transform=axs[ms[k]].transAxes,
             fontsize=7,  va='top', ha='right') 
@@ -499,31 +402,29 @@ def all_panels(rm_unre=True, align='motion',split='rt',xyz_res=False,
         if k == 1:
             axs[ms[k]].set_xlabel('time [sec]')
         
-        #axs[ms[k]].set_title('2-PCs reconstruction')
-        
+
         if k == 0:    
             axs[ms[k]].text(-0.1, 1.6, panel_n[ms[k]], 
                             transform=axs[ms[k]].transAxes,
                             fontsize=16,  va='top', 
                             ha='right', weight='bold')
           
-#        le = [Line2D([0], [0], c='r',ls='--', label='2-PC-fit'),
-#              Line2D([0], [0], c='k', label='PSTH')] 
         if k == 0:           
             axs[ms[k]].legend(loc='lower left',bbox_to_anchor=(0,0.9),
-                              ncol=1,prop={'size': 7}).set_draggable(True)
+                              ncol=3,prop={'size': 7}).set_draggable(True)
         k+=1     
      
     for re_rank in r2s_:
-        _,patches,_ =axs['F'].hist(x=r2s_[re_rank], bins='auto',label=re_rank,
-                alpha=0.7, rwidth=0.85,
-                histtype=u'step',lw=2)
+        _,patches,_ =axs['F'].hist(x=r2s_[re_rank], 
+                                   bins='auto',label=re_rank,
+                                   alpha=0.7, rwidth=0.85,
+                                   histtype=u'step',lw=2)
 
     leg = axs['F'].legend(ncol=len(r2s_[re_rank])//4, 
                     prop={'size': 7}).set_draggable(True)
     axs['F'].set_xlabel(r'$r^2$')
     axs['F'].set_ylabel('number of neurons')
-    #axs['F'].set_title(f'PSTH reconstruction')     
+    
     axs['F'].text(-0.1, 1.30, panel_n['F'], transform=axs['F'].transAxes,
       fontsize=16,  va='top', ha='right', weight='bold')
     
@@ -607,17 +508,7 @@ def all_panels(rm_unre=True, align='motion',split='rt',xyz_res=False,
                   for cenr in centsr]
         p = 1 - (0.01 * percentileofscore(null_d,dist))
         p_[reg] = np.round(p,3)         
-        
 
-#        comb = combinations(cents, 2)
-
-#        ps = {}
-#        for pair in comb:
-#            dist = distE(cents[pair[0]],cents[pair[1]])
-#            null_d = [distE(cenr[pair[0]],cenr[pair[1]]) for cenr in centsr]
-#            p = 1 - (0.01 * percentileofscore(null_d,dist))
-#            ps[pair] = np.round(p,3) 
-#        p_r[reg] = ps
 
         axs3[ms[k]].set_title(reg,loc = 'left' if reg == 'PO' else 'center')
         axs3[ms[k]].set_xlabel('embedding dim 1')
@@ -637,9 +528,6 @@ def all_panels(rm_unre=True, align='motion',split='rt',xyz_res=False,
             # normalise by the number of sessions, not the number of cells
             
             sessinlab = len(Counter(sess2[labs2 == lab]))
-            
-#            ste = np.std((y2[labs2 == lab])/T_BIN,axis=0)/np.sqrt(
-#                                                len(y2[labs2 == lab]))
 
             ste = np.std((y2[labs2 == lab])/T_BIN,axis=0)/np.sqrt(sessinlab)
             mes = mes[:len(xs)]
@@ -655,20 +543,12 @@ def all_panels(rm_unre=True, align='motion',split='rt',xyz_res=False,
         for x in np.array([25])*T_BIN:
             axs3[ms2[k]].axvline(x=0, lw=0.5, linestyle='--', 
                                    c='g',label='motion start')
-                                   
-#        axs3[ms2[k]].axvline(x=75*T_BIN, lw=2, linestyle='-', 
-#                               c='cyan',label='trial cut')
-                                   
+           
         axs3[ms2[k]].text(-0.1, 1.30, panel_n3[ms2[k]],
                           transform=axs3[ms2[k]].transAxes,
           fontsize=16,  va='top', ha='right', weight='bold')
         
         le = [Line2D([0], [0], color='g', lw=0.5, ls='--', label='motion start')]
-              #Line2D([0], [0], color='cyan', lw=2, ls='-', label='trial cut')] 
-
-#        if k == 0:                   
-#            axs[ms2[k]].legend(handles=le,
-#             loc='lower right', ncol=1).set_draggable(True)         
 
         axs3[ms[k]].sharex(axs['B'])
         axs3[ms[k]].sharey(axs['B']) 
@@ -690,187 +570,18 @@ def all_panels(rm_unre=True, align='motion',split='rt',xyz_res=False,
     print(dict(zip(list(p_.keys()),[np.round(p,3) for p in pvals_c_])))    
     
     
-    if fdr:
-        pps = pvals_c
-        pps_ = pvals_c_
-    else: 
-        pps = pvals
-        pps_ = pvals_
+    
+    axs['B'].set_xlim([-1.3, 1])
+    axs['B'].set_ylim([-0.7, 0.7])
+    
+    axs['D'].set_xlim([-0.2, 0.8])
+    axs['D'].set_ylim([-3.1, 8.5])
+    
     
 
-    
-    p_rc = {}
-    i = 0
-    for reg in p_r:
-        p_rc[reg] = {}
-        for lab in p_r[reg]:
-            p_rc[reg][lab] = np.round(pps[i],3)        
-            i += 1
-   
-    i = 0
-    for reg in p_rc:
-        j = 0
-        for pair in p_rc[reg]:
-            #if p_r[reg][pair] < 0.05:
-            a[i,j] = p_rc[reg][pair]
-            j += 1                        
-        i += 1
-        
-#    im = axs['L'].imshow(a, cmap='cool',aspect="auto",#'Greys'
-#        interpolation='none')
-##    # print values onto image
-##    for (i,j), s in np.ndenumerate(a):
-##        axs['L'].text(j,i,s,ha='center',va='center', fontsize=8)         
-#            
-#    cb = fig.colorbar(im, ax=axs['L'], location='right', anchor=(0, 0.3), shrink=0.7)
-#    cb.ax.set_ylabel('p')
-#    axs['L'].set_xticks(range(len(p_r[reg].keys())))
-#    axs['L'].set_xticklabels([b[lab] for lab in p_r[reg].keys()],rotation = 90)
-#    axs['L'].set_yticks(range(len(p_r.keys())))
-#    axs['L'].set_yticklabels(p_r.keys())    
-#    
-#    axs['L'].set_title(f'permutation test')
-#    #axs['L'].set_xlabel(f'labs')
-#    #axs['L'].set_ylabel('regions') 
-#    axs['L'].text(-0.1, 1.30, panel_n['L'], transform=axs['L'].transAxes,
-#      fontsize=16,  va='top', ha='right', weight='bold')
-
-
-#    supt = (f'PCA dim reduction of PSTH; {len(y)} clusters; xyz_res = {xyz_res}'
-#             f'; responsive only {rm_unre};'
-#             f' fdr = {fdr}; align = {align}; split = {split}')       
-#    plt.suptitle(supt)     
-    fig.tight_layout()
-    figs.tight_layout()
     fig.tight_layout()
     figs.tight_layout()
     fig_path = save_figure_path(figure='figure6')
-    fig.save_fig(save_figure_path().joinpath('figure6.png'))
-    figs.save_fig(save_figure_path().joinpath('figure6_supp1.png'))
+    fig.savefig(save_figure_path().joinpath('figure6.png'))
+    figs.savefig(save_figure_path().joinpath('figure6_supp1.png'))
     
-    #return y, regs, labs    
-
-
-
-
-
-#    # reaction time histograms
-#    rts = np.load('/home/mic/repro_manifold/rts.npy',
-#                  allow_pickle=True).flat[0]
-
-
-#    for lab in rts:
-#        if lab in ['UCLA']:
-#            continue  
-#        rtsf = np.array(rts[lab])
-#        axs['R'].hist(rtsf[np.where(rtsf<5)[0]],bins=200,
-#                      label=lab,histtype=u'step',lw=2)
-#    axs['R'].set_xlabel('reaction time [sec]')
-#    axs['R'].set_ylabel('frequency')
-#    #axs['R'].set_title('pooled reaction times \n of repeated site sessions')
-#    axs['R'].legend().set_draggable(True)
-#    axs['R'].set_xlim([0, 0.5])    
-#    axs['R'].text(-0.1, 1.30, 'R', transform=axs['R'].transAxes,
-#      fontsize=16,  va='top', ha='right', weight='bold') 
-
-#    
-    #return emb, xyz, labs, regs    
-
-
-    # shuffle test
-#    random.shuffle(labs)
-#    random.shuffle(regs)
-
-
-
-#    vmin, vmax = np.amin([al, ar]), np.amax([al, ar])
-#            
-#    dat = {'Cr':ar, 'Cl':al}
-#    met = {'Cr':'regions', 'Cl':'labs'}
-#    xlabels = [s1+','+s2 for s1 in ['emb1','emb2'] for s2 in ['x','y','z']]
-#    ylabels = {'Cr':regs_, 'Cl':[b[l] for l in labs_]}
-#                
-#    for p in ['Cr','Cl']:
-#        
-#        im = axs[p].imshow(dat[p], cmap='cool',aspect="auto",#'Greys'
-#                           interpolation='none',vmin=vmin, vmax=vmax)      
-#        cb = fig.colorbar(im, ax=axs[p], location='right', 
-#                          anchor=(0, 0.3), shrink=0.7)
-#        cb.ax.set_ylabel('max(cc)')
-#        axs[p].set_xticks(range(dat[p].shape[1]))
-#        axs[p].set_xticklabels(xlabels,rotation = 90)
-#        axs[p].set_yticks(range(dat[p].shape[0]))
-#        axs[p].set_yticklabels(ylabels[p])    
-#        
-#        axs[p].set_title(f'max cross correlation')
-#        axs[p].set_xlabel(f'covariate pairs')
-#        axs[p].set_ylabel(met[p]) 
-#        axs[p].text(-0.1, 1.30, p, transform=axs[p].transAxes,
-#          fontsize=16,  va='top', ha='right', weight='bold')    
-    
-        
-
-
-
-
-def plot_reaction_time_hists(rts=None,pool=False):
-
-    #rts = np.load('/home/mic/repro_manifold/rts.npy',allow_pickle=True).flat[0]
-    _,bl,lab_cols = labs_maps()
-    fig = plt.figure()
-    lab3 = ['wittenlab','zadorlab','cortexlab','churchlandlab_ucla']
-    if rts is None:
-        inserts = get_repeated_sites()
-        eids = np.array(inserts)[:,0]
-        
-        rts = {}
-        for eid in eids:
-            lab = str(one.eid2path(eid)).split('/')[4]
-            if lab in lab3:
-                continue
-                
-            wheelMoves = one.load_object(eid, 'wheelMoves')
-            A = wheelMoves['intervals'][:,0]
-            trials = one.load_object(eid, 'trials')
-            evts = ['stimOn_times', 'feedback_times', 'probabilityLeft',
-                    'choice', 'feedbackType']   
-
-            for tr in range(len(trials['intervals'])):
-                    
-                # skip trial if any key info is nan 
-                if any(np.isnan([trials[k][tr] for k in evts])):
-                    continue
-                    
-                # skip trial if duration is too long
-                if trials['feedback_times'][tr] - trials['stimOn_times'][tr] > 10: 
-                    continue      
-
-
-                b = trials['stimOn_times'][tr]
-                c = trials['feedback_times'][tr]
-                # making sure the motion onset time is in a coupled interval
-                ind = np.where((A > b) & (A < c), True, False)
-                if all(~ind):
-                    #print(f'non-still start, trial {tr} and eid {eid}')
-                    continue
-                a=A[ind][0]
-                try:
-                    rts[bl[lab]].append(a-b)
-                except:
-                    rts[bl[lab]] = []
-                    rts[bl[lab]].append(a-b)       
-    if pool:
-        rtsf = np.concatenate([rts[lab] for lab in rts])   
-        plt.hist(rtsf[np.where(rtsf<5)[0]],bins=200,label='pooled')     
-    else:         
-        for lab in rts:    
-            rtsf = np.array(rts[lab])
-            plt.hist(rtsf[np.where(rtsf<5)[0]],bins=200,label=lab)
-    plt.xlabel('reaction time [sec]')
-    plt.ylabel('frequency')
-    #plt.title('reaction times')
-    np.save('/home/mic/repro_manifold/rts.npy',rts,allow_pickle=True)
-    return rts
-
-
-
