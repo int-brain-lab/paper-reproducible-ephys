@@ -14,13 +14,13 @@ def load_dataframe(exists_only=False):
             return None
 
 
-def load_data(event='move', split='rt', norm='z_score', smoothing=None, exists_only=False):
+def load_data(event='move', norm='subtract', smoothing='sliding', exists_only=False):
 
     smoothing = smoothing or 'none'
     norm = norm or 'none'
 
     df_path = save_data_path(figure='figure7').joinpath(
-        f'figure7_data_event_{event}_split_{split}_smoothing_{smoothing}_norm_{norm}.npz')
+        f'figure7_data_event_{event}_smoothing_{smoothing}_norm_{norm}.npz')
     if exists_only:
         return df_path.exists()
     else:
@@ -28,3 +28,5 @@ def load_data(event='move', split='rt', norm='z_score', smoothing=None, exists_o
             return dict(np.load(df_path, allow_pickle=True))
         else:
             return None
+
+

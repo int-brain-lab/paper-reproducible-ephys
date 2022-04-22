@@ -236,8 +236,8 @@ def prepare_data(insertions, one, figure='figure5', recompute=False, **kwargs):
 
             data['avg_ff_post_move'] = np.nanmean(ff_r[:, np.bitwise_and(time_ff >= 0.04, time_ff <= 0.2)], axis=1)
 
-            # COMPUTE FANOFACTOR AND FIRING RATE WAVEFORMS (for figure 6 supplement)
-            if figure == 'figure6':
+            # COMPUTE FANOFACTOR AND FIRING RATE WAVEFORMS (for figure 7 supplement)
+            if figure == 'figure7':
                 # Compute firing rate waveforms for right 100% contrast
                 fr_r, _, time_fr = compute_psth(spikes['times'][spike_idx], spikes['clusters'][spike_idx], data['cluster_ids'],
                                                 eventTimes, align_epoch=event_epoch, bin_size=fr_bin_size,
@@ -310,7 +310,7 @@ def prepare_data(insertions, one, figure='figure5', recompute=False, **kwargs):
     save_path = save_data_path(figure=figure)
     concat_df.to_csv(save_path.joinpath(f'{figure}_dataframe.csv'))
 
-    if figure == 'figure6':
+    if figure == 'figure7':
         data = {'all_frs_l': all_frs_l,
                 'all_ffs_l': all_ffs_l,
                 'all_frs_r': all_frs_r,
