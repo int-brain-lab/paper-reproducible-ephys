@@ -15,6 +15,7 @@ from collections import defaultdict
 import matplotlib.pyplot as plt
 
 from utils import *
+from reproducible_ephys_functions import save_data_path
 
 class MTNN(nn.Module):
     def __init__(self, n_neurons, 
@@ -245,10 +246,13 @@ def run_train(model, train_feature_path, train_output_path,
               only_keep_cov=None, eval_train=False, simulated=False):
 
     if model_name_suffix is None:
-        model_name = f'trained_models/state_dict_rem={remove_cov}_keep={only_keep_cov}'
+        model_name = f'state_dict_rem={remove_cov}_keep={only_keep_cov}'
     else:
-        model_name = f'trained_models/state_dict_rem={remove_cov}_keep={only_keep_cov}_{model_name_suffix}'
+        model_name = f'state_dict_rem={remove_cov}_keep={only_keep_cov}_{model_name_suffix}'
     model_name = model_name + '_simulated.pt' if simulated else model_name + '.pt'
+    save_path = save_data_path(figure='figure9').joinpath('trained_models')
+    save_path.mkdir(exist_ok=True, parents=True)
+    
     static = static_bool if not simulated else sim_static_bool
         
     criterion = nn.PoissonNLLLoss(log_input=False)
@@ -358,7 +362,7 @@ def run_train(model, train_feature_path, train_output_path,
             model.train()
             print("Validation Loss: {:.4f}".format(val_loss_list[-1]))
             if val_loss_list[-1] <= valid_loss_min:
-                torch.save(model.state_dict(), model_name)
+                torch.save(model.state_dict(), save_path.joinpath(model_name))
                 print('Validation loss decreased ({:.6f} --> {:.6f}).  Saving model ...'.format(valid_loss_min,
                                                                                                 val_loss_list[-1]))
                 valid_loss_min = val_loss_list[-1]
@@ -445,14 +449,21 @@ def load_test_model(model_config, remove_cov, only_keep_cov,
                             hidden_dim_dynamic=model_config['hidden_size_dynamic'], 
                             n_layers=model_config['n_layers'])
     
-    feature_fname = f'mtnn_data/{data_dir}/feature.npy' if not simulated else f'simulated_data/{data_dir}/feature.npy'
-    output_fname = f'mtnn_data/{data_dir}/output.npy' if not simulated else f'simulated_data/{data_dir}/output.npy'
+    load_path = save_data_path(figure='figure9')
+    
+    if not simulated:
+        feature_fname = load_path.joinpath(f'mtnn_data/{data_dir}/feature.npy')
+        output_fname = load_path.joinpath(f'mtnn_data/{data_dir}/output.npy')
+    else:
+        feature_fname = load_path.joinpath(f'simulated_data/{data_dir}/feature.npy')
+        output_fname = load_path.joinpath(f'simulated_data/{data_dir}/output.npy')
     
     if model_name_suffix is None:
         model_name = f'trained_models/state_dict_rem={remove_cov}_keep={only_keep_cov}'
     else:
         model_name = f'trained_models/state_dict_rem={remove_cov}_keep={only_keep_cov}_{model_name_suffix}'
     model_name = model_name + '_simulated.pt' if simulated else model_name + '.pt'
+    model_name = load_path.joinpath(model_name)
     
     model.load_state_dict(torch.load(model_name))
     preds, loss = run_eval(model,feature_fname, output_fname,

@@ -207,7 +207,7 @@ def figure_style(return_colors=False):
 
 def generate_figure_9(feature_list, pred_list, obs_list, neu_list, sess_list, trial_list,
                       bin_size=0.05, which_sess=None, savefig=False, 
-                      plot_subsample_ratio=0.2, plot_neurons = None, subdir=None):
+                      plot_subsample_ratio=0.2, plot_neurons = None):
     '''
     which_sess: list
     '''
@@ -374,19 +374,21 @@ def generate_figure_9(feature_list, pred_list, obs_list, neu_list, sess_list, tr
             fg.add_labels(fig, labels)
             
             if savefig:
-                savedir = f'plots/figure9/main'
-                if subdir is not None:
-                    savedir = os.path.join(savedir, subdir)
-                if not os.path.exists(savedir):
-                    os.makedirs(savedir)
-                figname = os.path.join(savedir, f'{subject}_{region}_id={neuron}.png')
-                plt.savefig(figname,bbox_inches='tight', facecolor='white')
+                save_path = save_data_path(figure='figure9')
+                figname = save_path.joinpath(f'figure9_{subject}_{region}_id={neuron}.png')
+                plt.savefig(figname, bbox_inches='tight', facecolor='white')
             
             plt.show()
             
 
-def generate_figure9_supplement1(model_config, alpha=0.6, s=30,
-                                 xlims=[0.0,50.0], ylims=[-0.2,1.0], savefig=False):
+def generate_figure9_supplement1(model_config,                              
+                                 preds_shape,
+                                 obs,
+                                 test_feature,
+                                 sess_list,
+                                 alpha=0.6, s=30,
+                                 xlims=[0.0,50.0], ylims=[-0.2,1.0], 
+                                 savefig=False):
     
     color_names = ["windows blue",
                    "red",
@@ -408,10 +410,6 @@ def generate_figure9_supplement1(model_config, alpha=0.6, s=30,
     colors = sns.xkcd_palette(color_names)
     shapes = ['o', 's', '^', '+']
 
-    preds_shape = np.load('mtnn_data/test/shape.npy')
-    obs = np.load('mtnn_data/test/output.npy')
-    test_feature = np.load('mtnn_data/test/feature.npy')
-    sess_list = np.load('mtnn_data/session_info.npy', allow_pickle=True).tolist()
     mean_frs = compute_mean_frs()
     
     obs_list = []
@@ -468,14 +466,61 @@ def generate_figure9_supplement1(model_config, alpha=0.6, s=30,
     plt.suptitle('MTNN Prediction Quality vs. Firing Rate', fontsize=32)
     
     if savefig:
-        savedir = f'plots/figure9/'
-        if not os.path.exists(savedir):
-            os.makedirs(savedir)
-        figname = os.path.join(savedir, f'fig9_supplement1.png')
-        plt.savefig(figname,bbox_inches='tight', facecolor='white')
+        save_path = save_data_path(figure='figure9')
+        figname = save_path.joinpath(f'figure9_supplement1.png')
+        plt.savefig(figname, bbox_inches='tight', facecolor='white')
     
     plt.show()
     
+def generate_figure9_supplement2(model_config, 
+                                 glm_score, 
+                                 preds_shape,
+                                 obs,
+                                 test_feature,
+                                 savefig=False):
+
+    obs_list = []
+    feature_list = []
+    idx = 0
+    for sh in preds_shape:
+        n = sh[0]*sh[1]
+        obs_list.append(obs[idx:idx+n].reshape(sh[:-1]))
+        feature_list.append(test_feature[idx:idx+n].reshape(sh))
+        idx += n
+
+    mtnn_score = load_test_model(model_config, None, None, 
+                                 obs_list, preds_shape, use_psth=False, 
+                                 data_dir='test', model_name_suffix=None)
+    mtnn_score_glm_cov = load_test_model(model_config, leave_out_covs_for_glm, None, 
+                                         obs_list, preds_shape, use_psth=False, 
+                                         data_dir='test', model_name_suffix=None)
+    
+    plt.figure(figsize=(10,10))
+    
+    plt.scatter(mtnn_score[0], glm_score[0], color='blue', label='MTNN trained on MTNN covariates', alpha=0.65)
+    plt.scatter(mtnn_score_glm_cov[0], glm_score[0], color='red', label='MTNN trained on GLM covariates', alpha=0.65)
+    
+    plt.scatter(mtnn_score[1:], glm_score[1:], color='blue', alpha=0.65)
+    plt.scatter(mtnn_score_glm_cov[1:], glm_score[1:], color='red', alpha=0.65)
+    
+    plt.xlabel('MTNN Performance (R2)')
+    plt.ylabel('GLM Performance (R2)')
+    
+    plt.plot([-1,1],[-1,1], color='black')
+    plt.xlim(-0.25,0.55)
+    plt.ylim(-0.25,0.55)
+    
+    plt.title('MTNN vs GLM Predictive Performance Comparison')
+    
+    plt.legend(fontsize=20)
+    
+    
+    if savefig:
+        save_path = save_data_path(figure='figure9')
+        figname = save_path.joinpath(f'figure9_supplement2.png')
+        plt.savefig(figname,bbox_inches='tight', facecolor='white')
+    
+    plt.show()
     
 def get_session_order(feature_list):
 
@@ -487,24 +532,13 @@ def get_session_order(feature_list):
         
     return np.array(order)
     
-def generate_figure9_supplement3(model_config, savefig=False):
-    
-    preds_shape = np.load('mtnn_data/test/shape.npy')
-    obs = np.load('mtnn_data/test/output.npy')
-    test_feature = np.load('mtnn_data/test/feature.npy')
-    sess_list = np.load('mtnn_data/session_info.npy', allow_pickle=True).tolist()
-    
-    model = initialize_mtnn(n_neurons=model_config['n_neurons'], 
-                            input_size_static=model_config['input_size_static'], 
-                            input_size_dynamic=model_config['input_size_dynamic'],
-                            hidden_dim_static=model_config['hidden_size_static'], 
-                            hidden_dim_dynamic=model_config['hidden_size_dynamic'], 
-                            static_bias=model_config['dynamic_bias'],
-                            dynamic_bias=model_config['static_bias'],
-                            n_layers=model_config['n_layers'])
-    model.load_state_dict(torch.load(f'trained_models/state_dict_rem=None_keep=None.pt'))
-    preds, loss = run_eval(model,f'mtnn_data/test/feature.npy',
-                           f'mtnn_data/test/output.npy')
+def generate_figure9_supplement3(model_config, 
+                                 preds_shape,
+                                 obs,
+                                 test_feature,
+                                 sess_list,
+                                 preds,
+                                 savefig=False):
     
     obs_list = []
     feature_list = []
@@ -590,10 +624,8 @@ def generate_figure9_supplement3(model_config, savefig=False):
     plt.title('Observed and MTNN-predicted PETHs on held-out trials', fontsize=24, y=1.03)
     
     if savefig:
-        savedir = f'plots/figure9/'
-        if not os.path.exists(savedir):
-            os.makedirs(savedir)
-        figname = os.path.join(savedir, f'fig9_supplement3.png')
+        save_path = save_data_path(figure='figure9')
+        figname = save_path.joinpath(f'figure9_supplement3.png')
         plt.savefig(figname,bbox_inches='tight', facecolor='white')
     
     plt.show()
