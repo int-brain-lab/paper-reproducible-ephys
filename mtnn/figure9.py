@@ -19,6 +19,8 @@ from sklearn.metrics import r2_score
 from utils import *
 from mtnn import *
 
+from reproducible_ephys_functions import save_data_path
+
 def split_by_stimulus(feature):
     
     stim = feature[0,:,:,cov_idx_dict['stimuli'][0]:cov_idx_dict['stimuli'][1]].sum(1)
