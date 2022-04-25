@@ -16,20 +16,11 @@ import matplotlib.pyplot as plt
 
 from utils import *
 
-'''
-hyperparameters to consider:
-input dropout: 0.2 - was 0
-hidden layer size: 48 - was 64
-l2 penalty: 1e-4 - was 1e-5
-max padding: 4*length
-noise: N(0,0.25) - was N(0,1)
-'''
-
 class MTNN(nn.Module):
     def __init__(self, n_neurons, 
                  input_size_static, input_size_dynamic, 
                  output_size, hidden_dim_static, hidden_dim_dynamic, device,
-                 n_layers=1, static_bias=True, dynamic_bias=True, dropout=0.3):
+                 n_layers=1, static_bias=True, dynamic_bias=True, dropout=0.2):
         super(MTNN, self).__init__()
 
         self.n_neurons = n_neurons
@@ -44,7 +35,6 @@ class MTNN(nn.Module):
         self.fc_dynamic = nn.Linear(input_size_dynamic, hidden_dim_dynamic, bias=dynamic_bias)
 
         self.Dropout = torch.nn.Dropout(p=dropout)
-        self.input_dropout = torch.nn.Dropout(p=0.2)
 
         # RNN Layer
         self.rnn = nn.RNN(hidden_dim_dynamic, hidden_dim_dynamic, 
@@ -72,8 +62,7 @@ class MTNN(nn.Module):
         
         #print(x_static.shape)
         
-        out_static = self.input_dropout(x_static)
-        out_static = self.fc_static1(out_static)
+        out_static = self.fc_static1(x_static)
         out_static = self.ReLU(out_static)
         out_static = self.Dropout(out_static)
         
@@ -82,9 +71,8 @@ class MTNN(nn.Module):
         out_static = self.Dropout(out_static)
         #print(out_static.shape)
         #print(x_dynamic.shape)
-        
-        out_dynamic = self.input_dropout(x_dynamic)
-        out_dynamic = self.fc_dynamic(out_dynamic)
+
+        out_dynamic = self.fc_dynamic(x_dynamic)
         out_dynamic = self.ReLU(out_dynamic)
         out_dynamic = self.Dropout(out_dynamic)
         #print(out_dynamic.shape)
@@ -139,7 +127,7 @@ class MTNNDataset(Dataset):
 
 def initialize_mtnn(n_neurons, input_size_static, input_size_dynamic,
                     static_bias, dynamic_bias, hidden_dim_static, 
-                    hidden_dim_dynamic, n_layers, dropout=0.3):
+                    hidden_dim_dynamic, n_layers, dropout=0.2, model_state_dict=None):
     # torch.cuda.is_available() checks and returns a Boolean True if a GPU is available, else it'll return False
     is_cuda = torch.cuda.is_available()
 
@@ -159,23 +147,32 @@ def initialize_mtnn(n_neurons, input_size_static, input_size_dynamic,
                  n_layers=n_layers, dropout=dropout)
     model.to(device)
     
+    if model_state_dict is not None:
+        model.load_state_dict(torch.load(model_state_dict))
+    
     return model
 
-def leave_out(feature, covs, return_mask=False):
+def leave_out(feature, covs, simulated, return_mask=False):
+    cov_idx_map = cov_idx_dict if not simulated else sim_cov_idx_dict
+    static = static_bool if not simulated else sim_static_bool
+    
     mask = np.ones(feature.shape[-1]).astype(bool)
     for cov in covs:
-        i,j = cov_idx_dict[cov]
+        i,j = cov_idx_map[cov]
         feature[:,:,i:j] = 0
         mask[i:j] = False
         
     if return_mask:
-        return feature, mask[1:][~static_bool]
+        return feature, mask[1:][~static]
     else:
         return feature
 
-def only_keep(feature, cov, return_mask=False):
+def only_keep(feature, cov, simulated, return_mask=False):
+    cov_idx_map = cov_idx_dict if not simulated else sim_cov_idx_dict
+    static = static_bool if not simulated else sim_static_bool
+    
     mask = np.ones(feature.shape[-1]).astype(bool)
-    i,j = cov_idx_dict[cov]
+    i,j = cov_idx_map[cov]
     for idx in range(1, feature.shape[-1]):
         if idx >= i and idx < j:
             continue
@@ -183,7 +180,7 @@ def only_keep(feature, cov, return_mask=False):
         mask[idx] = False
         
     if return_mask:
-        return feature, mask[1:][~static_bool]
+        return feature, mask[1:][~static]
     else:
         return feature
 
@@ -212,7 +209,7 @@ def shift2D(mat, shifts: torch.LongTensor):
 def random_pad_shift(dynamic_f, mask):
     
     pre_padding, post_padding = np.random.randint(dynamic_f.shape[1]+1,
-                                                  dynamic_f.shape[1]*2,
+                                                  int(dynamic_f.shape[1]*1.5),
                                                   size=2)
     # TODO: use torch.nn.functional.pad
     pre = torch.randn((dynamic_f.shape[0], pre_padding, dynamic_f.shape[-1]))
@@ -232,40 +229,35 @@ def random_pad_shift(dynamic_f, mask):
     
 def add_weight_decay(net, l2_value1, l2_value2):
     decay1, decay2 = [], []
-#     decay1_name, decay2_name = [], []
     for name, param in net.named_parameters():
-        if not param.requires_grad: continue # frozen weights		            
+        if not param.requires_grad: continue # frozen weights           
         if 'rnn' in name and 'bias' in name: # rnn bias
-#             print(name)
             decay2.append(param)
-#             decay2_name.append(name)
         else: 
             decay1.append(param)
-#             decay1_name.append(name)
-#     print(decay1_name)
-#     print(decay2_name)
     return [{'params': decay1, 'weight_decay': l2_value1}, {'params': decay2, 'weight_decay': l2_value2}]
 
 def run_train(model, train_feature_path, train_output_path,
               val_feature_path, val_output_path, n_epochs=150, 
-              lr=0.01, momentum=0.9, batch_size=64, 
-              clip=3, weight_decay=1e-5, bias_weight_decay=1e-1, 
-              num_workers=2, model_name_suffix=None,
-              remove_cov=None, only_keep_cov=None):
+              lr=0.1, lr_decay=0.95, momentum=0.9, batch_size=512, 
+              clip=2, weight_decay=1e-5, valid_loss_min = np.Inf,
+              model_name_suffix=None, remove_cov=None, 
+              only_keep_cov=None, eval_train=False, simulated=False):
 
     if model_name_suffix is None:
-        model_name = f'trained_models/state_dict_rem={remove_cov}_keep={only_keep_cov}.pt'
+        model_name = f'trained_models/state_dict_rem={remove_cov}_keep={only_keep_cov}'
     else:
-        model_name = f'trained_models/state_dict_rem={remove_cov}_keep={only_keep_cov}_{model_name_suffix}.pt'
+        model_name = f'trained_models/state_dict_rem={remove_cov}_keep={only_keep_cov}_{model_name_suffix}'
+    model_name = model_name + '_simulated.pt' if simulated else model_name + '.pt'
+    static = static_bool if not simulated else sim_static_bool
         
-    #####################################
-    # TRY MSE?
-    #####################################
     criterion = nn.PoissonNLLLoss(log_input=False)
-    # criterion = nn.MSELoss()
 
-    params = add_weight_decay(model, weight_decay, bias_weight_decay)
-    optimizer = torch.optim.SGD(params, lr=lr, momentum=momentum)
+    #params = add_weight_decay(model, weight_decay, bias_weight_decay)
+    #optimizer = torch.optim.SGD(params, lr=lr, momentum=momentum)
+    optimizer = torch.optim.SGD(model.parameters(), lr=lr, momentum=momentum, weight_decay=weight_decay)
+    lr_lambda = lambda epoch: lr_decay ** epoch
+    scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_lambda)
     
     train_feature = np.load(train_feature_path)
     train_output = np.load(train_output_path)
@@ -273,31 +265,28 @@ def run_train(model, train_feature_path, train_output_path,
     val_output = np.load(val_output_path)
     
     if remove_cov is not None:
-        train_feature, mask = leave_out(train_feature, remove_cov, return_mask=True)
-        val_feature = leave_out(val_feature, remove_cov)
+        train_feature, mask = leave_out(train_feature, remove_cov, simulated, return_mask=True)
+        val_feature = leave_out(val_feature, remove_cov, simulated)
     elif only_keep_cov is not None:
-        train_feature, mask = only_keep(train_feature, only_keep_cov, return_mask=True)
-        val_feature = only_keep(val_feature, only_keep_cov)
+        train_feature, mask = only_keep(train_feature, only_keep_cov, simulated, return_mask=True)
+        val_feature = only_keep(val_feature, only_keep_cov, simulated)
     else:
-        mask = np.ones(train_feature.shape[-1]-static_bool.sum()-1).astype(bool)
+        mask = np.ones(train_feature.shape[-1]-static.sum()-1).astype(bool)
     
     train_neuron_order = train_feature[:,0,0]
     val_neuron_order = val_feature[:,0,0]
     train_feature = train_feature[:,:,1:]
     val_feature = val_feature[:,:,1:]
     
-    train_data = MTNNDataset(train_neuron_order, train_feature, train_output, static_bool)
-    val_data = MTNNDataset(val_neuron_order, val_feature, val_output, static_bool)
-    train_dataloader = DataLoader(train_data, batch_size=batch_size, 
-                                  shuffle=True, num_workers=num_workers, pin_memory=True)
-    val_dataloader = DataLoader(val_data, batch_size=batch_size, 
-                                shuffle=False, num_workers=num_workers, pin_memory=True)
+    train_data = MTNNDataset(train_neuron_order, train_feature, train_output, static)
+    val_data = MTNNDataset(val_neuron_order, val_feature, val_output, static)
+    train_dataloader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
+    val_dataloader = DataLoader(val_data, batch_size=batch_size, shuffle=False)
     
     best_epoch = 0
     
     loss_list = []
     val_loss_list = []
-    valid_loss_min = np.Inf
     model.train()
     for epoch in notebook.tqdm(range(1, n_epochs + 1)):
         batch_losses = []
@@ -322,30 +311,33 @@ def run_train(model, train_feature_path, train_output_path,
             del target_gpu
             del loss
             del output
-#             del flipped
             torch.cuda.empty_cache()
+        scheduler.step()
 
-        if epoch%5 == 1 or epoch == n_epochs:
+        if epoch%3 == 1 or epoch == n_epochs:
             print('Epoch: {}/{}.............'.format(epoch, n_epochs), end=' ')
 
             model.eval()
             with torch.no_grad():
-                batch_losses = []
-                for neu, static_f, dynamic_f, target in train_dataloader:
-                    static_f_gpu = static_f.cuda().float()
-                    dynamic_f_gpu = dynamic_f.cuda().float()
-                    target_gpu = target.cuda().float()
-                    output = model(static_f_gpu, dynamic_f_gpu, neu)
-                    loss = criterion(output.reshape(-1), target_gpu.reshape(-1).float())
-                    batch_losses.append(loss.item())
+                
+                if eval_train:
+                    batch_losses = []
+                    for neu, static_f, dynamic_f, target in train_dataloader:
+                        static_f_gpu = static_f.cuda().float()
+                        dynamic_f_gpu = dynamic_f.cuda().float()
+                        target_gpu = target.cuda().float()
+                        output = model(static_f_gpu, dynamic_f_gpu, neu)
+                        loss = criterion(output.reshape(-1), target_gpu.reshape(-1).float())
+                        batch_losses.append(loss.item())
 
-                    del static_f_gpu
-                    del dynamic_f_gpu
-                    del target_gpu
-                    del loss
-                    del output
-                    torch.cuda.empty_cache()
-                loss_list.append(np.mean(batch_losses))
+                        del static_f_gpu
+                        del dynamic_f_gpu
+                        del target_gpu
+                        del loss
+                        del output
+                        torch.cuda.empty_cache()
+                    loss_list.append(np.mean(batch_losses))
+                    print("Training Loss: {:.4f}".format(loss_list[-1]), end=' ')
                 
                 batch_losses=[]
                 for neu, static_f, dynamic_f, target in val_dataloader:
@@ -364,7 +356,6 @@ def run_train(model, train_feature_path, train_output_path,
                     torch.cuda.empty_cache()
                 val_loss_list.append(np.mean(batch_losses))
             model.train()
-            print("Training Loss: {:.4f}".format(loss_list[-1]), end=' ')
             print("Validation Loss: {:.4f}".format(val_loss_list[-1]))
             if val_loss_list[-1] <= valid_loss_min:
                 torch.save(model.state_dict(), model_name)
@@ -376,22 +367,23 @@ def run_train(model, train_feature_path, train_output_path,
     return best_epoch, loss_list, val_loss_list
 
 def run_eval(model, test_feature_path, test_output_path, 
-             batch_size=256, remove_cov=None, only_keep_cov=None):
+             batch_size=256, remove_cov=None, only_keep_cov=None, simulated=False):
     
     criterion = nn.PoissonNLLLoss(log_input=False)
     
     test_feature = np.load(test_feature_path)
     test_output = np.load(test_output_path)
+    static = static_bool if not simulated else sim_static_bool
     
     if remove_cov is not None:
-        test_feature = leave_out(test_feature, remove_cov)
+        test_feature = leave_out(test_feature, remove_cov, simulated)
     elif only_keep_cov is not None:
-        test_feature = only_keep(test_feature, only_keep_cov)
+        test_feature = only_keep(test_feature, only_keep_cov, simulated)
     
     test_neuron_order = test_feature[:,0,0]
     test_feature = test_feature[:,:,1:]
     
-    test_data = MTNNDataset(test_neuron_order, test_feature, test_output, static_bool)
+    test_data = MTNNDataset(test_neuron_order, test_feature, test_output, static)
     test_dataloader = DataLoader(test_data, batch_size=batch_size, shuffle=False)
     
     preds = []
@@ -442,7 +434,8 @@ def compute_score(obs, pred, metric='r2', use_psth=False):
 
 def load_test_model(model_config, remove_cov, only_keep_cov, 
                     obs_list, preds_shape, metric='r2', 
-                    use_psth=False, data_dir='test', model_name_suffix=None):
+                    use_psth=False, data_dir='test', 
+                    model_name_suffix=None, simulated=False):
     model = initialize_mtnn(n_neurons=model_config['n_neurons'], 
                             input_size_static=model_config['input_size_static'], 
                             input_size_dynamic=model_config['input_size_dynamic'],
@@ -452,15 +445,19 @@ def load_test_model(model_config, remove_cov, only_keep_cov,
                             hidden_dim_dynamic=model_config['hidden_size_dynamic'], 
                             n_layers=model_config['n_layers'])
     
+    feature_fname = f'mtnn_data/{data_dir}/feature.npy' if not simulated else f'simulated_data/{data_dir}/feature.npy'
+    output_fname = f'mtnn_data/{data_dir}/output.npy' if not simulated else f'simulated_data/{data_dir}/output.npy'
+    
     if model_name_suffix is None:
-        model_name = f'trained_models/state_dict_rem={remove_cov}_keep={only_keep_cov}.pt'
+        model_name = f'trained_models/state_dict_rem={remove_cov}_keep={only_keep_cov}'
     else:
-        model_name = f'trained_models/state_dict_rem={remove_cov}_keep={only_keep_cov}_{model_name_suffix}.pt'
+        model_name = f'trained_models/state_dict_rem={remove_cov}_keep={only_keep_cov}_{model_name_suffix}'
+    model_name = model_name + '_simulated.pt' if simulated else model_name + '.pt'
     
     model.load_state_dict(torch.load(model_name))
-    preds, loss = run_eval(model,f'mtnn_data/{data_dir}/feature.npy',
-                           f'mtnn_data/{data_dir}/output.npy',
-                           remove_cov=remove_cov, only_keep_cov=only_keep_cov)
+    preds, loss = run_eval(model,feature_fname, output_fname,
+                           remove_cov=remove_cov, only_keep_cov=only_keep_cov,
+                           simulated=simulated)
     print(f'rem={remove_cov} keep={only_keep_cov} {data_dir} loss: {loss}')
     pred_list = []
     idx = 0

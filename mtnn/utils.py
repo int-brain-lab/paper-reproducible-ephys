@@ -80,34 +80,30 @@ cov_idx_dict = {'lab': (lab_offset,session_offset),
                'noise': (noise_offset,noise_offset+1),
                'all': (1,noise_offset+1)}
 
-glm_leave_one_out_cov_idx = (cov_idx_dict['lab'],
-                             cov_idx_dict['session'],
-                             cov_idx_dict['x'],
-                             cov_idx_dict['y'],
-                             cov_idx_dict['z'],
-                             cov_idx_dict['waveform amplitude'],
-                             cov_idx_dict['waveform width'],
-                             cov_idx_dict['paw speed'],
-                             cov_idx_dict['nose speed'],
-                             cov_idx_dict['pupil diameter'],
-                             cov_idx_dict['motion energy'],
-                             cov_idx_dict['go cue'],
-                             cov_idx_dict['choice'], 
-                             cov_idx_dict['lick'],
-                             cov_idx_dict['decision strategy (GLM-HMM)'],
-                             cov_idx_dict['brain region'],
-                             cov_idx_dict['noise'])
+leave_out_covs_for_glm = ['lab','session','x','y','z',
+                         'waveform amplitude','waveform width',
+                         'paw speed','nose speed','pupil diameter',
+                         'motion energy','go cue','choice','lick',
+                         'decision strategy (GLM-HMM)','brain region','noise']
 
-grouped_cov_idx_dict = {'lab': ('lab',),
-                        'session': ('session',),
-                        'ephys': ('x','y','z','waveform amplitude','waveform width','brain region',),
-                        'task': ('stimuli','go cue','choice','reward',),
-                        'behavioral': ('paw speed','nose speed','pupil diameter',
-                                       'lick','motion energy','wheel velocity','first movement'),
-                        'mouse prior': ('mouse prior','last mouse prior'), 
-                        'decision strategy (GLM-HMM)': ('decision strategy (GLM-HMM)',),
-                        'noise': ('noise',),
-                        'all': ('all',)}
+grouped_cov_idx_dict = {'ephys': ['x','y','z','waveform amplitude','waveform width','brain region'],
+                        'task': ['stimuli','go cue','first movement','choice','reward'],
+                        'behavioral': ['paw speed','nose speed','pupil diameter',
+                                       'lick','motion energy','wheel velocity']}
+
+sim_cov_idx_dict = {'left stimuli': (1,2),
+                    'right stimuli': (2,3),
+                    'incorrect': (3,4),
+                    'correct': (4,5),
+                    'first movement': (5,6),
+                    'mouse prior': (6,7),
+                    'last mouse prior': (7,8),
+                    'wheel velocity': (8,9),}
+
+sim_static_idx = np.asarray([6,7])
+sim_static_bool = np.zeros(8).astype(bool)
+sim_static_bool[sim_static_idx] = True
+
 
 def check_mtnn_criteria(one=None):
     if one is None:
@@ -605,11 +601,11 @@ def reshape_flattened(flattened, shape, trim=0):
 def load_original(eids):
     feature_list, output_list, cluster_number_list, session_list, trial_number_list = [], [], [], [], []
     for eid in eids:
-        feature_list.append(np.load(save_data_path().joinpath('original_data', f'{eid}_feature.npy')))
-        output_list.append(np.load(save_data_path().joinpath('original_data', f'{eid}_output.npy')))
-        cluster_number_list.append(np.load(save_data_path().joinpath('original_data', f'{eid}_clusters.npy')))
-        session_list.append(np.load(save_data_path().joinpath('original_data', f'{eid}_session_info.npy'), allow_pickle=True))
-        trial_number_list.append(np.load(save_data_path().joinpath('original_data', f'{eid}_trials.npy')))
+        feature_list.append(np.load(save_data_path(figure='figure8').joinpath('original_data', f'{eid}_feature.npy')))
+        output_list.append(np.load(save_data_path(figure='figure8').joinpath('original_data', f'{eid}_output.npy')))
+        cluster_number_list.append(np.load(save_data_path(figure='figure8').joinpath('original_data', f'{eid}_clusters.npy')))
+        session_list.append(np.load(save_data_path(figure='figure8').joinpath('original_data', f'{eid}_session_info.npy'), allow_pickle=True))
+        trial_number_list.append(np.load(save_data_path(figure='figure8').joinpath('original_data', f'{eid}_trials.npy')))
         
     return feature_list, output_list, cluster_number_list, session_list, trial_number_list
 
