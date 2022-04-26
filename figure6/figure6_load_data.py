@@ -16,8 +16,8 @@ def load_dataframe(exists_only=False):
 
 def load_data(event='move', split='rt', norm='z_score', smoothing=None, exists_only=False):
 
-    smoothing = smoothing or 'none'
-    norm = norm or 'none'
+    smoothing = smoothing or None
+    norm = norm or None
 
     df_path = save_data_path(figure='figure6').joinpath(
         f'figure6_data_event_{event}_split_{split}_smoothing_{smoothing}_norm_{norm}.npz')
