@@ -36,52 +36,13 @@ from statsmodels.stats.multitest import multipletests
 from sklearn.cross_decomposition import CCA
 from sklearn.linear_model import Ridge
 
-from reproducible_ephys_functions import filter_recordings, save_figure_path
+from reproducible_ephys_functions import (filter_recordings, 
+save_figure_path, labs, figure_style)
 from figure6.figure6_load_data import load_dataframe, load_data
-
 
 T_BIN = 0.02  # time bin size in seconds
 one = ONE()
-
-def labs_maps():
-    lab_number_map = {'cortexlab': 'Lab 1', 'mainenlab': 'Lab 2', 
-                      'zadorlab': 'Lab 3',
-                      'churchlandlab': 'Lab 4', 'angelakilab': 'Lab 5', 
-                      'wittenlab': 'Lab 6',
-                      'hoferlab': 'Lab 7', 'mrsicflogellab': 'Lab 7', 
-                      'danlab': 'Lab 8',
-                      'steinmetzlab': 'Lab 9', 'churchlandlab_ucla': 'Lab 10'}
-    institution_map = {'cortexlab': 'UCL', 'mainenlab': 'CCU', 
-                        'zadorlab': 'CSHL (Z)',
-                       'churchlandlab': 'CSHL (C)', 'angelakilab': 'NYU',
-                       'wittenlab': 'Princeton', 'hoferlab': 'SWC', 
-                       'mrsicflogellab': 'SWC',
-                       'danlab': 'Berkeley', 'steinmetzlab': 'UW', 
-                       'churchlandlab_ucla': 'UCLA'}
-    colors = np.concatenate([sns.color_palette("Set1")[0:4],
-                             sns.color_palette("Set1")[6:],
-                             [[0, 0, 0]], [sns.color_palette("Dark2")[3]],
-                             [sns.color_palette("Set2")[0]]])
-    institutions = ['UCL', 'CCU', 'CSHL (Z)', 'CSHL (C)', 'NYU', 'Princeton', 
-                    'SWC', 'Berkeley','UW', 'UCLA']
-    institution_colors = {}
-    for i, inst in enumerate(institutions):
-        institution_colors[inst] = colors[i]
-    return lab_number_map, institution_map, institution_colors
-
-
-def reg_cols():
-    
-    return {'PPC': sns.color_palette('colorblind')[0],
-        'CA1': sns.color_palette('colorblind')[2],
-        'DG': sns.color_palette('muted')[2],
-        'LP': sns.color_palette('colorblind')[4],
-        'PO': sns.color_palette('colorblind')[6],
-        'RS': sns.color_palette('Set2')[0],
-        'FS': sns.color_palette('Set2')[1],
-        'RS1': sns.color_palette('Set2')[2],
-        'RS2': sns.color_palette('Set2')[3]}    
-    
+   
     
 def confidence_ellipse(x, y, ax, n_std=3.0, facecolor='none', **kwargs):
     """
@@ -137,22 +98,27 @@ def confidence_ellipse(x, y, ax, n_std=3.0, facecolor='none', **kwargs):
 
 
 
-def all_panels(rm_unre=True, align='move', split='rt',xyz_res=False, re_rank=2, fdr=True):
+def all_panels(rm_unre=True, align='move', split='rt',
+               xyz_res=False, re_rank=2, fdr=True,
+               permute_include=True):
 
     # load metainfo df, row per cell
     concat_df = load_dataframe()
     # load PSTHs, one per cell                 
-    data = load_data(event=align, split=split)
+    data = load_data(event=align, split=split, smoothing=None)
     all_frs = data['all_frs']
     
-    # get colors and short lab names                   
-    _, b, lab_cols = labs_maps()
+    # get colors and short lab names 
+    from reproducible_ephys_functions import labs                 
+    _, b, lab_cols = labs()
     ts = 'fast|slow RT PETH'
     
     # include has minimum number of clusters as being 3
     concat_df = filter_recordings(concat_df)
-    all_frs = all_frs[concat_df['permute_include'] == 1, :]
-    concat_df = concat_df[concat_df['permute_include'] == 1].reset_index()
+    
+    if permute_include:
+        all_frs = all_frs[concat_df['permute_include'] == 1, :]
+        concat_df = concat_df[concat_df['permute_include'] == 1].reset_index()
 
     if rm_unre:
         # restrict to responsive units
@@ -251,7 +217,7 @@ def all_panels(rm_unre=True, align='move', split='rt',xyz_res=False, re_rank=2, 
     axs['G'].legend(handles=le,loc='lower left', bbox_to_anchor=(0.1,1),
                     ncol=3, prop={'size': 8}).set_draggable(True)
                                     
-    Dc = reg_cols()
+    Dc = figure_style(return_colors=True)
     regs_ = Counter(regs)    
     cols_reg = [Dc[x] for x in regs]
     axs['B'].scatter(emb[:,0],emb[:,1],marker='o',c=cols_reg, s=2)
