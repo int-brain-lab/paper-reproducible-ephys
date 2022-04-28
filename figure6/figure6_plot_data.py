@@ -111,6 +111,8 @@ def all_panels(rm_unre=True, align='move', split='rt',
     # get colors and short lab names 
     from reproducible_ephys_functions import labs                 
     _, b, lab_cols = labs()
+    
+
     ts = 'fast|slow RT PETH'
     
     # include has minimum number of clusters as being 3
@@ -139,9 +141,11 @@ def all_panels(rm_unre=True, align='move', split='rt',
         clf = Ridge(alpha=0)
         clf.fit(xyz, emb)
         emb_p = clf.predict(xyz)
-        res = emb_p - emb        
+        res = emb_p - emb
+        #return res, emb_p, emb     
         emb = res
-
+        print('xyz influence subtracted')
+        
     # get reproduction using serveral first PCs
     u, s, vh = np.linalg.svd(y)
     y_res = {}
@@ -172,8 +176,8 @@ def all_panels(rm_unre=True, align='move', split='rt',
 
     sess = np.array(sess)
     
-    fig = plt.figure(figsize=(8, 7))
-    figs = plt.figure(figsize=(8, 9))
+    fig = plt.figure(figsize=(8, 7),facecolor='w')
+    figs = plt.figure(figsize=(8, 9),facecolor='w')
 
     inner = [['Ea'],
              ['Eb']]
@@ -210,14 +214,15 @@ def all_panels(rm_unre=True, align='move', split='rt',
         return np.sqrt(np.dot(x, x) - 2 * np.dot(x, y) + np.dot(y, y))    
      
 
-    le = [Patch(facecolor=lab_cols[b[lab]], 
+    le_labs = [Patch(facecolor=lab_cols[b[lab]], 
            edgecolor=lab_cols[b[lab]],
            label=b[lab]) for lab in labs_] 
                
-    axs['G'].legend(handles=le,loc='lower left', bbox_to_anchor=(0.1,1),
+    axs['G'].legend(handles=le_labs,loc='lower left', bbox_to_anchor=(0.1,1),
                     ncol=3, prop={'size': 8}).set_draggable(True)
                                     
     Dc = figure_style(return_colors=True)
+
     regs_ = Counter(regs)    
     cols_reg = [Dc[x] for x in regs]
     axs['B'].scatter(emb[:,0],emb[:,1],marker='o',c=cols_reg, s=2)
@@ -229,7 +234,7 @@ def all_panels(rm_unre=True, align='move', split='rt',
 
 
     # shuffle test
-    nrand = 1000  #random region allocations    
+    nrand = 10000 #random region allocations    
     centsr = []
     for shuf in range(nrand):
         regsr = regs.copy()
@@ -432,8 +437,7 @@ def all_panels(rm_unre=True, align='move', split='rt',
             confidence_ellipse(x[:,0], x[:,1], axs3[ms[k]], n_std=1.0,
                                edgecolor=lab_cols[b[lab]])
 
-        # shuffle test
-        nrand = 1000  #random lab allocations    
+        # shuffle test 
         centsr = []
         for shuf in range(nrand):
             labsr = labs2.copy()
@@ -446,11 +450,11 @@ def all_panels(rm_unre=True, align='move', split='rt',
 
         ps = {}        
         for lab in cents:
-            cs = np.mean([cents[l] for l in cents if l!=lab],axis=0)
+            cs = np.mean([cents[l] for l in cents],axis=0)# if l!=lab
             dist = distE(cents[lab],cs)
              
             null_d = [distE(cenr[lab],
-                      np.mean([cenr[l] for l in cenr if l!=lab],axis=0)) 
+                      np.mean([cenr[l] for l in cenr],axis=0))# if l!=lab 
                       for cenr in centsr]
             p = 1 - (0.01 * percentileofscore(null_d,dist))
             ps[lab] = np.round(p,3) 
@@ -474,8 +478,11 @@ def all_panels(rm_unre=True, align='move', split='rt',
                          transform=axs3[ms[k]].transAxes,
                          fontsize=16,  va='top', 
                          ha='right', weight='bold')
-          
-
+        
+        if k == 1:  
+            axs3[ms[k]].legend(handles=le_labs,loc='lower left',
+                               bbox_to_anchor=(0.1,1),
+                               ncol=3, prop={'size': 8}).set_draggable(True)    
         
         # plot average PSTHs across labs
         for lab in labs_:  
@@ -532,8 +539,7 @@ def all_panels(rm_unre=True, align='move', split='rt',
     axs['B'].set_ylim([-0.7, 0.7])
     
     axs['D'].set_xlim([-0.2, 0.8])
-    axs['D'].set_ylim([-3.1, 8.5])
-    
+    axs['D'].set_ylim([-3.1, 8.5])   
 
     fig.tight_layout()
     figs.tight_layout()
@@ -541,3 +547,5 @@ def all_panels(rm_unre=True, align='move', split='rt',
     fig_path = save_figure_path(figure='figure6')
     fig.savefig(fig_path.joinpath('figure6.png'))
     figs.savefig(fig_path.joinpath('figure6_supp1.png'))
+    
+    
