@@ -10,6 +10,8 @@ from mtnn import *
 
 from reproducible_ephys_functions import save_data_path
 
+data_load_path = save_data_path(figure='figure8').joinpath('mtnn_data')
+
 regions = list(get_acronym_dict().keys())
 acronym_dict_reverse = get_acronym_dict_reverse()
 region_colors = get_region_colors()
@@ -117,7 +119,7 @@ def compute_scores_for_figure_10(model_config,
     preds_shape = np.load(load_path.joinpath('test/shape.npy'))
     obs = np.load(load_path.joinpath('test/output.npy'))
     test_feature = np.load(load_path.joinpath('test/feature.npy'))
-    mean_frs = compute_mean_frs()
+    mean_frs = compute_mean_frs(data_load_path.joinpath('train/shape.npy'), data_load_path.joinpath('train/output.npy'))
     
     obs_list = []
     feature_list = []

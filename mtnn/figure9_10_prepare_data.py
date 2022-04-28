@@ -636,12 +636,12 @@ for i, eid in notebook.tqdm(enumerate(mtnn_eids)):
 
         unit_id += 1
         
-#         nbins = int(1.5/binwidth)
-#         raster = np.zeros((len(new_trialsdf), nbins))
-#         for trial in range(len(new_trialsdf)):
-#             for n in range(nbins):
-#                 idx = np.logical_and(adj_spkt>=1.5*trial+binwidth*n, adj_spkt<1.5*trial+binwidth*(n+1))
-#                 raster[trial,n] = idx.astype(int).sum() / binwidth
+        nbins = int(1.5/binwidth)
+        raster = np.zeros((len(new_trialsdf), nbins))
+        for trial in range(len(new_trialsdf)):
+            for n in range(nbins):
+                idx = np.logical_and(adj_spkt>=1.5*trial+binwidth*n, adj_spkt<1.5*trial+binwidth*(n+1))
+                raster[trial,n] = idx.astype(int).sum() / binwidth
                 
 #         plt.figure(figsize=(8,2))
 #         plt.plot(raster.mean(0), color='k')
@@ -745,8 +745,8 @@ np.save(save_path_val.joinpath('feature.npy'), np.concatenate(val_feature))
 np.save(save_path_test.joinpath('feature.npy'), np.concatenate(test_feature))
 
 np.save(save_path_train.joinpath('output.npy'), np.concatenate(train_output))
-np.save(save_path_val.joinpath('feature.npy'), np.concatenate(val_output))
-np.save(save_path_test.joinpath('feature.npy'), np.concatenate(test_output))
+np.save(save_path_val.joinpath('output.npy'), np.concatenate(val_output))
+np.save(save_path_test.joinpath('output.npy'), np.concatenate(test_output))
 
 np.save(save_path.joinpath('glm_scores.npy'), simulated_glm_scores)
 np.save(save_path.joinpath('glm_leave_one_out.npy'), simulated_glm_leave_one_out)

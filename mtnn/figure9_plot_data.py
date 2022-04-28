@@ -25,10 +25,10 @@ HIDDEN_SIZE_STATIC = 64
 HIDDEN_SIZE_DYNAMIC = 64
 n_layers = 2
 
-do_train = False
+do_train = True
 do_train_on_glm_covariates = True
 
-n_epochs = 1
+n_epochs = 100
 remove_cov = None
 only_keep_cov = None
 
