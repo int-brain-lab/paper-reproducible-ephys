@@ -44,7 +44,6 @@ def plot_raster_and_psth(pid, neuron, contrasts=(1, 0.25, 0.125, 0.0625, 0), sid
     slide_kwargs_ff = kwargs.get('slide_kwargs_ff', default_params['slide_kwargs_ff'])
     kernel_kwargs = kwargs.get('kernel_kwargs', default_params['kernel_kwargs'])
 
-    print("smoothing: {}".format(smoothing))
 
     figsize = kwargs.get('figsize', (9, 12))
     labelsize = kwargs.get('labelsize', 8)
@@ -118,15 +117,15 @@ def plot_raster_and_psth(pid, neuron, contrasts=(1, 0.25, 0.125, 0.0625, 0), sid
 
     ax[0].set_yticks(ylabel_pos)
     ax[0].set_yticklabels(contrasts)
-    ax[0].axvline(0, color=zero_line_c, ls='--', linewidth=2)
+    ax[0].axvline(0, color=zero_line_c, ls='--')
     ax[0].set_xlim(pre_time - fr_bin_size / 2, post_time + fr_bin_size / 2)
     ax[0].set_ylim(0, counter)
     ax[0].spines['right'].set_visible(False)
     ax[0].spines['top'].set_visible(False)
     ax[0].spines['left'].set_visible(False)
     ax[0].spines['bottom'].set_visible(False)
-    ax[0].tick_params(left=False, right=False, labelbottom=False, bottom=False, labelsize=labelsize)
-    ax[0].set_title("Contrast", loc='left', size=labelsize)
+    ax[0].tick_params(left=False, right=False, labelbottom=False, bottom=False)  # , labelsize=labelsize)
+    ax[0].set_title("Contrast", loc='left')  # , size=labelsize)
 
     # Comppute the psths for firing rate for each contrast
     for c in contrasts:
@@ -143,9 +142,9 @@ def plot_raster_and_psth(pid, neuron, contrasts=(1, 0.25, 0.125, 0.0625, 0), sid
     ax[1].axvline(0, color=zero_line_c, ls='--', linewidth=2)
     ax[1].spines['right'].set_visible(False)
     ax[1].spines['top'].set_visible(False)
-    ax[1].set_ylabel("Firing rate (sp/s)", size=labelsize + 3)
+    ax[1].set_ylabel("Firing rate (sp/s)")  # , size=labelsize + 3)
     ax[1].set_xlim(left=pre_time, right=post_time)
-    ax[1].tick_params(labelsize=labelsize)
+    # ax[1].tick_params(labelsize=labelsize)
 
     if plot_ff:
         for c in contrasts:
@@ -159,18 +158,18 @@ def plot_raster_and_psth(pid, neuron, contrasts=(1, 0.25, 0.125, 0.0625, 0), sid
         ax[2].axvline(0, color=zero_line_c, ls='--', linewidth=2)
         ax[2].spines['right'].set_visible(False)
         ax[2].spines['top'].set_visible(False)
-        ax[2].set_ylabel("Fano Factor", size=labelsize + 3)
+        ax[2].set_ylabel("Fano Factor")  # , size=labelsize + 3)
         ax[2].set_xlim(left=pre_time, right=post_time)
-        ax[2].tick_params(labelsize=labelsize)
+        # ax[2].tick_params(labelsize=labelsize)
         if align_event == 'move':
-            ax[2].set_xlabel("Time from movement onset (s)", size=labelsize + 3)
+            ax[2].set_xlabel("Time from movement onset (s)")  # , size=labelsize + 3)
         else:
-            ax[2].set_xlabel("Time from stimulus onset (s)", size=labelsize + 3)
+            ax[2].set_xlabel("Time from stimulus onset (s)")  # , size=labelsize + 3)
     else:
         if align_event == 'move':
-            ax[1].set_xlabel("Time from movement onset (s)", size=labelsize + 3)
+            ax[1].set_xlabel("Time from movement onset (s)")  # , size=labelsize + 3)
         else:
-            ax[1].set_xlabel("Time from stimulus onset (s)", size=labelsize + 3)
+            ax[1].set_xlabel("Time from stimulus onset (s)")  # , size=labelsize + 3)
 
 
     return ax
