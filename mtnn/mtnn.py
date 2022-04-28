@@ -449,21 +449,24 @@ def load_test_model(model_config, remove_cov, only_keep_cov,
                             hidden_dim_dynamic=model_config['hidden_size_dynamic'], 
                             n_layers=model_config['n_layers'])
     
-    load_path = save_data_path(figure='figure9')
+    data_load_path = save_data_path(figure='figure8')
+    sim_data_load_path = save_data_path(figure='figure10')
+    model_load_path = save_data_path(figure='figure9')
+    sim_model_load_path = save_data_path(figure='figure10')
     
     if not simulated:
-        feature_fname = load_path.joinpath(f'mtnn_data/{data_dir}/feature.npy')
-        output_fname = load_path.joinpath(f'mtnn_data/{data_dir}/output.npy')
+        feature_fname = data_load_path.joinpath(f'mtnn_data/{data_dir}/feature.npy')
+        output_fname = data_load_path.joinpath(f'mtnn_data/{data_dir}/output.npy')
     else:
-        feature_fname = load_path.joinpath(f'simulated_data/{data_dir}/feature.npy')
-        output_fname = load_path.joinpath(f'simulated_data/{data_dir}/output.npy')
+        feature_fname = sim_data_load_path.joinpath(f'simulated_data/{data_dir}/feature.npy')
+        output_fname = sim_data_load_path.joinpath(f'simulated_data/{data_dir}/output.npy')
     
     if model_name_suffix is None:
         model_name = f'trained_models/state_dict_rem={remove_cov}_keep={only_keep_cov}'
     else:
         model_name = f'trained_models/state_dict_rem={remove_cov}_keep={only_keep_cov}_{model_name_suffix}'
     model_name = model_name + '_simulated.pt' if simulated else model_name + '.pt'
-    model_name = load_path.joinpath(model_name)
+    model_name = model_load_path.joinpath(model_name) if not simulated else sim_model_load_path.joinpath(model_name)
     
     model.load_state_dict(torch.load(model_name))
     preds, loss = run_eval(model,feature_fname, output_fname,

@@ -21,6 +21,8 @@ from mtnn import *
 
 from reproducible_ephys_functions import save_data_path
 
+data_load_path = save_data_path(figure='figure8').joinpath('mtnn_data')
+
 def split_by_stimulus(feature):
     
     stim = feature[0,:,:,cov_idx_dict['stimuli'][0]:cov_idx_dict['stimuli'][1]].sum(1)
@@ -412,7 +414,7 @@ def generate_figure9_supplement1(model_config,
     colors = sns.xkcd_palette(color_names)
     shapes = ['o', 's', '^', '+']
 
-    mean_frs = compute_mean_frs()
+    mean_frs = compute_mean_frs(data_load_path.joinpath('train/shape.npy'), data_load_path.joinpath('train/output.npy'))
     
     obs_list = []
     feature_list = []

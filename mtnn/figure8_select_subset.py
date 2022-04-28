@@ -224,8 +224,8 @@ np.save(save_path_val.joinpath('feature.npy'), np.concatenate(val_feature))
 np.save(save_path_test.joinpath('feature.npy'), np.concatenate(test_feature))
 
 np.save(save_path_train.joinpath('output.npy'), np.concatenate(train_output))
-np.save(save_path_val.joinpath('feature.npy'), np.concatenate(val_output))
-np.save(save_path_test.joinpath('feature.npy'), np.concatenate(test_output))
+np.save(save_path_val.joinpath('output.npy'), np.concatenate(val_output))
+np.save(save_path_test.joinpath('output.npy'), np.concatenate(test_output))
 
 np.save(save_path.joinpath('session_info.npy'), np.asarray(session_list))
 np.save(save_path.joinpath('clusters.npy'), np.asarray(cluster_subset_list, dtype=object))
