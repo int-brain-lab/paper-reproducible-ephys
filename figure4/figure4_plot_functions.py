@@ -27,7 +27,7 @@ default_params = {'fr_bin_size': 0.01,
 
 
 def plot_raster_and_psth(pid, neuron, contrasts=(1, 0.25, 0.125, 0.0625, 0), side='all', feedback='all',
-                         one=None, ba=None, plot_ff=False, **kwargs):
+                         ax=None, one=None, ba=None, plot_ff=False, **kwargs):
 
     one = one or ONE()
     ba = ba or AllenAtlas()
@@ -43,6 +43,8 @@ def plot_raster_and_psth(pid, neuron, contrasts=(1, 0.25, 0.125, 0.0625, 0), sid
     slide_kwargs_fr = kwargs.get('slide_kwargs_fr', default_params['slide_kwargs_fr'])
     slide_kwargs_ff = kwargs.get('slide_kwargs_ff', default_params['slide_kwargs_ff'])
     kernel_kwargs = kwargs.get('kernel_kwargs', default_params['kernel_kwargs'])
+
+    print("smoothing: {}".format(smoothing))
 
     figsize = kwargs.get('figsize', (9, 12))
     labelsize = kwargs.get('labelsize', 8)
@@ -81,10 +83,11 @@ def plot_raster_and_psth(pid, neuron, contrasts=(1, 0.25, 0.125, 0.0625, 0), sid
     else:
         eventBase = None
 
-    if plot_ff:
-        fig, ax = plt.subplots(3, 1, figsize=figsize)
-    else:
-        fig, ax = plt.subplots(2, 1, figsize=figsize)
+    if ax is None:
+        if plot_ff:
+            fig, ax = plt.subplots(3, 1, figsize=figsize)
+        else:
+            fig, ax = plt.subplots(2, 1, figsize=figsize)
 
     boundary_width = 0.01
     base_grey = 0.3
@@ -170,4 +173,4 @@ def plot_raster_and_psth(pid, neuron, contrasts=(1, 0.25, 0.125, 0.0625, 0), sid
             ax[1].set_xlabel("Time from stimulus onset (s)", size=labelsize + 3)
 
 
-    return fig, ax
+    return ax
