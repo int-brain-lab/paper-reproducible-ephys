@@ -139,7 +139,7 @@ def plot_raster_and_psth(pid, neuron, contrasts=(1, 0.25, 0.125, 0.0625, 0), sid
         ax[1].fill_between(t, fr[0] + fr_std[0] / np.sqrt(len(events)), fr[0] - fr_std[0] / np.sqrt(len(events)),
                            color=str(1 - (base_grey + c * (1 - base_grey))), alpha=0.3)
 
-    ax[1].axvline(0, color=zero_line_c, ls='--', linewidth=2)
+    ax[1].axvline(0, color=zero_line_c, ls='--')
     ax[1].spines['right'].set_visible(False)
     ax[1].spines['top'].set_visible(False)
     ax[1].set_ylabel("Firing rate (sp/s)")  # , size=labelsize + 3)
@@ -155,7 +155,7 @@ def plot_raster_and_psth(pid, neuron, contrasts=(1, 0.25, 0.125, 0.0625, 0), sid
                                        slide_kwargs=slide_kwargs_ff, return_ff=True)
             ax[2].plot(t, ff[0], c=str(1 - (base_grey + c * (1 - base_grey))))
 
-        ax[2].axvline(0, color=zero_line_c, ls='--', linewidth=2)
+        ax[2].axvline(0, color=zero_line_c, ls='--')
         ax[2].spines['right'].set_visible(False)
         ax[2].spines['top'].set_visible(False)
         ax[2].set_ylabel("Fano Factor")  # , size=labelsize + 3)
@@ -170,6 +170,5 @@ def plot_raster_and_psth(pid, neuron, contrasts=(1, 0.25, 0.125, 0.0625, 0), sid
             ax[1].set_xlabel("Time from movement onset (s)")  # , size=labelsize + 3)
         else:
             ax[1].set_xlabel("Time from stimulus onset (s)")  # , size=labelsize + 3)
-
 
     return ax
