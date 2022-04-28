@@ -1,4 +1,4 @@
-from mtnn.utils import get_mtnn_eids, get_traj, featurize
+from utils import get_mtnn_eids, get_traj, featurize
 from reproducible_ephys_functions import save_data_path, save_dataset_info
 from one.api import ONE
 from ibllib.atlas import AllenAtlas

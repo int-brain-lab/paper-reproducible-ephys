@@ -7,7 +7,7 @@ from one.api import ONE
 from one.alf.exceptions import ALFObjectNotFound
 import sys 
 sys.path.append('..')
-from reproducible_ephys_functions import query, eid_list
+from reproducible_ephys_functions import query#, eid_list
 from tqdm import notebook
 from collections import defaultdict
 import brainbox.behavior.wheel as wh
