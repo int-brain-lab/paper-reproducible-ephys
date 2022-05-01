@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 from reproducible_ephys_functions import filter_recordings, BRAIN_REGIONS
 from figure7.figure7_load_data import load_data, load_dataframe
 import numpy as np
+from matplotlib import cm, colors
 
 df = load_dataframe()
 data = load_data(event='move', smoothing='sliding', norm=None)
@@ -30,13 +31,12 @@ for reg in BRAIN_REGIONS:
     ax[1][1].plot(data['time_ff'], np.nanmean(ffs_l_reg, axis=0))
     fig.suptitle(reg)
 
-from matplotlib import cm, colors
+
 for reg in BRAIN_REGIONS:
     fig = plt.figure()
     ax = fig.add_subplot(projection='3d')
     df_reg = df_filt_reg.get_group(reg)
-    norm = colors.Normalize(vmin=np.nanmin(df_reg['avg_ff_post_move']), vmax=np.nanmax(df_reg['avg_ff_post_move']),
-                                       clip=False)
+    norm = colors.Normalize(vmin=np.nanmin(df_reg['avg_ff_post_move']), vmax=np.nanmax(df_reg['avg_ff_post_move']), clip=False)
     mapper = cm.ScalarMappable(norm=norm, cmap=cm.get_cmap('viridis'))
     cluster_color = np.array([mapper.to_rgba(col) for col in df_reg['avg_ff_post_move']])
     s = np.ones_like(df_reg['x']) * 2

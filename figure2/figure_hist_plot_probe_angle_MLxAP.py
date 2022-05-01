@@ -4,7 +4,7 @@
 Created on Tue Oct  5 13:33:54 2021
 
 This Python Script generates a figure plotting the PLANNED repeated site
-insertion coordinate at the brain surface at [0,0], and then the VECTORS from 
+insertion coordinate at the brain surface at [0,0], and then the VECTORS from
 planned surface to actual surface coord of histology tracks.  The points
 of the histology track surface coords are coloured based on lab affiliation.
 
@@ -27,17 +27,17 @@ lab_number_map, institution_map, institution_colors = labs()
 
 def plot_probe_angle_histology_panel():
     """
-    Plot the whole probe histology panel, consisting of: 
-    
-    * scatterplot of the PLANNED to HISTOLOGY angles at brain surface, 
-    
-    * horizontal boxplot plus distplot (density plot) of all PLANNED to 
+    Plot the whole probe histology panel, consisting of:
+
+    * scatterplot of the PLANNED to HISTOLOGY angles at brain surface,
+
+    * horizontal boxplot plus distplot (density plot) of all PLANNED to
     HISTOLOGY angle values (to see total distribution),
-    
+
     * horizontal boxplots of each labs distribution
-    
+
     * heat map of each labs permutation test p-value.?
-    
+
     Panel saved to output as: angle_histology_panel.svg
 
     Returns
@@ -47,9 +47,9 @@ def plot_probe_angle_histology_panel():
     """
 
     # generate scatterplot in first axes
-    plot_probe_angle_histology() # saves as SVG to output
-    
-    # generate histogram/density plot of Euclidean distance at surface from 
+    plot_probe_angle_histology()  # saves as SVG to output
+
+    # generate histogram/density plot of Euclidean distance at surface from
     # planned to actual for all trajectories
     # AND plot by lab
     plot_probe_angle_histology_all_lab()
@@ -79,20 +79,20 @@ def plot_probe_angle_histology():
 
     for idx, row in probe_data.iterrows():
 
-       ax1.plot([row['angle_ml'], 0], [row['angle_ap'], 0],
-                color=institution_colors[institution_map[row['lab']]], linewidth=0.15, alpha=0.8)
-       ax1.plot(row['angle_ml'], row['angle_ap'], color=institution_colors[institution_map[row['lab']]],
-                marker="o", markersize=0.5, alpha=0.8, markeredgewidth=0.5)
+        ax1.plot([row['angle_ml'], 0], [row['angle_ap'], 0],
+                 color=institution_colors[institution_map[row['lab']]], linewidth=0.15, alpha=0.8)
+        ax1.plot(row['angle_ml'], row['angle_ap'], color=institution_colors[institution_map[row['lab']]],
+                 marker="o", markersize=0.5, alpha=0.8, markeredgewidth=0.5)
 
     # Plot the mean micro coords
     # lab means
     lab_mean_ml = probe_data.groupby('lab')['angle_ml'].mean()
     lab_mean_ap = probe_data.groupby('lab')['angle_ap'].mean()
-    
+
     for ml, ap, k in zip(lab_mean_ml, lab_mean_ap, lab_mean_ml.keys()):
         ax1.plot(ml, ap, color=institution_colors[institution_map[k]], marker="+", markersize=3, alpha=0.5,
                  label=institution_map[k])
-    
+
     # overall mean (mean of labs)
     mean_ml = probe_data['angle_ml'].mean()
     mean_ap = probe_data['angle_ap'].mean()
@@ -111,15 +111,14 @@ def plot_probe_angle_histology():
     angle_mean_include = np.mean(probe_data['angle'][probe_data['include'] == 1].values)
     angle_std_include = np.std(probe_data['angle'][probe_data['include'] == 1].values)
 
-
     # set x/y axis labels
     ax1.set_xlabel('histology ML angle (degrees)', fontsize=6)
     ax1.set_ylabel('histology AP angle (degrees)', fontsize=6)
     # add mean trageting error distance to title
     ax1.set_title('Mean (SD) angle \n' +
                   'ALL : ' + str(np.around(angle_mean_all, 1)) + ' (' + str(np.around(angle_std_all, 2)) + ')' + ' degrees \n' +
-                  'PASS : ' + str(np.around(angle_mean_include, 1)) + ' (' + str(np.around(angle_std_include, 2)) + ')' + ' degrees',
-                  fontsize=8)
+                  'PASS : ' + str(np.around(angle_mean_include, 1)) + ' (' + str(np.around(angle_std_include, 2)) + ')'
+                  + ' degrees', fontsize=8)
 
     ax1.xaxis.set_major_locator(plt.MaxNLocator(7))
     ax1.yaxis.set_major_locator(plt.MaxNLocator(7))
@@ -141,7 +140,7 @@ def plot_probe_angle_histology():
 
     for ml, ap, k in zip(lab_mean_ml, lab_mean_ap, lab_mean_ml.keys()):
         axav.plot(ml, ap, color=institution_colors[institution_map[k]], marker="+", markersize=5, alpha=0.7,
-                 label=institution_map[k])
+                  label=institution_map[k])
     axav.plot(mean_ml, mean_ap, color='k', marker="+", markersize=8, alpha=0.7, label="MEAN")
 
     plt.tight_layout()
@@ -152,7 +151,7 @@ def plot_probe_angle_histology():
 
 
 def plot_probe_angle_histology_all_lab(min_rec_per_lab=4):
-    '''Plot the DISTANCES from planned to histology angles, histology track 
+    '''Plot the DISTANCES from planned to histology angles, histology track
     boxplot of ALL angles - to see its distribution shape.
     '''
 
@@ -196,7 +195,7 @@ def plot_probe_angle_histology_all_lab(min_rec_per_lab=4):
     ax1.tick_params(bottom=False)
 
     sns.stripplot(y='institute', x='angle', data=probe_data, hue='passed', size=1.5, alpha=0.8, orient="h", ax=ax2)
-    
+
     # plot the mean line
     sns.boxplot(showmeans=True, meanline=True, meanprops={'color': 'gray', 'ls': '-', 'lw': 1}, medianprops={'visible': False},
                 whiskerprops={'visible': False}, zorder=10, x="angle", y="institute", data=probe_data, showfliers=False,

@@ -2,7 +2,6 @@
 General functions for reproducible ephys paper
 """
 
-import os
 import pandas as pd
 import seaborn as sns
 import matplotlib
@@ -115,7 +114,7 @@ def traj_list_to_dataframe(trajectories):
     return trajectories
 
 
-def get_insertions(level=2, recompute=False, as_dataframe=False, one=None, freeze=None):
+def get_insertions(level=2, recompute=False, as_dataframe=False, one=None, freeze='biorxiv_2022_05'):
     """
     Find insertions used for analysis based on different exclusion levels
     Level 0: minimum_regions = 0, resolved = True, behavior = False, n_trial >= 0, exclude_critical = True
@@ -178,8 +177,9 @@ def get_histology_insertions(one=None, freeze=None):
         insertions = one.alyx.rest('trajectories', 'list', provenance='Planned', django=f'probe_insertion__in,{list(pids)}')
     else:
         insertions = one.alyx.rest('trajectories', 'list', provenance='Planned', x=-2243, y=-2000, theta=15,
-                               project='ibl_neuropixel_brainwide_01')
+                                   project='ibl_neuropixel_brainwide_01')
     return insertions
+
 
 def recompute_metrics(insertions, one):
     """
@@ -345,7 +345,7 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
             trials = one.load_object(eid, 'trials', collection='alf', attribute=training.TRIALS_KEYS)
             n_trials = trials["stimOn_times"].shape[0]
             behav = training.criterion_delay(n_trials=n_trials, perf_easy=training.compute_performance_easy(trials)).astype(bool)
-        except Exception as err:
+        except Exception:
             sess_details = one.alyx.rest('sessions', 'read', id=eid)
             n_trials = sess_details['n_trials']
             behav = bool(sess_details['extended_qc']['behavior'])
@@ -431,7 +431,7 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
 
 def filter_recordings(df=None, max_ap_rms=40, max_lfp_power=-140, min_neurons_per_channel=0.1, min_channels_region=5,
                       min_regions=3, min_neuron_region=4, min_lab_region=3, min_rec_lab=4, n_trials=400, behavior=False,
-                      exclude_subjects=['DY013', 'ibl_witten_26'], recompute=True, freeze=None):
+                      exclude_subjects=['DY013', 'ibl_witten_26'], recompute=True, freeze='biorxiv_2022_05'):
     """
     Filter values in dataframe according to different exclusion criteria
     :param df: pandas dataframe
@@ -481,12 +481,11 @@ def filter_recordings(df=None, max_ap_rms=40, max_lfp_power=-140, min_neurons_pe
     df = df.groupby('pid').apply(lambda m: m.assign(high_noise=lambda m: m['rms_ap_p90'].median() > max_ap_rms))
     df = df.groupby('pid').apply(lambda m: m.assign(high_lfp=lambda m: m['lfp_power'].median() > max_lfp_power))
     df = df.groupby('pid').apply(lambda m: m.assign(low_yield=lambda m: (m['neuron_yield'].sum() / m['n_channels'].sum())
-                                                                        < min_neurons_per_channel))
+                                                    < min_neurons_per_channel))
     df = df.groupby('pid').apply(lambda m: m.assign(missed_target=lambda m: m['region_hit'].sum() < min_regions))
     df = df.groupby('pid').apply(lambda m: m.assign(low_trials=lambda m: m['n_trials'] < n_trials))
 
     sum_metrics = df['high_noise'] + df['high_lfp'] + df['low_yield'] + df['missed_target'] + df['low_trials'] + df['low_neurons']
-
     if behavior:
         sum_metrics += ~df['behavior']
 
@@ -535,6 +534,7 @@ def filter_recordings(df=None, max_ap_rms=40, max_lfp_power=-140, min_neurons_pe
     df = df.sort_values('original_index').reset_index(drop=True)
 
     return df
+
 
 def repo_path():
     """

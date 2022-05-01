@@ -1,8 +1,7 @@
 import pandas as pd
 import numpy as np
-import logging
 
-from one.api import ONE, One
+from one.api import ONE
 from brainbox.io.one import SpikeSortingLoader
 from iblutil.numerical import ismember
 from ibllib.atlas import AllenAtlas
@@ -11,8 +10,6 @@ from reproducible_ephys_functions import combine_regions, BRAIN_REGIONS, get_ins
 from reproducible_ephys_processing import compute_psth
 from figure4.figure4_load_data import load_data, load_dataframe
 
-
-logger = logging.getLogger('paper_repro_ephys')
 ba = AllenAtlas()
 
 # Defaults parameters for psth computation
@@ -161,6 +158,7 @@ def prepare_data(insertions, one, recompute=False, **kwargs):
             'params': params}
 
     save_path = save_data_path(figure='figure4')
+    print(f'Saving data to {save_path}')
     concat_df.to_csv(save_path.joinpath('figure4_dataframe.csv'))
     smoothing = smoothing or 'none'
     norm = norm or 'none'

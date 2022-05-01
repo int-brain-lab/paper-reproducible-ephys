@@ -17,6 +17,7 @@ default_params = {'fr_bin_size': 0.04,
                   'slide_kwargs_ff': {'n_win': 5, 'causal': 1},
                   'slide_kwargs_fr': {'n_win': 2, 'causal': 1}}
 
+
 def prepare_data(insertions, one, recompute=False, **kwargs):
 
     align_event = kwargs.get('align_event', default_params['align_event'])

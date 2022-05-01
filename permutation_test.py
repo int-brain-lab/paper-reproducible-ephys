@@ -69,7 +69,8 @@ def shuffle_labels(labels1, labels2, n_permut, shuffling):
         permut_indices = np.tile(np.arange(labels1.size), (n_permut, 1))
         # TODO: use numpy random.Generator.permuted to do this in numpy version 1.20
         [np.random.shuffle(permut_indices[i]) for i in range(n_permut)]
-        return permut_indices, np.tile(np.arange(labels1.size), (n_permut, 1))  # TODO: save space of second array, since it's not used?
+        # TODO: save space of second array, since it's not used?
+        return permut_indices, np.tile(np.arange(labels1.size), (n_permut, 1))
 
 
 def plot_permut_test(null_dist, observed_val, p, title=None):
@@ -115,6 +116,7 @@ if __name__ == '__main__':
     rng = np.random.RandomState(2)
     data = rng.normal(0, 1, 25)
     t = time.time()
-    p = permut_test(data, metric=example_metric, labels1=np.tile(np.arange(5), 5), labels2=np.ones(25, dtype=np.int), n_permut=1000, plot=True)
+    p = permut_test(data, metric=example_metric, labels1=np.tile(np.arange(5), 5), labels2=np.ones(25, dtype=np.int),
+                    n_permut=1000, plot=True)
     print(time.time() - t)
     print(p)

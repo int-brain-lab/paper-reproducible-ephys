@@ -28,5 +28,3 @@ def load_data(event='move', norm=None, smoothing='sliding', exists_only=False):
             return dict(np.load(df_path, allow_pickle=True))
         else:
             return None
-
-

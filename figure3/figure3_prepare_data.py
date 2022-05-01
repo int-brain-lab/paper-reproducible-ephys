@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from one.api import ONE, One
+from one.api import ONE
 from ibllib.atlas import AllenAtlas
 from ibllib.pipes.ephys_alignment import EphysAlignment
 from iblutil.numerical import ismember
@@ -10,6 +10,7 @@ from brainbox.io.one import SpikeSortingLoader
 
 from reproducible_ephys_functions import get_insertions, combine_regions, BRAIN_REGIONS, save_data_path, save_dataset_info
 from figure3.figure3_load_data import load_dataframe
+
 
 ba = AllenAtlas()
 
@@ -152,7 +153,7 @@ def prepare_data(insertions, one, recompute=False):
                     for n, neuron_id in enumerate(region_clusters):
                         neuron_fr[n] = np.sum(spikes['clusters'] == neuron_id) / np.max(spikes['times'])
                         spike_amp[n] = np.median(spikes.amps[spikes['clusters'] == neuron_id])
-                        
+
                     # Add to dataframe
                     metrics = pd.concat((metrics, pd.DataFrame(
                         index=[metrics.shape[0] + 1], data={'pid': pid, 'eid': eid, 'probe': probe,
@@ -171,6 +172,7 @@ def prepare_data(insertions, one, recompute=False):
     concat_df_clust = pd.concat(all_df_clust, ignore_index=True)
     concat_df_chns = pd.concat(all_df_chns, ignore_index=True)
     save_path = save_data_path(figure='figure3')
+    print(f'Saving data to {save_path}')
     concat_df_clust.to_csv(save_path.joinpath('figure3_dataframe_clust.csv'))
     concat_df_chns.to_csv(save_path.joinpath('figure3_dataframe_chns.csv'))
     metrics.to_csv(save_path.joinpath('figure3_dataframe_ins.csv'))

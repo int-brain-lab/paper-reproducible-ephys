@@ -10,7 +10,6 @@ from ibllib.atlas import AllenAtlas
 from brainbox.io.one import SpikeSortingLoader
 from brainbox.task.trials import find_trial_ids
 from reproducible_ephys_processing import compute_psth
-from reproducible_ephys_functions import save_figure_path
 
 # Defaults parameters for psth computation
 default_params = {'fr_bin_size': 0.01,
@@ -43,7 +42,6 @@ def plot_raster_and_psth(pid, neuron, contrasts=(1, 0.25, 0.125, 0.0625, 0), sid
     slide_kwargs_fr = kwargs.get('slide_kwargs_fr', default_params['slide_kwargs_fr'])
     slide_kwargs_ff = kwargs.get('slide_kwargs_ff', default_params['slide_kwargs_ff'])
     kernel_kwargs = kwargs.get('kernel_kwargs', default_params['kernel_kwargs'])
-
 
     figsize = kwargs.get('figsize', (9, 12))
     labelsize = kwargs.get('labelsize', 8)

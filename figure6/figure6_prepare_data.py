@@ -46,7 +46,6 @@ def prepare_data(insertions, one, recompute=False, **kwargs):
               'split': split,
               'slide_kwargs': slide_kwargs}
 
-
     if not recompute:
         data_exists = load_data(event=align_event, split='rt', norm=norm, smoothing=smoothing, exists_only=True)
         if data_exists:
@@ -174,6 +173,7 @@ def prepare_data(insertions, one, recompute=False, **kwargs):
     data = {'all_frs': all_frs, 'time': t, 'params': params}
 
     save_path = save_data_path(figure='figure6')
+    print(f'Saving data to {save_path}')
     concat_df.to_csv(save_path.joinpath('figure6_dataframe.csv'))
     smoothing = smoothing or 'none'
     norm = norm or 'none'

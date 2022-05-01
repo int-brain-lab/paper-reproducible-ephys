@@ -1,6 +1,7 @@
 import pandas as pd
 from reproducible_ephys_functions import save_data_path
 
+
 def load_dataframe(df_name='chns', exists_only=False):
     df_path = save_data_path(figure='figure3').joinpath(f'figure3_dataframe_{df_name}.csv')
     if exists_only:

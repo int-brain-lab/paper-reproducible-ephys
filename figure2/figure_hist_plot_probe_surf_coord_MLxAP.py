@@ -4,14 +4,13 @@
 Created on Tue Oct  5 13:33:54 2021
 
 This Python Script generates a figure plotting the PLANNED repeated site
-insertion coordinate at the brain surface at [0,0], and then the VECTORS from 
+insertion coordinate at the brain surface at [0,0], and then the VECTORS from
 planned surface to actual surface coord of histology tracks.  The points
 of the histology track surface coords are coloured based on lab affiliation.
 
 @author: sjwest
 """
 
-from pathlib import Path
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
@@ -24,43 +23,6 @@ from figure2.figure2_load_data import load_dataframe
 from permutation_test import permut_test, permut_dist
 
 lab_number_map, institution_map, institution_colors = labs()
-
-
-def plot_probe_surf_coord_micro_panel():
-    '''
-    Plot the whole probe micro-manipulator panel, consisting of: 
-    
-    * scatterplot of the PLANNED to MICRO coords at brain surface, 
-    
-    * horizontal boxplot plus distplot (density plot) of all PLANNED to 
-    MICRO surf coord distances (to see total distribution),
-    
-    * horizontal boxplots of each labs distribution
-    
-    * heat map of each labs permutation test p-value.?
-    
-    
-    Panel saved to output as: surf_coord_micro_panel.svg
-
-    Returns
-    -------
-    None.
-
-    '''
-    
-    # generate scatterplot in first axes
-    plot_probe_surf_coord(traj='micro') # saves as SVG to output
-    
-    # generate histogram/density plot of Euclidean distance at surface from 
-    # planned to actual for all trajectories AND dotplots by lab
-    plot_probe_distance_all_lab(traj='micro')
-
-    fig_path = save_figure_path(figure='figure2')
-    fig = sc.Figure("66mm", "140mm",
-                    sc.Panel(sc.SVG(fig_path.joinpath('D_probe_surf_coord_micro_label.svg')).scale(0.35)),
-                    sc.Panel(sc.SVG(fig_path.joinpath('D_probe_dist_micro_all_lab.svg')).scale(0.35).move(0, 68)))
-    
-    fig.save(fig_path.joinpath("surf_coord_micro_panel.svg"))
 
 
 def plot_probe_surf_coord_micro_panel():
@@ -156,25 +118,25 @@ def plot_probe_surf_coord(traj='micro'):
 
     for idx, row in probe_data.iterrows():
 
-       ax1.plot([row[f'{traj}_x'], row['planned_x']], [row[f'{traj}_y'], row['planned_y']],
-                color=institution_colors[institution_map[row['lab']]], linewidth=0.2, alpha=0.8)
+        ax1.plot([row[f'{traj}_x'], row['planned_x']], [row[f'{traj}_y'], row['planned_y']],
+                 color=institution_colors[institution_map[row['lab']]], linewidth=0.2, alpha=0.8)
 
-       ax1.plot(row[f'{traj}_x'], row[f'{traj}_y'], color=institution_colors[institution_map[row['lab']]],
-                marker="o", markersize=0.5, alpha=0.8, markeredgewidth=0.5)
+        ax1.plot(row[f'{traj}_x'], row[f'{traj}_y'], color=institution_colors[institution_map[row['lab']]],
+                 marker="o", markersize=0.5, alpha=0.8, markeredgewidth=0.5)
 
     # Plot the mean micro coords
     # lab means
     lab_mean_x = probe_data.groupby('lab')[f'{traj}_x'].mean()
     lab_mean_y = probe_data.groupby('lab')[f'{traj}_y'].mean()
-    
+
     for x, y, k in zip(lab_mean_x, lab_mean_y, lab_mean_x.keys()):
         ax1.plot(x, y, color=institution_colors[institution_map[k]], marker="+", markersize=3, alpha=0.5,
                  label=institution_map[k])
-    
+
     # overall mean (mean of labs)
     mean_x = probe_data[f'{traj}_x'].mean()
     mean_y = probe_data[f'{traj}_y'].mean()
-    
+
     ax1.plot(mean_x, mean_y, color='k', marker="+", markersize=6, alpha=0.7, label="MEAN")
 
     # Compute targeting error at surface of brain
@@ -292,7 +254,7 @@ def plot_probe_distance_all_lab(traj='micro', min_rec_per_lab=4):
     ax1.tick_params(bottom=False)
 
     sns.stripplot(y='institute', x=f'{traj}_error_surf_xy', data=probe_data, hue='passed', size=1.5, orient="h", ax=ax2)
-    
+
     # plot the mean line
     sns.boxplot(showmeans=True, meanline=True, meanprops={'color': 'gray', 'ls': '-', 'lw': 1}, medianprops={'visible': False},
                 whiskerprops={'visible': False}, zorder=10, x=f'{traj}_error_surf_xy', y="institute", data=probe_data,
@@ -340,7 +302,7 @@ def plot_probe_distance_all_lab(traj='micro', min_rec_per_lab=4):
     pp_m = np.mean([pp_m1, pp_m2, pp_m3])
 
     print("PERMUTATION TEST PASS : ", pp_m)
-    
+
     ax1.set_title('Permutation Test p-value: \n    ALL : ' + str(round(p_m, 4)) + '    PASS : ' + str(round(pp_m, 4)))
 
     plt.tight_layout()  # tighten layout around xlabel & ylabel

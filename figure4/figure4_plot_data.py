@@ -8,6 +8,44 @@ from figure4.figure4_plot_functions import plot_raster_and_psth
 lab_number_map, institution_map, lab_colors = labs()
 fig_path = save_figure_path(figure='figure4')
 
+
+def plot_main_figure():
+    DPI = 400  # if the figure is too big on your screen, lower this number
+    figure_style()
+    fig = plt.figure(figsize=(7, 10.5), dpi=DPI)  # full width figure is 7 inches
+    ax = {'panel_A_1': fg.place_axes_on_grid(fig, xspan=[0.075, 0.325], yspan=[0., 0.15],
+                                             wspace=0.3),
+          'panel_A_2': fg.place_axes_on_grid(fig, xspan=[0.075, 0.325], yspan=[0.15, 0.3],
+                                             wspace=0.3),
+          'panel_B': fg.place_axes_on_grid(fig, xspan=[0.43, 1.], yspan=[0., 0.3],
+                                           wspace=0.3),
+          'panel_C_1': fg.place_axes_on_grid(fig, xspan=[0.075, 0.25], yspan=[0.38, 0.65],
+                                             wspace=0.3),
+          'panel_C_2': fg.place_axes_on_grid(fig, xspan=[0.26, 0.435], yspan=[0.38, 0.65],
+                                             wspace=0.3),
+          'panel_C_3': fg.place_axes_on_grid(fig, xspan=[0.445, 0.62], yspan=[0.38, 0.65],
+                                             wspace=0.3),
+          'panel_C_4': fg.place_axes_on_grid(fig, xspan=[0.63, 0.805], yspan=[0.38, 0.65],
+                                             wspace=0.3),
+          'panel_C_5': fg.place_axes_on_grid(fig, xspan=[0.815, 1.], yspan=[0.38, 0.65],
+                                             wspace=0.3),
+          'panel_D': fg.place_axes_on_grid(fig, xspan=[0.075, 1.], yspan=[0.7, 1],
+                                           wspace=0.3)}
+    plot_panel_single_neuron(ax=[ax['panel_A_1'], ax['panel_A_2']], save=False)
+    plot_panel_single_subject(ax=ax['panel_B'], save=False)
+    plot_panel_all_subjects(ax=[ax['panel_C_1'], ax['panel_C_2'], ax['panel_C_3'], ax['panel_C_4'], ax['panel_C_5']], save=False)
+
+    labels = [{'label_text': 'a', 'xpos': 0, 'ypos': 0, 'fontsize': 10, 'weight': 'bold'},
+              {'label_text': 'b', 'xpos': 0.36, 'ypos': 0, 'fontsize': 10, 'weight': 'bold'},
+              {'label_text': 'c', 'xpos': 0, 'ypos': 0.36, 'fontsize': 10, 'weight': 'bold'}]
+             # {'label_text': 'd', 'xpos': 0, 'ypos': 0.68, 'fontsize': 10, 'weight': 'bold'}]
+    fg.add_labels(fig, labels)
+    print(f'Saving figures to {fig_path}')
+    plt.savefig(fig_path.joinpath('figure4_combined.png'), bbox_inches='tight', pad_inches=0)
+    plt.savefig(fig_path.joinpath('figure4_combined.pdf'), bbox_inches='tight', pad_inches=0)
+    plt.close()
+
+
 def plot_panel_single_neuron(ax=None, save=True):
     # Code to plot figure similar to figure 4a
     pid = 'f26a6ab1-7e37-4f8d-bb50-295c056e1062'
@@ -57,13 +95,13 @@ def plot_panel_single_subject(event='move', norm='subtract', smoothing='kernel',
     for fr, fr_std in zip(all_frs_l[idx], all_frs_l_std[idx]):
         ax.plot(time, fr, 'k')
         propagated_error += fr_std ** 2
-        ax.fill_between(time, fr-fr_std, fr+fr_std, color='k', alpha=0.25)
+        ax.fill_between(time, fr - fr_std, fr + fr_std, color='k', alpha=0.25)
 
     fr_mean = np.mean(all_frs_l[idx], axis=0)
     fr_std = np.std(all_frs_l[idx], axis=0)
     ax.plot(time, fr_mean, c=lab_colors[lab], lw=1.5)
     propagated_error = np.sqrt(propagated_error) / idx.shape[0]
-    ax.fill_between(time, fr_mean-propagated_error, fr_mean+propagated_error, color=lab_colors[lab], alpha=0.25)
+    ax.fill_between(time, fr_mean - propagated_error, fr_mean + propagated_error, color=lab_colors[lab], alpha=0.25)
 
     ax.set_title("Single mouse, {}".format(region))
     ax.set_xlabel("Time from movement onset (s)")
@@ -134,46 +172,13 @@ def plot_panel_all_subjects(ax=None, save=True):
 
         if iR == len(BRAIN_REGIONS) - 1:
             # this is a hack for the legend
-            for l in all_present_labs:
-                ax[iR].plot(data['time'], np.zeros_like(data['time']) - 100, c=lab_colors[l], label=l)
+            for lab in all_present_labs:
+                ax[iR].plot(data['time'], np.zeros_like(data['time']) - 100, c=lab_colors[lab], label=lab)
             ax[iR].legend(frameon=False, bbox_to_anchor=(1.01, 1))
 
     if save:
         plt.savefig(fig_path.joinpath('figure4_all_subjects.png'))
 
 
-DPI = 400  # if the figure is too big on your screen, lower this number
 if __name__ == '__main__':
-    figure_style()
-    fig = plt.figure(figsize=(7, 10.5), dpi=DPI)  # full width figure is 7 inches
-    ax = {'panel_A_1': fg.place_axes_on_grid(fig, xspan=[0.075, 0.325], yspan=[0., 0.15],
-                                             wspace=0.3),
-          'panel_A_2': fg.place_axes_on_grid(fig, xspan=[0.075, 0.325], yspan=[0.15, 0.3],
-                                             wspace=0.3),
-          'panel_B': fg.place_axes_on_grid(fig, xspan=[0.43, 1.], yspan=[0., 0.3],
-                                           wspace=0.3),
-          'panel_C_1': fg.place_axes_on_grid(fig, xspan=[0.075, 0.25], yspan=[0.38, 0.65],
-                                             wspace=0.3),
-          'panel_C_2': fg.place_axes_on_grid(fig, xspan=[0.26, 0.435], yspan=[0.38, 0.65],
-                                             wspace=0.3),
-          'panel_C_3': fg.place_axes_on_grid(fig, xspan=[0.445, 0.62], yspan=[0.38, 0.65],
-                                             wspace=0.3),
-          'panel_C_4': fg.place_axes_on_grid(fig, xspan=[0.63, 0.805], yspan=[0.38, 0.65],
-                                             wspace=0.3),
-          'panel_C_5': fg.place_axes_on_grid(fig, xspan=[0.815, 1.], yspan=[0.38, 0.65],
-                                             wspace=0.3),
-          'panel_D': fg.place_axes_on_grid(fig, xspan=[0.075, 1.], yspan=[0.7, 1],
-                                           wspace=0.3)}
-    plot_panel_single_neuron(ax=[ax['panel_A_1'], ax['panel_A_2']], save=False)
-    plot_panel_single_subject(ax=ax['panel_B'], save=False)
-    plot_panel_all_subjects(ax=[ax['panel_C_1'], ax['panel_C_2'], ax['panel_C_3'], ax['panel_C_4'], ax['panel_C_5']], save=False)
-
-    labels = [{'label_text': 'a', 'xpos': 0, 'ypos': 0, 'fontsize': 10, 'weight': 'bold'},
-              {'label_text': 'b', 'xpos': 0.36, 'ypos': 0, 'fontsize': 10, 'weight': 'bold'},
-              {'label_text': 'c', 'xpos': 0, 'ypos': 0.36, 'fontsize': 10, 'weight': 'bold'}]
-              # {'label_text': 'd', 'xpos': 0, 'ypos': 0.68, 'fontsize': 10, 'weight': 'bold'}]
-    fg.add_labels(fig, labels)
-
-    plt.savefig(fig_path.joinpath(f'figure4_combined.png'), bbox_inches='tight', pad_inches=0)
-    plt.savefig(fig_path.joinpath(f'figure4_combined.pdf'), bbox_inches='tight', pad_inches=0)
-    plt.close()
+    plot_main_figure()

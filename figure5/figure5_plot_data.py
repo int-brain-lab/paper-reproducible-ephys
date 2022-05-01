@@ -21,6 +21,52 @@ tests = {'trial': 'Trial',
          'post_reward': 'Post reward',
          'avg_ff_post_move': 'FanoFactor'}
 
+
+def plot_main_figure():
+    DPI = 400  # if the figure is too big on your screen, lower this number
+    figure_style()
+    fig = plt.figure(figsize=(7, 10.5), dpi=DPI)  # full width figure is 7 inches
+    ax = {'panel_A_1_1': fg.place_axes_on_grid(fig, xspan=[0.075, 0.45], yspan=[0., 0.15],
+                                               wspace=0.3),
+          'panel_A_1_2': fg.place_axes_on_grid(fig, xspan=[0.075, 0.45], yspan=[0.15, 0.3],
+                                               wspace=0.3),
+          'panel_A_2_1': fg.place_axes_on_grid(fig, xspan=[0.55, 1.], yspan=[0., 0.15],
+                                               wspace=0.3),
+          'panel_A_2_2': fg.place_axes_on_grid(fig, xspan=[0.55, 1.], yspan=[0.15, 0.3],
+                                               wspace=0.3),
+          # 'panel_B': fg.place_axes_on_grid(fig, xspan=[0.6, 1.], yspan=[0.33, 0.63],
+          #                                  wspace=0.3),
+          'panel_C_1': fg.place_axes_on_grid(fig, xspan=[0.075, 0.46], yspan=[0.66, 0.72],
+                                             wspace=0.3),
+          'panel_C_2': fg.place_axes_on_grid(fig, xspan=[0.075, 0.46], yspan=[0.73, 0.79],
+                                             wspace=0.3),
+          'panel_C_3': fg.place_axes_on_grid(fig, xspan=[0.075, 0.46], yspan=[0.8, 0.86],
+                                             wspace=0.3),
+          'panel_C_4': fg.place_axes_on_grid(fig, xspan=[0.075, 0.46], yspan=[0.87, 0.93],
+                                             wspace=0.3),
+          'panel_C_5': fg.place_axes_on_grid(fig, xspan=[0.075, 0.46], yspan=[0.94, 1],
+                                             wspace=0.3),
+          'panel_D': fg.place_axes_on_grid(fig, xspan=[0.54, 1.], yspan=[0.66, 1],
+                                           wspace=0.3)}
+
+    plot_panel_example_neurons(ax1=[ax['panel_A_1_1'], ax['panel_A_1_2']], ax2=[ax['panel_A_2_1'], ax['panel_A_2_2']], save=False)
+    plot_panel_task_modulated_neurons(specific_tests=['start_to_move'],
+                                      ax=[ax['panel_C_1'], ax['panel_C_2'], ax['panel_C_3'], ax['panel_C_4'], ax['panel_C_5']],
+                                      save=False)
+    plot_panel_permutation(ax=ax['panel_D'])
+
+    labels = [{'label_text': 'a', 'xpos': 0, 'ypos': 0, 'fontsize': 10, 'weight': 'bold'},
+              {'label_text': 'd', 'xpos': 0.5, 'ypos': 0.64, 'fontsize': 10, 'weight': 'bold'},
+              {'label_text': 'b', 'xpos': 0, 'ypos': 0.36, 'fontsize': 10, 'weight': 'bold'},
+              {'label_text': 'c', 'xpos': 0, 'ypos': 0.64, 'fontsize': 10, 'weight': 'bold'}]
+    fg.add_labels(fig, labels)
+
+    print(f'Saving figures to {fig_path}')
+    plt.savefig(fig_path.joinpath('figure5_combined.png'), bbox_inches='tight', pad_inches=0)
+    plt.savefig(fig_path.joinpath('figure5_combined.pdf'), bbox_inches='tight', pad_inches=0)
+    plt.close()
+
+
 def plot_panel_example_neurons(ax1=None, ax2=None, save=True):
     neuron = 614
     pid = 'ce397420-3cd2-4a55-8fd1-5e28321981f4'  # SWC_054
@@ -29,8 +75,8 @@ def plot_panel_example_neurons(ax1=None, ax2=None, save=True):
     align_event = 'stim'
 
     ax = plot_raster_and_psth(pid, neuron, event_epoch=[-0.4, 0.6], fr_bin_size=0.06, align_event=align_event, side=side,
-                                   feedback=feedback, smoothing='sliding', slide_kwargs_fr={'n_win': 3, 'causal': 1},
-                                   zero_line_c=(0, 0.5, 1), labelsize=16, ax=ax1)
+                              feedback=feedback, smoothing='sliding', slide_kwargs_fr={'n_win': 3, 'causal': 1},
+                              zero_line_c=(0, 0.5, 1), labelsize=16, ax=ax1)
     ax[0].set_title(f'Contrast: {side}, {feedback}, Aligned to {align_event}', loc='left')
 
     if save:
@@ -38,8 +84,8 @@ def plot_panel_example_neurons(ax1=None, ax2=None, save=True):
 
     align_event = 'move'
     ax = plot_raster_and_psth(pid, neuron, event_epoch=[-0.4, 0.6], fr_bin_size=0.06, align_event=align_event, side=side,
-                                   feedback=feedback, smoothing='sliding', slide_kwargs_fr={'n_win': 2, 'causal': 1},
-                                   zero_line_c='g', labelsize=16, ax=ax2)
+                              feedback=feedback, smoothing='sliding', slide_kwargs_fr={'n_win': 2, 'causal': 1},
+                              zero_line_c='g', labelsize=16, ax=ax2)
     ax[0].set_title(f'Contrast: {side}, {feedback}, Aligned to {align_event}', loc='left')
 
     if save:
@@ -113,8 +159,8 @@ def plot_panel_permutation(ax=None):
 
             p = permut_test(data, metric=permut_dist, labels1=labs,
                             labels2=subjects, n_permut=n_permut)
-            results = results.append(pd.DataFrame(index=[results.shape[0] + 1], data={
-                 'test': test, 'region': reg, 'p_value_permut': p}))
+            results = results.append(pd.DataFrame(index=[results.shape[0] + 1],
+                                                  data={'test': test, 'region': reg, 'p_value_permut': p}))
 
     shape = (len(tests.keys()), len(BRAIN_REGIONS))
     _, corrected_p_vals, _, _ = multipletests(results.p_value_permut.values, 0.05, method='fdr_bh')
@@ -135,45 +181,5 @@ def plot_panel_permutation(ax=None):
     return results
 
 
-DPI = 400  # if the figure is too big on your screen, lower this number
 if __name__ == '__main__':
-    figure_style()
-    fig = plt.figure(figsize=(7, 10.5), dpi=DPI)  # full width figure is 7 inches
-    ax = {'panel_A_1_1': fg.place_axes_on_grid(fig, xspan=[0.075, 0.45], yspan=[0., 0.15],
-                                               wspace=0.3),
-          'panel_A_1_2': fg.place_axes_on_grid(fig, xspan=[0.075, 0.45], yspan=[0.15, 0.3],
-                                               wspace=0.3),
-          'panel_A_2_1': fg.place_axes_on_grid(fig, xspan=[0.55, 1.], yspan=[0., 0.15],
-                                               wspace=0.3),
-          'panel_A_2_2': fg.place_axes_on_grid(fig, xspan=[0.55, 1.], yspan=[0.15, 0.3],
-                                               wspace=0.3),
-          # 'panel_B': fg.place_axes_on_grid(fig, xspan=[0.6, 1.], yspan=[0.33, 0.63],
-          #                                  wspace=0.3),
-          'panel_C_1': fg.place_axes_on_grid(fig, xspan=[0.075, 0.46], yspan=[0.66, 0.72],
-                                             wspace=0.3),
-          'panel_C_2': fg.place_axes_on_grid(fig, xspan=[0.075, 0.46], yspan=[0.73, 0.79],
-                                             wspace=0.3),
-          'panel_C_3': fg.place_axes_on_grid(fig, xspan=[0.075, 0.46], yspan=[0.8, 0.86],
-                                             wspace=0.3),
-          'panel_C_4': fg.place_axes_on_grid(fig, xspan=[0.075, 0.46], yspan=[0.87, 0.93],
-                                             wspace=0.3),
-          'panel_C_5': fg.place_axes_on_grid(fig, xspan=[0.075, 0.46], yspan=[0.94, 1],
-                                             wspace=0.3),
-          'panel_D': fg.place_axes_on_grid(fig, xspan=[0.54, 1.], yspan=[0.66, 1],
-                                           wspace=0.3)}
-
-    plot_panel_example_neurons(ax1=[ax['panel_A_1_1'], ax['panel_A_1_2']], ax2=[ax['panel_A_2_1'], ax['panel_A_2_2']], save=False)
-    plot_panel_task_modulated_neurons(specific_tests=['start_to_move'], ax=[ax['panel_C_1'], ax['panel_C_2'], ax['panel_C_3'], ax['panel_C_4'], ax['panel_C_5']], save=False)
-    plot_panel_permutation(ax=ax['panel_D'])
-
-    labels = [{'label_text': 'a', 'xpos': 0, 'ypos': 0, 'fontsize': 10, 'weight': 'bold'},
-              {'label_text': 'd', 'xpos': 0.5, 'ypos': 0.64, 'fontsize': 10, 'weight': 'bold'},
-              {'label_text': 'b', 'xpos': 0, 'ypos': 0.36, 'fontsize': 10, 'weight': 'bold'},
-              {'label_text': 'c', 'xpos': 0, 'ypos': 0.64, 'fontsize': 10, 'weight': 'bold'}]
-    fg.add_labels(fig, labels)
-
-    plt.savefig(fig_path.joinpath(f'figure5_combined.png'), bbox_inches='tight', pad_inches=0)
-    plt.savefig(fig_path.joinpath(f'figure5_combined.pdf'), bbox_inches='tight', pad_inches=0)
-    plt.close()
-
-# plot_panel_permutation()
+    plot_main_figure()

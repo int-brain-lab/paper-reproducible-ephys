@@ -5,18 +5,12 @@ Created on Wed Dec 15 13:41:49 2021
 By: Guido Meijer
 """
 
-from os.path import join
-
-from ibllib.atlas import atlas, BrainRegions
-from permutation_test import permut_test
-from statsmodels.stats.multitest import multipletests
+from ibllib.atlas import BrainRegions
 from figure3.figure3_functions import plot_probe, get_brain_boundaries
-from reproducible_ephys_functions import labs, data_path, filter_recordings, BRAIN_REGIONS
+from reproducible_ephys_functions import filter_recordings, BRAIN_REGIONS
 from figure3.figure3_load_data import load_dataframe
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
-import pandas as pd
 import numpy as np
-import seaborn as sns
 
 
 def panel_a(fig, ax, incl_labs, boundary_align='DG-TH', ylim=[-2000, 2000], normalize=True, clim=(0.1, 0.9)):
@@ -42,7 +36,7 @@ def panel_a(fig, ax, incl_labs, boundary_align='DG-TH', ylim=[-2000, 2000], norm
         im = plot_probe(df['lfp'].values, z, ax[iR], clim=clim, normalize=normalize,
                         cmap='viridis')
 
-        if data['include'] == True:
+        if data['include']:
             ax[iR].set_title(data.subject, rotation=45, ha='left', color='green', fontsize=4)
         else:
             ax[iR].set_title(data.subject, rotation=45, ha='left', color='red', fontsize=4)
@@ -72,7 +66,7 @@ def panel_a(fig, ax, incl_labs, boundary_align='DG-TH', ylim=[-2000, 2000], norm
     cbar.set_label('Power spectral density (dB)', rotation=270, labelpad=-5)
 
 
-def panel_b(fig, ax, incl_labs=None, boundary_align='DG-TH', ylim=[-2000, 2000], one=None):
+def panel_b(fig, ax, incl_labs=None, boundary_align='DG-TH', ylim=[-2000, 2000]):
     br = BrainRegions()
 
     df_chns = load_dataframe(df_name='chns')
@@ -136,7 +130,7 @@ def panel_b(fig, ax, incl_labs=None, boundary_align='DG-TH', ylim=[-2000, 2000],
             ax[iR].bar(x=width / 2, height=height, width=width, color=color, bottom=reg[0],
                        edgecolor='k', alpha=alpha, zorder=1)
 
-        if data['include'] == True:
+        if data['include']:
             ax[iR].set_title(data.subject, rotation=45, ha='left', color='green', fontsize=4)
         else:
             ax[iR].set_title(data.subject, rotation=45, ha='left', color='red', fontsize=4)
@@ -159,79 +153,3 @@ def panel_b(fig, ax, incl_labs=None, boundary_align='DG-TH', ylim=[-2000, 2000],
     cbar = fig.colorbar(im, cax=axin, ticks=im.get_clim())
     cbar.ax.set_yticklabels([f'{levels[0]}', f'{levels[1]}'])
     cbar.set_label('Firing rate (spks/s)', rotation=270, labelpad=0)
-
-
-def panel_c(ax, metrics, regions, labels, n_permut, incl_labs):
-    data, lab_colors = plots_data(incl_labs)
-    data_excl = exclude_recordings(data)
-    results = pd.DataFrame()
-    for metric in metrics:
-        for region in regions:
-            this_data = data.loc[data['region'] == region, metric].values
-            p_all = permut_test(
-                    this_data[~np.isnan(this_data)],
-                    metric=permut_dist,
-                    labels1=data.loc[data['region'] == region, 'institute'].values[~np.isnan(this_data)],
-                    labels2=data.loc[data['region'] == region, 'subject'].values[~np.isnan(this_data)],
-                    n_permut=n_permut)
-            this_data = data_excl.loc[data['region'] == region, metric].values
-            p_excl = permut_test(
-                    this_data[~np.isnan(this_data)],
-                    metric=permut_dist,
-                    labels1=data_excl.loc[data['region'] == region, 'institute'].values[~np.isnan(this_data)],
-                    labels2=data_excl.loc[data['region'] == region, 'subject'].values[~np.isnan(this_data)],
-                    n_permut=n_permut)
-            results = results.append(pd.DataFrame(index=[results.shape[0]+1], data={
-                'metric': metric, 'region': region, 'p_all': p_all, 'p_excl': p_excl}))
-
-    for i, region in enumerate(regions):
-        results.loc[results['region'] == region, 'region_number'] = i
-
-    # Perform correction for multiple testing
-    _, results['p_all'], _, _ = multipletests(results['p_all'], 0.05, method='fdr_bh')
-    _, results['p_excl'], _, _ = multipletests(results['p_excl'], 0.05, method='fdr_bh')
-
-    results_all = results.pivot(index='region_number', columns='metric', values='p_all')
-    results_excl = results.pivot(index='region_number', columns='metric', values='p_excl')
-    #results_plot = results_excl.copy()
-    results_plot = results_excl - results_all
-    results_plot = results_plot.reindex(columns=metrics)
-    #results_plot = np.log10(results_plot)
-
-    axin = inset_axes(ax, width="5%", height="80%", loc='lower right', borderpad=0,
-                      bbox_to_anchor=(0.1, 0.1, 1, 1), bbox_transform=ax.transAxes)
-    #cmap = sns.color_palette('viridis_r', n_colors=20)
-    #cmap[0] = [1, 0, 0]
-    sns.heatmap(results_plot, cmap='coolwarm', square=True,
-                cbar=True, cbar_ax=axin, center=0,
-                annot=False, annot_kws={"size": 5},
-                linewidths=.5, fmt='.2f', vmin=-0.2, vmax=0.2, ax=ax)
-    cbar = ax.collections[0].colorbar
-    #cbar.set_ticks(np.log10([0.05, 0.5, 1]))
-    #cbar.set_ticklabels([0.05, 0.5, 1])
-    ax.set(xlabel='', ylabel='', title='Permutation p-values')
-    ax.set_yticklabels(regions, va='center', rotation=0)
-    ax.set_xticklabels(labels, rotation=30, ha='right')
-
-
-def plots_data(incl_labs=None):
-    data = pd.read_csv(join(data_path(), 'metrics_region_all.csv'))
-    lab_number_map, institution_map, lab_colors = labs()
-    data['institute'] = data.lab.map(institution_map)
-    data['lab_number'] = data.lab.map(lab_number_map)
-    if incl_labs is not None:
-        data = data[data['institute'].isin(incl_labs)]
-    data = data.sort_values(by=['lab_number', 'subject']).reset_index(drop=True)
-    data['lab_position'] = np.linspace(0.18, 0.9, data.shape[0])
-    data['in_recording'] = data['neuron_yield'].isnull() == False
-    data['yield_per_channel'] = data['neuron_yield'] / data['n_channels']
-    data.loc[data['lfp_power_high'] < -100000, 'lfp_power_high'] = np.nan
-    return data, lab_colors
-
-
-def permut_dist(data, labs, mice):
-    lab_means = []
-    for lab in np.unique(labs):
-        lab_means.append(np.mean(data[labs == lab]))
-    lab_means = np.array(lab_means)
-    return np.sum(np.abs(lab_means - np.mean(lab_means)))

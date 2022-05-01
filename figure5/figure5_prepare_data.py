@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import time
 
-from one.api import ONE, One
+from one.api import ONE
 from ibllib.atlas import AllenAtlas
 from brainbox.population.decode import get_spike_counts_in_bins
 from brainbox.task.closed_loop import compute_comparison_statistics
@@ -61,7 +61,6 @@ def prepare_data(insertions, one, figure='figure5', recompute=False, **kwargs):
                 print('Already computed data for set of insertions. Will load in data. To recompute set recompute=True')
                 return df
 
-
     all_df = []
     for iIns, ins in enumerate(insertions):
         start = time.time()
@@ -104,8 +103,10 @@ def prepare_data(insertions, one, figure='figure5', recompute=False, **kwargs):
             # Find event times of interest and remove nan values
             eventStim = trials['stimOn_times'][np.bitwise_and(trial_idx, ~nanStimMove)]
             eventMove = trials['firstMovement_times'][np.bitwise_and(trial_idx, ~nanStimMove)]
-            eventMoveL = trials['firstMovement_times'][np.bitwise_and(np.bitwise_and(trial_idx, ~nanStimMove), trials['choice'] == 1)]
-            eventMoveR = trials['firstMovement_times'][np.bitwise_and(np.bitwise_and(trial_idx, ~nanStimMove), trials['choice'] == -1)]
+            eventMoveL = trials['firstMovement_times'][np.bitwise_and(np.bitwise_and(trial_idx, ~nanStimMove),
+                                                                      trials['choice'] == 1)]
+            eventMoveR = trials['firstMovement_times'][np.bitwise_and(np.bitwise_and(trial_idx, ~nanStimMove),
+                                                                      trials['choice'] == -1)]
             eventFeedback = trials['feedback_times'][np.bitwise_and(trial_idx, ~nanStimMove)]
 
             # Baseline firing rate
@@ -230,9 +231,9 @@ def prepare_data(insertions, one, figure='figure5', recompute=False, **kwargs):
                 eventBase = eventStim
 
             _, _, ff_r, time_ff = compute_psth(spikes['times'][spike_idx], spikes['clusters'][spike_idx], data['cluster_ids'],
-                                               eventTimes, align_epoch=event_epoch, bin_size=ff_bin_size, baseline_events=eventBase,
-                                               base_epoch=base_epoch, smoothing=smoothing,norm=norm, slide_kwargs=slide_kwargs_ff,
-                                               return_ff=True)
+                                               eventTimes, align_epoch=event_epoch, bin_size=ff_bin_size,
+                                               baseline_events=eventBase, base_epoch=base_epoch, smoothing=smoothing, norm=norm,
+                                               slide_kwargs=slide_kwargs_ff, return_ff=True)
 
             data['avg_ff_post_move'] = np.nanmean(ff_r[:, np.bitwise_and(time_ff >= 0.04, time_ff <= 0.2)], axis=1)
 
@@ -262,14 +263,14 @@ def prepare_data(insertions, one, figure='figure5', recompute=False, **kwargs):
                 # Compute fanofactor
                 _, _, ff_l, time_ff = compute_psth(spikes['times'][spike_idx], spikes['clusters'][spike_idx], data['cluster_ids'],
                                                    eventTimes, align_epoch=event_epoch, bin_size=ff_bin_size,
-                                                   baseline_events=eventBase, base_epoch=base_epoch, smoothing=smoothing,norm=norm,
-                                                   slide_kwargs=slide_kwargs_ff, return_ff=True)
+                                                   baseline_events=eventBase, base_epoch=base_epoch, smoothing=smoothing,
+                                                   norm=norm, slide_kwargs=slide_kwargs_ff, return_ff=True)
 
                 # Compute firing rate
                 fr_l, _, time_fr = compute_psth(spikes['times'][spike_idx], spikes['clusters'][spike_idx], data['cluster_ids'],
-                                                   eventTimes, align_epoch=event_epoch, bin_size=fr_bin_size,
-                                                   baseline_events=eventBase, base_epoch=base_epoch, smoothing=smoothing, norm=norm,
-                                                   slide_kwargs=slide_kwargs_fr)
+                                                eventTimes, align_epoch=event_epoch, bin_size=fr_bin_size,
+                                                baseline_events=eventBase, base_epoch=base_epoch, smoothing=smoothing,
+                                                norm=norm, slide_kwargs=slide_kwargs_fr)
 
                 if iIns == 0:
                     all_frs_l = fr_l
@@ -290,7 +291,6 @@ def prepare_data(insertions, one, figure='figure5', recompute=False, **kwargs):
             data['p2t'] = clusters['peakToTrough'][cluster_idx]
             data['amp'] = clusters['amps'][cluster_idx]
 
-
             df = pd.DataFrame.from_dict(data)
             df['eid'] = eid
             df['pid'] = pid
@@ -308,6 +308,7 @@ def prepare_data(insertions, one, figure='figure5', recompute=False, **kwargs):
     # Save data frame
     concat_df = pd.concat(all_df, ignore_index=True)
     save_path = save_data_path(figure=figure)
+    print(f'Saving data to {save_path}')
     concat_df.to_csv(save_path.joinpath(f'{figure}_dataframe.csv'))
 
     if figure == 'figure7':

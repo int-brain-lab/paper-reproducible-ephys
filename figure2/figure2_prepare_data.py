@@ -5,99 +5,50 @@ Created on Mon Jun  1 09:11:26 2020
 
 Probe Geometry Data Collection
 
-Functions to gather data on probe geometry from IBL servers
-
-
-Following functions are defined:
-
-* download_ : downloads the current data from IBL servers
-
-* save_ : saves a dataframe, using specified prefix, to local cache.
-
-* load_ : Load a dataframe, using a specified prefix, from local cache.
-
-
-The following data is processed:
-
-* channels : all channel locations and their orthogonal coord to the probes planned trajectory
-
-* probe_trajectory : brain surface insertion coord and the probe tip coordinate.
-
-
-
-Gather channels displacement data from planned traj at repeated site.
-
-Following data is gathered:
-
-* subject, eid, probe - the subject, eid and probe IDs
-
-* chan_loc - xyz coord of channels
-
-* planned_orth_proj - xyz coord of orthogonal line from chan_loc to planned proj
-
-* dist - the 3D distance between chan_loc xyz and planned_orth_proj xyz
-
-
-Three functions:
-    
-    download : download the data from Alyx, returns as pandas DataFrame
-    
-    load  : open a cached CSV which exists next to this file.
-
-    save  : save a pandas dataframe to a cached location
-
-
-If run as main: data is saved to CSV next to this module.
-
-NB: Channels are derived from the serializer: histology processed, histology,
-micro manipulator, planned - the first is always returned.
-
 @author: stevenwest
 '''
 
 from one.api import ONE
 from ibllib.atlas import Insertion, AllenAtlas
+from iblutil.numerical import ismember
 from brainbox.io.one import load_channel_locations
-from reproducible_ephys_functions import save_data_path, get_histology_insertions, save_dataset_info
+from reproducible_ephys_functions import save_data_path, get_histology_insertions, save_dataset_info, get_insertions
+from figure2.figure2_load_data import load_dataframe
 
 import numpy as np
 import pandas as pd
 
-# TODO remove duplicates on insertions
+
 def prepare_data(insertions, one=None, brain_atlas=None, recompute=False):
     """Download channels geometry data for all given probes in a given project
     at the planned insertion coord [x,y] from Alyx.
-    
-    Downloads the most up-to-date data from Alyx for all recordings planned at 
-    [x,y], including their channel positions, and the orthogonal coords of 
+
+    Downloads the most up-to-date data from Alyx for all recordings planned at
+    [x,y], including their channel positions, and the orthogonal coords of
     each channel from the planned trajectory.
-    
+
     Saves this data to a standard location in the file system.
-    
+
     Also returns this data as a pandas DataFrame object with following cols:
-    
+
     * subject, eid, probe - the subject, eid and probe IDs
     * chan_loc - xyz coords of all channels
     * planned_orth_proj - xyz coord of orthogonal line from chan_loc onto planned proj
     * dist - the euclidean distance between chan_loc xyz and planned_orth_proj xyz
-    
-    Parameters
-    ----------
-    x : int
-        x planned insertion coord in µm.  Eg. repeated site is -2243
-    y : int
-        y planned insertion coord in µm. Eg. repeated site is -2000.
-    project : str, optional
-        Project to gather all trajectories from. The default is 
-        'ibl_neuropixel_brainwide_01'.
-    
-    Returns
-    -------
-    data_frame : pandas DataFrame
-        Dataframe containing: subject, eid, probe; ins_x, ins_y; chan_loc; 
-        planned_orth_proj; dist.
-    
+
     """
+
+    if not recompute:
+        data_probe = load_dataframe(df_name='traj', exists_only=True)
+        data_chns = load_dataframe(df_name='chns', exists_only=True)
+        if data_probe and data_chns:
+            df_probe = load_dataframe(df_name='traj')
+            pids = np.array([p['probe_insertion'] for p in insertions])
+            isin, _ = ismember(pids, df_probe['pid'].unique())
+            if np.all(isin):
+                print('Already computed data for set of insertions. Will load in data. To recompute set recompute=True')
+                df_chns = load_dataframe(df_name='chns')
+                return df_probe, df_chns
 
     brain_atlas = brain_atlas or AllenAtlas()
     brain_atlas.compute_surface()
@@ -144,7 +95,7 @@ def prepare_data(insertions, one=None, brain_atlas=None, recompute=False):
         data_traj['planned_theta'] = ins['theta']
         data_traj['planned_phi'] = ins['phi']
 
-        data_traj['micro_x'] = traj_micro['x'] # Should be ins_micro
+        data_traj['micro_x'] = traj_micro['x']
         data_traj['micro_y'] = traj_micro['y']
         data_traj['micro_z'] = traj_micro['z']
         data_traj['micro_depth'] = traj_micro['depth']
@@ -207,7 +158,7 @@ def prepare_data(insertions, one=None, brain_atlas=None, recompute=False):
 
         # calculate the ANGLE between ins_plan TIP -> SURFACE -> hist_tip_norm
         # ins_plan.xyz[1, :] -> ins_plan.xyz[0, :] -> hist_tip_norm
-        # from: https://stackoverflow.com/questions/35176451/python-code-to-calculate-angle-between-three-point-using-their-3d-coordinates
+        # from: https://stackoverflow.com/questions/35176451/python-code-to-calculate-angle-between-three-point-using-their-3d-coordinates # noqa
         ba = ins_plan.xyz[1, :] - ins_plan.xyz[0, :]
         bc = hist_tip_norm - ins_plan.xyz[0, :]
         cosine_angle = np.dot(ba, bc) / (np.linalg.norm(ba) * np.linalg.norm(bc))
@@ -275,7 +226,6 @@ def prepare_data(insertions, one=None, brain_atlas=None, recompute=False):
             dist = np.linalg.norm(ch_loc - proj)
         except Exception as err:
             print(f'No channels for insertion: {pid} - {err}')
-            # logger.warniing(f'No channels for insertion: {pid}')
             continue
 
         # Channel data
@@ -303,6 +253,7 @@ def prepare_data(insertions, one=None, brain_atlas=None, recompute=False):
 
     # Concat dataframes from all insertions
     save_path = save_data_path(figure='figure2')
+    print(f'Saving data to {save_path}')
     concat_df_chns = pd.concat(all_df_chns, ignore_index=True)
     concat_df_traj = pd.concat(all_df_traj, ignore_index=True)
     concat_df_traj = concat_df_traj.drop_duplicates(subset='subject')
@@ -315,6 +266,7 @@ def prepare_data(insertions, one=None, brain_atlas=None, recompute=False):
 if __name__ == '__main__':
     one = ONE()
     one.record_loaded = True
+    _ = get_insertions(level=0, one=one, freeze='biorxiv_2022_05')
     insertions = get_histology_insertions(one=one, freeze='biorxiv_2022_05')
     all_df_chns, all_df_traj = prepare_data(insertions, one=one)
     save_dataset_info(one, figure='figure2')

@@ -13,7 +13,6 @@ probe channels onto this histology data.
 import matplotlib.pyplot as plt
 from ibllib.atlas import Insertion
 import numpy as np
-import atlaselectrophysiology.load_histology as hist
 import ibllib.atlas as atlas
 from figure2.figure2_load_data import load_dataframe
 from figure2.figure2_functions import df_to_traj_dict
@@ -22,6 +21,7 @@ from reproducible_ephys_functions import save_figure_path
 
 def plot_channels(figcor=None, figsag=None, subjects=None, n_cols=None, remove_axes=False, show_scalebar=False, marker_size=None):
 
+    import atlaselectrophysiology.load_histology as hist  # noqa
     # Load data
     probe_data = load_dataframe(df_name='traj')
     chn_data = load_dataframe(df_name='chns')
@@ -44,9 +44,6 @@ def plot_channels(figcor=None, figsag=None, subjects=None, n_cols=None, remove_a
     row_index = -1
 
     for i, (idx, row) in enumerate(probe_data.iterrows()):
-
-        # get the insertion for id 0 - NYU-12
-        print(str(i) + " : " + row['subject'])
 
         # keep track of row/col
         if np.mod(i, n_cols) == 0:
@@ -215,18 +212,17 @@ def plot_all_channels(subjects=None):
     # adjust spacing
     wspace = 0.05
     hspace = 0.1
-    
+
     figcor.subplots_adjust(wspace, hspace)
     figsag.subplots_adjust(wspace, hspace)
 
     figcor.tight_layout()
     figsag.tight_layout()
-    
+
     # save to output
     fig_path = save_figure_path(figure='figure2')
     figcor.savefig(fig_path.joinpath('all_channels_subj_hist_coronal.svg'), bbox_inches="tight")
     figsag.savefig(fig_path.joinpath('all_channels_subj_hist_sagittal.svg'), bbox_inches="tight")
-    
 
 
 def plot_channels_n3():
@@ -254,7 +250,7 @@ def plot_channels_n3():
 
     figcor.tight_layout()
     figsag.tight_layout()
-    
+
     # save to output
     fig_path = save_figure_path(figure='figure2')
     figcor.savefig(fig_path.joinpath('B_channels_subj3_hist_coronal.svg'), bbox_inches="tight")
@@ -263,5 +259,3 @@ def plot_channels_n3():
 
 if __name__ == "__main__":
     plot_channels_n3()
-
-

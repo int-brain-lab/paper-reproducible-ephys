@@ -3,6 +3,7 @@ from ibllib.atlas.regions import BrainRegions
 from ibllib.ephys.neuropixel import SITES_COORDINATES
 from matplotlib.image import NonUniformImage
 
+
 def get_brain_boundaries(brain_regions, z, r=None):
 
     r = r or BrainRegions()
@@ -53,6 +54,7 @@ def get_brain_boundaries(brain_regions, z, r=None):
 
     return boundaries, colours, regions
 
+
 def plot_probe(data, z, ax, clim=[0.1, 0.9], normalize=True, cmap=None):
     bnk_x, bnk_y, bnk_data = arrange_channels2banks(data, z)
     for x, y, dat in zip(bnk_x, bnk_y, bnk_data):
@@ -66,6 +68,7 @@ def plot_probe(data, z, ax, clim=[0.1, 0.9], normalize=True, cmap=None):
         ax.images.append(im)
     ax.set_xlim(0, 4.5)
     return im
+
 
 def arrange_channels2banks(data, y):
     bnk_data = []
