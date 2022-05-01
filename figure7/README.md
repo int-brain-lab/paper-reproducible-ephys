@@ -10,12 +10,12 @@ or by using the following code snippet in an ipython terminal
 ```python
 
 from one.api import ONE
-from figure6.figure6_run import run_figure6
+from figure7.figure7_run import run_figure7
 one = ONE()
-run_figure6(one)
+run_figure7(one)
 
 # To also generate the supplementary figures
-run_figure6(one, supplementary=True)
+run_figure7(one, supplementary=True)
 
 ```
 
