@@ -66,3 +66,6 @@ def train(do_train=True, do_train_on_glm_covariates=True):
                                                          remove_cov=leave_out_covs_for_glm,
                                                          only_keep_cov=only_keep_cov)
 
+
+if __name__ == '__main__':
+    train()

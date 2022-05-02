@@ -184,3 +184,7 @@ def train(do_train=True, sim_do_train=True):
                                                              weight_decay=1e-5,
                                                              remove_cov=remove_cov,
                                                              only_keep_cov=only_keep_cov, simulated=True)
+
+
+if __name__ == '__main__':
+    train()

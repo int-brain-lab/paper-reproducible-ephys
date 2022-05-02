@@ -351,10 +351,11 @@ def featurize(i, trajectory, one, session_counter, bin_size=0.05, align_event='m
     trial_numbers = np.arange(trials['stimOn_times'].shape[0])
 
     # load pLeft (Charles's model's output)
-    pLeft = np.load(repo_path().joinpath('figure9_10','priors', f'prior_{eid}.npy'))
+    pLeft = np.load(save_data_path(figure='figure9_10').joinpath('priors', f'prior_{eid}.npy'))
 
     # load in GLM-HMM
-    glm_hmm = np.load(repo_path().joinpath('figure9_10','glm_hmm','k=4', f'posterior_probs_valuessession_{subject}-{date_number}.npz'))
+    glm_hmm = np.load(save_data_path(figure='figure9_10').joinpath('glm_hmm', 'k=4',
+                                                                   f'posterior_probs_valuessession_{subject}-{date_number}.npz'))
     for item in glm_hmm.files:
         glm_hmm_states = glm_hmm[item]
 

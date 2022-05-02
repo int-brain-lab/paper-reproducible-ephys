@@ -14,20 +14,26 @@ from reproducible_ephys_functions import save_data_path, save_dataset_info, repo
 from figure9_10.utils import get_mtnn_eids, get_traj, featurize, select_high_fr_neurons, preprocess_feature
 from figure9_10.glm import generate_design, bases, binwidth, t_before, t_after
 from figure9_10.simulate import simulate_cell, concat_simcell_data, to_mtnn_form
+from figure9_10.figure9_10_load_data import download_priors, download_glm_hmm
 
 data_path = save_data_path(figure='figure9_10')
 import ssl
 ssl._create_default_https_context = ssl._create_unverified_context
 
+
 def prepare_data(one):
     brain_atlas = AllenAtlas()
     eids = get_mtnn_eids()
     insertions = get_traj(eids)
-    # prepare_mtnn_data(insertions, one, brain_atlas=brain_atlas)
+    prepare_mtnn_data(insertions, one, brain_atlas=brain_atlas)
     prepare_glm_and_simulated_data(insertions, one, brain_atlas=brain_atlas)
 
 
 def prepare_mtnn_data(insertions, one, brain_atlas=None):
+
+    download_priors()
+    download_glm_hmm()
+
     feature_list = []
     output_list = []
     cluster_number_list = []
@@ -210,6 +216,7 @@ def prepare_mtnn_data(insertions, one, brain_atlas=None):
 
 def prepare_glm_and_simulated_data(insertions, one, brain_atlas=None):
 
+    download_priors()
     data_load_path = data_path.joinpath('mtnn_data')
     train_trial_ids = np.load(data_load_path.joinpath('train/trials.npy'), allow_pickle=True)
     val_trial_ids = np.load(data_load_path.joinpath('validation/trials.npy'), allow_pickle=True)
@@ -244,7 +251,7 @@ def prepare_glm_and_simulated_data(insertions, one, brain_atlas=None):
         trialsdf = trialsdf.loc[trial_idx]
         trialsdf_list.append(trialsdf)
 
-        pLeft = np.load(repo_path().joinpath('figure9_10','priors', f'prior_{eid}.npy'))
+        pLeft = np.load(save_data_path(figure='figure9_10').joinpath('priors', f'prior_{eid}.npy'))
         prior_list.append(pLeft[trial_idx])
 
         cluster_list.append(clusters[i])
