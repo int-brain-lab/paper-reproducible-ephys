@@ -373,6 +373,7 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
         try:
             clusters = one.load_object(eid, 'clusters', collection=collection, attribute=['metrics', 'channels'])
             if 'metrics' not in clusters.keys():
+                # TODO change this
                 spikes, clusters = bbone.load_spike_sorting(eid, probe=probe, spike_sorter='pykilosort',
                                                             dataset_types=['spikes.amps', 'spikes.depths'], one=one)
                 spikes = spikes[probe]

@@ -200,6 +200,7 @@ def get_region_colors():
     region_colors = {'LP': 'k', 'CA1': 'b', 'DG': 'r', 'PPC': 'g', 'PO': 'y'}
     return region_colors
 
+
 def get_mtnn_eids():
 #     mtnn_eids = {'56b57c38-2699-4091-90a8-aba35103155e': 0,
 #                 '72cb5550-43b4-4ef0-add5-e4adfdfb5e02': 0,
@@ -350,10 +351,10 @@ def featurize(i, trajectory, one, session_counter, bin_size=0.05, align_event='m
     trial_numbers = np.arange(trials['stimOn_times'].shape[0])
 
     # load pLeft (Charles's model's output)
-    pLeft = np.load(repo_path().joinpath('mtnn','priors', f'prior_{eid}.npy'))
+    pLeft = np.load(repo_path().joinpath('figure9_10','priors', f'prior_{eid}.npy'))
 
     # load in GLM-HMM
-    glm_hmm = np.load(repo_path().joinpath('mtnn','glm_hmm','k=4', f'posterior_probs_valuessession_{subject}-{date_number}.npz'))
+    glm_hmm = np.load(repo_path().joinpath('figure9_10','glm_hmm','k=4', f'posterior_probs_valuessession_{subject}-{date_number}.npz'))
     for item in glm_hmm.files:
         glm_hmm_states = glm_hmm[item]
 
@@ -623,3 +624,69 @@ def compute_mean_frs(shape_path='mtnn_data/train/shape.npy', obs_path='mtnn_data
         idx += n
     
     return np.asarray(mean_fr_list)
+
+
+def select_high_fr_neurons(feature, output, clusters,
+                           neuron_id_start=0, threshold1=5.0, threshold2=2.0, max_n_neurons=15):
+    # select = output.mean(1).max(1) >= threshold
+    select = np.logical_and(output.mean(1).max(1) >= threshold1, np.mean(output, axis=(1, 2)) >= threshold2)
+    feature_subset = feature[select]
+    if feature_subset.shape[0] > max_n_neurons:
+        select2 = np.random.choice(np.arange(feature_subset.shape[0]), size=max_n_neurons, replace=False)
+    else:
+        select2 = np.arange(feature_subset.shape[0])
+    feature_subset = feature_subset[select2]
+    for i in range(feature_subset.shape[0]):
+        feature_subset[i, :, :, 0] = neuron_id_start + i
+
+    return feature_subset, output[select][select2], clusters[select][select2]
+
+
+def preprocess_feature(feature_concat):
+    # normalize truncated_feature: dlc features + xyz location
+    # first normalize xyz
+    x_max = feature_concat[:, :, xyz_offset].max()
+    x_min = feature_concat[:, :, xyz_offset].min()
+    y_max = feature_concat[:, :, xyz_offset + 1].max()
+    y_min = feature_concat[:, :, xyz_offset + 1].min()
+    z_max = feature_concat[:, :, xyz_offset + 2].max()
+    z_min = feature_concat[:, :, xyz_offset + 2].min()
+
+    feature_concat[:, :, xyz_offset] = 0.1 + 0.9 * (feature_concat[:, :, xyz_offset] - x_min) / (x_max - x_min)
+    feature_concat[:, :, xyz_offset + 1] = 0.1 + 0.9 * (feature_concat[:, :, xyz_offset + 1] - y_min) / (y_max - y_min)
+    feature_concat[:, :, xyz_offset + 2] = 0.1 + 0.9 * (feature_concat[:, :, xyz_offset + 2] - z_min) / (z_max - z_min)
+
+    # next normalize dlc features
+    for i in range(stimulus_offset - paw_offset):
+        idx = paw_offset + i
+
+        feature_min = feature_concat[:, :, idx].min()
+        feature_max = feature_concat[:, :, idx].max()
+
+        feature_concat[:, :, idx] = 0.1 + 0.9 * (feature_concat[:, :, idx] - feature_min) / (feature_max - feature_min)
+
+    # next normalize wheel
+    wheel_min = feature_concat[:, :, wheel_offset].min()
+    wheel_max = feature_concat[:, :, wheel_offset].max()
+
+    feature_concat[:, :, wheel_offset] = -1 + 2 * (feature_concat[:, :, wheel_offset] - wheel_min) / (wheel_max - wheel_min)
+
+    # next normalize max_ptp
+    max_ptp_min = feature_concat[:, :, max_ptp_offset].min()
+    max_ptp_max = feature_concat[:, :, max_ptp_offset].max()
+
+    feature_concat[:, :, max_ptp_offset] = 0.1 + 0.9 * (feature_concat[:, :, max_ptp_offset] - max_ptp_min) / (
+                max_ptp_max - max_ptp_min)
+
+    # next normalize wf_width
+    wf_width_min = feature_concat[:, :, wf_width_offset].min()
+    wf_width_max = feature_concat[:, :, wf_width_offset].max()
+
+    feature_concat[:, :, wf_width_offset] = 0.1 + 0.9 * (feature_concat[:, :, wf_width_offset] - wf_width_min) / (
+                wf_width_max - wf_width_min)
+
+    # noise
+    noise = np.random.normal(loc=0.0, scale=1.0, size=feature_concat.shape[:-1])
+    feature_concat[:, :, noise_offset] = noise
+
+    return feature_concat

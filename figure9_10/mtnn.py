@@ -1,21 +1,16 @@
 import torch
 import torch.nn as nn
-import torch.optim as optim
 from torch.autograd import Variable
 from torch.utils.data import Dataset, DataLoader
-from torch.nn.functional import pad
 
 import numpy as np
 from sklearn.metrics import r2_score
 from scipy.stats import pearsonr
-
 from tqdm import notebook
-from collections import defaultdict
 
-import matplotlib.pyplot as plt
-
-from utils import *
+from figure9_10.utils import static_bool, cov_idx_dict, sim_static_bool, sim_cov_idx_dict
 from reproducible_ephys_functions import save_data_path
+
 
 class MTNN(nn.Module):
     def __init__(self, n_neurons, 
@@ -107,6 +102,7 @@ class MTNN(nn.Module):
         hidden = Variable(torch.zeros(self.n_layers*2, batch_size, self.hidden_dim_dynamic))
         return hidden
 
+
 class MTNNDataset(Dataset):
     def __init__(self, neuron_order, feature, output, static_bool):
         self.neuron_order = neuron_order
@@ -126,10 +122,8 @@ class MTNNDataset(Dataset):
         
         return neu, static_f, dynamic_f, target
 
-def initialize_mtnn(n_neurons, input_size_static, input_size_dynamic,
-                    static_bias, dynamic_bias, hidden_dim_static, 
-                    hidden_dim_dynamic, n_layers, dropout=0.2, model_state_dict=None):
-    # torch.cuda.is_available() checks and returns a Boolean True if a GPU is available, else it'll return False
+
+def get_device():
     is_cuda = torch.cuda.is_available()
 
     # If we have a GPU available, we'll set our device to GPU. We'll use this device variable later in our code.
@@ -139,6 +133,14 @@ def initialize_mtnn(n_neurons, input_size_static, input_size_dynamic,
     else:
         device = torch.device("cpu")
         print("GPU not available, CPU used")
+    return device
+
+
+def initialize_mtnn(n_neurons, input_size_static, input_size_dynamic,
+                    static_bias, dynamic_bias, hidden_dim_static, 
+                    hidden_dim_dynamic, n_layers, dropout=0.2, model_state_dict=None):
+
+    device = get_device()
     
     model = MTNN(n_neurons=n_neurons, input_size_static=input_size_static, 
                  input_size_dynamic=input_size_dynamic,
@@ -152,6 +154,7 @@ def initialize_mtnn(n_neurons, input_size_static, input_size_dynamic,
         model.load_state_dict(torch.load(model_state_dict))
     
     return model
+
 
 def leave_out(feature, covs, simulated, return_mask=False):
     cov_idx_map = cov_idx_dict if not simulated else sim_cov_idx_dict
@@ -167,6 +170,7 @@ def leave_out(feature, covs, simulated, return_mask=False):
         return feature, mask[1:][~static]
     else:
         return feature
+
 
 def only_keep(feature, cov, simulated, return_mask=False):
     cov_idx_map = cov_idx_dict if not simulated else sim_cov_idx_dict
@@ -185,6 +189,7 @@ def only_keep(feature, cov, simulated, return_mask=False):
     else:
         return feature
 
+
 def shift3D(tensor, shifts: torch.LongTensor):
     # assumes 3D tensor
     n_batches, n_rows, n_cols = tensor.shape
@@ -192,6 +197,7 @@ def shift3D(tensor, shifts: torch.LongTensor):
     arange1 = torch.arange(n_rows).view((1,n_rows,1)).repeat((n_batches,1,n_cols))
     arange2 = (arange1 - shifts) % n_rows
     return torch.gather(tensor, 1, arange2)
+
 
 def shift2D(mat, shifts: torch.LongTensor):
     # assumes 2D matrix
@@ -206,6 +212,7 @@ def shift2D(mat, shifts: torch.LongTensor):
     torch.cuda.empty_cache()
     
     return shifted
+
 
 def random_pad_shift(dynamic_f, mask):
     
@@ -227,7 +234,8 @@ def random_pad_shift(dynamic_f, mask):
     rolled = shift3D(padded, shifts)
     
     return rolled, pre_padding, post_padding, shifts
-    
+
+
 def add_weight_decay(net, l2_value1, l2_value2):
     decay1, decay2 = [], []
     for name, param in net.named_parameters():
@@ -237,6 +245,7 @@ def add_weight_decay(net, l2_value1, l2_value2):
         else: 
             decay1.append(param)
     return [{'params': decay1, 'weight_decay': l2_value1}, {'params': decay2, 'weight_decay': l2_value2}]
+
 
 def run_train(model, train_feature_path, train_output_path,
               val_feature_path, val_output_path, n_epochs=150, 
@@ -250,7 +259,7 @@ def run_train(model, train_feature_path, train_output_path,
     else:
         model_name = f'state_dict_rem={remove_cov}_keep={only_keep_cov}_{model_name_suffix}'
     model_name = model_name + '_simulated.pt' if simulated else model_name + '.pt'
-    save_path = save_data_path(figure='figure9').joinpath('trained_models')
+    save_path = save_data_path(figure='figure9_10').joinpath('trained_models')
     save_path.mkdir(exist_ok=True, parents=True)
     
     static = static_bool if not simulated else sim_static_bool
@@ -370,6 +379,7 @@ def run_train(model, train_feature_path, train_output_path,
                 
     return best_epoch, loss_list, val_loss_list
 
+
 def run_eval(model, test_feature_path, test_output_path, 
              batch_size=256, remove_cov=None, only_keep_cov=None, simulated=False):
     
@@ -412,6 +422,7 @@ def run_eval(model, test_feature_path, test_output_path,
     
     return np.concatenate(preds), loss
 
+
 def compute_score(obs, pred, metric='r2', use_psth=False):
     
     n_neurons = obs.shape[0]
@@ -436,6 +447,7 @@ def compute_score(obs, pred, metric='r2', use_psth=False):
     
     return score
 
+
 def load_test_model(model_config, remove_cov, only_keep_cov, 
                     obs_list, preds_shape, metric='r2', 
                     use_psth=False, data_dir='test', 
@@ -449,9 +461,9 @@ def load_test_model(model_config, remove_cov, only_keep_cov,
                             hidden_dim_dynamic=model_config['hidden_size_dynamic'], 
                             n_layers=model_config['n_layers'])
     
-    data_load_path = save_data_path(figure='figure8')
-    sim_data_load_path = save_data_path(figure='figure10')
-    model_load_path = save_data_path(figure='figure9')
+    data_load_path = save_data_path(figure='figure9_10')
+    sim_data_load_path = save_data_path(figure='figure9_10')
+    model_load_path = save_data_path(figure='figure9_10')
     
     if not simulated:
         feature_fname = data_load_path.joinpath(f'mtnn_data/{data_dir}/feature.npy')

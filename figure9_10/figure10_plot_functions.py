@@ -2,23 +2,25 @@ import figrid as fg
 import matplotlib.pyplot as plt
 import seaborn as sns
 import matplotlib
-
+import numpy as np
 from copy import deepcopy
 
-from utils import *
-from mtnn import *
+from figure9_10.utils import (reshape_flattened, get_acronym_dict, get_acronym_dict_reverse, get_region_colors, cov_idx_dict,
+                              grouped_cov_idx_dict, compute_mean_frs)
+from figure9_10.mtnn import load_test_model
+from reproducible_ephys_functions import save_data_path, figure_style, save_figure_path
 
-from reproducible_ephys_functions import save_data_path
+data_load_path = save_data_path(figure='figure9_10').joinpath('mtnn_data')
+save_path = save_figure_path(figure='figure9_10')
 
-data_load_path = save_data_path(figure='figure8').joinpath('mtnn_data')
 
 regions = list(get_acronym_dict().keys())
 acronym_dict_reverse = get_acronym_dict_reverse()
 region_colors = get_region_colors()
 
 dynamic_covs = ['paw speed', 'nose speed', 'pupil diameter', 
-               'motion energy', 'stimuli', 'go cue', 'first movement',
-               'choice', 'reward', 'wheel velocity', 'lick', 'noise']
+                'motion energy', 'stimuli', 'go cue', 'first movement',
+                'choice', 'reward', 'wheel velocity', 'lick', 'noise']
 
 static_covs = ['mouse prior', 'last mouse prior', 'decision strategy (GLM-HMM)']
 
@@ -59,42 +61,7 @@ def make_fig_ax():
     
     return fig, ax, labels
 
-def figure_style(return_colors=False):
-    """
-    Set seaborn style for plotting figures
-    """
-    sns.set(style="ticks", context="paper",
-            font="DejaVu Sans",
-            rc={"font.size": 24,
-                "axes.titlesize": 24,
-                "axes.labelsize": 24,
-                "axes.linewidth": 0.5,
-                "lines.linewidth": 1,
-                "lines.markersize": 4,
-                "xtick.labelsize": 16,
-                "ytick.labelsize": 16,
-                "savefig.transparent": True,
-                "xtick.major.size": 2.5,
-                "ytick.major.size": 2.5,
-                "xtick.major.width": 0.5,
-                "ytick.major.width": 0.5,
-                "xtick.minor.size": 2,
-                "ytick.minor.size": 2,
-                "xtick.minor.width": 0.5,
-                "ytick.minor.width": 0.5
-                })
-    matplotlib.rcParams['pdf.fonttype'] = 42
-    matplotlib.rcParams['ps.fonttype'] = 42
-    if return_colors:
-        return {'PPC': sns.color_palette('colorblind')[0],
-                'CA1': sns.color_palette('colorblind')[2],
-                'DG': sns.color_palette('muted')[2],
-                'LP': sns.color_palette('colorblind')[4],
-                'PO': sns.color_palette('colorblind')[6],
-                'RS': sns.color_palette('Set2')[0],
-                'FS': sns.color_palette('Set2')[1],
-                'RS1': sns.color_palette('Set2')[2],
-                'RS2': sns.color_palette('Set2')[3]}
+
 
 def get_region_inds(feature_list):
     
@@ -107,14 +74,14 @@ def get_region_inds(feature_list):
             region_idx = np.nonzero(feature[neu_id,0,0,start:end])[0][0]
             region_inds.append(acronym_dict_reverse[region_idx])
     return np.asarray(region_inds)
-    
+
 def compute_scores_for_figure_10(model_config,
                                  leave_one_out_covs,
                                  single_covs,
                                  leave_group_out,
                                  use_psth=False):
     
-    load_path = save_data_path(figure='figure8').joinpath('mtnn_data')
+    load_path = save_data_path(figure='figure9_10').joinpath('mtnn_data')
     
     preds_shape = np.load(load_path.joinpath('test/shape.npy'))
     obs = np.load(load_path.joinpath('test/output.npy'))
@@ -168,7 +135,7 @@ def compute_scores_for_figure_10(model_config,
                                     preds_shape, use_psth=use_psth)
             scores['single_covariate'][cov]['all'] = score
         else:
-            score = load_test_model(model_config_static, None, cov, obs_list, 
+            score = load_test_model(model_config_static, None, cov, obs_list,
                                     preds_shape, use_psth=use_psth)
             scores['single_covariate'][cov]['all'] = score
         for region in regions:
@@ -334,8 +301,6 @@ def generate_figure_10(model_config,
     
     fg.add_labels(fig, labels)
     if savefig:
-        save_path = save_data_path(figure='figure10')
-        save_path.mkdir(exist_ok=True, parents=True)
         figname = save_path.joinpath(f'figure10.png')
         plt.savefig(figname, bbox_inches='tight', facecolor='white')
     
@@ -364,7 +329,7 @@ def generate_figure_10_supplement1(model_config,
                                    glm_leave_one_out,
                                    savefig=False):
     
-    load_path = save_data_path(figure='figure10').joinpath('simulated_data')
+    load_path = save_data_path(figure='figure9_10').joinpath('simulated_data')
     
     data_dir = 'test'
     preds_shape = np.load(load_path.joinpath(f'{data_dir}/shape.npy'))
@@ -485,8 +450,6 @@ def generate_figure_10_supplement1(model_config,
     
     fg.add_labels(fig, labels)
     if savefig:
-        save_path = save_data_path(figure='figure10')
-        save_path.mkdir(exist_ok=True, parents=True)
         figname = save_path.joinpath(f'figure10_supplement1.png')
         plt.savefig(figname, bbox_inches='tight', facecolor='white')
     
@@ -509,10 +472,9 @@ def generate_figure_10_supplement2(model_config,
                                               [],
                                               single_covs,
                                               [])
-    
-    load_path = save_data_path(figure='figure8').joinpath('mtnn_data')
-    preds_shape = np.load(load_path.joinpath('test/shape.npy'))
-    sess_list = np.load(load_path.joinpath('session_info.npy'), allow_pickle=True).tolist()
+
+    preds_shape = np.load(data_load_path.joinpath('test/shape.npy'))
+    sess_list = np.load(data_load_path.joinpath('session_info.npy'), allow_pickle=True).tolist()
     
     all_scores_mean_list = []
     single_covs_renamed = []
@@ -571,8 +533,6 @@ def generate_figure_10_supplement2(model_config,
     plt.suptitle('Pairwise scatterplots of MTNN single-covariate effect sizes', y=0.92, fontsize=40)
     
     if savefig:
-        save_path = save_data_path(figure='figure10')
-        save_path.mkdir(exist_ok=True, parents=True)
         figname = save_path.joinpath(f'figure10_supplement2.png')
         plt.savefig(figname, bbox_inches='tight', facecolor='white')
     

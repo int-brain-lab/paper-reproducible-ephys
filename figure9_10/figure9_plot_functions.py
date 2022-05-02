@@ -1,27 +1,23 @@
 import numpy as np
 from collections import defaultdict
+from tqdm import notebook
 
 import figrid as fg
 import matplotlib.pyplot as plt
 import seaborn as sns
-import matplotlib
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import pylab as pl
 from tqdm import notebook
-
-import sys, os
-sys.path.append('..')
-from neural_and_behav_rasters import plot_neural_behav_raster
-
-# remove this later
 from sklearn.metrics import r2_score
 
-from utils import *
-from mtnn import *
+from reproducible_ephys_functions import save_data_path, save_figure_path, figure_style
+from figure9_10.neural_and_behav_rasters import plot_neural_behav_raster
+from figure9_10.utils import (cov_idx_dict, get_acronym_dict_reverse, compute_mean_frs, acronym_offset, noise_offset, lab_offset,
+                              session_offset, xyz_offset, stimulus_offset, leave_out_covs_for_glm, reshape_flattened)
+from figure9_10.mtnn import load_test_model
 
-from reproducible_ephys_functions import save_data_path
-
-data_load_path = save_data_path(figure='figure8').joinpath('mtnn_data')
+data_load_path = save_data_path(figure='figure9_10').joinpath('mtnn_data')
+save_path = save_figure_path(figure='figure9_10')
 
 def split_by_stimulus(feature):
     
@@ -172,42 +168,6 @@ def make_fig_ax():
     
     return fig, ax, labels
 
-def figure_style(return_colors=False):
-    """
-    Set seaborn style for plotting figures
-    """
-    sns.set(style="ticks", context="paper",
-            font="DejaVu Sans",
-            rc={"font.size": 24,
-                "axes.titlesize": 24,
-                "axes.labelsize": 24,
-                "axes.linewidth": 0.5,
-                "lines.linewidth": 1,
-                "lines.markersize": 4,
-                "xtick.labelsize": 16,
-                "ytick.labelsize": 16,
-                "savefig.transparent": True,
-                "xtick.major.size": 2.5,
-                "ytick.major.size": 2.5,
-                "xtick.major.width": 0.5,
-                "ytick.major.width": 0.5,
-                "xtick.minor.size": 2,
-                "ytick.minor.size": 2,
-                "xtick.minor.width": 0.5,
-                "ytick.minor.width": 0.5
-                })
-    matplotlib.rcParams['pdf.fonttype'] = 42
-    matplotlib.rcParams['ps.fonttype'] = 42
-    if return_colors:
-        return {'PPC': sns.color_palette('colorblind')[0],
-                'CA1': sns.color_palette('colorblind')[2],
-                'DG': sns.color_palette('muted')[2],
-                'LP': sns.color_palette('colorblind')[4],
-                'PO': sns.color_palette('colorblind')[6],
-                'RS': sns.color_palette('Set2')[0],
-                'FS': sns.color_palette('Set2')[1],
-                'RS1': sns.color_palette('Set2')[2],
-                'RS2': sns.color_palette('Set2')[3]}
 
 def generate_figure_9(feature_list, pred_list, obs_list, neu_list, sess_list, trial_list,
                       bin_size=0.05, which_sess=None, savefig=False, 
@@ -378,7 +338,6 @@ def generate_figure_9(feature_list, pred_list, obs_list, neu_list, sess_list, tr
             fg.add_labels(fig, labels)
             
             if savefig:
-                save_path = save_data_path(figure='figure9')
                 figname = save_path.joinpath(f'figure9_{subject}_{region}_id={neuron}.png')
                 plt.savefig(figname, bbox_inches='tight', facecolor='white')
             
@@ -470,7 +429,6 @@ def generate_figure9_supplement1(model_config,
     plt.suptitle('MTNN Prediction Quality vs. Firing Rate', fontsize=32)
     
     if savefig:
-        save_path = save_data_path(figure='figure9')
         figname = save_path.joinpath(f'figure9_supplement1.png')
         plt.savefig(figname, bbox_inches='tight', facecolor='white')
     
@@ -520,7 +478,6 @@ def generate_figure9_supplement2(model_config,
     
     
     if savefig:
-        save_path = save_data_path(figure='figure9')
         figname = save_path.joinpath(f'figure9_supplement2.png')
         plt.savefig(figname,bbox_inches='tight', facecolor='white')
     
@@ -628,7 +585,6 @@ def generate_figure9_supplement3(model_config,
     plt.title('Observed and MTNN-predicted PETHs on held-out trials', fontsize=24, y=1.03)
     
     if savefig:
-        save_path = save_data_path(figure='figure9')
         figname = save_path.joinpath(f'figure9_supplement3.png')
         plt.savefig(figname,bbox_inches='tight', facecolor='white')
     
