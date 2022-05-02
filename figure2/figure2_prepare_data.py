@@ -210,8 +210,8 @@ def prepare_data(insertions, one=None, brain_atlas=None, recompute=False):
         data_traj['angle_ap'] = angle_ap
 
         # Get subject weight at time of recording and date of birth
-        weight = one.alyx.rest('weighings', 'list', nickname=subject, django=f'date_time__icontains,{date}')[0]
-        data_traj['mouse_recording_weight'] = weight['weight']
+        # weight = one.alyx.rest('weighings', 'list', nickname=subject, django=f'date_time__icontains,{date}')[0]
+        # data_traj['mouse_recording_weight'] = weight['weight']
         subj = one.alyx.rest('subjects', 'list', nickname=subject)[0]
         data_traj['dob'] = subj['birth_date']
 
