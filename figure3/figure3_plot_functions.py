@@ -240,11 +240,11 @@ def panel_probe_neurons(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[
                bottom=-950, edgecolor='k', linewidth=0)
     ax[-1].bar(x=width / 2, height=950, width=width, color=np.array([255, 144, 159]) / 255,
                bottom=-2000, edgecolor='k', linewidth=0)
-    ax[-1].text(width / 2, 1600, 'PPC', rotation=90, va='center', color='w', fontweight='bold', ha='center')
-    ax[-1].text(width / 2, 900, 'CA1', rotation=90, va='center', color='w', fontweight='bold', ha='center')
-    ax[-1].text(width / 2, 300, 'DG', rotation=90, va='center', color='w', fontweight='bold', ha='center')
-    ax[-1].text(width / 2, -500, 'LP', rotation=90, va='center', color='w', fontweight='bold', ha='center')
-    ax[-1].text(width / 2, -1500, 'PO', rotation=90, va='center', color='w', fontweight='bold', ha='center')
+    ax[-1].text(width / 2 + 0.1, 1600, 'PPC', rotation=90, va='center', color='w', fontweight='bold', ha='center')
+    ax[-1].text(width / 2 + 0.1, 900, 'CA1', rotation=90, va='center', color='w', fontweight='bold', ha='center')
+    ax[-1].text(width / 2 + 0.1, 300, 'DG', rotation=90, va='center', color='w', fontweight='bold', ha='center')
+    ax[-1].text(width / 2 + 0.1, -500, 'LP', rotation=90, va='center', color='w', fontweight='bold', ha='center')
+    ax[-1].text(width / 2 + 0.1, -1500, 'PO', rotation=90, va='center', color='w', fontweight='bold', ha='center')
     ax[-1].set_axis_off()
 
     # Add colorbar

@@ -37,7 +37,7 @@ def plot_main_figure(one=None):
     # Set up figure
     figure_style()
     fig = plt.figure(figsize=(7, 9), dpi=DPI)  # full width figure is 7 inches
-    ax = {'panel_A': fg.place_axes_on_grid(fig, xspan=[0.1, 1], yspan=[0.05, 0.18]),
+    ax = {'panel_A': fg.place_axes_on_grid(fig, xspan=[0.1, 1], yspan=[0, 0.18]),
          'panel_B': fg.place_axes_on_grid(fig, xspan=[0.1, 1], yspan=[0.25, 0.5],
                                           dim=[1, n_columns + 1], wspace=0.3),
          'panel_C': fg.place_axes_on_grid(fig, xspan=[0.1, 1], yspan=[0.55, 0.8],
