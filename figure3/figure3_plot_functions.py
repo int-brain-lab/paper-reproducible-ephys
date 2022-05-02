@@ -1,4 +1,4 @@
-from reproducible_ephys_functions import filter_recordings, labs, BRAIN_REGIONS, query
+from reproducible_ephys_functions import filter_recordings, labs, BRAIN_REGIONS, query, get_insertions
 import pandas as pd
 import numpy as np
 from figure3.figure3_functions import get_brain_boundaries, plot_probe
@@ -14,25 +14,27 @@ br = BrainRegions()
 
 lab_number_map, institution_map, lab_colors = labs()
 
-
 def panel_sankey(fig, ax, one):
+    
+    # Get number of recordings after freeze cutoff date
+    after_freeze = len(get_insertions(one=one)) - len(get_insertions(one=one, freeze='biorxiv_2022_05'))
+
+    # Get number of failed recordings (CRITICAL)
+    crit = (len(query(behavior=False, n_trials=0, resolved=False, min_regions=0, exclude_critical=False, one=one))
+            - len(query(behavior=False, n_trials=0, resolved=False, min_regions=0, exclude_critical=True, one=one))
+            - after_freeze)
 
     # Get total number of insertions
-    all_ins = len(query(behavior=False, n_trials=0, resolved=False, min_regions=0, exclude_critical=False, one=one))
-
-    # Dropout due to to critical
-    crit = all_ins - len(query(behavior=False, n_trials=0, resolved=False, min_regions=0, exclude_critical=True, one=one))
-
-    # Dropout due to histology
-    hist = all_ins - crit - len(query(behavior=False, n_trials=0, resolved=True, min_regions=0, exclude_critical=True, one=one))
+    all_ins = (len(query(behavior=False, n_trials=0, resolved=True, min_regions=0, exclude_critical=True, one=one))
+               + crit - after_freeze)
 
     # Dropout due to targeting
-    target = all_ins - hist - crit - len(query(behavior=False, n_trials=0, resolved=True, min_regions=2, exclude_critical=True,
-                                               one=one))
+    target = all_ins - crit - len(query(behavior=False, n_trials=0, resolved=True,
+                                        min_regions=2, exclude_critical=True, one=one))
 
     # Dropout due to behavior
-    behav = all_ins - hist - crit - target - len(query(behavior=False, n_trials=400, resolved=True, min_regions=2,
-                                                       exclude_critical=True, one=one))
+    behav = all_ins - crit - target - len(query(behavior=False, n_trials=400, resolved=True,
+                                                min_regions=2, exclude_critical=True, one=one))
 
     # Get secondary QC
     df_filt = filter_recordings(min_rec_lab=0, min_neuron_region=0)
@@ -44,35 +46,35 @@ def panel_sankey(fig, ax, one):
                         & ~df_filt['high_lfp'])].shape[0]
 
     # Recordigns left
-    rec_left = all_ins - hist - crit - target - behav - low_yield - noise - artifacts
+    rec_left = all_ins - crit - target - behav - low_yield - noise - artifacts
 
-    # fig, ax = plt.subplots(1, 1, figsize=(6, 3), dpi=400)
+    #fig, ax = plt.subplots(1, 1, figsize=(6, 3), dpi=400)
     ax.axis('off')
 
-    # currently hardcoded to match Steven & Guido analyses;
-    # todo: finalize numbers and match with above code
-    num_trajectories = [92, -crit, -hist, -target, -behav, -low_yield, -(noise + artifacts), -rec_left]
+    #currently hardcoded to match Steven & Guido analyses;
+    #todo: finalize numbers and match with above code
+    num_trajectories = [all_ins, -crit, -target, -behav, -low_yield, -(noise+artifacts), -rec_left]
 
     # Sankey plot
-    sankey = Sankey(ax=ax, scale=0.0015, offset=0.1, head_angle=90, shoulder=0.025, gap=0.5, radius=0.05)
+    sankey = Sankey(ax=ax, scale=0.005, offset=0.1, head_angle=90, shoulder=0.025, gap=0.5, radius=0.05)
     sankey.add(flows=num_trajectories,
                labels=['All sessions',
                        'Recording failure',
-                       'Alignment unresolved',
                        'Off target',
                        'Too few trials',
                        'Low yield',
                        'Noise/artifacts',
                        'Data analysis'],
                trunklength=0.8,
-               orientations=[0, 1, 1, 1, 1, 1, 1, 0],
-               pathlengths=[0.08, 0.4, 0.3, 0.2, 0.15, 0.1, 0.08, 0.4],
-               facecolor=sns.color_palette('Pastel1')[1])
+               orientations=[0, 1, 1, 1, 1, 1, 0],
+               pathlengths=[0.08, 0.3, 0.15, 0.15, 0.1, 0.08, 0.4],
+               facecolor = sns.color_palette('Pastel1')[1])
     diagrams = sankey.finish()
 
-    # text font and positioning
+    #text font and positioning
     for text in diagrams[0].texts:
-        text.set_fontsize('7')
+            text.set_fontsize('7')
+
 
     text = diagrams[0].texts[0]
     xy = text.get_position()
@@ -83,28 +85,7 @@ def panel_sankey(fig, ax, one):
     xy = text.get_position()
     text.set_position((xy[0] + 0.2, xy[1]))
     text.set_weight('bold')
-    """
-    text = diagrams[0].texts[1]
-    xy = text.get_position()
-    text.set_position((xy[0], xy[1] - 0.1))
-
-    text = diagrams[0].texts[2]
-    xy = text.get_position()
-    text.set_position((xy[0] + 0.2, xy[1]-0.2))
-
-    text = diagrams[0].texts[3]
-    xy = text.get_position()
-    text.set_position((xy[0] + 0.06, xy[1]+0.1))
-
-    text = diagrams[0].texts[4]
-    xy = text.get_position()
-    text.set_position((xy[0], xy[1]+0.1))
-
-    text = diagrams[0].texts[5]
-    xy = text.get_position()
-    text.set_position((xy[0], xy[1]+0.1))
-    """
-
+    
 
 def panel_probe_lfp(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-2000, 2000],
                     normalize=False, clim=[-190, -150]):
@@ -274,8 +255,8 @@ def panel_probe_neurons(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[
     cbar.set_label('Firing rate (spks/s)', rotation=270, labelpad=-2)
 
 
-def panel_example(ax, n_rec_per_lab=4, example_region='LP', example_metric='lfp_power_high',
-                  ylim=[-200, -150]):
+def panel_example(ax, n_rec_per_lab=4, example_region='CA1', example_metric='lfp_power_high',
+                  ylim=None, ylabel='LFP power in CA1 (db)', yticks=None):
 
     df_ins = load_dataframe(df_name='ins')
     df_filt = filter_recordings(df_ins, min_rec_lab=n_rec_per_lab)
@@ -296,12 +277,16 @@ def panel_example(ax, n_rec_per_lab=4, example_region='LP', example_metric='lfp_
     ax_lines = sns.pointplot(x='institute', y=example_metric, data=data_example,
                              ci=0, join=False, estimator=np.mean, color='k',
                              markers="_", scale=1, ax=ax)
-    # plt.setp(ax_lines.collections, zorder=100, label="")
+
+    #plt.setp(ax_lines.collections, zorder=100, label="")
     ax.plot(np.arange(data_example['institute'].unique().shape[0]),
-            [data_example[example_metric].mean()] * data_example['institute'].unique().shape[0],
-            color='r', lw=1)
-    ax.set(ylabel=f'LFP power in {example_region} (dB)', xlabel='',
-           xlim=[-.5, len(data['institute'].unique()) + .5], ylim=ylim)
+             [data_example[example_metric].mean()] * data_example['institute'].unique().shape[0],
+             color='r', lw=1)
+    ax.set(ylabel=ylabel, xlabel='', xlim=[-.5, len(data['institute'].unique()) + .5])
+    if ylim is not None:
+        ax.set(ylim=ylim)
+    if yticks is not None:
+        ax.set(yticks=yticks)
     ax.set_xticklabels(data_example['institute'].unique(), rotation=30, ha='right')
     sns.despine(trim=True)
 
