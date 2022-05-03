@@ -1,7 +1,19 @@
 # Installation
+## Making a new python environment (optional)
 
 Install [Anaconda](https://www.anaconda.com/distribution/#download-section) and [git](https://git-scm.com/downloads), 
 and follow their installer instructions to add each to the system path
+
+Create new python environment
+```
+conda create --name ibl_repro_ephys python=3.9
+```
+Activate environment
+```
+conda activate ibl_repro_ephys
+```
+
+## Downloading and Installing repo
 
 Clone the repo 
 ```
@@ -13,14 +25,8 @@ Navigate to repo
 cd paper-reproducible-ephys
 ```
 
-Create new python environment
+Install requirements and repo
 ```
-conda create --name ibl_repro_ephys python=3.9
-```
-
-Activate environment and install requirements
-```
-conda activate ibl_repro_ephys
 pip install -e .
 ```
 
@@ -28,7 +34,8 @@ pip install -e .
 Open an ipython terminal
 ```
 from one.api import ONE
-one = ONE(silent=True, password='international')
+pw = 'international'
+one = ONE(silent=True, password=pw)
 ```
 
 # Setting up saving scripts
