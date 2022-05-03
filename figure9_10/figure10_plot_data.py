@@ -49,7 +49,7 @@ def plot_figures():
                    'choice', 'reward', 'wheel velocity', 'lick', 'noise',
                    'mouse prior', 'last mouse prior', 'decision strategy (GLM-HMM)']
 
-    #generate_figure_10(model_config, leave_one_out_covs, single_covs, leave_group_out, savefig=True)
+    generate_figure_10(model_config, leave_one_out_covs, single_covs, leave_group_out, savefig=True)
 
 
     sim_model_config = {'n_neurons': n_neurons,
