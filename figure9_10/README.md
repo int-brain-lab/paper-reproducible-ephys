@@ -6,7 +6,7 @@ To install pytorch for your OS please follow this link https://pytorch.org/ and 
 # Figure 9 and 10
 Figures 9 and 10 can be reproduced by executing figure9_10_run.py file 
 ```
-python figure6_run.py
+python figure9_10_run.py
 ```
 
 or by using the following code snippet in an ipython terminal
