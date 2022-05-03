@@ -1,4 +1,8 @@
 # Installation
+
+Install [Anaconda](https://www.anaconda.com/distribution/#download-section) and [git](https://git-scm.com/downloads), 
+and follow their installer instructions to add each to the system path
+
 Clone the repo 
 ```
 git clone https://github.com/int-brain-lab/paper-reproducible-ephys.git
@@ -8,15 +12,18 @@ Navigate to repo
 ```
 cd paper-reproducible-ephys
 ```
+
 Create new python environment
 ```
 conda create --name ibl_repro_ephys python=3.9
 ```
+
 Activate environment and install requirements
 ```
 conda activate ibl_repro_ephys
 pip install -e .
 ```
+
 # Setting up ONE credentials
 Open an ipython terminal
 ```
@@ -40,4 +47,4 @@ FIG_PATH = '/path/where/to/save/your/figures/'
 DATA_PATH = '/path/where/to/save/your/data/
 
 # Running code
-For instructions on how to run code please refer to README file in each figure sub-folder
+For instructions on how to run code for each figure please refer to README file in each figure sub-folder
