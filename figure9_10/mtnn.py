@@ -254,16 +254,18 @@ def run_train(model, train_feature_path, train_output_path,
               model_name_suffix=None, remove_cov=None, 
               only_keep_cov=None, eval_train=False, simulated=False):
 
+    save_remove_cov = map_leave_out_covs_for_glm(remove_cov)
+
     if model_name_suffix is None:
-        model_name = f'state_dict_rem={remove_cov}_keep={only_keep_cov}'
+        model_name = f'state_dict_rem={save_remove_cov}_keep={only_keep_cov}'
     else:
-        model_name = f'state_dict_rem={remove_cov}_keep={only_keep_cov}_{model_name_suffix}'
+        model_name = f'state_dict_rem={save_remove_cov}_keep={only_keep_cov}_{model_name_suffix}'
     model_name = model_name + '_simulated.pt' if simulated else model_name + '.pt'
     save_path = save_data_path(figure='figure9_10').joinpath('trained_models')
     save_path.mkdir(exist_ok=True, parents=True)
-    
+
     static = static_bool if not simulated else sim_static_bool
-        
+
     criterion = nn.PoissonNLLLoss(log_input=False)
 
     #params = add_weight_decay(model, weight_decay, bias_weight_decay)
@@ -271,12 +273,12 @@ def run_train(model, train_feature_path, train_output_path,
     optimizer = torch.optim.SGD(model.parameters(), lr=lr, momentum=momentum, weight_decay=weight_decay)
     lr_lambda = lambda epoch: lr_decay ** epoch
     scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_lambda)
-    
+
     train_feature = np.load(train_feature_path)
     train_output = np.load(train_output_path)
     val_feature = np.load(val_feature_path)
     val_output = np.load(val_output_path)
-    
+
     if remove_cov is not None:
         train_feature, mask = leave_out(train_feature, remove_cov, simulated, return_mask=True)
         val_feature = leave_out(val_feature, remove_cov, simulated)
@@ -285,19 +287,19 @@ def run_train(model, train_feature_path, train_output_path,
         val_feature = only_keep(val_feature, only_keep_cov, simulated)
     else:
         mask = np.ones(train_feature.shape[-1]-static.sum()-1).astype(bool)
-    
+
     train_neuron_order = train_feature[:,0,0]
     val_neuron_order = val_feature[:,0,0]
     train_feature = train_feature[:,:,1:]
     val_feature = val_feature[:,:,1:]
-    
+
     train_data = MTNNDataset(train_neuron_order, train_feature, train_output, static)
     val_data = MTNNDataset(val_neuron_order, val_feature, val_output, static)
     train_dataloader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
     val_dataloader = DataLoader(val_data, batch_size=batch_size, shuffle=False)
-    
+
     best_epoch = 0
-    
+
     loss_list = []
     val_loss_list = []
     model.train()
@@ -310,7 +312,7 @@ def run_train(model, train_feature_path, train_output_path,
             dynamic_f, pre_pads, post_pads, shifts = random_pad_shift(dynamic_f, mask)
             dynamic_f_gpu = dynamic_f.cuda().float()
             target_gpu = target.cuda().float()
-            
+
             output = shift2D(model(static_f_gpu, dynamic_f_gpu, neu), -shifts[:,:,0])[:,pre_pads:-post_pads]
             loss = criterion(output.reshape(-1), target_gpu.reshape(-1).float())
 
@@ -318,7 +320,7 @@ def run_train(model, train_feature_path, train_output_path,
             nn.utils.clip_grad_norm_(model.parameters(), clip)
             optimizer.step() # Updates the weights accordingly
             batch_losses.append(loss.item())
-            
+
             del static_f_gpu
             del dynamic_f_gpu
             del target_gpu
@@ -332,7 +334,7 @@ def run_train(model, train_feature_path, train_output_path,
 
             model.eval()
             with torch.no_grad():
-                
+
                 if eval_train:
                     batch_losses = []
                     for neu, static_f, dynamic_f, target in train_dataloader:
@@ -351,7 +353,7 @@ def run_train(model, train_feature_path, train_output_path,
                         torch.cuda.empty_cache()
                     loss_list.append(np.mean(batch_losses))
                     print("Training Loss: {:.4f}".format(loss_list[-1]), end=' ')
-                
+
                 batch_losses=[]
                 for neu, static_f, dynamic_f, target in val_dataloader:
                     static_f_gpu = static_f.cuda().float()
@@ -360,7 +362,7 @@ def run_train(model, train_feature_path, train_output_path,
                     output = model(static_f_gpu, dynamic_f_gpu, neu)
                     loss = criterion(output.reshape(-1), target_gpu.reshape(-1).float())
                     batch_losses.append(loss.item())
-                    
+
                     del static_f_gpu
                     del dynamic_f_gpu
                     del target_gpu
@@ -376,7 +378,7 @@ def run_train(model, train_feature_path, train_output_path,
                                                                                                 val_loss_list[-1]))
                 valid_loss_min = val_loss_list[-1]
                 best_epoch = epoch
-                
+
     return best_epoch, loss_list, val_loss_list
 
 
@@ -447,6 +449,14 @@ def compute_score(obs, pred, metric='r2', use_psth=False):
     
     return score
 
+def map_leave_out_covs_for_glm(remove_cov):
+    # A complete hack because for leave_one_out_glm_cov the filename is too long on windows
+    if remove_cov and len(remove_cov) > 10:
+        save_remove_cov = ['covs_glm']
+    else:
+        save_remove_cov = remove_cov
+    return save_remove_cov
+
 
 def load_test_model(model_config, remove_cov, only_keep_cov, 
                     obs_list, preds_shape, metric='r2', 
@@ -471,14 +481,16 @@ def load_test_model(model_config, remove_cov, only_keep_cov,
     else:
         feature_fname = sim_data_load_path.joinpath(f'simulated_data/{data_dir}/feature.npy')
         output_fname = sim_data_load_path.joinpath(f'simulated_data/{data_dir}/output.npy')
-    
+
+    save_remove_cov = map_leave_out_covs_for_glm(remove_cov)
+
     if model_name_suffix is None:
-        model_name = f'trained_models/state_dict_rem={remove_cov}_keep={only_keep_cov}'
+        model_name = f'trained_models/state_dict_rem={save_remove_cov}_keep={only_keep_cov}'
     else:
-        model_name = f'trained_models/state_dict_rem={remove_cov}_keep={only_keep_cov}_{model_name_suffix}'
+        model_name = f'trained_models/state_dict_rem={save_remove_cov}_keep={only_keep_cov}_{model_name_suffix}'
     model_name = model_name + '_simulated.pt' if simulated else model_name + '.pt'
     model_name = model_load_path.joinpath(model_name)
-    
+
     model.load_state_dict(torch.load(model_name))
     preds, loss = run_eval(model,feature_fname, output_fname,
                            remove_cov=remove_cov, only_keep_cov=only_keep_cov,
@@ -490,11 +502,11 @@ def load_test_model(model_config, remove_cov, only_keep_cov,
         n = sh[0]*sh[1]
         pred_list.append(preds[idx:idx+n].reshape(sh[:-1]))
         idx += n
-        
+
     scores = []
     for i in range(len(obs_list)):
-        scr = compute_score(obs_list[i], 
-                          pred_list[i], 
+        scr = compute_score(obs_list[i],
+                          pred_list[i],
                           metric=metric,
                           use_psth=use_psth)[metric]
         scores.extend(list(scr))
