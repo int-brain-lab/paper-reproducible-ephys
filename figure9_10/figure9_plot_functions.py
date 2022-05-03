@@ -289,7 +289,7 @@ def generate_figure_9(feature_list, pred_list, obs_list, neu_list, sess_list, tr
             if left[-1] > 0:
                 ax['panel_E'].axhline(left[-1]-0.5, color='k', linestyle='--', lw=3)
             ax['panel_E'].axvline(10.5, color='k', linestyle='--', lw=3)
-            ax['panel_E'].set_xlabel('time (sec)')
+            ax['panel_E'].set_xlabel('time (sec)', fontsize=26)
             ax['panel_E'].set_yticks([])
             ax['panel_E'].set_ylabel('predicted\nraster plot\ntrials', fontsize=26)
             ax['panel_E'].set_xticks([0.5, 10.5, 20.5, 29.5])
@@ -306,7 +306,7 @@ def generate_figure_9(feature_list, pred_list, obs_list, neu_list, sess_list, tr
                 ax['panel_F'].axhline(right[-1]-0.5, color='k', linestyle='--', lw=3)
             ax['panel_F'].axvline(10.5, color='k', linestyle='--', lw=3)
             ax['panel_F'].set_yticks([])
-            ax['panel_F'].set_xlabel('time (sec)')
+            ax['panel_F'].set_xlabel('time (sec)', fontsize=26)
             ax['panel_F'].set_xticks([0.5, 10.5, 20.5, 29.5])
             ax['panel_F'].set_xticklabels(np.arange(-0.5,1.1,0.5), fontsize=22)
             for k in range(right_trial_idx.shape[0]):
@@ -341,7 +341,7 @@ def generate_figure_9(feature_list, pred_list, obs_list, neu_list, sess_list, tr
                 figname = save_path.joinpath(f'figure9_{subject}_{region}_id={neuron}.png')
                 plt.savefig(figname, bbox_inches='tight', facecolor='white')
             
-            plt.show()
+            plt.close()
             
 
 def generate_figure9_supplement1(model_config,                              
@@ -465,14 +465,14 @@ def generate_figure9_supplement2(model_config,
     plt.scatter(mtnn_score[1:], glm_score[1:], color='blue', alpha=0.65)
     plt.scatter(mtnn_score_glm_cov[1:], glm_score[1:], color='red', alpha=0.65)
     
-    plt.xlabel('MTNN Performance (R2)')
-    plt.ylabel('GLM Performance (R2)')
+    plt.xlabel('MTNN Performance (R2)', fontsize=24)
+    plt.ylabel('GLM Performance (R2)', fontsize=24)
     
     plt.plot([-1,1],[-1,1], color='black')
     plt.xlim(-0.25,0.55)
     plt.ylim(-0.25,0.55)
     
-    plt.title('MTNN vs GLM Predictive Performance Comparison')
+    plt.title('MTNN vs GLM Predictive Performance Comparison', fontsize=24)
     
     plt.legend(fontsize=20)
     

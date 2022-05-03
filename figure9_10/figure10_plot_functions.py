@@ -385,26 +385,26 @@ def generate_figure_10_supplement1(model_config,
     ax['panel_A'].set_xlim(-0.1,1.0)
     ax['panel_A'].set_ylim(-0.1,1.0)
     ax['panel_A'].plot([-1,1],[-1,1],color='k')
-    ax['panel_A'].set_ylabel('GLM predictive performance (R2)')
-    ax['panel_A'].set_xlabel('MTNN predictive performance (R2)')
-    ax['panel_A'].set_title('GLM vs MTNN\npredictive performance on simulated data')
+    ax['panel_A'].set_ylabel('GLM predictive performance (R2)', fontsize=20)
+    ax['panel_A'].set_xlabel('MTNN predictive performance (R2)', fontsize=20)
+    ax['panel_A'].set_title('GLM vs MTNN\npredictive performance on simulated data', fontsize=24)
     
-    ax['panel_B'][0][0].set_title('left stimulus')
-    ax['panel_B'][0][1].set_title('right stimulus')
-    ax['panel_B'][0][2].set_title('incorrect')
-    ax['panel_B'][0][3].set_title('correct')
-    ax['panel_B'][1][0].set_title('first movement onset')
-    ax['panel_B'][1][1].set_title('mouse prior')
-    ax['panel_B'][1][2].set_title('previous mouse prior')
-    ax['panel_B'][1][3].set_title('wheel velocity')
+    ax['panel_B'][0][0].set_title('left stimulus', fontsize=16)
+    ax['panel_B'][0][1].set_title('right stimulus', fontsize=16)
+    ax['panel_B'][0][2].set_title('incorrect', fontsize=16)
+    ax['panel_B'][0][3].set_title('correct', fontsize=16)
+    ax['panel_B'][1][0].set_title('first movement onset', fontsize=16)
+    ax['panel_B'][1][1].set_title('mouse prior', fontsize=16)
+    ax['panel_B'][1][2].set_title('previous mouse prior', fontsize=16)
+    ax['panel_B'][1][3].set_title('wheel velocity', fontsize=16)
     
-    ax['panel_B'][0][0].set_ylabel('GLM Effect Size '+r'($\Delta$'+'R2)')
-    ax['panel_B'][1][0].set_ylabel('GLM Effect Size '+r'($\Delta$'+'R2)')
+    ax['panel_B'][0][0].set_ylabel('GLM Effect Size '+r'($\Delta$'+'R2)', fontsize=16)
+    ax['panel_B'][1][0].set_ylabel('GLM Effect Size '+r'($\Delta$'+'R2)', fontsize=16)
     
-    ax['panel_B'][1][0].set_xlabel('MTNN Effect Size '+r'($\Delta$'+'R2)')
-    ax['panel_B'][1][1].set_xlabel('MTNN Effect Size '+r'($\Delta$'+'R2)')
-    ax['panel_B'][1][2].set_xlabel('MTNN Effect Size '+r'($\Delta$'+'R2)')
-    ax['panel_B'][1][3].set_xlabel('MTNN Effect Size '+r'($\Delta$'+'R2)')
+    ax['panel_B'][1][0].set_xlabel('MTNN Effect Size '+r'($\Delta$'+'R2)', fontsize=16)
+    ax['panel_B'][1][1].set_xlabel('MTNN Effect Size '+r'($\Delta$'+'R2)', fontsize=16)
+    ax['panel_B'][1][2].set_xlabel('MTNN Effect Size '+r'($\Delta$'+'R2)', fontsize=16)
+    ax['panel_B'][1][3].set_xlabel('MTNN Effect Size '+r'($\Delta$'+'R2)', fontsize=16)
     
     ax['panel_B'][0][0].scatter(best_score-leftstim_score, glm_leave_one_out[:,0], color='k', alpha=0.6)
     ax['panel_B'][0][0].set_xlim(-0.1,1.0)
@@ -446,7 +446,7 @@ def generate_figure_10_supplement1(model_config,
     ax['panel_B'][1][3].set_ylim(-0.1,1.0)
     ax['panel_B'][1][3].plot([-1,1],[-1,1],color='k')
     
-    plt.suptitle('GLM vs MTNN Effect Sizes on Simulated Data', y=0.62)
+    plt.suptitle('GLM vs MTNN Effect Sizes on Simulated Data', y=0.62, fontsize=20)
     
     fg.add_labels(fig, labels)
     if savefig:
@@ -502,10 +502,10 @@ def generate_figure_10_supplement2(model_config,
             covj = single_covs[single_cov_ordering[j]]        
                 
             if j == 0:
-                axs[i,j].set_ylabel(covi, rotation=45)
+                axs[i,j].set_ylabel(covi, rotation=45, fontsize=20)
                 axs[i,j].yaxis.set_label_coords(-1.0, 0.5)
             if i == ncovs-1:
-                axs[i,j].set_xlabel(covj, rotation=45)
+                axs[i,j].set_xlabel(covj, rotation=45, fontsize=20)
                 axs[i,j].xaxis.set_label_coords(0.5, -0.2)
             
             if i==0 and j==0:
