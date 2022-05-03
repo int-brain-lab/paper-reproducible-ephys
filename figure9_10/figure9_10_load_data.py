@@ -39,9 +39,9 @@ def download_glm_hmm():
     download_aws('glm_hmm')
 
 
-def download_trained():
-    if data_path.joinpath('trained_models').exists():
-        return
-    print('downloading trained_models')
+def download_data():
+    print('downloading data')
     download_aws('trained_models')
-    # TODO long filename problem
+    download_aws('mtnn_data')
+    download_aws('glm_data')
+    download_aws('simulated_data')

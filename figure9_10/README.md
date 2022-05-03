@@ -19,8 +19,8 @@ one = ONE()
 run_figure9_10(one)
 ```
 
-By default the mtnn models are not retrained and instead the trained models are downloaded. To retrain the models, the
-following can be run. N.B Training the models takes a couple of days 
+By default the data and trained models are downloaded and the figures reproduced. If you want to rerun the full analysis
+the following can be run N.B Training takes a couple of days 
 ```python
 
 from one.api import ONE
