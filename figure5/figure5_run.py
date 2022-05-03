@@ -8,7 +8,7 @@ from reproducible_ephys_functions import get_insertions
 from one.api import ONE
 
 
-def run_figure5(one, recompute=False, supplementary=False):
+def run_figure5(one, recompute=False):
 
     insertions = get_insertions(level=2, one=one, freeze='biorxiv_2022_05')
     prepare_data(insertions, one=one, **default_params, recompute=recompute)
