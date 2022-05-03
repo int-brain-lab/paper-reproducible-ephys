@@ -7,7 +7,7 @@ from figure9_10.figure9_10_load_data import download_data
 from figure9_10.figure9_train import train as train_fig9
 from figure9_10.figure10_train import train as train_fig10
 from figure9_10.figure9_plot_data import plot_figures as plot_figures9
-from figure9_10.figure9_plot_data import plot_figures as plot_figures10
+from figure9_10.figure10_plot_data import plot_figures as plot_figures10
 
 from one.api import ONE
 
