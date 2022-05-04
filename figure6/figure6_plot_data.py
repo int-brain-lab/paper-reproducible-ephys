@@ -83,7 +83,7 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
     # load metainfo df, row per cell
     concat_df = load_dataframe()
     # load PSTHs, one per cell
-    data = load_data(event=align, split=split, smoothing=None)
+    data = load_data(event=align, split=split, smoothing='none')
     all_frs = data['all_frs']
 
     ts = 'fast|slow RT PETH'
@@ -327,8 +327,9 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
     k = 0
     p_ = {}  # Guido's permutation test score
     p_r = {}
-    D = Counter(regs)
-    for reg in reversed(D):
+    D = sorted(list(Counter(regs)))
+    
+    for reg in D:
         if reg is None:
             continue
 
@@ -391,7 +392,7 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
         p = 1 - (0.01 * percentileofscore(null_d, dist))
         p_[reg] = np.round(p, 3)
 
-        axs3[ms[k]].set_title(reg, loc='left' if reg == 'PO' else 'center')
+        axs3[ms[k]].set_title(reg, loc='left')
         axs3[ms[k]].set_xlabel('embedding dim 1')
         axs3[ms[k]].set_ylabel('embedding dim 2')
         axs3[ms[k]].text(-0.1, 1.30, panel_n3[ms[k]],
