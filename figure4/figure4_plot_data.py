@@ -78,7 +78,7 @@ def plot_panel_single_subject(event='move', norm='subtract', smoothing='kernel',
         fig, ax = plt.subplots()
     subject = 'SWC_054'
     region = 'CA1'
-    idx = df_filt.loc[(df['region'] == region) & (df['subject'] == subject)].index
+    idx = df_filt.loc[(df_filt['region'] == region) & (df_filt['subject'] == subject)].index
     # print(df_filt.loc[(df['region'] == region) & (df['subject'] == subject)].index)
     # print(df_filt.loc[(df['region'] == region) & (df['subject'] == subject)].institute)
     # a = df_filt.groupby(['subject', 'institute'])
