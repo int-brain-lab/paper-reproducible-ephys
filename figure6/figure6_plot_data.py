@@ -173,7 +173,7 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
 
     labs_ = Counter(labs)
     # Euclidean distance of points for permutation test
-
+    #return labs_
     def distE(x, y):
         return np.sqrt(np.dot(x, x) - 2 * np.dot(x, y) + np.dot(y, y))
 
@@ -193,7 +193,7 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
         cents[reg] = np.mean(emb[regs == reg], axis=0)
 
     # shuffle test
-    nrand = 10000  # random region allocations
+    nrand = 1000  # random region allocations
     centsr = []
     for shuf in range(nrand):
         regsr = regs.copy()
@@ -287,14 +287,18 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
 
     for k in range(len(idxs)):
 
-        axs[ms[k]].plot(xs - 0.5, y[idxs[k]][:len(xs)] / T_BIN, c='k', label='PETH')
-        axs[ms[k]].plot(xs - 0.5, y_res[2][idxs[k]][:len(xs)] / T_BIN, c='r', ls='--', label='2-PC-fit')
+        axs[ms[k]].plot(xs - 0.5, y[idxs[k]][:len(xs)] / T_BIN,
+                        c='k', label='PETH')
+        axs[ms[k]].plot(xs - 0.5, y_res[2][idxs[k]][:len(xs)] / T_BIN,
+                        c='r', ls='--', label='2-PC-fit')
 
         for x in np.array([25]) * T_BIN:
-            axs[ms[k]].axvline(x=0, linewidth=0.5, linestyle='--', c='g', label='motion start')
+            axs[ms[k]].axvline(x=0, linewidth=0.5, linestyle='--',
+                               c='g', label='motion start')
 
         axs[ms[k]].set_ylabel('firing rate \n [Hz]')
-        axs[ms[k]].text(0.2, 1, rf'$r^2$={np.round(r2_score(y[idxs[k]], y_res[2][idxs[k]]), 2)}', transform=axs[ms[k]].transAxes,
+        stext = rf'$r^2$={np.round(r2_score(y[idxs[k]], y_res[2][idxs[k]]), 2)}'
+        axs[ms[k]].text(0.2, 1, stext, transform=axs[ms[k]].transAxes,
                         fontsize=7, va='top', ha='right')
 
         if k == 1:
@@ -324,7 +328,7 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
     p_ = {}  # Guido's permutation test score
     p_r = {}
     D = Counter(regs)
-    for reg in D:
+    for reg in reversed(D):
         if reg is None:
             continue
 
