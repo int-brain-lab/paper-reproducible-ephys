@@ -66,8 +66,8 @@ def plot_trajs(plan_colour='w', lab_colour=True):
         # colour by institution_colors[institution_map[phi_lab]]
         if lab_colour:
             color = institution_colors[institution_map[lab]]
-            cax.plot(ins.xyz[:, 0] * 1e6, ins.xyz[:, 2] * 1e6, color=color, linewidth=0.8)
-            sax.plot(ins.xyz[:, 1] * 1e6, ins.xyz[:, 2] * 1e6, color=color, linewidth=0.8)
+            cax.plot(ins.xyz[:, 0] * 1e6, ins.xyz[:, 2] * 1e6, color=color, linewidth=0.5)
+            sax.plot(ins.xyz[:, 1] * 1e6, ins.xyz[:, 2] * 1e6, color=color, linewidth=0.5)
         else:
             # OR plot all trajectories the same colour - deepskyblue
             cax.plot(ins.xyz[:, 0] * 1e6, ins.xyz[:, 2] * 1e6, color='deepskyblue', linewidth=0.5, alpha=0.5)

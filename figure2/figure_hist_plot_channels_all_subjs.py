@@ -259,3 +259,4 @@ def plot_channels_n3():
 
 if __name__ == "__main__":
     plot_channels_n3()
+    plot_all_channels()

@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 import svgutils.compose as sc  # layout figure in svgutils
+import math
 
 from iblutil.numerical import ismember
 
@@ -114,11 +115,12 @@ def plot_probe_angle_histology():
     # set x/y axis labels
     ax1.set_xlabel('histology ML angle (degrees)', fontsize=6)
     ax1.set_ylabel('histology AP angle (degrees)', fontsize=6)
+    ax1.set_title('Angle variability')
     # add mean trageting error distance to title
-    ax1.set_title('Mean (SD) angle \n' +
-                  'ALL : ' + str(np.around(angle_mean_all, 1)) + ' (' + str(np.around(angle_std_all, 2)) + ')' + ' degrees \n' +
-                  'PASS : ' + str(np.around(angle_mean_include, 1)) + ' (' + str(np.around(angle_std_include, 2)) + ')'
-                  + ' degrees', fontsize=8)
+    #ax1.set_title('Mean (SD) angle \n' +
+    #              'ALL : ' + str(np.around(angle_mean_all, 1)) + ' (' + str(np.around(angle_std_all, 2)) + ')' + ' degrees \n' +
+    #              'PASS : ' + str(np.around(angle_mean_include, 1)) + ' (' + str(np.around(angle_std_include, 2)) + ')'
+    #              + ' degrees', fontsize=8)
 
     ax1.xaxis.set_major_locator(plt.MaxNLocator(7))
     ax1.yaxis.set_major_locator(plt.MaxNLocator(7))
@@ -129,19 +131,19 @@ def plot_probe_angle_histology():
     # plt.tight_layout()  # tighten layout around xlabel & ylabel
 
     # add a subplot INSIDE the fig1 ax1
-    axav = fig1.add_axes([0.1, 0.12, 0.28, 0.28])
-    axav.xaxis.tick_top()
-    axav.yaxis.tick_right()
-    axav.tick_params(axis='both', labelsize=3, pad=1)
-    axav.axhline(y=0, color="grey", linestyle="--", linewidth=0.5)
-    axav.axvline(x=0, color="grey", linestyle="--", linewidth=0.5)
-    axav.set_xlim((-10, 5))
-    axav.set_ylim((-10, 5))
+    #axav = fig1.add_axes([0.1, 0.12, 0.28, 0.28])
+    #axav.xaxis.tick_top()
+    #axav.yaxis.tick_right()
+    #axav.tick_params(axis='both', labelsize=3, pad=1)
+    #axav.axhline(y=0, color="grey", linestyle="--", linewidth=0.5)
+    #axav.axvline(x=0, color="grey", linestyle="--", linewidth=0.5)
+    #axav.set_xlim((-10, 5))
+    #axav.set_ylim((-10, 5))
 
-    for ml, ap, k in zip(lab_mean_ml, lab_mean_ap, lab_mean_ml.keys()):
-        axav.plot(ml, ap, color=institution_colors[institution_map[k]], marker="+", markersize=5, alpha=0.7,
-                  label=institution_map[k])
-    axav.plot(mean_ml, mean_ap, color='k', marker="+", markersize=8, alpha=0.7, label="MEAN")
+    #for ml, ap, k in zip(lab_mean_ml, lab_mean_ap, lab_mean_ml.keys()):
+    #    axav.plot(ml, ap, color=institution_colors[institution_map[k]], marker="+", markersize=5, alpha=0.7,
+    #              label=institution_map[k])
+    #axav.plot(mean_ml, mean_ap, color='k', marker="+", markersize=8, alpha=0.7, label="MEAN")
 
     plt.tight_layout()
     fig1.set_size_inches(2.15, 2.15)
@@ -185,8 +187,13 @@ def plot_probe_angle_histology_all_lab(min_rec_per_lab=4):
     # Set your custom color palette
     sns.set_palette(sns.color_palette(colors))
 
-    sns.histplot(probe_data['angle'], kde=True, color='grey', ax=ax1)
-    ax1.set_xlim(0, 20)
+    #sns.histplot(probe_data['angle'], kde=True, color='grey', ax=ax1)
+    sns.boxplot(y='passed', x='angle', data=probe_data, hue='passed', orient="h", fliersize=2,
+                order = ['PASS', 'FAIL'], ax=ax1)
+    ax1.legend_.remove()
+    # round up to nearest hundred from maximum xy surface error for histoloy
+    max_distance = int(math.ceil( max(probe_data['angle'])))
+    ax1.set_xlim(0, max_distance)
     ax1.set_ylabel('count')
     ax1.set_xlabel(None)
     ax1.xaxis.set_major_locator(plt.MaxNLocator(5))
@@ -214,30 +221,21 @@ def plot_probe_angle_histology_all_lab(min_rec_per_lab=4):
     remove_inst = ~probe_data['institute'].isin(remove_inst).values
 
     probe_data_permute = probe_data[remove_inst]
-    p_m1 = permut_test(probe_data_permute['angle'].values, metric=permut_dist,
+    p_m = permut_test(probe_data_permute['angle'].values, metric=permut_dist,
                        labels1=probe_data_permute['lab'].values, labels2=probe_data_permute['subject'].values)
-    p_m2 = permut_test(probe_data_permute['angle'].values, metric=permut_dist,
-                       labels1=probe_data_permute['lab'].values, labels2=probe_data_permute['subject'].values)
-    p_m3 = permut_test(probe_data_permute['angle'].values, metric=permut_dist,
-                       labels1=probe_data_permute['lab'].values, labels2=probe_data_permute['subject'].values)
-    p_m = np.mean([p_m1, p_m2, p_m3])
 
+    print('\nHistology probe angle')
     print("PERMUTATION TEST ALL : ", p_m)
 
-    # TODO why is permutation result so different now?
     # permutation testing - PASS DATA ONLY
     probe_data_permute = probe_data[probe_data['permute_include'] == 1]
-    pp_m1 = permut_test(probe_data_permute['angle'].values, metric=permut_dist,
+    pp_m = permut_test(probe_data_permute['angle'].values, metric=permut_dist,
                         labels1=probe_data_permute['lab'].values, labels2=probe_data_permute['subject'].values)
-    pp_m2 = permut_test(probe_data_permute['angle'].values, metric=permut_dist,
-                        labels1=probe_data_permute['lab'].values, labels2=probe_data_permute['subject'].values)
-    pp_m3 = permut_test(probe_data_permute['angle'].values, metric=permut_dist,
-                        labels1=probe_data_permute['lab'].values, labels2=probe_data_permute['subject'].values)
-    pp_m = np.mean([pp_m1, pp_m2, pp_m3])
 
     print("PERMUTATION TEST PASS : ", pp_m)
 
-    ax1.set_title('Permutation Test p-value: \n    ALL : ' + str(round(p_m, 4)) + '    PASS : ' + str(round(pp_m, 4)))
+    ax1.set_title('Histology-to-planned angle', fontsize=7)
+    #ax1.set_title('Permutation Test p-value: \n    ALL : ' + str(round(p_m, 4)) + '    PASS : ' + str(round(pp_m, 4)))
 
     plt.tight_layout()  # tighten layout around xlabel & ylabel
     fig.set_size_inches(2.15, 2.8)
