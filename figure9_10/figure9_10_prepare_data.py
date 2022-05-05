@@ -18,6 +18,7 @@ from figure9_10.figure9_10_load_data import download_priors, download_glm_hmm
 
 data_path = save_data_path(figure='figure9_10')
 
+rng = np.random.default_rng(seed=0b01101001 + 0b01100010 + 0b01101100)
 
 def prepare_data(one, new_metrics=True):
     brain_atlas = AllenAtlas()
@@ -25,7 +26,6 @@ def prepare_data(one, new_metrics=True):
     insertions = get_traj(eids)
     prepare_mtnn_data(insertions, one, new_metrics=new_metrics, brain_atlas=brain_atlas)
     prepare_glm_and_simulated_data(insertions, one, brain_atlas=brain_atlas)
-
 
 def prepare_mtnn_data(insertions, one, new_metrics=True, brain_atlas=None):
 
@@ -150,11 +150,11 @@ def prepare_mtnn_data(insertions, one, new_metrics=True, brain_atlas=None):
         val_shape_list.append((sh[0], n_val,) + sh[-2:])
         test_shape_list.append((sh[0], n_test,) + sh[-2:])
 
-        test_idx = np.random.choice(np.arange(n_trials), size=n_test, replace=False)
+        test_idx = rng.choice(np.arange(n_trials), size=n_test, replace=False)
         test_bool = np.zeros(n_trials).astype(bool)
         test_bool[test_idx] = True
 
-        train_idx = np.random.choice(np.arange(n_trials)[~test_bool], size=n_train, replace=False)
+        train_idx = rng.choice(np.arange(n_trials)[~test_bool], size=n_train, replace=False)
         train_bool = np.zeros(n_trials).astype(bool)
         train_bool[train_idx] = True
 
@@ -214,7 +214,7 @@ def prepare_mtnn_data(insertions, one, new_metrics=True, brain_atlas=None):
 
 
 def prepare_glm_and_simulated_data(insertions, one, brain_atlas=None):
-
+    
     download_priors()
     data_load_path = data_path.joinpath('mtnn_data')
     train_trial_ids = np.load(data_load_path.joinpath('train/trials.npy'), allow_pickle=True)
@@ -327,11 +327,11 @@ def prepare_glm_and_simulated_data(insertions, one, brain_atlas=None):
     n_train = int((num_trials-n_test)*0.8)
     n_val = num_trials - n_train - n_test
 
-    test_idx = np.random.choice(np.arange(num_trials), size=n_test, replace=False)
+    test_idx = rng.choice(np.arange(num_trials), size=n_test, replace=False)
     test_bool = np.zeros(num_trials).astype(bool)
     test_bool[test_idx] = True
 
-    train_idx = np.random.choice(np.arange(num_trials)[~test_bool], size=n_train, replace=False)
+    train_idx = rng.choice(np.arange(num_trials)[~test_bool], size=n_train, replace=False)
     train_bool = np.zeros(num_trials).astype(bool)
     train_bool[train_idx] = True
 
@@ -341,8 +341,6 @@ def prepare_glm_and_simulated_data(insertions, one, brain_atlas=None):
     train_idx = np.arange(num_trials)[train_bool]
     val_idx = np.arange(num_trials)[val_bool]
     test_idx = np.arange(num_trials)[test_bool]
-
-    rng = np.random.default_rng(seed=0b01101001 + 0b01100010 + 0b01101100)
 
     fdb_rt_vals = np.linspace(0.1, 0.7, num=10)
     fdb_rt_probs = np.array([0.15970962, 0.50635209, 0.18693285, 0.0707804, 0.02540835,
@@ -397,7 +395,7 @@ def prepare_glm_and_simulated_data(insertions, one, brain_atlas=None):
 
         for j, clu in notebook.tqdm(enumerate(clus)):
 
-            scales = np.random.uniform(1, 2, size=6)
+            scales = 1 #rng.uniform(1, 2, size=6)
             scales_dict[(eid,clu)] = scales
 
             stimkernL = weights['stimonL'].loc[clu].to_numpy() * (1/binwidth) * scales[0]
