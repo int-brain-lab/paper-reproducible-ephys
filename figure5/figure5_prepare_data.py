@@ -10,7 +10,7 @@ from brainbox.io.one import SpikeSortingLoader
 from iblutil.numerical import ismember
 
 from reproducible_ephys_functions import combine_regions, get_insertions, BRAIN_REGIONS, save_data_path, save_dataset_info
-from reproducible_ephys_processing import compute_psth
+from reproducible_ephys_processing import compute_psth, compute_new_label
 from figure5.figure5_load_data import load_dataframe
 
 ba = AllenAtlas()
@@ -27,7 +27,7 @@ default_params = {'fr_bin_size': 0.04,
                   'slide_kwargs_fr': {'n_win': 2, 'causal': 1}}
 
 
-def prepare_data(insertions, one, figure='figure5', recompute=False, **kwargs):
+def prepare_data(insertions, one, figure='figure5', recompute=False, new_metrics=True, **kwargs):
 
     fr_bin_size = kwargs.get('fr_bin_size', default_params['fr_bin_size'])
     ff_bin_size = kwargs.get('ff_bin_size', default_params['ff_bin_size'])
@@ -76,6 +76,15 @@ def prepare_data(insertions, one, figure='figure5', recompute=False, **kwargs):
             sl = SpikeSortingLoader(eid=eid, pname=probe, one=one, atlas=ba)
             spikes, clusters, channels = sl.load_spike_sorting(dataset_types=['clusters.amps', 'clusters.peakToTrough'])
             clusters = sl.merge_clusters(spikes, clusters, channels)
+
+            if new_metrics:
+                try:
+                    clusters['label'] = np.load(sl.files['clusters'][0].parent.joinpath('clusters.new_labels.npy'))
+                except FileNotFoundError:
+                    print('file not found')
+                    new_labels = compute_new_label(spikes, clusters, save_path=sl.files['spikes'][0].parent)
+                    clusters['label'] = new_labels
+
             clusters['rep_site_acronym'] = combine_regions(clusters['acronym'])
 
             # Find clusters that are in the regions we are interested in and are good

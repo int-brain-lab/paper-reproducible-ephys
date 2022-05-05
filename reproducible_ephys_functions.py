@@ -15,8 +15,8 @@ from one.alf.exceptions import ALFObjectNotFound
 from iblutil.numerical import ismember
 from ibllib.atlas import AllenAtlas
 import brainbox.io.one as bbone
-from brainbox.metrics.single_units import quick_unit_metrics
 from brainbox.behavior import training
+from reproducible_ephys_processing import compute_new_label
 
 from one.params import get_cache_dir
 
@@ -114,7 +114,7 @@ def traj_list_to_dataframe(trajectories):
     return trajectories
 
 
-def get_insertions(level=2, recompute=False, as_dataframe=False, one=None, freeze='biorxiv_2022_05'):
+def get_insertions(level=2, recompute=False, as_dataframe=False, one=None, freeze='biorxiv_2022_05', new_metrics=True):
     """
     Find insertions used for analysis based on different exclusion levels
     Level 0: minimum_regions = 0, resolved = True, behavior = False, n_trial >= 0, exclude_critical = True
@@ -135,7 +135,7 @@ def get_insertions(level=2, recompute=False, as_dataframe=False, one=None, freez
         pids = ins_df[ins_df['level'] >= level].pid.values
         insertions = one.alyx.rest('trajectories', 'list', provenance='Planned', django=f'probe_insertion__in,{list(pids)}')
         if recompute:
-            _ = recompute_metrics(insertions, one)
+            _ = recompute_metrics(insertions, one, new_metrics=new_metrics)
 
         if as_dataframe:
             insertions = traj_list_to_dataframe(insertions)
@@ -145,20 +145,20 @@ def get_insertions(level=2, recompute=False, as_dataframe=False, one=None, freez
     if level == 0:
         insertions = query(min_regions=0, n_trials=0, behavior=False, exclude_critical=True, one=one, as_dataframe=as_dataframe)
         if recompute:
-            _ = recompute_metrics(insertions, one)
+            _ = recompute_metrics(insertions, one, new_metrics=new_metrics)
         return insertions
 
     if level == 1:
         insertions = query(one=one, as_dataframe=as_dataframe)
         if recompute:
-            _ = recompute_metrics(insertions, one)
+            _ = recompute_metrics(insertions, one, new_metrics=new_metrics)
         return insertions
 
     if level >= 2:
         insertions = query(one=one, as_dataframe=False)
         pids = np.array([ins['probe_insertion'] for ins in insertions])
         if recompute:
-            _ = recompute_metrics(insertions, one)
+            _ = recompute_metrics(insertions, one, new_metrics=new_metrics)
         ins = filter_recordings(min_neuron_region=0)
         ins = ins[ins['include']]
 
@@ -181,7 +181,7 @@ def get_histology_insertions(one=None, freeze=None):
     return insertions
 
 
-def recompute_metrics(insertions, one):
+def recompute_metrics(insertions, one, new_metrics=True):
     """
     Determine whether metrics need to be recomputed or not for given list of insertions
     :param insertions: list of insertions
@@ -192,11 +192,11 @@ def recompute_metrics(insertions, one):
     pids = np.array([ins['probe_insertion'] for ins in insertions])
     metrics = load_metrics()
     if (metrics is None) or (metrics.shape[0] == 0):
-        metrics = compute_metrics(insertions, one=one)
+        metrics = compute_metrics(insertions, one=one, new_metrics=new_metrics)
     else:
         isin, _ = ismember(pids, metrics['pid'].unique())
         if not np.all(isin):
-            metrics = compute_metrics(insertions, one=one)
+            metrics = compute_metrics(insertions, one=one, new_metrics=new_metrics)
 
     return metrics
 
@@ -325,7 +325,7 @@ def save_figure_path(figure=None):
     return fig_path
 
 
-def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', save=True):
+def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', new_metrics=True, save=True):
     one = one or ONE()
     ba = ba or AllenAtlas()
     lab_number_map, institution_map, _ = labs()
@@ -372,16 +372,20 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
 
         try:
             clusters = one.load_object(eid, 'clusters', collection=collection, attribute=['metrics', 'channels'])
-            if 'metrics' not in clusters.keys():
-                # TODO change this
-                spikes, clusters = bbone.load_spike_sorting(eid, probe=probe, spike_sorter='pykilosort',
-                                                            dataset_types=['spikes.amps', 'spikes.depths'], one=one)
-                spikes = spikes[probe]
-                clusters = clusters[probe]
-                clusters['metrics'] = quick_unit_metrics(spikes.clusters, spikes.times, spikes.amps, spikes.depths,
-                                                         cluster_ids=np.arange(clusters.channels.size))
+            if 'metrics' not in clusters.keys() or new_metrics:
+                sl = bbone.SpikeSortingLoader(eid=eid, pname=probe, one=one, atlas=ba)
+                spikes, clusters, channels = sl.load_spike_sorting()
+                clusters = sl.merge_clusters(spikes, clusters, channels)
+                if new_metrics:
+                    try:
+                        clusters['label'] = np.load(sl.files['clusters'][0].parent.joinpath('clusters.new_labels.npy'))
+                    except FileNotFoundError:
+                        new_labels = compute_new_label(spikes, clusters, save_path=sl.files['spikes'][0].parent)
+                        clusters['label'] = new_labels
+            else:
+                clusters['label'] = clusters['metrics']['label']
+                channels = bbone.load_channel_locations(eid, probe=probe, one=one, aligned=True, brain_atlas=ba)[probe]
 
-            channels = bbone.load_channel_locations(eid, probe=probe, one=one, aligned=True, brain_atlas=ba)[probe]
             channels['rawInd'] = one.load_dataset(eid, dataset='channels.rawInd.npy', collection=collection)
             channels['rep_site_acronym'] = combine_regions(channels['acronym'])
             clusters['rep_site_acronym'] = channels['rep_site_acronym'][clusters['channels']]
@@ -392,7 +396,7 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
         try:
             for region in BRAIN_REGIONS:
                 region_clusters = np.where(np.bitwise_and(clusters['rep_site_acronym'] == region,
-                                                          clusters['metrics']['label'] == 1))[0]
+                                                          clusters['label'] == 1))[0]
                 region_chan = channels['rawInd'][np.where(channels['rep_site_acronym'] == region)[0]]
 
                 if 'power' in lfp.keys() and region_chan.shape[0] > 0:
@@ -432,7 +436,7 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
 
 def filter_recordings(df=None, max_ap_rms=40, max_lfp_power=-140, min_neurons_per_channel=0.1, min_channels_region=5,
                       min_regions=3, min_neuron_region=4, min_lab_region=3, min_rec_lab=4, n_trials=400, behavior=False,
-                      exclude_subjects=['DY013', 'ibl_witten_26'], recompute=True, freeze='biorxiv_2022_05'):
+                      exclude_subjects=['DY013', 'ibl_witten_26'], recompute=True, freeze='biorxiv_2022_05', new_metrics=True):
     """
     Filter values in dataframe according to different exclusion criteria
     :param df: pandas dataframe
@@ -455,18 +459,22 @@ def filter_recordings(df=None, max_ap_rms=40, max_lfp_power=-140, min_neurons_pe
         df = metrics
         if df is None:
             ins = get_insertions(level=0, recompute=False, freeze=freeze)
-            df = recompute_metrics(ins, ONE())
+            df = compute_metrics(ins, one=ONE(), save=True, new_metrics=new_metrics)
         df['original_index'] = df.index
     else:
         # make sure that all pids in the dataframe df are included in metrics otherwise recompute metrics
+        if metrics is None:
+            one = ONE()
+            ins = get_insertions(level=0, one=one, recompute=False, freeze=freeze)
+            metrics = compute_metrics(ins, one=ONE(), save=True, new_metrics=new_metrics)
+
         isin, _ = ismember(df['pid'].unique(), metrics['pid'].unique())
         if ~np.all(isin):
             logger.warning(f'Warning: {np.sum(~isin)} recordings are missing metrics')
             if recompute:
                 one = ONE()
-                ins = one.alyx.rest('trajectories', 'list', provenance='Planned',
-                                    django=f'probe_insertion__in,{list(df["pid"].unique())}')
-                metrics = compute_metrics(ins, one=one, save=True)
+                ins = get_insertions(level=0, one=one, recompute=False, freeze=freeze)
+                metrics = compute_metrics(ins, one=ONE(), save=True, new_metrics=new_metrics)
 
         # merge the two dataframes
         df['original_index'] = df.index

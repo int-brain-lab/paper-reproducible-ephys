@@ -98,7 +98,7 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
     if rm_unre:
         # restrict to responsive units
         all_frs = all_frs[concat_df['responsive']]
-        concat_df = concat_df[concat_df["responsive"]]
+        concat_df = concat_df[concat_df["responsive"]].reset_index()
 
     y = all_frs
     regs = concat_df['region'].values

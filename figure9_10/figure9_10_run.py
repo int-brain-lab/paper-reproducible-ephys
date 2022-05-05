@@ -12,12 +12,12 @@ from figure9_10.figure10_plot_data import plot_figures as plot_figures10
 from one.api import ONE
 
 
-def run_figure9_10(one, do_training=False):
+def run_figure9_10(one, do_training=False, new_metrics=True):
 
     if not do_training:
         download_data()
     else:
-        prepare_data(one)
+        prepare_data(one, new_metrics=new_metrics)
         train_fig9()
         train_fig10()
 

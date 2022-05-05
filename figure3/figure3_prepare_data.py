@@ -9,6 +9,7 @@ from brainbox.processing import compute_cluster_average
 from brainbox.io.one import SpikeSortingLoader
 
 from reproducible_ephys_functions import get_insertions, combine_regions, BRAIN_REGIONS, save_data_path, save_dataset_info
+from reproducible_ephys_processing import compute_new_label
 from figure3.figure3_load_data import load_dataframe
 
 
@@ -17,7 +18,7 @@ ba = AllenAtlas()
 LFP_BAND = [20, 80]
 
 
-def prepare_data(insertions, one, recompute=False):
+def prepare_data(insertions, one, recompute=False, new_metrics=True):
 
     if not recompute:
         data_clust = load_dataframe(df_name='clust', exists_only=True)
@@ -38,6 +39,7 @@ def prepare_data(insertions, one, recompute=False):
     metrics = pd.DataFrame()
 
     for iIns, ins in enumerate(insertions):
+
         print(f'processing {iIns + 1}/{len(insertions)}')
         data_clust = {}
         data_chns = {}
@@ -54,6 +56,14 @@ def prepare_data(insertions, one, recompute=False):
 
         channels['rawInd'] = one.load_dataset(eid, dataset='channels.rawInd.npy', collection=sl.collection)
         clusters = sl.merge_clusters(spikes, clusters, channels)
+
+        if new_metrics:
+            try:
+                clusters['label'] = np.load(sl.files['clusters'][0].parent.joinpath('clusters.new_labels.npy'))
+            except FileNotFoundError:
+                print('file not found')
+                new_labels = compute_new_label(spikes, clusters, save_path=sl.files['spikes'][0].parent)
+                clusters['label'] = new_labels
 
         channels['rep_site_acronym'] = combine_regions(channels['acronym'])
         channels['rep_site_acronym_alt'] = np.copy(channels['rep_site_acronym'])

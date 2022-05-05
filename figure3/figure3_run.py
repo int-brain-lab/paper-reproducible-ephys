@@ -13,9 +13,9 @@ from one.api import ONE
 logger = logging.getLogger('paper_reproducible_ephys')
 
 
-def run_figure3(one, recompute=False, supplementary=True):
-    insertions = get_insertions(level=0, one=one, freeze='biorxiv_2022_05')
-    prepare_data(insertions, one=one, recompute=recompute)
+def run_figure3(one, recompute=False, supplementary=True, new_metrics=True):
+    insertions = get_insertions(level=0, one=one, freeze='biorxiv_2022_05', new_metrics=new_metrics)
+    prepare_data(insertions, one=one, recompute=recompute, new_metrics=new_metrics)
     plot_main_figure(one)
     if supplementary:
         plot_figure_supp1()

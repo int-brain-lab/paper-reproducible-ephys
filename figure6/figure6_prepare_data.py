@@ -4,7 +4,7 @@ from brainbox.io.one import SpikeSortingLoader
 from ibllib.atlas import AllenAtlas
 from one.api import ONE
 from reproducible_ephys_functions import combine_regions, BRAIN_REGIONS, get_insertions, save_data_path, save_dataset_info
-from reproducible_ephys_processing import compute_psth
+from reproducible_ephys_processing import compute_psth, compute_new_label
 from brainbox.population.decode import get_spike_counts_in_bins
 from brainbox.task.closed_loop import compute_comparison_statistics
 from figure6.figure6_load_data import load_dataframe, load_data
@@ -24,7 +24,7 @@ default_params = {'bin_size': 0.02,
                   'slide_kwargs': {'n_win': 5, 'causal': 1}}
 
 
-def prepare_data(insertions, one, recompute=False, **kwargs):
+def prepare_data(insertions, one, recompute=False, new_metrics=True, **kwargs):
 
     bin_size = kwargs.get('bin_size', default_params['bin_size'])
     align_event = kwargs.get('align_event', default_params['align_event'])
@@ -71,6 +71,15 @@ def prepare_data(insertions, one, recompute=False, **kwargs):
             sl = SpikeSortingLoader(eid=eid, pname=probe, one=one, atlas=ba)
             spikes, clusters, channels = sl.load_spike_sorting()
             clusters = sl.merge_clusters(spikes, clusters, channels)
+
+            if new_metrics:
+                try:
+                    clusters['label'] = np.load(sl.files['clusters'][0].parent.joinpath('clusters.new_labels.npy'))
+                except FileNotFoundError:
+                    print('file not found')
+                    new_labels = compute_new_label(spikes, clusters, save_path=sl.files['spikes'][0].parent)
+                    clusters['label'] = new_labels
+
             clusters['rep_site_acronym'] = combine_regions(clusters['acronym'])
             # Find clusters that are in the repeated site brain regions and that have been labelled as good
             cluster_idx = np.sort(np.where(np.bitwise_and(np.isin(clusters['rep_site_acronym'], BRAIN_REGIONS),

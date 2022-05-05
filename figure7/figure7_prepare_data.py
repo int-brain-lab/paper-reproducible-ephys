@@ -18,7 +18,7 @@ default_params = {'fr_bin_size': 0.04,
                   'slide_kwargs_fr': {'n_win': 2, 'causal': 1}}
 
 
-def prepare_data(insertions, one, recompute=False, **kwargs):
+def prepare_data(insertions, one, recompute=False, new_metrics=True, **kwargs):
 
     align_event = kwargs.get('align_event', default_params['align_event'])
     norm = kwargs.get('norm', default_params['norm'])
@@ -35,7 +35,7 @@ def prepare_data(insertions, one, recompute=False, **kwargs):
                 data = load_data()
                 return df, data
 
-    df, data = prepare_data_fig5(insertions, one, figure='figure7', recompute=True, **kwargs)
+    df, data = prepare_data_fig5(insertions, one, figure='figure7', recompute=True, new_metrics=new_metrics **kwargs)
     return df, data
 
 

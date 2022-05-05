@@ -17,19 +17,17 @@ from figure9_10.simulate import simulate_cell, concat_simcell_data, to_mtnn_form
 from figure9_10.figure9_10_load_data import download_priors, download_glm_hmm
 
 data_path = save_data_path(figure='figure9_10')
-import ssl
-ssl._create_default_https_context = ssl._create_unverified_context
 
 
-def prepare_data(one):
+def prepare_data(one, new_metrics=True):
     brain_atlas = AllenAtlas()
     eids = get_mtnn_eids()
     insertions = get_traj(eids)
-    prepare_mtnn_data(insertions, one, brain_atlas=brain_atlas)
+    prepare_mtnn_data(insertions, one, new_metrics=new_metrics, brain_atlas=brain_atlas)
     prepare_glm_and_simulated_data(insertions, one, brain_atlas=brain_atlas)
 
 
-def prepare_mtnn_data(insertions, one, brain_atlas=None):
+def prepare_mtnn_data(insertions, one, new_metrics=True, brain_atlas=None):
 
     download_priors()
     download_glm_hmm()
@@ -44,7 +42,8 @@ def prepare_mtnn_data(insertions, one, brain_atlas=None):
                      'danlab': 0, 'angelakilab': 0}
 
     for i, ins in enumerate(insertions):
-        feature, output, cluster_numbers, trial_numbers = featurize(i, ins, one, session_count, brain_atlas=brain_atlas)
+        feature, output, cluster_numbers, trial_numbers = featurize(i, ins, one, session_count, brain_atlas=brain_atlas,
+                                                                    new_metrics=new_metrics)
         feature_list.append(feature)
         output_list.append(output)
         cluster_number_list.append(cluster_numbers)
