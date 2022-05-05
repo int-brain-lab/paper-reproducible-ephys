@@ -61,7 +61,6 @@ def prepare_data(insertions, one, recompute=False, new_metrics=True):
             try:
                 clusters['label'] = np.load(sl.files['clusters'][0].parent.joinpath('clusters.new_labels.npy'))
             except FileNotFoundError:
-                print('file not found')
                 new_labels = compute_new_label(spikes, clusters, save_path=sl.files['spikes'][0].parent)
                 clusters['label'] = new_labels
 
