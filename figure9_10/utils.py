@@ -340,7 +340,6 @@ def featurize(i, trajectory, one, session_counter, bin_size=0.05, align_event='m
         try:
             clusters['label'] = np.load(sl.files['clusters'][0].parent.joinpath('clusters.new_labels.npy'))
         except FileNotFoundError:
-            print('file not found')
             new_labels = compute_new_label(spikes, clusters, save_path=sl.files['spikes'][0].parent)
             clusters['label'] = new_labels
     clusters['rep_site_acronym'] = combine_regions(clusters['acronym'])
