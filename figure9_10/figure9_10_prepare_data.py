@@ -87,8 +87,8 @@ def prepare_mtnn_data(insertions, one, new_metrics=True, brain_atlas=None):
                                                                                 output_list[i],
                                                                                 cluster_number_list[i],
                                                                                 neuron_id_start=total_n_neurons,
-                                                                                threshold1=8.0,
-                                                                                threshold2=2.5,
+                                                                                threshold1=0.0,
+                                                                                threshold2=0.0,
                                                                                 max_n_neurons=15)
         total_n_neurons += feature_subset.shape[0]
         print('{}/{} remaining'.format(feature_subset.shape[0], feature_list[i].shape[0]))
