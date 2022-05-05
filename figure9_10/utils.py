@@ -612,11 +612,11 @@ def reshape_flattened(flattened, shape, trim=0):
 def load_original(eids):
     feature_list, output_list, cluster_number_list, session_list, trial_number_list = [], [], [], [], []
     for eid in eids:
-        feature_list.append(np.load(save_data_path(figure='figure8').joinpath('original_data', f'{eid}_feature.npy')))
-        output_list.append(np.load(save_data_path(figure='figure8').joinpath('original_data', f'{eid}_output.npy')))
-        cluster_number_list.append(np.load(save_data_path(figure='figure8').joinpath('original_data', f'{eid}_clusters.npy')))
-        session_list.append(np.load(save_data_path(figure='figure8').joinpath('original_data', f'{eid}_session_info.npy'), allow_pickle=True))
-        trial_number_list.append(np.load(save_data_path(figure='figure8').joinpath('original_data', f'{eid}_trials.npy')))
+        feature_list.append(np.load(save_data_path(figure='figure9_10').joinpath('original_data', f'{eid}_feature.npy')))
+        output_list.append(np.load(save_data_path(figure='figure9_10').joinpath('original_data', f'{eid}_output.npy')))
+        cluster_number_list.append(np.load(save_data_path(figure='figure9_10').joinpath('original_data', f'{eid}_clusters.npy')))
+        session_list.append(np.load(save_data_path(figure='figure9_10').joinpath('original_data', f'{eid}_session_info.npy'), allow_pickle=True))
+        trial_number_list.append(np.load(save_data_path(figure='figure9_10').joinpath('original_data', f'{eid}_trials.npy')))
         
     return feature_list, output_list, cluster_number_list, session_list, trial_number_list
 
@@ -637,8 +637,8 @@ def compute_mean_frs(shape_path='mtnn_data/train/shape.npy', obs_path='mtnn_data
 
 
 def select_high_fr_neurons(feature, output, clusters,
-                           neuron_id_start=0, threshold1=8.0, threshold2=2.5, max_n_neurons=15):
-    select = np.logical_and(output.mean(1).max(1) >= threshold1, np.mean(output, axis=(1, 2)) >= threshold2)
+                           neuron_id_start=0, threshold=2.5, max_n_neurons=15):
+    select = np.mean(output, axis=(1, 2)) >= threshold
     feature_subset = feature[select]
     if feature_subset.shape[0] > max_n_neurons:
         select2 = rng.choice(np.arange(feature_subset.shape[0]), size=max_n_neurons, replace=False)

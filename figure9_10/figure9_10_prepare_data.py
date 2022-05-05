@@ -11,7 +11,7 @@ import brainbox.modeling.utils as mut
 import brainbox.io.one as bbone
 
 from reproducible_ephys_functions import save_data_path, save_dataset_info, repo_path
-from figure9_10.utils import get_mtnn_eids, get_traj, featurize, select_high_fr_neurons, preprocess_feature
+from figure9_10.utils import get_mtnn_eids, get_traj, featurize, select_high_fr_neurons, preprocess_feature, load_original
 from figure9_10.glm import generate_design, bases, binwidth, t_before, t_after
 from figure9_10.simulate import simulate_cell, concat_simcell_data, to_mtnn_form
 from figure9_10.figure9_10_load_data import download_priors, download_glm_hmm
@@ -24,10 +24,10 @@ def prepare_data(one, new_metrics=True):
     brain_atlas = AllenAtlas()
     eids = get_mtnn_eids()
     insertions = get_traj(eids)
-    prepare_mtnn_data(insertions, one, new_metrics=new_metrics, brain_atlas=brain_atlas)
+    prepare_mtnn_data(eids, insertions, one, new_metrics=new_metrics, brain_atlas=brain_atlas)
     prepare_glm_and_simulated_data(insertions, one, brain_atlas=brain_atlas)
 
-def prepare_mtnn_data(insertions, one, new_metrics=True, brain_atlas=None):
+def prepare_mtnn_data(eids, insertions, one, new_metrics=True, brain_atlas=None):
 
     download_priors()
     download_glm_hmm()
@@ -77,6 +77,7 @@ def prepare_mtnn_data(insertions, one, new_metrics=True, brain_atlas=None):
         print(trial_number_list[i].shape)
         np.save(save_path.joinpath(f'{session_list[i]["session"]["id"]}_trials.npy'), trial_number_list[i])
 
+#     feature_list, output_list, cluster_number_list, session_list, trial_number_list = load_original(eids)
 
     total_n_neurons = 0
     shape_list = []
@@ -87,8 +88,7 @@ def prepare_mtnn_data(insertions, one, new_metrics=True, brain_atlas=None):
                                                                                 output_list[i],
                                                                                 cluster_number_list[i],
                                                                                 neuron_id_start=total_n_neurons,
-                                                                                threshold1=0.0,
-                                                                                threshold2=0.0,
+                                                                                threshold=5.0,
                                                                                 max_n_neurons=15)
         total_n_neurons += feature_subset.shape[0]
         print('{}/{} remaining'.format(feature_subset.shape[0], feature_list[i].shape[0]))
