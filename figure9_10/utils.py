@@ -29,6 +29,8 @@ import brainbox.behavior.dlc as dlc
 from reproducible_ephys_processing import bin_spikes, bin_spikes2D,  bin_norm, compute_new_label
 from ibllib.atlas import AllenAtlas
 
+rng = np.random.default_rng(seed=0)
+
 lab_offset = 1
 session_offset = 6
 xyz_offset = 10
@@ -641,7 +643,7 @@ def select_high_fr_neurons(feature, output, clusters,
     select = np.logical_and(output.mean(1).max(1) >= threshold1, np.mean(output, axis=(1, 2)) >= threshold2)
     feature_subset = feature[select]
     if feature_subset.shape[0] > max_n_neurons:
-        select2 = np.random.choice(np.arange(feature_subset.shape[0]), size=max_n_neurons, replace=False)
+        select2 = rng.choice(np.arange(feature_subset.shape[0]), size=max_n_neurons, replace=False)
     else:
         select2 = np.arange(feature_subset.shape[0])
     feature_subset = feature_subset[select2]
@@ -695,7 +697,7 @@ def preprocess_feature(feature_concat):
                 wf_width_max - wf_width_min)
 
     # noise
-    noise = np.random.normal(loc=0.0, scale=1.0, size=feature_concat.shape[:-1])
+    noise = rng.normal(loc=0.0, scale=1.0, size=feature_concat.shape[:-1])
     feature_concat[:, :, noise_offset] = noise
 
     return feature_concat
