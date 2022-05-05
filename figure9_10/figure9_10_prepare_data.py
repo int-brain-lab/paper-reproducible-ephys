@@ -395,7 +395,7 @@ def prepare_glm_and_simulated_data(insertions, one, brain_atlas=None):
 
         for j, clu in notebook.tqdm(enumerate(clus)):
 
-            scales = 1 #rng.uniform(1, 2, size=6)
+            scales = np.ones(6) #rng.uniform(1, 2, size=6)
             scales_dict[(eid,clu)] = scales
 
             stimkernL = weights['stimonL'].loc[clu].to_numpy() * (1/binwidth) * scales[0]
