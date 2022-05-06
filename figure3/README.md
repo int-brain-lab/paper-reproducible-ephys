@@ -13,7 +13,4 @@ from figure3.figure3_run import run_figure3
 one = ONE()
 run_figure3(one)
 
-# To also generate the supplementary figures
-run_figure3(one, supplementary=True)
-
 ```

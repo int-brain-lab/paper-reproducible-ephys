@@ -1,3 +1,5 @@
+This repository contains code to reproduce figures from the IBL reproducible ephys paper
+ 
 # Installation
 ## Making a new python environment (optional)
 

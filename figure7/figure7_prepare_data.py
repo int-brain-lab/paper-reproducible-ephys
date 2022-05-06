@@ -2,9 +2,13 @@ from figure5.figure5_prepare_data import prepare_data as prepare_data_fig5
 from figure7.figure7_load_data import load_dataframe, load_data
 from iblutil.numerical import ismember
 from one.api import ONE
-from reproducible_ephys_functions import get_insertions, save_dataset_info
+from reproducible_ephys_functions import (get_insertions, save_dataset_info, save_figure_path, BRAIN_REGIONS, combine_regions,
+                                          save_data_path)
 
+from ibllib.atlas import AllenAtlas, Insertion
+from ibllib.pipes.histology import get_brain_regions
 import numpy as np
+import pandas as pd
 
 default_params = {'fr_bin_size': 0.04,
                   'ff_bin_size': 0.1,
@@ -36,6 +40,29 @@ def prepare_data(insertions, one, recompute=False, new_metrics=True, **kwargs):
                 return df, data
 
     df, data = prepare_data_fig5(insertions, one, figure='figure7', recompute=True, new_metrics=new_metrics, **kwargs)
+    save_figure_path(figure='figure7')
+
+    # Compute the centre of mass of the different regions
+    planned_ins = one.alyx.rest('trajectories', 'list', probe_insertion=insertions[0]['probe_insertion'], provenance='Planned')[0]
+    ba = AllenAtlas()
+    ba.compute_surface()
+    ins = Insertion.from_dict(planned_ins, brain_atlas=ba)
+    xyz = np.c_[ins.tip, ins.entry].T
+    brain_regions, _ = get_brain_regions(xyz, brain_atlas=ba)
+    rep_site_acro = combine_regions(brain_regions.acronym)
+
+    data = {'region': [], 'x': [], 'y': [], 'z': []}
+    for reg in BRAIN_REGIONS:
+        reg_idx = np.where(rep_site_acro == reg)[0]
+        cent_of_mass_ref = np.mean(brain_regions.xyz[reg_idx], 0)
+        data['region'].append(reg)
+        data['x'].append(cent_of_mass_ref[0])
+        data['y'].append(cent_of_mass_ref[1])
+        data['z'].append(cent_of_mass_ref[2])
+
+    df_reg = pd.DataFrame.from_dict(data)
+    df_reg.to_csv(save_data_path(figure='figure7').joinpath('figure7_cent_of_mass.csv'))
+
     return df, data
 
 

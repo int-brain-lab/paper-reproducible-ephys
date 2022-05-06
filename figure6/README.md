@@ -14,7 +14,4 @@ from figure6.figure6_run import run_figure6
 one = ONE()
 run_figure6(one)
 
-# To also generate the supplementary figures
-run_figure6(one, supplementary=True)
-
 ```
