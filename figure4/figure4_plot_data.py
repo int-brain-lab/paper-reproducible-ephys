@@ -28,9 +28,8 @@ def plot_main_figure():
           'panel_C_4': fg.place_axes_on_grid(fig, xspan=[0.63, 0.805], yspan=[0.38, 0.65],
                                              wspace=0.3),
           'panel_C_5': fg.place_axes_on_grid(fig, xspan=[0.815, 1.], yspan=[0.38, 0.65],
-                                             wspace=0.3),
-          'panel_D': fg.place_axes_on_grid(fig, xspan=[0.075, 1.], yspan=[0.7, 1],
-                                           wspace=0.3)}
+                                             wspace=0.3)}
+
     plot_panel_single_neuron(ax=[ax['panel_A_1'], ax['panel_A_2']], save=False)
     plot_panel_single_subject(ax=ax['panel_B'], save=False)
     plot_panel_all_subjects(ax=[ax['panel_C_1'], ax['panel_C_2'], ax['panel_C_3'], ax['panel_C_4'], ax['panel_C_5']], save=False)
@@ -38,7 +37,7 @@ def plot_main_figure():
     labels = [{'label_text': 'a', 'xpos': 0, 'ypos': 0, 'fontsize': 10, 'weight': 'bold'},
               {'label_text': 'b', 'xpos': 0.36, 'ypos': 0, 'fontsize': 10, 'weight': 'bold'},
               {'label_text': 'c', 'xpos': 0, 'ypos': 0.36, 'fontsize': 10, 'weight': 'bold'}]
-             # {'label_text': 'd', 'xpos': 0, 'ypos': 0.68, 'fontsize': 10, 'weight': 'bold'}]
+
     fg.add_labels(fig, labels)
     print(f'Saving figures to {fig_path}')
     plt.savefig(fig_path.joinpath('figure4_combined.png'), bbox_inches='tight', pad_inches=0)

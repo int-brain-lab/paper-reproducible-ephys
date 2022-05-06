@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
-from reproducible_ephys_functions import BRAIN_REGIONS, labs, filter_recordings, save_figure_path, figure_style
+from reproducible_ephys_functions import BRAIN_REGIONS, labs, filter_recordings, save_figure_path, figure_style, save_data_path
 from permutation_test import permut_test, permut_dist
-from figure5.figure5_load_data import load_dataframe
+from figure5.figure5_load_data import load_dataframe, load_example_neuron
 from figure4.figure4_plot_functions import plot_raster_and_psth
 import numpy as np
 import pandas as pd
@@ -34,8 +34,8 @@ def plot_main_figure():
                                                wspace=0.3),
           'panel_A_2_2': fg.place_axes_on_grid(fig, xspan=[0.55, 1.], yspan=[0.15, 0.3],
                                                wspace=0.3),
-          # 'panel_B': fg.place_axes_on_grid(fig, xspan=[0.6, 1.], yspan=[0.33, 0.63],
-          #                                  wspace=0.3),
+          #'panel_B': fg.place_axes_on_grid(fig, xspan=[0.6, 1.], yspan=[0.33, 0.63],
+          #                                 wspace=0.3),
           'panel_C_1': fg.place_axes_on_grid(fig, xspan=[0.075, 0.46], yspan=[0.66, 0.72],
                                              wspace=0.3),
           'panel_C_2': fg.place_axes_on_grid(fig, xspan=[0.075, 0.46], yspan=[0.73, 0.79],
@@ -50,6 +50,7 @@ def plot_main_figure():
                                            wspace=0.3)}
 
     plot_panel_example_neurons(ax1=[ax['panel_A_1_1'], ax['panel_A_1_2']], ax2=[ax['panel_A_2_1'], ax['panel_A_2_2']], save=False)
+    #plot_panel_modulation_comparison(ax=ax['panel_B_1'])
     plot_panel_task_modulated_neurons(specific_tests=['start_to_move'],
                                       ax=[ax['panel_C_1'], ax['panel_C_2'], ax['panel_C_3'], ax['panel_C_4'], ax['panel_C_5']],
                                       save=False)
@@ -90,6 +91,36 @@ def plot_panel_example_neurons(ax1=None, ax2=None, save=True):
 
     if save:
         plt.savefig(fig_path.joinpath(f'figure5_{pid}_neuron{neuron}_align_{align_event}.png'))
+
+
+def plot_panel_modulation_comparison(ax=None, save=True):
+
+    frs = load_example_neuron()
+    fr_pre_stim = frs[:, 0]
+    fr_pre_stim_mean = np.mean(fr_pre_stim)
+    fr_pre_stim_std = np.std(fr_pre_stim)
+    x1 = np.ones_like(fr_pre_stim)
+
+    fr_pre_move = frs[:, 1]
+    fr_pre_move_mean = np.mean(fr_pre_move)
+    fr_pre_move_std = np.std(fr_pre_move)
+    x2 = np.ones_like(fr_pre_move) * 4
+
+    x = np.c_[x1, x2].T
+    y = np.c_[fr_pre_stim, fr_pre_move].T
+
+    ax.plot(x, y, 'silver', linestyle="-", linewidth='1', alpha=0.3)
+    ax.scatter(x1, fr_pre_stim, facecolors='none', edgecolors=(0, 0.5, 1))
+    ax.scatter(x2, fr_pre_move, facecolors='none', edgecolors='g')
+    ax.errorbar(x1[0] - 0.15, fr_pre_stim_mean, fr_pre_stim_std, marker="o", markersize=8, c=(0, 0.5, 1), ecolor=(0, 0.5, 1),
+                capsize=3)
+    ax.errorbar(x2[0] + 0.15, fr_pre_move_mean, fr_pre_move_std, marker="o", markersize=8, c='g', ecolor='g', capsize=3)
+    ax.set_ylabel('Avg. Firing Rate (Sp/s)')
+    ax.set_xticks([1, 4])
+    ax.set_xticklabels(['Pre-stim', 'Pre-movement'])
+    ax.set_title('Example task modulated neuron')
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
 
 
 def plot_panel_task_modulated_neurons(specific_tests=None, ax=None, save=True):
