@@ -4,7 +4,7 @@
 % Code written by: Marsa Taheri
 
 function [hLegend, pMWU_corrected,...
-    mdl, mdl_shuffle] = plot3D_TM(CSVfile, BrainRegion, TM_test, ax)
+    mdl, mdl_shuffle] = plot3D_TM(CSVfile, BrainRegion, TM_test, ax, save_path)
 
 %mdl and mdl_shuffle are the linear regression model for real and shuffled
 %data
@@ -133,7 +133,7 @@ hold off
 %% Separate the two groups, then statistics (what's unique about outlier clusters):
 
 % x, y, z histograms:
-figure%(2)
+fig = figure; %(2)
 for spHist=1:3
     subplot(3,1,spHist)
     Sample1(:,spHist) = dXYZ(p_logic_neur, spHist);
@@ -178,13 +178,14 @@ for spHist=1:3
     
 end
 
+saveas(fig, append(save_path, TM_test, BrainRegion, '_xyz_hist.png'));
 
 % Spike amp and duration histograms:
 region_amps = T.amp(Neur_idx);
 region_p2t = T.p2t(Neur_idx);
 SpikeWF = [region_amps, region_p2t];
 
-figure%(3)
+fig = figure; %(3)
 for spHist=4:5
     subplot(1,2,spHist-3)
     Sample1(:,spHist) = SpikeWF(p_logic_neur, spHist-3);
@@ -230,7 +231,7 @@ for spHist=4:5
     ylabel('Probability')
     
 end
-
+saveas(fig, append(save_path, TM_test, BrainRegion, '_amp_dur_hist.png'));
 
 % Testing the signficance:
 for st = 1:size(Sample1,2)

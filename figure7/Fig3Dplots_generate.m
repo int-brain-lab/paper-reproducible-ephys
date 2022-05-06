@@ -1,31 +1,26 @@
+function [] = Fig3Dplots_generate(CSVfile, BrainRegion, save_path)
 
-clear, clc, close all
-
-data_path = '/Users/mt/Downloads/FlatIron/paper_repro_ephys_data/figure5/'; %Needs to be updated; where the csv file is saved
-CSVfile = [data_path, 'figure5_dataframe.csv'];
-%CSVfile = 'figure5_dataframe_April2022.csv'; %old data
-BrainRegion = 'LP';
 TM_test1 = 'start_to_move'; %'pre_move_lr'; %'start_to_move';
 TM_test2 = 'pre_move_lr';
 
 f = figure(1);
 ax(1) = subplot(3,2,2);
 [hCB, FRthresh, pMWU_corrFR, mdlFR, mdlFR_shuffle] = plot3D_FR(CSVfile,...
-    BrainRegion, ax(1));
+    BrainRegion, ax(1), save_path);
 set(hCB, 'position', [0.9326  0.7002  0.0085  0.2355]) %[0.9175  0.6879  0.0085  0.2355]) %[0.9175  0.6930  0.0201  0.2157])
 set(get(gca, 'Ylabel'), 'Rotation', -40, 'Position', [-642 -343 -612])
 
 figure(f)
 ax(2) = subplot(3,2,4);
 [hLegend1, pMWU_corrTM1, mdlTM1, mdlTM1_shuffle] = plot3D_TM(CSVfile,...
-    BrainRegion, TM_test1, ax(2));
+    BrainRegion, TM_test1, ax(2), save_path);
 set(hLegend1, 'box', 'off', 'Position', [0.7310  0.4277  0.1713  0.0363])
 set(get(gca, 'Ylabel'), 'Rotation', -40, 'Position', [-810 -270 -518])
 
 figure(f)
 ax(3) = subplot(3,2,6);
 [hLegend2, pMWU_corrTM2, mdlTM2, mdlTM2_shuffle] = plot3D_TM(CSVfile,...
-    BrainRegion, TM_test2, ax(3));
+    BrainRegion, TM_test2, ax(3), save_path);
 set(hLegend2, 'box', 'off', 'Position', [0.7445  0.1285  0.1619 0.0342])
 set(get(gca, 'Ylabel'), 'Rotation', -40, 'Position', [-650 -338 -609])
 
@@ -76,3 +71,4 @@ disp(R2)
 disp({'x','y','z','amp','p2t dur'})
 disp([pMWU_corrFR; pMWU_corrTM1; pMWU_corrTM2])
 
+saveas(f, append(save_path, 'figure7_', BrainRegion, '.png'))

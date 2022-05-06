@@ -35,7 +35,7 @@ def prepare_data(insertions, one, recompute=False, new_metrics=True, **kwargs):
                 data = load_data()
                 return df, data
 
-    df, data = prepare_data_fig5(insertions, one, figure='figure7', recompute=True, new_metrics=new_metrics **kwargs)
+    df, data = prepare_data_fig5(insertions, one, figure='figure7', recompute=True, new_metrics=new_metrics, **kwargs)
     return df, data
 
 
