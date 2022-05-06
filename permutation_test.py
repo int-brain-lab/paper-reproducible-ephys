@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import time
 
 
-def permut_test(data, metric, labels1, labels2, n_permut=1000, shuffling='labels1', plot=False):
+def permut_test(data, metric, labels1, labels2, n_permut=10000, shuffling='labels1', plot=False):
     """
     Compute the probability of observating metric difference for datasets, via permutation testing.
 
