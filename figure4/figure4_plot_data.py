@@ -29,7 +29,8 @@ def plot_main_figure():
                                              wspace=0.3),
           'panel_C_5': fg.place_axes_on_grid(fig, xspan=[0.815, 1.], yspan=[0.38, 0.65],
                                              wspace=0.3)}
-
+          # 'panel_D': fg.place_axes_on_grid(fig, xspan=[0.075, 1.], yspan=[0.7, 1],
+          #                                  wspace=0.3)}
     plot_panel_single_neuron(ax=[ax['panel_A_1'], ax['panel_A_2']], save=False)
     plot_panel_single_subject(ax=ax['panel_B'], save=False)
     plot_panel_all_subjects(ax=[ax['panel_C_1'], ax['panel_C_2'], ax['panel_C_3'], ax['panel_C_4'], ax['panel_C_5']], save=False)
@@ -158,7 +159,7 @@ def plot_panel_all_subjects(ax=None, save=True):
             ax[iR].plot(data['time'], np.mean(frs_subj, axis=0), c=lab_colors[df_subj.iloc[0]['institute']],
                         lw=min_lw + ((subj_idx.shape[0] - min_neurons) / (max_neurons - min_neurons)) * max_lw,
                         alpha=0.8)
-        ax[iR].set_ylim(bottom=-7, top=11)
+        ax[iR].set_ylim(bottom=-9, top=11)
         ax[iR].spines["right"].set_visible(False)
         ax[iR].spines["top"].set_visible(False)
         ax[iR].set_xlim(left=data['time'][0], right=data['time'][-1])
