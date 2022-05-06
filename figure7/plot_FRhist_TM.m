@@ -1,3 +1,6 @@
+% Code for generating firing rate histograms of task-modulated neurons
+% (e.g., in Fig. 7c-d, left side).
+% Code written by: Marsa Taheri
 
 function [hLegend] = plot_FRhist_TM(CSVfile, BrainRegion, TM_test)
 

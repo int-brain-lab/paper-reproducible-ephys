@@ -161,9 +161,9 @@ for spHist=1:3
 
     if spHist==1
         xlabel('\DeltaX (L-M)')
-        title([BrainRegion, ': ', num2str(sum(UnitsOutliers)),...
+        title([char(BrainRegion), ': ', num2str(sum(UnitsOutliers)),...
             ' Outlier neurons from ',...
-            num2str(size(dXYZ,1)), ' Total']);
+            num2str(size(dXYZ,1)), ' Total'], 'Interpreter', 'None');
     elseif spHist==2
         xlabel('\DeltaY (P-A)')
     elseif spHist==3
@@ -217,9 +217,9 @@ for spHist=4:5
     
     if spHist==4
         xlabel('WF Amp.')
-        title([BrainRegion, ': ', num2str(sum(UnitsOutliers)),...
+        title([char(BrainRegion), ': ', num2str(sum(UnitsOutliers)),...
             ' Outlier neurons from ',...
-            num2str(size(dXYZ,1)), ' Total']);
+            num2str(size(dXYZ,1)), ' Total'], 'Interpreter', 'None');
     elseif spHist==5
         xlabel('WF duration')
         legend('Regular Units', 'Outlier Units');

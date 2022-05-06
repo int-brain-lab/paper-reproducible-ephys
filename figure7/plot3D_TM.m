@@ -150,9 +150,10 @@ for spHist=1:3
     
     if spHist==1
         xlabel('\DeltaX (L-M)')
-        title([BrainRegion, ', ', TM_test, ': ', num2str(sum(p_logic_neur)),...
+        title([char(BrainRegion), ', ', TM_test, ': ', num2str(sum(p_logic_neur)),...
             ' TM neurons from ',...
             num2str(size(dXYZ,1)), ' Total'],'Interpreter','none');
+        %title([char(BrainRegion), ', ', TM_test, ': ', num2str(sum(p_logic_neur)),' TM neurons from ',num2str(size(dXYZ,1)), ' Total'], 'Interpreter','none')
     elseif spHist==2
         xlabel('\DeltaY (P-A)')
     elseif spHist==3
@@ -219,7 +220,7 @@ for spHist=4:5
     
     if spHist==4
         xlabel('WF Amp.')
-        title([BrainRegion, ', ', TM_test, ': ', num2str(sum(p_logic_neur)),...
+        title([char(BrainRegion), ', ', TM_test, ': ', num2str(sum(p_logic_neur)),...
             ' TM neurons from ',...
             num2str(size(dXYZ,1)), ' Total'],'Interpreter','none');
     elseif spHist==5
