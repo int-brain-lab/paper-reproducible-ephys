@@ -80,7 +80,8 @@ cov_idx_dict = {'lab': (lab_offset,session_offset),
                'decision strategy (GLM-HMM)': (glmhmm_offset,acronym_offset),
                'brain region': (acronym_offset,noise_offset),
                'noise': (noise_offset,noise_offset+1),
-               'all': (1,noise_offset+1)}
+#                'all': (1,noise_offset+1)
+               }
 
 leave_out_covs_for_glm = ['lab','session','x','y','z',
                          'waveform amplitude','waveform width',
