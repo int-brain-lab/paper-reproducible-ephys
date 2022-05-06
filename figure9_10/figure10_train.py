@@ -87,9 +87,7 @@ def train(do_train=True, sim_do_train=True):
         # train static single-covariate
         for i, key in notebook.tqdm(enumerate(cov_idx_dict.keys())):
 
-            if key in ['paw speed', 'nose speed', 'pupil diameter', 'motion energy',
-                       'stimuli', 'go cue', 'first movement', 'choice', 'reward',
-                       'wheel velocity', 'lick', 'noise', 'all']:
+            if key not in ['mouse prior', 'last mouse prior', 'decision strategy (GLM-HMM)']:
                 continue
 
             print(f'processing {key}')
@@ -160,7 +158,7 @@ def train(do_train=True, sim_do_train=True):
                                                          remove_cov=None,
                                                          only_keep_cov=None, simulated=True)
 
-        # train simulated leave-group-out
+        # train simulated leave-one-out
         for i, key in notebook.tqdm(enumerate(sim_cov_idx_dict.keys())):
             print(f'processing {key}')
 

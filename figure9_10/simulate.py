@@ -11,6 +11,7 @@ from numpy.random import uniform, normal
 
 binwidth = 0.05
 
+rng = np.random.default_rng(seed=0b01101001 + 0b01100010 + 0b01101100)
 
 def simulate_cell(stimkerns, fdbkkerns, fmovekern, wheelkern, wheeltraces,
                   stimtimes, fdbktimes, feedbacktypes, fmovetimes, priors, prev_priors, contrasts,
@@ -58,18 +59,18 @@ def simulate_cell(stimkerns, fdbkkerns, fmovekern, wheelkern, wheeltraces,
 
         if not linear:
             ratevals = np.exp(kernsum + gain) * binwidth
-            spikecounts = np.random.poisson(ratevals)
+            spikecounts = rng.poisson(ratevals)
         else:
             ratevals = (kernsum + gain) * binwidth
-            contspikecounts = np.random.normal(
+            contspikecounts = rng.normal(
                 loc=ratevals, scale=gain * binwidth)
             spikecounts = np.round(contspikecounts).astype(int)
         if ret_raw:
             trialcont.append(contspikecounts)
         spike_times = []
 
-        noisevals = uniform(low=0, high=binwidth - 1e-8,
-                            size=np.max(spikecounts))
+        noisevals = rng.uniform(low=0, high=binwidth - 1e-8,
+                                size=np.max(spikecounts))
         for i in np.nonzero(spikecounts)[0]:
             curr_t = i * binwidth
             for j in range(spikecounts[i]):

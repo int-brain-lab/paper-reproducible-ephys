@@ -38,7 +38,7 @@ def plot_main_figure():
     labels = [{'label_text': 'a', 'xpos': 0, 'ypos': 0, 'fontsize': 10, 'weight': 'bold'},
               {'label_text': 'b', 'xpos': 0.36, 'ypos': 0, 'fontsize': 10, 'weight': 'bold'},
               {'label_text': 'c', 'xpos': 0, 'ypos': 0.36, 'fontsize': 10, 'weight': 'bold'}]
-             # {'label_text': 'd', 'xpos': 0, 'ypos': 0.68, 'fontsize': 10, 'weight': 'bold'}]
+
     fg.add_labels(fig, labels)
     print(f'Saving figures to {fig_path}')
     plt.savefig(fig_path.joinpath('figure4_combined.png'), bbox_inches='tight', pad_inches=0)

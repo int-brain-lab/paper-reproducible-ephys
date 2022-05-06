@@ -11,6 +11,19 @@ from tqdm import notebook
 from figure9_10.utils import static_bool, cov_idx_dict, sim_static_bool, sim_cov_idx_dict
 from reproducible_ephys_functions import save_data_path
 
+import random
+
+torch.manual_seed(0)
+np.random.seed(0)
+random.seed(0)
+
+def seed_worker(worker_id):
+    worker_seed = torch.initial_seed() % 2**32
+    numpy.random.seed(worker_seed)
+    random.seed(worker_seed)
+
+g = torch.Generator()
+g.manual_seed(0)
 
 class MTNN(nn.Module):
     def __init__(self, n_neurons, 
@@ -295,7 +308,9 @@ def run_train(model, train_feature_path, train_output_path,
 
     train_data = MTNNDataset(train_neuron_order, train_feature, train_output, static)
     val_data = MTNNDataset(val_neuron_order, val_feature, val_output, static)
-    train_dataloader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
+    train_dataloader = DataLoader(train_data, batch_size=batch_size, 
+                                  shuffle=True, worker_init_fn=seed_worker,
+                                  generator=g)
     val_dataloader = DataLoader(val_data, batch_size=batch_size, shuffle=False)
 
     best_epoch = 0

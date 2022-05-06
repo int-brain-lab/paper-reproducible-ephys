@@ -29,6 +29,8 @@ import brainbox.behavior.dlc as dlc
 from reproducible_ephys_processing import bin_spikes, bin_spikes2D,  bin_norm, compute_new_label
 from ibllib.atlas import AllenAtlas
 
+rng = np.random.default_rng(seed=0)
+
 lab_offset = 1
 session_offset = 6
 xyz_offset = 10
@@ -78,7 +80,8 @@ cov_idx_dict = {'lab': (lab_offset,session_offset),
                'decision strategy (GLM-HMM)': (glmhmm_offset,acronym_offset),
                'brain region': (acronym_offset,noise_offset),
                'noise': (noise_offset,noise_offset+1),
-               'all': (1,noise_offset+1)}
+#                'all': (1,noise_offset+1)
+               }
 
 leave_out_covs_for_glm = ['lab','session','x','y','z',
                          'waveform amplitude','waveform width',
@@ -610,11 +613,11 @@ def reshape_flattened(flattened, shape, trim=0):
 def load_original(eids):
     feature_list, output_list, cluster_number_list, session_list, trial_number_list = [], [], [], [], []
     for eid in eids:
-        feature_list.append(np.load(save_data_path(figure='figure8').joinpath('original_data', f'{eid}_feature.npy')))
-        output_list.append(np.load(save_data_path(figure='figure8').joinpath('original_data', f'{eid}_output.npy')))
-        cluster_number_list.append(np.load(save_data_path(figure='figure8').joinpath('original_data', f'{eid}_clusters.npy')))
-        session_list.append(np.load(save_data_path(figure='figure8').joinpath('original_data', f'{eid}_session_info.npy'), allow_pickle=True))
-        trial_number_list.append(np.load(save_data_path(figure='figure8').joinpath('original_data', f'{eid}_trials.npy')))
+        feature_list.append(np.load(save_data_path(figure='figure9_10').joinpath('original_data', f'{eid}_feature.npy')))
+        output_list.append(np.load(save_data_path(figure='figure9_10').joinpath('original_data', f'{eid}_output.npy')))
+        cluster_number_list.append(np.load(save_data_path(figure='figure9_10').joinpath('original_data', f'{eid}_clusters.npy')))
+        session_list.append(np.load(save_data_path(figure='figure9_10').joinpath('original_data', f'{eid}_session_info.npy'), allow_pickle=True))
+        trial_number_list.append(np.load(save_data_path(figure='figure9_10').joinpath('original_data', f'{eid}_trials.npy')))
         
     return feature_list, output_list, cluster_number_list, session_list, trial_number_list
 
@@ -635,12 +638,11 @@ def compute_mean_frs(shape_path='mtnn_data/train/shape.npy', obs_path='mtnn_data
 
 
 def select_high_fr_neurons(feature, output, clusters,
-                           neuron_id_start=0, threshold1=5.0, threshold2=2.0, max_n_neurons=15):
-    # select = output.mean(1).max(1) >= threshold
-    select = np.logical_and(output.mean(1).max(1) >= threshold1, np.mean(output, axis=(1, 2)) >= threshold2)
+                           neuron_id_start=0, threshold=2.5, max_n_neurons=15):
+    select = np.mean(output, axis=(1, 2)) >= threshold
     feature_subset = feature[select]
     if feature_subset.shape[0] > max_n_neurons:
-        select2 = np.random.choice(np.arange(feature_subset.shape[0]), size=max_n_neurons, replace=False)
+        select2 = rng.choice(np.arange(feature_subset.shape[0]), size=max_n_neurons, replace=False)
     else:
         select2 = np.arange(feature_subset.shape[0])
     feature_subset = feature_subset[select2]
@@ -694,7 +696,7 @@ def preprocess_feature(feature_concat):
                 wf_width_max - wf_width_min)
 
     # noise
-    noise = np.random.normal(loc=0.0, scale=1.0, size=feature_concat.shape[:-1])
+    noise = rng.normal(loc=0.0, scale=1.0, size=feature_concat.shape[:-1])
     feature_concat[:, :, noise_offset] = noise
 
     return feature_concat

@@ -53,5 +53,22 @@ that is called reproducible_ephys_paths.py and add the following following:
 FIG_PATH = '/path/where/to/save/your/figures/'
 DATA_PATH = '/path/where/to/save/your/data/
 
-# Running code
+# Getting Started
+To get started you will need to execute the code reproducible_ephys_run.py which will download the data and compute
+exclusion criteria for the insertions 
+```
+python reproducible_ephys_run.py
+```
+This can also be run from a python terminal
+or by using the following code snippet in an ipython terminal
+```python
+
+from one.api import ONE
+from reproducible_ephys_run import run_repro_ephys_metrics
+one = ONE()
+run_repro_ephys_metrics(one)
+
+```
+
+# Running figures
 For instructions on how to run code for each figure please refer to README file in each figure sub-folder
