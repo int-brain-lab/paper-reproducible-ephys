@@ -184,14 +184,11 @@ def prepare_data(insertions, one, figure='figure5', recompute=False, new_metrics
                 intervals = np.c_[eventStim[rxn_idx] - 0.2, eventStim[rxn_idx]]
                 counts, cluster_ids = get_spike_counts_in_bins(spikes.times[spike_idx], spikes.clusters[spike_idx], intervals)
                 assert np.array_equal(cluster_ids, data['cluster_ids'])
-                fr_base = counts / (intervals[:, 1] - intervals[:, 0])
+                fr_base_example = counts / (intervals[:, 1] - intervals[:, 0])
                 neuron_id = 614
                 clu_idx = np.where(cluster_ids == neuron_id)[0]
-                fr_example = np.c_[fr_base[clu_idx, :][0], fr_pre_move_tw[clu_idx, :][0]]
-                save_path = save_data_path(figure=figure)
+                fr_example = np.c_[fr_base_example[clu_idx, :][0], fr_pre_move_tw[clu_idx, :][0]]
                 np.save(save_data_path(figure=figure).joinpath(f'figure5_example_neuron{neuron_id}_{pid}.npy'), fr_example)
-
-
 
 
             # Post-move firing rate
@@ -208,11 +205,6 @@ def prepare_data(insertions, one, figure='figure5', recompute=False, new_metrics
             fr_post_reward = counts / (intervals[:, 1] - intervals[:, 0])
             data['avg_fr_post_reward'] = np.nanmean(fr_post_reward, axis=1)
 
-            # Save the data that we need for the
-            if pid == 'ce397420-3cd2-4a55-8fd1-5e28321981f4' and figure == 'figure5':
-                clu_idx = np.where(cluster_ids == 614)[0]
-                fr_base_example = fr_base[clu_idx, :]
-                fr_pre_move_tw_example = fr_pre_move_tw[clu_idx, :]
 
             # COMPARE FIRING RATES TO FIND RESPONSIVE UNITS
             # Trial vs Baseline
