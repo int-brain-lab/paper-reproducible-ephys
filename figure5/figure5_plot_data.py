@@ -68,51 +68,62 @@ def plot_main_figure():
     plt.close()
 
 
+def task_mod_panel_helper(fig, panel_name, xspan, ybot, ytop):
+    step = (ytop - ybot + 0.01) / 5
+    ret = {panel_name + '1': fg.place_axes_on_grid(fig, xspan=xspan, yspan=[ybot + 0 * step, ybot + 1 * step - 0.01],
+                                                   wspace=0.3),
+           panel_name + '2': fg.place_axes_on_grid(fig, xspan=xspan, yspan=[ybot + 1 * step, ybot + 2 * step - 0.01],
+                                                   wspace=0.3),
+           panel_name + '3': fg.place_axes_on_grid(fig, xspan=xspan, yspan=[ybot + 2 * step, ybot + 3 * step - 0.01],
+                                                   wspace=0.3),
+           panel_name + '4': fg.place_axes_on_grid(fig, xspan=xspan, yspan=[ybot + 3 * step, ybot + 4 * step - 0.01],
+                                                   wspace=0.3),
+           panel_name + '5': fg.place_axes_on_grid(fig, xspan=xspan, yspan=[ybot + 4 * step, ytop],
+                                                   wspace=0.3)}
+    return ret
+
+
 def plot_supp_figure():
     DPI = 400  # if the figure is too big on your screen, lower this number
     figure_style()
     fig = plt.figure(figsize=(7, 10.5), dpi=DPI)  # full width figure is 7 inches
-    ax = {'panel_A_1': fg.place_axes_on_grid(fig, xspan=[0.075, 0.45], yspan=[0., 0.15],
-                                               wspace=0.3),
-          'panel_A_2': fg.place_axes_on_grid(fig, xspan=[0.075, 0.45], yspan=[0.15, 0.3],
-                                               wspace=0.3),
-          'panel_B_1': fg.place_axes_on_grid(fig, xspan=[0.55, 1.], yspan=[0., 0.15],
-                                               wspace=0.3),
-          'panel_B_2': fg.place_axes_on_grid(fig, xspan=[0.55, 1.], yspan=[0.15, 0.3],
-                                               wspace=0.3),
-          'panel_C_1': fg.place_axes_on_grid(fig, xspan=[0.075, 0.45], yspan=[0.36, 0.63],
-                                             wspace=0.3),
-          'panel_C_2': fg.place_axes_on_grid(fig, xspan=[0.075, 0.45], yspan=[0.66, 0.72],
-                                             wspace=0.3),
-          'panel_D_1': fg.place_axes_on_grid(fig, xspan=[0.55, 1.], yspan=[0.73, 0.79],
-                                             wspace=0.3),
-          'panel_D_2': fg.place_axes_on_grid(fig, xspan=[0.55, 1.], yspan=[0.8, 0.86],
-                                             wspace=0.3),
-          'panel_E_1': fg.place_axes_on_grid(fig, xspan=[0.075, 0.45], yspan=[0.87, 0.93],
-                                             wspace=0.3),
-          'panel_E_2': fg.place_axes_on_grid(fig, xspan=[0.075, 0.45], yspan=[0.94, 1],
-                                             wspace=0.3),
-          'panel_F_1': fg.place_axes_on_grid(fig, xspan=[0.55, 1.], yspan=[0.66, 1],
-                                             wspace=0.3),
-          'panel_F_2': fg.place_axes_on_grid(fig, xspan=[0.55, 1.], yspan=[0.66, 1],
-                                             wspace=0.3)}
+    panel_a = task_mod_panel_helper(fig, 'panel_A_', [0.075, 0.45], 0.13, 0.32)
+    panel_b = task_mod_panel_helper(fig, 'panel_B_', [0.55, 1.], 0.13, 0.32)
+    panel_c = task_mod_panel_helper(fig, 'panel_C_', [0.075, 0.45], 0.46, 0.65)
+    panel_d = task_mod_panel_helper(fig, 'panel_D_', [0.55, 1.], 0.46, 0.65)
+    panel_e = task_mod_panel_helper(fig, 'panel_E_', [0.075, 0.45], 0.79, 1)
+    panel_f = task_mod_panel_helper(fig, 'panel_F_', [0.55, 1.], 0.79, 1)
 
-    plot_panel_example_neurons(ax1=[ax['panel_A_1_1'], ax['panel_A_1_2']], ax2=[ax['panel_A_2_1'], ax['panel_A_2_2']], save=False)
-    plot_panel_modulation_comparison(ax=ax['panel_B_2'])
-    plot_panel_task_modulated_neurons(specific_tests=['start_to_move'],
-                                      ax=[ax['panel_C_1'], ax['panel_C_2'], ax['panel_C_3'], ax['panel_C_4'], ax['panel_C_5']],
+    plot_panel_task_modulated_neurons(specific_tests=['trial'],
+                                      ax=[panel_a['panel_A_{}'.format(x)] for x in range(1, 6)],
                                       save=False)
-    plot_panel_permutation(ax=ax['panel_D'])
+    plot_panel_task_modulated_neurons(specific_tests=['post_stim'],
+                                      ax=[panel_b['panel_B_{}'.format(x)] for x in range(1, 6)],
+                                      save=False)
+    plot_panel_task_modulated_neurons(specific_tests=['post_move'],
+                                      ax=[panel_c['panel_C_{}'.format(x)] for x in range(1, 6)],
+                                      save=False)
+    plot_panel_task_modulated_neurons(specific_tests=['pre_move'],
+                                      ax=[panel_d['panel_D_{}'.format(x)] for x in range(1, 6)],
+                                      save=False)
+    plot_panel_task_modulated_neurons(specific_tests=['pre_move_lr'],
+                                      ax=[panel_e['panel_E_{}'.format(x)] for x in range(1, 6)],
+                                      save=False)
+    plot_panel_task_modulated_neurons(specific_tests=['post_reward'],
+                                      ax=[panel_f['panel_F_{}'.format(x)] for x in range(1, 6)],
+                                      save=False)
 
     labels = [{'label_text': 'a', 'xpos': 0, 'ypos': 0, 'fontsize': 10, 'weight': 'bold'},
-              {'label_text': 'd', 'xpos': 0.5, 'ypos': 0.64, 'fontsize': 10, 'weight': 'bold'},
-              {'label_text': 'b', 'xpos': 0, 'ypos': 0.36, 'fontsize': 10, 'weight': 'bold'},
-              {'label_text': 'c', 'xpos': 0, 'ypos': 0.64, 'fontsize': 10, 'weight': 'bold'}]
+              {'label_text': 'b', 'xpos': 0.5, 'ypos': 0, 'fontsize': 10, 'weight': 'bold'},
+              {'label_text': 'c', 'xpos': 0, 'ypos': 0.33, 'fontsize': 10, 'weight': 'bold'},
+              {'label_text': 'd', 'xpos': 0.5, 'ypos': 0.33, 'fontsize': 10, 'weight': 'bold'},
+              {'label_text': 'e', 'xpos': 0, 'ypos': 0.66, 'fontsize': 10, 'weight': 'bold'},
+              {'label_text': 'f', 'xpos': 0.5, 'ypos': 0.66, 'fontsize': 10, 'weight': 'bold'}]
     fg.add_labels(fig, labels)
 
     print(f'Saving figures to {fig_path}')
-    plt.savefig(fig_path.joinpath('figure5_combined.png'), bbox_inches='tight', pad_inches=0)
-    plt.savefig(fig_path.joinpath('figure5_combined.pdf'), bbox_inches='tight', pad_inches=0)
+    plt.savefig(fig_path.joinpath('figure5_supp.png'), bbox_inches='tight', pad_inches=0)
+    plt.savefig(fig_path.joinpath('figure5_supp.pdf'), bbox_inches='tight', pad_inches=0)
     plt.close()
 
 
@@ -218,10 +229,7 @@ def plot_panel_permutation(ax=None):
     df_filt = filter_recordings(df)
     df_filt = df_filt[df_filt['permute_include'] == 1]
 
-    n_permut = 1000
-    print("!!!")
-    print(n_permut)
-    print("!!!")
+    n_permut = 10000
     df_filt_reg = df_filt.groupby('region')
     results = pd.DataFrame()
     test_names = []
@@ -262,3 +270,4 @@ def plot_panel_permutation(ax=None):
 
 if __name__ == '__main__':
     plot_main_figure()
+    plot_supp_figure()

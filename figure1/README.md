@@ -23,5 +23,5 @@ run_figure1(one)
 
 ```
 ## Info
-Currently the code only creates the individual panels for the figures and does not contrust the whole figures shown in
+Currently the code only creates the individual panels for the figures and does not construct the whole figures shown in
 the paper

@@ -1,5 +1,6 @@
 ONE-api
 ibllib
+ibl-neuropixel
 svgutils
 figrid
 statsmodels
