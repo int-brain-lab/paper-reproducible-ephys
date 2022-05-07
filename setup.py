@@ -24,7 +24,7 @@ with open('requirements.txt') as f:
 
 setup(
     name='paper-reproducible-ephys',
-    version='1.0.0',
+    version='0.1.0',
     python_requires='>={}.{}'.format(*REQUIRED_PYTHON),
     description='Github repo for code associated with IBL reproducible ephys paper',
     license="MIT",
