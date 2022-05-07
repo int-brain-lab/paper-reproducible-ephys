@@ -1,6 +1,6 @@
 import numpy as np
 from ibllib.atlas.regions import BrainRegions
-from ibllib.ephys.neuropixel import SITES_COORDINATES
+from neuropixel import SITES_COORDINATES
 from matplotlib.image import NonUniformImage
 
 
