@@ -4,10 +4,13 @@
 % Code written by: Marsa Taheri
 
 function [hLegend, pMWU_corrected,...
-    mdl, mdl_shuffle] = plot3D_TM(CSVfile, BrainRegion, TM_test, ax, save_path)
+    mdl, mdl_shuffle] = plot3D_TM(CSVfile, BrainRegion, TM_test, jitt, ax, save_path)
 
 %mdl and mdl_shuffle are the linear regression model for real and shuffled
 %data
+%jitt is the xyz jitter/noise that is added to each data point, used
+%previously in plot3D_FR.m and output from there (for consistency between
+%plots).
 
 T = readtable(CSVfile);
 
@@ -39,8 +42,8 @@ Z0_region = T_target.Z0(find(strcmp(T_target.Row, BrainRegion)));
 dXYZ = [T.x(Neur_idx) - X0_region, T.y(Neur_idx) - Y0_region, T.z(Neur_idx) - Z0_region]*1e6; %convert to microns
 
 % Add x, y, z jitter:
-jittSize = ones(1,3)*min([range(abs(dXYZ(:,1))), range(abs(dXYZ(:,2))), range(abs(dXYZ(:,3)))])./70;
-jitt = jittSize.*(rand(size(dXYZ(:,1), 1), 3)-0.5); %center the noise around 0 (+ and -) with - 0.5
+%jittSize = ones(1,3)*min([range(abs(dXYZ(:,1))), range(abs(dXYZ(:,2))), range(abs(dXYZ(:,3)))])./70;
+%jitt = jittSize.*(rand(size(dXYZ(:,1), 1), 3)-0.5); %center the noise around 0 (+ and -) with - 0.5
 
 dXjitt = dXYZ(:,1) + jitt(:,1);
 dYjitt = dXYZ(:,2) + jitt(:,2);
@@ -141,12 +144,12 @@ for spHist=1:3
     
     h1=histogram(Sample1(:,spHist),...
         'binwidth',100, 'edgecolor', [1, 0.41, 0.16],...
-        'normalization', 'probability', 'DisplayStyle', 'stairs', 'linewidth',3, 'edgealpha', 0.8); hold on;
+        'normalization', 'probability', 'DisplayStyle', 'stairs', 'linewidth',2, 'edgealpha', 0.8); hold on;
     hold on
     h2=histogram(Sample2(:,spHist),...
         'normalization', 'probability',...
         'binwidth',100, 'edgecolor', [0.5, 0.5, 0.5],...
-        'facealpha', 0.4, 'edgealpha', 0.6, 'DisplayStyle', 'stairs', 'linewidth',4);
+        'facealpha', 0.4, 'edgealpha', 0.6, 'DisplayStyle', 'stairs', 'linewidth',3);
     
     if spHist==1
         xlabel('\DeltaX (L-M)')
@@ -171,9 +174,9 @@ for spHist=1:3
     RightEnd(2) = prctile(Sample2(:,spHist), 80);
     
     Yl = get(gca, 'ylim');
-    rectangle('Position', [LeftEnd(1), 0, (RightEnd(1)-LeftEnd(1)), 0.9*Yl(2)],...
+    rectangle('Position', [LeftEnd(1), 0, (RightEnd(1)-LeftEnd(1)), 1.15*Yl(2)],...
         'linewidth', 1, 'EdgeColor', [1, 0.41, 0.16, 0.2], 'FaceColor', [1, 0.41, 0.16, 0.2])%'FaceAlpha' is determined by the 4th #
-    rectangle('Position', [LeftEnd(2), 0, (RightEnd(2)-LeftEnd(2)), 1.15*Yl(2)],...
+    rectangle('Position', [LeftEnd(2), 0, (RightEnd(2)-LeftEnd(2)), 0.9*Yl(2)],...
         'linewidth', 1, 'EdgeColor', [0.5, 0.5, 0.5, 0.2], 'FaceColor', [0.5, 0.5, 0.5, 0.2])
     set(gca, 'ylim', [0, 1.15*Yl(2)])
     
@@ -194,7 +197,7 @@ for spHist=4:5
     
     h1=histogram(Sample1(:,spHist),...
         'edgecolor', [1, 0.41, 0.16],...
-        'normalization', 'probability', 'DisplayStyle', 'stairs', 'linewidth',3, 'edgealpha', 0.8); hold on;
+        'normalization', 'probability', 'DisplayStyle', 'stairs', 'linewidth',2, 'edgealpha', 0.8); hold on;
     hold on
     %     h2=histogram(Sample2(:,spHist),...
     %         'normalization', 'probability',...
@@ -203,7 +206,7 @@ for spHist=4:5
     h2=histogram(Sample2(:,spHist),...
         'normalization', 'probability',...
         'binwidth', get(h1, 'binwidth'), 'edgecolor', [0.5, 0.5, 0.5],...
-        'facealpha', 0.4, 'edgealpha', 0.6, 'DisplayStyle', 'stairs', 'linewidth',4);
+        'facealpha', 0.4, 'edgealpha', 0.6, 'DisplayStyle', 'stairs', 'linewidth',3);
     
     %Note for hist colors:
     %Task modulated:  'edgecolor', [1, 0.41, 0.16]

@@ -3,26 +3,39 @@ function [] = Fig3Dplots_generate(CSVfile, BrainRegion, save_path)
 TM_test1 = 'start_to_move'; %'pre_move_lr'; %'start_to_move';
 TM_test2 = 'pre_move_lr';
 
+% Sets the 3D plot's ylabel rotation depending on brain region view rotation:
+if strcmp(BrainRegion, 'PPC')
+    rot = -25; pos1 = [-687  -346  -728]; pos2=[-697  -391  -729]; pos3=[-657  -360  -744];
+elseif strcmp(BrainRegion, 'CA1')
+    rot = -30; pos1 = [-605  -374  -655]; pos2=[-603  -432  -669]; pos3=[-569  -403  -695];
+elseif strcmp(BrainRegion, 'DG')
+    rot = -30; pos1 = [-605  -327  -507]; pos2=[-596  -389  -526]; pos3=[-596  -389  -526];
+elseif strcmp(BrainRegion, 'LP')
+    rot = -40; pos1 = [-642 -343 -612]; pos2=[-667 -380 -600]; pos3=[-650 -338 -609];
+elseif strcmp(BrainRegion, 'PO')
+    rot = -33; pos1 = [-772  -317  -698]; pos2=[-779  -357  -672]; pos3=[-755  -320  -688];
+end
+
 f = figure(1);
 ax(1) = subplot(3,2,2);
-[hCB, FRthresh, pMWU_corrFR, mdlFR, mdlFR_shuffle] = plot3D_FR(CSVfile,...
+[hCB, jitt, FRthresh, pMWU_corrFR, mdlFR, mdlFR_shuffle] = plot3D_FR(CSVfile,...
     BrainRegion, ax(1), save_path);
 set(hCB, 'position', [0.9326  0.7002  0.0085  0.2355]) %[0.9175  0.6879  0.0085  0.2355]) %[0.9175  0.6930  0.0201  0.2157])
-set(get(gca, 'Ylabel'), 'Rotation', -40, 'Position', [-642 -343 -612])
+set(get(ax(1), 'Ylabel'), 'Rotation', rot, 'Position', pos1)
 
 figure(f)
 ax(2) = subplot(3,2,4);
 [hLegend1, pMWU_corrTM1, mdlTM1, mdlTM1_shuffle] = plot3D_TM(CSVfile,...
-    BrainRegion, TM_test1, ax(2), save_path);
-set(hLegend1, 'box', 'off', 'Position', [0.7310  0.4277  0.1713  0.0363])
-set(get(gca, 'Ylabel'), 'Rotation', -40, 'Position', [-810 -270 -518])
+    BrainRegion, TM_test1, jitt, ax(2), save_path);
+set(hLegend1, 'box', 'on', 'Position', [0.7310  0.4277  0.1713  0.0363])
+set(get(ax(2), 'Ylabel'), 'Rotation', rot, 'Position', pos2)
 
 figure(f)
 ax(3) = subplot(3,2,6);
 [hLegend2, pMWU_corrTM2, mdlTM2, mdlTM2_shuffle] = plot3D_TM(CSVfile,...
-    BrainRegion, TM_test2, ax(3), save_path);
-set(hLegend2, 'box', 'off', 'Position', [0.7445  0.1285  0.1619 0.0342])
-set(get(gca, 'Ylabel'), 'Rotation', -40, 'Position', [-650 -338 -609])
+    BrainRegion, TM_test2, jitt, ax(3), save_path);
+set(hLegend2, 'box', 'on', 'Position', [0.7445  0.1285  0.1619 0.0342])
+set(get(ax(3), 'Ylabel'), 'Rotation', rot, 'Position', pos3)
 
 figure(f)
 ax(4) = subplot(3,2,3);
