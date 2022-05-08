@@ -63,6 +63,18 @@ switch TM_test
     case 'post_stim'
         pVal_neur = T.p_post_stim(Neur_idx);
         p_TF_neur = T.post_stim(Neur_idx);
+    case 'pre_move'
+        pVal_neur = T.p_pre_move(Neur_idx);
+        p_TF_neur = T.pre_move(Neur_idx);
+    case 'trial'
+        pVal_neur = T.p_trial(Neur_idx);
+        p_TF_neur = T.trial(Neur_idx);
+    case 'post_move'
+        pVal_neur = T.p_post_move(Neur_idx);
+        p_TF_neur = T.post_move(Neur_idx);
+    case 'post_reward'
+        pVal_neur = T.p_post_reward(Neur_idx);
+        p_TF_neur = T.post_reward(Neur_idx);
 end
 
 %Convert vector with True or False strings to a logical vector:

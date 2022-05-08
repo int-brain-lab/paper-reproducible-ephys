@@ -1,7 +1,7 @@
 function [] = Fig3Dplots_generate(CSVfile, BrainRegion, save_path)
 
-TM_test1 = 'start_to_move'; %'pre_move_lr'; %'start_to_move';
-TM_test2 = 'pre_move_lr';
+TM_test1 = 'start_to_move'; %'post_stim'; %'trial'; %'post_reward';%
+TM_test2 = 'pre_move_lr'; %'pre_move'; %'post_move'; %
 
 % Sets the 3D plot's ylabel rotation depending on brain region view rotation:
 if strcmp(BrainRegion, 'PPC')
@@ -18,7 +18,8 @@ end
 
 f = figure(1);
 ax(1) = subplot(3,2,2);
-[hCB, jitt, FRthresh, pMWU_corrFR, mdlFR, mdlFR_shuffle] = plot3D_FR(CSVfile,...
+[hCB, jitt, FRthresh, pMWU_corrFR, mdlFR, mdlFR_shuffle,...
+    FRthreshLow] = plot3D_FR(CSVfile,...
     BrainRegion, ax(1), save_path);
 set(hCB, 'position', [0.9326  0.7002  0.0085  0.2355]) %[0.9175  0.6879  0.0085  0.2355]) %[0.9175  0.6930  0.0201  0.2157])
 set(get(ax(1), 'Ylabel'), 'Rotation', rot, 'Position', pos1)
@@ -66,6 +67,12 @@ YlineLoc = barPos(2) + barPos(4)*PositionRatio;
 XlineLoc = barPos(1) + barPos(3)/2 + [0.014, -0.014];
 %XlineLoc = barPos(1) + barPos(3)/2 + [0.022, -0.022];
 h_colorbarLine = annotation('line', XlineLoc, [YlineLoc, YlineLoc], 'Color', [0.9 0.6 0.2], 'linewidth', 2.5);                
+if ~isnan(FRthreshLow)
+    PositionRatioLow = (log10(FRthreshLow)-cLimits(1))/diff(cLimits);
+    YlineLocLowFR = barPos(2) + barPos(4)*PositionRatioLow;
+    h_colorbarLineLowFR = annotation('line', XlineLoc,...
+        [YlineLocLowFR, YlineLocLowFR], 'Color', [0.3 0.4 0.9], 'linewidth', 2.5);                
+end
 
 %% Linear Regression Model analysis:
 % Linear regression model for shuffled data (as the control):

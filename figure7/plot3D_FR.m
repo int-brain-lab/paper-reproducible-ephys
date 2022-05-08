@@ -4,7 +4,7 @@
 % Code written by: Marsa Taheri
 
 function [hCB, jitt, FRthresh, pMWU_corrected,...
-    mdl, mdl_shuffle] = plot3D_FR(CSVfile, BrainRegion, ax, save_path)
+    mdl, mdl_shuffle, FRthreshLow] = plot3D_FR(CSVfile, BrainRegion, ax, save_path)
 
 %mdl and mdl_shuffle are the linear regression model for real and shuffled
 %data
@@ -63,15 +63,24 @@ UnitsRegular = DeviationFromMedian<FiltThresh & DeviationFromMedian > -FiltThres
 UnitsOutliers = DeviationFromMedian>=FiltThresh | DeviationFromMedian<= -FiltThresh;
 % Separate outliers into HF and LF:
 %UnitsHF = DeviationFromMedian>=FiltThresh; %High firing (HF) units
-%UnitsLF = DeviationFromMedian<= -FiltThresh; %Low firing (LF) units
+UnitsLF = DeviationFromMedian<= -FiltThresh; %Low firing (LF) units
+
+
+FRthresh = range(AvgFR)*FiltThresh +  median(AvgFR);
+if sum(UnitsLF)>0
+    FRthreshLow = range(AvgFR)*(-FiltThresh) +  median(AvgFR); %thresh for low firing neurons
+else
+    FRthreshLow=NaN;
+end
+
 %--------To examine FR histogram and thresholds for outliers-------------
 % figure
 % hFR = histogram(AvgFR, 'binwidth', 0.12, 'normalization', 'probability');
 % m1=mean(AvgFR); m2=median(AvgFR);
 % p90=prctile(AvgFR, 90); p85=prctile(AvgFR, 85);
 % p10=prctile(AvgFR, 10); p15=prctile(AvgFR, 15);
-% manualCutOff1 = range(AvgFR)*FiltThresh +  median(AvgFR);
-% manualCutOff2 = range(AvgFR)*(-FiltThresh) +  median(AvgFR);
+% FRthresh = range(AvgFR)*FiltThresh +  median(AvgFR);
+% FRthreshLow = range(AvgFR)*(-FiltThresh) +  median(AvgFR);
 % line([m1 m1], [min(hFR.Values), max(hFR.Values)], 'color', 'k')
 % text(m1, max(hFR.Values), 'mean', 'color', 'k')
 % line([m2 m2], [min(hFR.Values), max(hFR.Values)], 'color', 'r')
@@ -84,15 +93,15 @@ UnitsOutliers = DeviationFromMedian>=FiltThresh | DeviationFromMedian<= -FiltThr
 % text(p85, max(hFR.Values), '85th perc', 'color', [0.5 0.5 0.5])
 % line([p15 p15], [min(hFR.Values), max(hFR.Values)], 'color', [0.5 0.5 0.5])
 % text(p15, max(hFR.Values), '15th perc', 'color', [0.5 0.5 0.5])
-% line([manualCutOff1 manualCutOff1], [min(hFR.Values), max(hFR.Values)], 'color', [0.6 0 0.6])
-% text(manualCutOff1, 0.8*max(hFR.Values), 'Manual Cut-off', 'color', [0.6 0 0.6])
-% line([manualCutOff2 manualCutOff2], [min(hFR.Values), max(hFR.Values)], 'color', [0.6 0 0.6])
+% line([FRthresh FRthresh], [min(hFR.Values), max(hFR.Values)], 'color', [0.6 0 0.6],...
+%     'linewidth', 2)
+% text(FRthresh, 0.8*max(hFR.Values), 'FR Cut-off', 'color', [0.6 0 0.6])
+% line([FRthreshLow FRthreshLow], [min(hFR.Values), max(hFR.Values)], 'color', [0.6 0 0.6],...
+%     'linewidth', 2)
 % %text(manualCutOff2, 0.8*max(hFR.Values), 'Manual Cut-off', 'color', [0.6 0 0.6])
 % ylabel('count'); xlabel('FR Deviation (normalized to -1 to 1)')
 % set(gca,'fontsize', 14)
 %---------------------------------------------------------------------
-
-FRthresh = range(AvgFR)*FiltThresh +  median(AvgFR);
 
 AvgFR_regular = log10(AvgFR(UnitsRegular)');
 dX_regular = dXjitt(UnitsRegular);
@@ -143,6 +152,10 @@ set(hCB,'TickLabels', TickLabelsCell)
 %hCB.TickLabels = 10.^(hCB.Ticks);
 % To have no threshold indicated:
 hCB.Ticks = log10(FRticks); hCB.TickLabels = 10.^(hCB.Ticks);
+%If low firing neurons are also outliers, place a line there:
+if sum(UnitsLF)>0
+    FRthreshLow = range(AvgFR)*(-FiltThresh) +  median(AvgFR); %thresh for low firing neurons
+end
 
 % % Annotate the colorbar to separate regular and outlier neurons:
 % % Find position of colobar and its min/max values:
