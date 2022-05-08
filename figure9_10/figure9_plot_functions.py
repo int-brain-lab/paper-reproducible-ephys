@@ -19,6 +19,8 @@ from figure9_10.mtnn import load_test_model
 data_load_path = save_data_path(figure='figure9_10').joinpath('mtnn_data')
 save_path = save_figure_path(figure='figure9_10')
 
+rng = np.random.default_rng(seed=0b01101001 + 0b01100010 + 0b01101100)
+
 def split_by_stimulus(feature):
     
     stim = feature[0,:,:,cov_idx_dict['stimuli'][0]:cov_idx_dict['stimuli'][1]].sum(1)
@@ -183,7 +185,7 @@ def generate_figure_9(feature_list, pred_list, obs_list, neu_list, sess_list, tr
     acronym_dict_reverse = get_acronym_dict_reverse()
         
     for i in which_sess:
-        sess_info = sess_list[i].tolist()
+        sess_info = sess_list[i]#.tolist()
         eid = sess_info['session']['id']
         subject = sess_info['session']['subject']
         probe = sess_info['probe_name']
@@ -201,7 +203,7 @@ def generate_figure_9(feature_list, pred_list, obs_list, neu_list, sess_list, tr
         n_neurons = neu.shape[0]
         if plot_subsample_ratio < 1.0:
             n_samples = int(n_neurons*plot_subsample_ratio)
-            selected_neurons = np.random.choice(np.arange(n_neurons), size=n_samples, replace=False)
+            selected_neurons = rng.choice(np.arange(n_neurons), size=n_samples, replace=False)
         else:
             selected_neurons = np.arange(n_neurons)
             
@@ -350,7 +352,7 @@ def generate_figure9_supplement1(model_config,
                                  test_feature,
                                  sess_list,
                                  alpha=0.6, s=30,
-                                 xlims=[0.0,50.0], ylims=[-0.2,1.0], 
+                                 xlims=[0.0,45.0], ylims=[-0.1,1.0], 
                                  savefig=False):
     
     color_names = ["windows blue",
@@ -396,7 +398,7 @@ def generate_figure9_supplement1(model_config,
     for i, sess in enumerate(sess_list):
         lab_id = np.where(feature_list[i][0,0,0,lab_offset:session_offset] == 1)[0][0]
         session_id = np.where(feature_list[i][0,0,0,session_offset:xyz_offset] == 1)[0][0]
-        sess = sess.tolist()
+        #sess = sess.tolist()
         
         axs[0].scatter(reshaped_frs[i][0], reshaped_score[i][0], s=s,
                        color=colors[lab_id], marker=shapes[session_id], alpha=alpha,
@@ -469,8 +471,8 @@ def generate_figure9_supplement2(model_config,
     plt.ylabel('GLM Performance (R2)', fontsize=24)
     
     plt.plot([-1,1],[-1,1], color='black')
-    plt.xlim(-0.25,0.55)
-    plt.ylim(-0.25,0.55)
+    plt.xlim(-0.05,0.6)
+    plt.ylim(-0.05,0.6)
     
     plt.title('MTNN vs GLM Predictive Performance Comparison', fontsize=24)
     

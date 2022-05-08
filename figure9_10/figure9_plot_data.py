@@ -27,7 +27,7 @@ def plot_figures():
 
     HIDDEN_SIZE_STATIC = 64
     HIDDEN_SIZE_DYNAMIC = 64
-    n_layers = 2
+    n_layers = 3
 
     remove_cov = None
     only_keep_cov = None
@@ -69,7 +69,7 @@ def plot_figures():
     for i in range(len(pred_list)):
         generate_figure_9(feature_list, pred_list, obs_list,
                           neu_list, sess_list, trial_list, which_sess=[i],
-                          savefig=True, plot_subsample_ratio=0.1)
+                          savefig=True, plot_subsample_ratio=0.5)
 
     model_config = {'n_neurons': n_neurons,
                     'input_size_static': INPUT_SIZE_STATIC,

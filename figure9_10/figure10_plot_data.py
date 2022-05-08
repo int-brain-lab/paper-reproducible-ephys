@@ -24,7 +24,7 @@ def plot_figures():
 
     HIDDEN_SIZE_STATIC = 64
     HIDDEN_SIZE_DYNAMIC = 64
-    n_layers = 2
+    n_layers = 3
 
 
     model_config = {'n_neurons': n_neurons,
