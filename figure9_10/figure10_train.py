@@ -4,7 +4,6 @@ from reproducible_ephys_functions import save_data_path
 from figure9_10.utils import static_idx, cov_idx_dict, sim_cov_idx_dict, grouped_cov_idx_dict
 from figure9_10.mtnn import initialize_mtnn, run_train
 
-
 def train(do_train=True, sim_do_train=True):
     data_load_path = save_data_path(figure='figure9_10').joinpath('mtnn_data')
     sim_data_load_path = save_data_path(figure='figure9_10').joinpath('simulated_data')
@@ -24,8 +23,10 @@ def train(do_train=True, sim_do_train=True):
 
     HIDDEN_SIZE_STATIC = 64
     HIDDEN_SIZE_DYNAMIC = 64
-    n_layers = 2
+    n_layers = 3
     n_epochs = 100
+    
+    weight_decay = 1e-15
 
     if do_train:
         # train leave-one-out
@@ -49,7 +50,7 @@ def train(do_train=True, sim_do_train=True):
                                                              data_load_path.joinpath('validation/feature.npy'),
                                                              data_load_path.joinpath('validation/output.npy'),
                                                              batch_size=512, n_epochs=n_epochs, lr=0.1,
-                                                             weight_decay=1e-5,
+                                                             weight_decay=weight_decay,
                                                              remove_cov=remove_cov,
                                                              only_keep_cov=only_keep_cov)
 
@@ -80,7 +81,7 @@ def train(do_train=True, sim_do_train=True):
                                                              data_load_path.joinpath('validation/feature.npy'),
                                                              data_load_path.joinpath('validation/output.npy'),
                                                              batch_size=512, n_epochs=n_epochs, lr=0.1,
-                                                             weight_decay=1e-5,
+                                                             weight_decay=weight_decay,
                                                              remove_cov=remove_cov,
                                                              only_keep_cov=only_keep_cov)
 
@@ -109,7 +110,7 @@ def train(do_train=True, sim_do_train=True):
                                                              data_load_path.joinpath('validation/feature.npy'),
                                                              data_load_path.joinpath('validation/output.npy'),
                                                              batch_size=512, n_epochs=n_epochs, lr=0.1,
-                                                             weight_decay=1e-5,
+                                                             weight_decay=weight_decay,
                                                              remove_cov=remove_cov,
                                                              only_keep_cov=only_keep_cov)
 
@@ -134,7 +135,7 @@ def train(do_train=True, sim_do_train=True):
                                                              data_load_path.joinpath('validation/feature.npy'),
                                                              data_load_path.joinpath('validation/output.npy'),
                                                              batch_size=512, n_epochs=n_epochs, lr=0.1,
-                                                             weight_decay=1e-5,
+                                                             weight_decay=weight_decay,
                                                              remove_cov=remove_cov,
                                                              only_keep_cov=only_keep_cov)
 
@@ -154,7 +155,7 @@ def train(do_train=True, sim_do_train=True):
                                                          sim_data_load_path.joinpath('validation/feature.npy'),
                                                          sim_data_load_path.joinpath('validation/output.npy'),
                                                          batch_size=512, n_epochs=n_epochs, lr=0.1,
-                                                         weight_decay=1e-5,
+                                                         weight_decay=weight_decay,
                                                          remove_cov=None,
                                                          only_keep_cov=None, simulated=True)
 
@@ -179,7 +180,7 @@ def train(do_train=True, sim_do_train=True):
                                                              sim_data_load_path.joinpath('validation/feature.npy'),
                                                              sim_data_load_path.joinpath('validation/output.npy'),
                                                              batch_size=512, n_epochs=n_epochs, lr=0.1,
-                                                             weight_decay=1e-5,
+                                                             weight_decay=weight_decay,
                                                              remove_cov=remove_cov,
                                                              only_keep_cov=only_keep_cov, simulated=True)
 
