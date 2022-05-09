@@ -1,5 +1,6 @@
 import figrid as fg
 import matplotlib.pyplot as plt
+from matplotlib.ticker import FormatStrFormatter
 import seaborn as sns
 import matplotlib
 import numpy as np
@@ -217,6 +218,9 @@ def generate_figure_10(model_config,
     #ax['panel_B'].legend(fontsize=24)
 #     ax['panel_B'].set_ylim(-0.1,0.2)
     ax['panel_B'].set_ylim(-0.1,0.5)
+    ax['panel_B'].set_yticks(np.arange(-0.1,0.6,0.1))
+    ax['panel_B'].set_yticklabels(np.arange(-0.1,0.6,0.1), fontsize=18)
+    ax['panel_B'].yaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
 #     ax['panel_D'].set_ylim(-0.1,0.2)
     
     # Leave-group-out
@@ -296,6 +300,9 @@ def generate_figure_10(model_config,
 #                                   c=frs[region], cmap=plt.get_cmap('Reds'), s=20, alpha=0.7)
     ax['panel_A'].legend(fontsize=24)
     ax['panel_A'].set_ylim(-0.1,0.5)
+    ax['panel_A'].set_yticks(np.arange(-0.1,0.6,0.1))
+    ax['panel_A'].set_yticklabels(np.arange(-0.1,0.6,0.1), fontsize=18)
+    ax['panel_A'].yaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
 #     ax['panel_C'].set_ylim(-0.1,0.5)
 
     
@@ -315,7 +322,7 @@ def make_fig_ax_supplement1():
     ax = {'panel_A': fg.place_axes_on_grid(fig, xspan=xsplit[0], yspan=ysplit[0]),
           'panel_B': fg.place_axes_on_grid(fig, xspan=xsplit[1], yspan=ysplit[1],
                                            dim=[2, 4], sharey=True,
-                                           wspace=0.1, hspace=0.1)}
+                                           wspace=0.08, hspace=0.08)}
     
     # Add subplot labels
     labels = [{'label_text':'a', 'xpos':0, 'ypos':0, 'fontsize':30, 'weight': 'bold',
@@ -327,7 +334,9 @@ def make_fig_ax_supplement1():
 def generate_figure_10_supplement1(model_config,
                                    glm_scores,
                                    glm_leave_one_out,
-                                   savefig=False):
+                                   savefig=False,
+                                   down_lim=-0.05,
+                                   up_lim=0.75):
     
     load_path = save_data_path(figure='figure9_10').joinpath('simulated_data')
     
@@ -382,11 +391,17 @@ def generate_figure_10_supplement1(model_config,
     ax['panel_B'][0][3].set_xticks([])
     
     ax['panel_A'].scatter(best_score, glm_scores, color='k', alpha=0.6)
-    ax['panel_A'].set_xlim(-0.1,1.0)
-    ax['panel_A'].set_ylim(-0.1,1.0)
+    ax['panel_A'].set_xlim(down_lim, up_lim)
+    ax['panel_A'].set_ylim(down_lim, up_lim)
     ax['panel_A'].plot([-1,1],[-1,1],color='k')
     ax['panel_A'].set_ylabel('GLM predictive performance (R2)', fontsize=20)
     ax['panel_A'].set_xlabel('MTNN predictive performance (R2)', fontsize=20)
+    ax['panel_A'].set_yticks(np.arange(0,0.8,0.1))
+    ax['panel_A'].set_yticklabels(np.arange(0,0.8,0.1), fontsize=14)
+    ax['panel_A'].yaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
+    ax['panel_A'].set_xticks(np.arange(0,0.8,0.1))
+    ax['panel_A'].set_xticklabels(np.arange(0,0.8,0.1), fontsize=14)
+    ax['panel_A'].xaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
     ax['panel_A'].set_title('GLM vs MTNN\npredictive performance on simulated data', fontsize=24)
     
     ax['panel_B'][0][0].set_title('left stimulus', fontsize=16)
@@ -407,46 +422,64 @@ def generate_figure_10_supplement1(model_config,
     ax['panel_B'][1][3].set_xlabel('MTNN Effect Size '+r'($\Delta$'+'R2)', fontsize=16)
     
     ax['panel_B'][0][0].scatter(best_score-leftstim_score, glm_leave_one_out[:,0], color='k', alpha=0.6)
-    ax['panel_B'][0][0].set_xlim(-0.1,1.0)
-    ax['panel_B'][0][0].set_ylim(-0.1,1.0)
+    ax['panel_B'][0][0].set_xlim(down_lim,up_lim)
+    ax['panel_B'][0][0].set_ylim(down_lim,up_lim)
     ax['panel_B'][0][0].plot([-1,1],[-1,1],color='k')
+    ax['panel_B'][0][0].set_yticks(np.arange(0,0.8,0.1))
+    ax['panel_B'][0][0].set_yticklabels(np.arange(0,0.8,0.1), fontsize=14)
+    ax['panel_B'][0][0].yaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
     
     ax['panel_B'][0][1].scatter(best_score-rightstim_score, glm_leave_one_out[:,1], color='k', alpha=0.6)
-    ax['panel_B'][0][1].set_xlim(-0.1,1.0)
-    ax['panel_B'][0][1].set_ylim(-0.1,1.0)
+    ax['panel_B'][0][1].set_xlim(down_lim,up_lim)
+    ax['panel_B'][0][1].set_ylim(down_lim,up_lim)
     ax['panel_B'][0][1].plot([-1,1],[-1,1],color='k')
     
     ax['panel_B'][0][2].scatter(best_score-incorrect_score, glm_leave_one_out[:,3], color='k', alpha=0.6)
-    ax['panel_B'][0][2].set_xlim(-0.1,1.0)
-    ax['panel_B'][0][2].set_ylim(-0.1,1.0)
+    ax['panel_B'][0][2].set_xlim(down_lim,up_lim)
+    ax['panel_B'][0][2].set_ylim(down_lim,up_lim)
     ax['panel_B'][0][2].plot([-1,1],[-1,1],color='k')
     
     ax['panel_B'][0][3].scatter(best_score-correct_score, glm_leave_one_out[:,2], color='k', alpha=0.6)
-    ax['panel_B'][0][3].set_xlim(-0.1,1.0)
-    ax['panel_B'][0][3].set_ylim(-0.1,1.0)
+    ax['panel_B'][0][3].set_xlim(down_lim,up_lim)
+    ax['panel_B'][0][3].set_ylim(down_lim,up_lim)
     ax['panel_B'][0][3].plot([-1,1],[-1,1],color='k')
     
     ax['panel_B'][1][0].scatter(best_score-fmv_score, glm_leave_one_out[:,4], color='k', alpha=0.6)
-    ax['panel_B'][1][0].set_xlim(-0.1,1.0)
-    ax['panel_B'][1][0].set_ylim(-0.1,1.0)
+    ax['panel_B'][1][0].set_xlim(down_lim,up_lim)
+    ax['panel_B'][1][0].set_ylim(down_lim,up_lim)
     ax['panel_B'][1][0].plot([-1,1],[-1,1],color='k')
+    ax['panel_B'][1][0].set_yticks(np.arange(0,0.8,0.1))
+    ax['panel_B'][1][0].set_yticklabels(np.arange(0,0.8,0.1), fontsize=14)
+    ax['panel_B'][1][0].yaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
+    ax['panel_B'][1][0].set_xticks(np.arange(0,0.8,0.1))
+    ax['panel_B'][1][0].set_xticklabels(np.arange(0,0.8,0.1), fontsize=14)
+    ax['panel_B'][1][0].xaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
     
     ax['panel_B'][1][1].scatter(best_score-prior_score, glm_leave_one_out[:,5], color='k', alpha=0.6)
-    ax['panel_B'][1][1].set_xlim(-0.1,1.0)
-    ax['panel_B'][1][1].set_ylim(-0.1,1.0)
+    ax['panel_B'][1][1].set_xlim(down_lim,up_lim)
+    ax['panel_B'][1][1].set_ylim(down_lim,up_lim)
     ax['panel_B'][1][1].plot([-1,1],[-1,1],color='k')
+    ax['panel_B'][1][1].set_xticks(np.arange(0,0.8,0.1))
+    ax['panel_B'][1][1].set_xticklabels(np.arange(0,0.8,0.1), fontsize=14)
+    ax['panel_B'][1][1].xaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
     
     ax['panel_B'][1][2].scatter(best_score-last_prior_score, glm_leave_one_out[:,6], color='k', alpha=0.6)
-    ax['panel_B'][1][2].set_xlim(-0.1,1.0)
-    ax['panel_B'][1][2].set_ylim(-0.1,1.0)
+    ax['panel_B'][1][2].set_xlim(down_lim,up_lim)
+    ax['panel_B'][1][2].set_ylim(down_lim,up_lim)
     ax['panel_B'][1][2].plot([-1,1],[-1,1],color='k')
+    ax['panel_B'][1][2].set_xticks(np.arange(0,0.8,0.1))
+    ax['panel_B'][1][2].set_xticklabels(np.arange(0,0.8,0.1), fontsize=14)
+    ax['panel_B'][1][2].xaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
     
     ax['panel_B'][1][3].scatter(best_score-wheel_score, glm_leave_one_out[:,7], color='k', alpha=0.6)
-    ax['panel_B'][1][3].set_xlim(-0.1,1.0)
-    ax['panel_B'][1][3].set_ylim(-0.1,1.0)
+    ax['panel_B'][1][3].set_xlim(down_lim,up_lim)
+    ax['panel_B'][1][3].set_ylim(down_lim,up_lim)
     ax['panel_B'][1][3].plot([-1,1],[-1,1],color='k')
+    ax['panel_B'][1][3].set_xticks(np.arange(0,0.8,0.1))
+    ax['panel_B'][1][3].set_xticklabels(np.arange(0,0.8,0.1), fontsize=14)
+    ax['panel_B'][1][3].xaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
     
-    plt.suptitle('GLM vs MTNN Effect Sizes on Simulated Data', y=0.62, fontsize=20)
+    plt.suptitle('GLM vs MTNN Effect Sizes on Simulated Data', y=0.61, fontsize=24)
     
     fg.add_labels(fig, labels)
     if savefig:
@@ -503,15 +536,21 @@ def generate_figure_10_supplement2(model_config,
                 
             if j == 0:
                 axs[i,j].set_ylabel(covi, rotation=45, fontsize=20)
-                axs[i,j].yaxis.set_label_coords(-1.0, 0.5)
+                axs[i,j].yaxis.set_label_coords(-0.9, 0.5)
+                axs[i,j].set_yticks(np.arange(0,0.6,0.2))
+                axs[i,j].set_yticklabels(np.arange(0,0.6,0.2), fontsize=14)
+                axs[i,j].yaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
             if i == ncovs-1:
                 axs[i,j].set_xlabel(covj, rotation=45, fontsize=20)
                 axs[i,j].xaxis.set_label_coords(0.5, -0.2)
+                axs[i,j].set_xticks(np.arange(0,0.6,0.2))
+                axs[i,j].set_xticklabels(np.arange(0,0.6,0.2), fontsize=14)
+                axs[i,j].xaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
             
             if i==0 and j==0:
                 for n in range(5):
                     for m in range(4):
-                        subject = sess_list[4*n+m].tolist()['session']['subject']
+                        subject = sess_list[4*n+m]['session']['subject']#.tolist()['session']['subject']
                         axs[i,j].scatter(-2, -2, color=colors[n], marker=shapes[m], 
                                          alpha=1.0, s=70, label=subject)
                 axs[i,j].legend(bbox_to_anchor=(13.0,-5.5), fontsize=18)

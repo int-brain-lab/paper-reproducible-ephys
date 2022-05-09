@@ -3,11 +3,13 @@
 % Fig. 7b).
 % Code written by: Marsa Taheri
 
-function [hCB, FRthresh, pMWU_corrected,...
-    mdl, mdl_shuffle] = plot3D_FR(CSVfile, BrainRegion, ax, save_path)
+function [hCB, jitt, FRthresh, pMWU_corrected,...
+    mdl, mdl_shuffle, FRthreshLow] = plot3D_FR(CSVfile, BrainRegion, ax, save_path)
 
 %mdl and mdl_shuffle are the linear regression model for real and shuffled
 %data
+%jitt is the jitter added to xyz position; to keep it consistent between 3D
+%plots of the same brain region, this value is an output.
 
 T = readtable(CSVfile);
 
@@ -61,9 +63,45 @@ UnitsRegular = DeviationFromMedian<FiltThresh & DeviationFromMedian > -FiltThres
 UnitsOutliers = DeviationFromMedian>=FiltThresh | DeviationFromMedian<= -FiltThresh;
 % Separate outliers into HF and LF:
 %UnitsHF = DeviationFromMedian>=FiltThresh; %High firing (HF) units
-%UnitsLF = DeviationFromMedian<= -FiltThresh; %Low firing (LF) units
+UnitsLF = DeviationFromMedian<= -FiltThresh; %Low firing (LF) units
+
 
 FRthresh = range(AvgFR)*FiltThresh +  median(AvgFR);
+if sum(UnitsLF)>0
+    FRthreshLow = range(AvgFR)*(-FiltThresh) +  median(AvgFR); %thresh for low firing neurons
+else
+    FRthreshLow=NaN;
+end
+
+%--------To examine FR histogram and thresholds for outliers-------------
+% figure
+% hFR = histogram(AvgFR, 'binwidth', 0.12, 'normalization', 'probability');
+% m1=mean(AvgFR); m2=median(AvgFR);
+% p90=prctile(AvgFR, 90); p85=prctile(AvgFR, 85);
+% p10=prctile(AvgFR, 10); p15=prctile(AvgFR, 15);
+% FRthresh = range(AvgFR)*FiltThresh +  median(AvgFR);
+% FRthreshLow = range(AvgFR)*(-FiltThresh) +  median(AvgFR);
+% line([m1 m1], [min(hFR.Values), max(hFR.Values)], 'color', 'k')
+% text(m1, max(hFR.Values), 'mean', 'color', 'k')
+% line([m2 m2], [min(hFR.Values), max(hFR.Values)], 'color', 'r')
+% text(m2, 0.85*max(hFR.Values), 'median', 'color', 'r')
+% line([p90 p90], [min(hFR.Values), 1.1*max(hFR.Values)], 'color', 'b')
+% text(p90, 1.1*max(hFR.Values), '90th perc', 'color', 'b')
+% line([p10 p10], [min(hFR.Values), 1.1*max(hFR.Values)], 'color', 'b')
+% text(p10, 1.1*max(hFR.Values), '10th perc', 'color', 'b')
+% line([p85 p85], [min(hFR.Values), max(hFR.Values)], 'color', [0.5 0.5 0.5])
+% text(p85, max(hFR.Values), '85th perc', 'color', [0.5 0.5 0.5])
+% line([p15 p15], [min(hFR.Values), max(hFR.Values)], 'color', [0.5 0.5 0.5])
+% text(p15, max(hFR.Values), '15th perc', 'color', [0.5 0.5 0.5])
+% line([FRthresh FRthresh], [min(hFR.Values), max(hFR.Values)], 'color', [0.6 0 0.6],...
+%     'linewidth', 2)
+% text(FRthresh, 0.8*max(hFR.Values), 'FR Cut-off', 'color', [0.6 0 0.6])
+% line([FRthreshLow FRthreshLow], [min(hFR.Values), max(hFR.Values)], 'color', [0.6 0 0.6],...
+%     'linewidth', 2)
+% %text(manualCutOff2, 0.8*max(hFR.Values), 'Manual Cut-off', 'color', [0.6 0 0.6])
+% ylabel('count'); xlabel('FR Deviation (normalized to -1 to 1)')
+% set(gca,'fontsize', 14)
+%---------------------------------------------------------------------
 
 AvgFR_regular = log10(AvgFR(UnitsRegular)');
 dX_regular = dXjitt(UnitsRegular);
@@ -111,9 +149,13 @@ FRthresh_idx = find(abs(10.^(hCB.Ticks) - FRthresh) == min(abs(10.^(hCB.Ticks) -
 TickLabelsCell{FRthresh_idx} = [];
 set(hCB,'TickLabels', TickLabelsCell)
 % To include the label for the threshold value:
-%h1.TickLabels = 10.^(h1.Ticks);
+%hCB.TickLabels = 10.^(hCB.Ticks);
 % To have no threshold indicated:
-%h1.Ticks = log10(FRticks); h1.TickLabels = 10.^(h1.Ticks);
+hCB.Ticks = log10(FRticks); hCB.TickLabels = 10.^(hCB.Ticks);
+%If low firing neurons are also outliers, place a line there:
+if sum(UnitsLF)>0
+    FRthreshLow = range(AvgFR)*(-FiltThresh) +  median(AvgFR); %thresh for low firing neurons
+end
 
 % % Annotate the colorbar to separate regular and outlier neurons:
 % % Find position of colobar and its min/max values:
@@ -152,12 +194,12 @@ for spHist=1:3
     
     h1=histogram(Sample1(:,spHist),...
         'binwidth',100, 'edgecolor', [0.02, 0.31, 0.51],...
-        'normalization', 'probability', 'DisplayStyle', 'stairs', 'linewidth',3, 'edgealpha', 0.8); hold on;
+        'normalization', 'probability', 'DisplayStyle', 'stairs', 'linewidth',2, 'edgealpha', 0.8); hold on;
     hold on
     h2=histogram(Sample2(:,spHist),...
         'normalization', 'probability',...
         'binwidth',100, 'edgecolor', [1, 0.53, 0],...
-        'facealpha', 0.4, 'edgealpha', 0.6, 'DisplayStyle', 'stairs', 'linewidth',4);
+        'facealpha', 0.4, 'edgealpha', 0.6, 'DisplayStyle', 'stairs', 'linewidth',3);
 
     if spHist==1
         xlabel('\DeltaX (L-M)')
@@ -203,17 +245,17 @@ for spHist=4:5
     
     h1=histogram(Sample1(:,spHist),...
         'edgecolor', [0.02, 0.31, 0.51],...
-        'normalization', 'probability', 'DisplayStyle', 'stairs', 'linewidth',3, 'edgealpha', 0.8); hold on;
+        'normalization', 'probability', 'DisplayStyle', 'stairs', 'linewidth',2, 'edgealpha', 0.8); hold on;
     hold on
     h2=histogram(Sample2(:,spHist),...
         'normalization', 'probability',...
-        'binedges', get(h1, 'binedges'), 'edgecolor', [1, 0.53, 0],...
-        'facealpha', 0.4, 'edgealpha', 0.6, 'DisplayStyle', 'stairs', 'linewidth',4);
+        'binwidth', get(h1, 'binwidth'), 'edgecolor', [1, 0.53, 0],...
+        'facealpha', 0.4, 'edgealpha', 0.6, 'DisplayStyle', 'stairs', 'linewidth',3);
   
-    if max(Sample1(:,spHist)) < max(Sample2(:,spHist))
-        disp('error: fix plotting axes') %if 'error', fix plotting
-        break
-    end
+%     if max(Sample1(:,spHist)) < max(Sample2(:,spHist))
+%         disp('error: fix plotting axes') %if 'error', fix plotting
+%         break
+%     end
     
     if spHist==4
         xlabel('WF Amp.')

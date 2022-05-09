@@ -12,13 +12,17 @@ import brainbox.io.one as bbone
 
 from reproducible_ephys_functions import save_data_path, save_dataset_info, repo_path
 from figure9_10.utils import get_mtnn_eids, get_traj, featurize, select_high_fr_neurons, preprocess_feature, load_original
-from figure9_10.glm import generate_design, bases, binwidth, t_before, t_after
+from figure9_10.glm import generate_design, bases, binwidth, t_before, t_after, GLMPredictor
 from figure9_10.simulate import simulate_cell, concat_simcell_data, to_mtnn_form
 from figure9_10.figure9_10_load_data import download_priors, download_glm_hmm
 
+import matplotlib.pyplot as plt
+
 data_path = save_data_path(figure='figure9_10')
 
-rng = np.random.default_rng(seed=0b01101001 + 0b01100010 + 0b01101100)
+# rng = np.random.default_rng(seed=0b01101001 + 0b01100010 + 0b01101100)
+rng = np.random.default_rng(seed=10234567)
+alphas = (0.1, 0.5, 1.0, 3.0, 5.0, 7.0, 10.0)
 
 def prepare_data(one, new_metrics=True):
     brain_atlas = AllenAtlas()
@@ -275,7 +279,7 @@ def prepare_glm_and_simulated_data(insertions, one, brain_atlas=None):
     for i, design in enumerate(design_list):
         nglm = lm.LinearGLM(design, spk_times_list[i], clus_list[i],
                             estimator=RidgeCV(cv=3), binwidth=binwidth)
-        nglm.fit(train_idx=train_trial_ids[i])
+        nglm.fit(train_idx=np.concatenate([train_trial_ids[i], val_trial_ids[i]]))
 
     #     pred = GLMPredictor(nglm, spk_times_list[i], clus_list[i], trialsdf_list[i])
     #     for j, unit in enumerate(np.unique(clus_list[i])):
@@ -342,11 +346,11 @@ def prepare_glm_and_simulated_data(insertions, one, brain_atlas=None):
     val_idx = np.arange(num_trials)[val_bool]
     test_idx = np.arange(num_trials)[test_bool]
 
-    fdb_rt_vals = np.linspace(0.1, 0.7, num=10)
+    fdb_rt_vals = np.linspace(0.2, 0.7, num=10)
     fdb_rt_probs = np.array([0.15970962, 0.50635209, 0.18693285, 0.0707804, 0.02540835,
                             0.01633394, 0.00907441, 0.00725953, 0.00544465, 0.01270417])
 
-    stim_rt_vals = np.linspace(0.25, 0.4, num=10)
+    stim_rt_vals = np.linspace(0.2, 0.4, num=10)
     stim_rt_probs = np.array([0.1324877, 0.10914096, 0.03974338, 0.05596731, 0.14581747, 0.08437234,
                               0.01841735, 0.15889255, 0.16163811, 0.09352284])
 
@@ -372,13 +376,14 @@ def prepare_glm_and_simulated_data(insertions, one, brain_atlas=None):
         nglm = fit_glm_lists[i]
         clus = cluster_list[i]
         weights = nglm.combine_weights()
+        intercepts = nglm.intercepts
 
         wheeltraces = trialsdf.wheel_velocity.to_list()
         firstMovement_times = np.ones(num_trials) * 0.5
         stimtimes = rng.choice(stim_rt_vals, size=num_trials, p=stim_rt_probs) \
-            + normal(size=num_trials) * 0.05
+            + rng.normal(size=num_trials) * 0.05
         fdbktimes = rng.choice(fdb_rt_vals, size=num_trials, p=fdb_rt_probs) \
-            + firstMovement_times + normal(size=num_trials) * 0.05
+            + firstMovement_times + rng.normal(size=num_trials) * 0.05
         if prior_list[i].shape[0] < num_trials:
             priors = np.concatenate((prior_list[i], prior_list[i][:num_trials-prior_list[i].shape[0]]))
         else:
@@ -395,22 +400,20 @@ def prepare_glm_and_simulated_data(insertions, one, brain_atlas=None):
 
         for j, clu in notebook.tqdm(enumerate(clus)):
 
-            scales = np.ones(6) #rng.uniform(1, 2, size=6)
-            scales_dict[(eid,clu)] = scales
-
-            stimkernL = weights['stimonL'].loc[clu].to_numpy() * (1/binwidth) * scales[0]
-            stimkernR = weights['stimonR'].loc[clu].to_numpy() * (1/binwidth) * scales[1]
-            fdbkkern1 = weights['correct'].loc[clu].to_numpy() * (1/binwidth) * scales[2]
-            fdbkkern2 = weights['incorrect'].loc[clu].to_numpy() * (1/binwidth) * scales[3]
-            wheelkern = weights['wheel'].loc[clu].to_numpy() * (1/binwidth) * scales[4]
-            fmovekern = weights['fmove'].loc[clu].to_numpy() * (1/binwidth) * scales[5]
+            stimkernL = weights['stimonL'].loc[clu].to_numpy() * (1/binwidth)
+            stimkernR = weights['stimonR'].loc[clu].to_numpy() * (1/binwidth)
+            fdbkkern1 = weights['correct'].loc[clu].to_numpy() * (1/binwidth)
+            fdbkkern2 = weights['incorrect'].loc[clu].to_numpy() * (1/binwidth)
+            fmovekern = weights['fmove'].loc[clu].to_numpy() * (1/binwidth)
+            wheelkern = weights['wheel'].loc[clu].to_numpy() * (1/binwidth)
+            intercept = intercepts.loc[clu] * (1/binwidth) 
 
             ret = simulate_cell((stimkernL,stimkernR), (fdbkkern1,fdbkkern2),
                                 fmovekern, wheelkern,
                                 wheeltraces,
                                 stimtimes, fdbktimes, feedbacktypes, firstMovement_times,
                                 priors, prev_priors, contrasts,
-                                wheelmoves, pgain=2.0, gain=8.0,
+                                wheelmoves, pgain=5.0, gain=10.0,
                                 num_trials=num_trials, linear=True, ret_raw=False)
             trialspikes, contrasts, priors, stimtimes, fdbktimes, fmovetimes, feedbacktypes, trialwheel = ret[:-2]
             adj_spkt, new_trialsdf = concat_simcell_data(trialspikes, contrasts, priors,
@@ -427,24 +430,27 @@ def prepare_glm_and_simulated_data(insertions, one, brain_atlas=None):
             session_simulated_feature_list.append(feature[None])
 
             nglm = lm.LinearGLM(design, adj_spkt, sess_clu,
-                            estimator=RidgeCV(cv=3), binwidth=binwidth)
-            nglm.fit(train_idx=train_idx)
+                            estimator=RidgeCV(alphas=alphas, cv=5), binwidth=binwidth)
+            nglm.fit(train_idx=np.concatenate([train_idx, val_idx]))
 
-    #         pred = GLMPredictor(nglm, adj_spkt, sess_clu, new_trialsdf, np.arange(num_trials))
-    #         for j, unit in enumerate(np.unique(sess_clu)):
-    #             ax = pred.psth_summary('firstMovement_times', unit, t_before=0.5, t_after=1.0)
-    #             plt.show()
+#             pred = GLMPredictor(nglm, adj_spkt, sess_clu, new_trialsdf, np.arange(num_trials))
+#             for k, unit in enumerate(np.unique(sess_clu)):
+#                 ax = pred.psth_summary('firstMovement_times', unit, t_before=0.5, t_after=1.0)
+#                 plt.show()
 
-            score = nglm.score()
+            score = nglm.score(testinds=test_idx)
             simulated_glm_scores.append(score)
+            
+#             sfs2 = mut.SequentialSelector(nglm, train=np.concatenate([train_idx, val_idx]), test=test_idx, direction='forward',
+#                                          n_features_to_select=len(nglm.design.covar))
+#             sfs2.fit(progress=False)
 
-            sfs = mut.SequentialSelector(nglm, train=train_idx, test=test_idx, direction='backward',
+            sfs = mut.SequentialSelector(nglm, train=np.concatenate([train_idx, val_idx]), test=test_idx, direction='backward',
                                          n_features_to_select=len(nglm.design.covar)-1)
-            sfs.fit(progress=True)
-            sfs.all_scores.loc[unit_id] = score.loc[unit_id] - sfs.all_scores.loc[unit_id]
-            simulated_glm_leave_one_out.append(sfs.all_scores)
-    #         plt.bar(glm_covs.keys(), sfs.all_scores.loc[unit_id].to_numpy())
-    #         plt.show()
+            sfs.fit(full_scores=True, progress=False)
+
+            sfs.full_scores_test_.loc[unit_id,0] = score.loc[unit_id] - sfs.full_scores_test_.loc[unit_id,0]
+            simulated_glm_leave_one_out.append(sfs.full_scores_test_.loc[unit_id,0].to_numpy()[None].astype(np.float32))
 
             unit_id += 1
 
@@ -455,14 +461,15 @@ def prepare_glm_and_simulated_data(insertions, one, brain_atlas=None):
                     idx = np.logical_and(adj_spkt>=1.5*trial+binwidth*n, adj_spkt<1.5*trial+binwidth*(n+1))
                     raster[trial,n] = idx.astype(int).sum() / binwidth
 
-    #         plt.figure(figsize=(8,2))
-    #         plt.plot(raster.mean(0), color='k')
-    #         plt.show()
+#             plt.figure(figsize=(8,2))
+# #             plt.plot(raster.mean(0), color='k')
+#             plt.imshow(raster, aspect='auto', interpolation='none')
+#             plt.show()
 
             session_simulated_spkidx_list.append(raster[None])
         simulated_output_list.append(np.concatenate(session_simulated_spkidx_list, axis=0))
         simulated_feature_list.append(np.concatenate(session_simulated_feature_list, axis=0))
-    simulated_glm_leave_one_out = pd.concat(simulated_glm_leave_one_out)
+    simulated_glm_leave_one_out = np.concatenate(simulated_glm_leave_one_out, axis=0)
     simulated_glm_scores = pd.concat(simulated_glm_scores)
 
     shape_list = []

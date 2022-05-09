@@ -25,6 +25,8 @@ def plot_psth_raster(ax, t, psth, raster, title=None, ylabel=None,
 
     if xlabel is not None:
         ax.set_xlabel(xlabel, fontsize=26)
+        ax.set_xticks(np.arange(-0.5,1.1,0.5))
+        ax.set_xticklabels(np.arange(-0.5,1.1,0.5), fontsize=16)
     else:
         ax.set_xticks([])
         

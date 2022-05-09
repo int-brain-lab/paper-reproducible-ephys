@@ -4,6 +4,7 @@ from tqdm import notebook
 
 import figrid as fg
 import matplotlib.pyplot as plt
+from matplotlib.ticker import FormatStrFormatter
 import seaborn as sns
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import pylab as pl
@@ -18,6 +19,8 @@ from figure9_10.mtnn import load_test_model
 
 data_load_path = save_data_path(figure='figure9_10').joinpath('mtnn_data')
 save_path = save_figure_path(figure='figure9_10')
+
+rng = np.random.default_rng(seed=0b01101001 + 0b01100010 + 0b01101100)
 
 def split_by_stimulus(feature):
     
@@ -144,7 +147,7 @@ def get_ticks(feature):
 
 def make_fig_ax():
     
-    xsplit = ([0,0.475], [0.495,0.97], [0.98,1])
+    xsplit = ([0,0.475], [0.495,0.97], [0.975,1])
     ysplit = ([0.05,0.22], [0.23,0.40], [0.41,0.58], [0.745, 1], [0.23, 0.58])
     
     fig = plt.figure(figsize=(30,20))
@@ -183,7 +186,7 @@ def generate_figure_9(feature_list, pred_list, obs_list, neu_list, sess_list, tr
     acronym_dict_reverse = get_acronym_dict_reverse()
         
     for i in which_sess:
-        sess_info = sess_list[i].tolist()
+        sess_info = sess_list[i]#.tolist()
         eid = sess_info['session']['id']
         subject = sess_info['session']['subject']
         probe = sess_info['probe_name']
@@ -201,7 +204,7 @@ def generate_figure_9(feature_list, pred_list, obs_list, neu_list, sess_list, tr
         n_neurons = neu.shape[0]
         if plot_subsample_ratio < 1.0:
             n_samples = int(n_neurons*plot_subsample_ratio)
-            selected_neurons = np.random.choice(np.arange(n_neurons), size=n_samples, replace=False)
+            selected_neurons = rng.choice(np.arange(n_neurons), size=n_samples, replace=False)
         else:
             selected_neurons = np.arange(n_neurons)
             
@@ -219,13 +222,14 @@ def generate_figure_9(feature_list, pred_list, obs_list, neu_list, sess_list, tr
 
             region_idx = np.nonzero(left[0][j,0,0,acronym_offset:noise_offset])[0][0]
             region = acronym_dict_reverse[region_idx]
-            print(f'eid: {eid}, brain region: {region}')
             r2_psth = r2_score(np.concatenate([left_obs_j,right_obs_j], axis=0).mean(0), 
                            np.concatenate([left_pred_j,right_pred_j], axis=0).mean(0), 
                            multioutput='raw_values')[0]
             r2 = r2_score(np.concatenate([left_obs_j,right_obs_j], axis=0).flatten(), 
                            np.concatenate([left_pred_j,right_pred_j], axis=0).flatten(), 
                            multioutput='raw_values')[0]
+            print(f'eid: {eid}, brain region: {region}, neuron id: {neuron}')
+            print('R2: {:.3f}, R2 on PETH: {:.3f}\nsubject={}, region={}'.format(r2, r2_psth, subject, region))
             
             max_fr = max([left_pred_j.max(), left_obs_j.max(), 
                           right_pred_j.max(), right_obs_j.max()])
@@ -242,8 +246,8 @@ def generate_figure_9(feature_list, pred_list, obs_list, neu_list, sess_list, tr
             ax['panel_A'].set_xticks([])
             ax['panel_A'].set_title('left stimulus', fontsize=28)
             ax['panel_A'].set_ylabel('firing rate (Hz)', fontsize=26)
-            ax['panel_A'].set_yticks(np.arange(0,80,20))
-            ax['panel_A'].set_yticklabels(np.arange(0,80,20), fontsize=22)
+            ax['panel_A'].set_yticks(np.arange(0,max_psth*1.2,20).astype(int))
+            ax['panel_A'].set_yticklabels(np.arange(0,max_psth*1.2,20).astype(int), fontsize=22)
             ax['panel_A'].legend(fontsize=26)
 
             ax['panel_B'].plot(right_pred_j.mean(0), color='r', lw=3, label='predicted')
@@ -330,8 +334,8 @@ def generate_figure_9(feature_list, pred_list, obs_list, neu_list, sess_list, tr
             divider = make_axes_locatable(ax['panel_I'])
             colorbar_axes = divider.append_axes("right", size="100%", pad=0.1)
             cbar = fig.colorbar(img, cax=colorbar_axes, orientation='vertical')
+            cbar.ax.set_ylabel('spikes/sec', fontsize=24, labelpad=6.0)
             cbar.ax.tick_params(labelsize=20)
-            cbar.ax.set_xlabel('spikes/sec', fontsize=24, labelpad=32.0)
             
 #             plt.suptitle('R2: {:.3f}, R2 on PETH: {:.3f}\nsubject={}, region={}'.format(r2, r2_psth, subject, region), fontsize=24, y=0.92)
 
@@ -350,7 +354,7 @@ def generate_figure9_supplement1(model_config,
                                  test_feature,
                                  sess_list,
                                  alpha=0.6, s=30,
-                                 xlims=[0.0,50.0], ylims=[-0.2,1.0], 
+                                 xlims=[4.0,45.0], ylims=[-0.075,1.0], 
                                  savefig=False):
     
     color_names = ["windows blue",
@@ -392,11 +396,11 @@ def generate_figure9_supplement1(model_config,
     reshaped_frs = reshape_flattened(mean_frs, preds_shape, trim=3)
 
     fig, axs = plt.subplots(1,2, sharey=True, figsize=(20,10))
-    plt.subplots_adjust(wspace=0.02)
+    plt.subplots_adjust(wspace=0.075)
     for i, sess in enumerate(sess_list):
         lab_id = np.where(feature_list[i][0,0,0,lab_offset:session_offset] == 1)[0][0]
         session_id = np.where(feature_list[i][0,0,0,session_offset:xyz_offset] == 1)[0][0]
-        sess = sess.tolist()
+        #sess = sess.tolist()
         
         axs[0].scatter(reshaped_frs[i][0], reshaped_score[i][0], s=s,
                        color=colors[lab_id], marker=shapes[session_id], alpha=alpha,
@@ -425,6 +429,16 @@ def generate_figure9_supplement1(model_config,
     axs[0].set_ylim(ylims[0],ylims[1])
     axs[1].set_xlim(xlims[0],xlims[1])
     axs[1].set_ylim(ylims[0],ylims[1])
+    
+    axs[0].set_yticks(np.arange(0,1.2,0.2))
+    axs[0].set_yticklabels(np.arange(0,1.2,0.2), fontsize=18)
+    axs[0].yaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
+    
+    axs[0].set_xticks(np.arange(0,50,5).astype(int))
+    axs[0].set_xticklabels(np.arange(0,50,5).astype(int), fontsize=18)
+    
+    axs[1].set_xticks(np.arange(0,50,5).astype(int))
+    axs[1].set_xticklabels(np.arange(0,50,5).astype(int), fontsize=18)
     
     plt.suptitle('MTNN Prediction Quality vs. Firing Rate', fontsize=32)
     
@@ -469,10 +483,13 @@ def generate_figure9_supplement2(model_config,
     plt.ylabel('GLM Performance (R2)', fontsize=24)
     
     plt.plot([-1,1],[-1,1], color='black')
-    plt.xlim(-0.25,0.55)
-    plt.ylim(-0.25,0.55)
+    plt.xlim(-0.05,0.6)
+    plt.ylim(-0.05,0.6)
     
-    plt.title('MTNN vs GLM Predictive Performance Comparison', fontsize=24)
+    plt.yticks(np.arange(0,0.7,0.1), fontsize=18)
+    plt.xticks(np.arange(0,0.7,0.1), fontsize=18)
+    
+    plt.title('MTNN vs GLM Predictive Performance Comparison', fontsize=24, y=1.02)
     
     plt.legend(fontsize=20)
     

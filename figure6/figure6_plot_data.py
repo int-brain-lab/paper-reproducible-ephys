@@ -218,7 +218,7 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
 
     # plot means
     for reg in cents:
-        axs['B'].scatter(cents[reg][0], cents[reg][1], s=800, marker='x', color=Dc[reg])
+        axs['B'].scatter(cents[reg][0], cents[reg][1], s=500, marker='x', color=Dc[reg])
 
     # plot confidence ellipses
     for reg in regs_:
@@ -356,7 +356,7 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
 
         # plot means
         for lab in cents:
-            axs3[ms[k]].scatter(cents[lab][0], cents[lab][1], s=800, marker='x', color=lab_cols[b[lab]])
+            axs3[ms[k]].scatter(cents[lab][0], cents[lab][1], s=500, marker='x', color=lab_cols[b[lab]])
 
         # plot confidence ellipses
         for lab in labs_:
@@ -449,10 +449,10 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
     print('permutation test labs per region, corrected:')
     print(dict(zip(list(p_.keys()), [np.round(p, 3) for p in pvals_c_])))
 
-    axs['B'].set_xlim([-1.3, 1])
-    axs['B'].set_ylim([-0.7, 0.7])
+    axs['B'].set_xlim([-2, 1.5])
+    axs['B'].set_ylim([-1.1, 1.1])
     axs['D'].set_xlim([-0.2, 0.8])
-    axs['D'].set_ylim([-3.1, 8.5])
+    axs['D'].set_ylim([-7, 12])
 
     fig.tight_layout()
     figs.tight_layout()

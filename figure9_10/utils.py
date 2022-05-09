@@ -29,7 +29,7 @@ import brainbox.behavior.dlc as dlc
 from reproducible_ephys_processing import bin_spikes, bin_spikes2D,  bin_norm, compute_new_label
 from ibllib.atlas import AllenAtlas
 
-rng = np.random.default_rng(seed=0)
+rng = np.random.default_rng(seed=12345)
 
 lab_offset = 1
 session_offset = 6
@@ -638,7 +638,7 @@ def compute_mean_frs(shape_path='mtnn_data/train/shape.npy', obs_path='mtnn_data
 
 
 def select_high_fr_neurons(feature, output, clusters,
-                           neuron_id_start=0, threshold=2.5, max_n_neurons=15):
+                           neuron_id_start=0, threshold=0.0, max_n_neurons=15):
     select = np.mean(output, axis=(1, 2)) >= threshold
     feature_subset = feature[select]
     if feature_subset.shape[0] > max_n_neurons:

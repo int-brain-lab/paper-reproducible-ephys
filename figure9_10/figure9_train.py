@@ -22,7 +22,9 @@ def train(do_train=True, do_train_on_glm_covariates=True):
 
     HIDDEN_SIZE_STATIC = 64
     HIDDEN_SIZE_DYNAMIC = 64
-    n_layers = 2
+    n_layers = 3
+    
+    weight_decay = 1e-15
 
     n_epochs = 100
     remove_cov = None
@@ -43,7 +45,7 @@ def train(do_train=True, do_train_on_glm_covariates=True):
                                                          data_load_path.joinpath('validation/feature.npy'),
                                                          data_load_path.joinpath('validation/output.npy'),
                                                          batch_size=512, n_epochs=n_epochs, lr=0.1,
-                                                         weight_decay=1e-5,
+                                                         weight_decay=weight_decay,
                                                          remove_cov=remove_cov,
                                                          only_keep_cov=only_keep_cov)
 
@@ -62,7 +64,7 @@ def train(do_train=True, do_train_on_glm_covariates=True):
                                                          data_load_path.joinpath('validation/feature.npy'),
                                                          data_load_path.joinpath('validation/output.npy'),
                                                          batch_size=512, n_epochs=n_epochs, lr=0.1,
-                                                         weight_decay=1e-5,
+                                                         weight_decay=weight_decay,
                                                          remove_cov=leave_out_covs_for_glm,
                                                          only_keep_cov=only_keep_cov)
 

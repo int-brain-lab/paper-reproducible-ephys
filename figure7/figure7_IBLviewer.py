@@ -20,7 +20,7 @@ if __name__ == '__main__':
     viewer.initialize(resolution=25, embed_ui=True)
 
     ## Load the dataframe (e.g., from LP)
-    BrainRegion = 'LP'
+    BrainRegion = 'CA1'
     df = load_dataframe()    
     df_reg = df[df['region'] == BrainRegion]
     #AvgFR = df_reg['avg_fr']
@@ -295,7 +295,7 @@ if __name__ == '__main__':
     parula_map = LinearSegmentedColormap.from_list('parula', cm_data)
 
 
-    ColormapMin = 0 #ValuesPerKey.min() #setting zero ensures all colormaps run have the same minimum
+    ColormapMin = ValuesPerKey.min() #0 #setting zero ensures all colormaps run have the same minimum
     point_actors = viewer.add_points(XYZs, radius=PtRadius, values=ValuesPerKey, screen_space=False, 
                                 noise_amount=PtNoise, min_v=ColormapMin, max_v=ValuesPerKey.max(), color_map=parula_map)
     #viridis

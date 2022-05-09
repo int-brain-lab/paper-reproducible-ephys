@@ -139,7 +139,7 @@ def generate_design(trialsdf, prior, t_before, bases, prior_last=None,
         design.covar['wheel']['dmcol_idx'] = design.covar['wheel']['dmcol_idx'][:n_keep]
         design.covar['wheel']['bases'] = bases_reduced
 
-    print('Condition of design matrix:', np.linalg.cond(design.dm))
+    #print('Condition of design matrix:', np.linalg.cond(design.dm))
     return design
 
 

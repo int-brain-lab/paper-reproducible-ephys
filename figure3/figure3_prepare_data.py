@@ -170,7 +170,7 @@ def prepare_data(insertions, one, recompute=False, new_metrics=True):
                                                             'region': region, 'date': date,
                                                             'median_firing_rate': np.median(neuron_fr),
                                                             'mean_firing_rate': np.mean(neuron_fr),
-                                                            'spike_amp_mean': np.nanmean(spike_amp),
+                                                            'spike_amp_mean': np.nanmean(spike_amp) * 1e6,
                                                             'spike_amp_median': np.nanmedian(spike_amp),
                                                             'spike_amp_90': np.percentile(spike_amp, 95),
                                                             'rms_ap': rms_ap_region})))
