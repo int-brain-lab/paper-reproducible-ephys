@@ -66,7 +66,7 @@ def plot_main_figure(one=None):
     panel_probe_lfp(fig, ax['panel_B'], n_rec_per_lab=MIN_REC_PER_LAB, boundary_align=BOUNDARY)
     panel_probe_neurons(fig, ax['panel_C'], n_rec_per_lab=MIN_REC_PER_LAB, boundary_align=BOUNDARY)
     panel_example(ax['panel_D'], n_rec_per_lab=MIN_REC_PER_LAB, example_region='CA1',
-                  example_metric='lfp_power', ylim=[75, 225], ylabel='Spike amplitude in CA1 (uV)',
+                  example_metric='spike_amp_mean', ylim=[75, 225], ylabel='Spike amplitude in CA1 (uV)',
                   yticks=[75, 125, 175, 225])
     panel_example(ax['panel_E'], n_rec_per_lab=MIN_REC_PER_LAB, example_region='LP',
                   example_metric='median_firing_rate', ylim=[0, 10], ylabel='Firing rate in LP (spks/s)',
