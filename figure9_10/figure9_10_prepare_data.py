@@ -447,11 +447,10 @@ def prepare_glm_and_simulated_data(insertions, one, brain_atlas=None):
 
             sfs = mut.SequentialSelector(nglm, train=np.concatenate([train_idx, val_idx]), test=test_idx, direction='backward',
                                          n_features_to_select=len(nglm.design.covar)-1)
-            sfs.fit(progress=False)
-#             print(score.loc[unit_id], sfs2.sequences_.loc[unit_id], 
-#                   sfs2.scores_.loc[unit_id], sfs.all_scores.loc[unit_id])
-            sfs.all_scores.loc[unit_id] = score.loc[unit_id] - sfs.all_scores.loc[unit_id]
-            simulated_glm_leave_one_out.append(sfs.all_scores)
+            sfs.fit(full_scores=True, progress=False)
+
+            sfs.full_scores_test_.loc[unit_id,0] = score.loc[unit_id] - sfs.full_scores_test_.loc[unit_id,0]
+            simulated_glm_leave_one_out.append(sfs.full_scores_test_.loc[unit_id,0].to_numpy()[None].astype(np.float32))
 
             unit_id += 1
 
@@ -470,7 +469,7 @@ def prepare_glm_and_simulated_data(insertions, one, brain_atlas=None):
             session_simulated_spkidx_list.append(raster[None])
         simulated_output_list.append(np.concatenate(session_simulated_spkidx_list, axis=0))
         simulated_feature_list.append(np.concatenate(session_simulated_feature_list, axis=0))
-    simulated_glm_leave_one_out = pd.concat(simulated_glm_leave_one_out)
+    simulated_glm_leave_one_out = np.concatenate(simulated_glm_leave_one_out, axis=0)
     simulated_glm_scores = pd.concat(simulated_glm_scores)
 
     shape_list = []
