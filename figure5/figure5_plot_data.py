@@ -229,7 +229,6 @@ def plot_panel_permutation(ax=None):
     df_filt = filter_recordings(df)
     df_filt = df_filt[df_filt['permute_include'] == 1]
 
-    n_permut = 10000
     df_filt_reg = df_filt.groupby('region')
     results = pd.DataFrame()
     test_names = []
@@ -245,7 +244,7 @@ def plot_panel_permutation(ax=None):
             lab_names, this_n_labs = np.unique(labs, return_counts=True)
 
             p = permut_test(data, metric=permut_dist, labels1=labs,
-                            labels2=subjects, n_permut=n_permut)
+                            labels2=subjects)
             results = pd.concat((results, pd.DataFrame(index=[results.shape[0] + 1],
                                                       data={'test': test, 'region': reg, 'p_value_permut': p})))
 
