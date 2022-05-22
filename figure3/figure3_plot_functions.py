@@ -6,6 +6,10 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from ibllib.atlas.regions import BrainRegions
 from figure3.figure3_load_data import load_dataframe
 import seaborn as sns
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import KFold
+from sklearn.metrics import accuracy_score
+from sklearn.utils import shuffle
 from matplotlib.sankey import Sankey
 from permutation_test import permut_test, permut_dist
 from statsmodels.stats.multitest import multipletests
@@ -350,3 +354,44 @@ def panel_permutation(ax, metrics, regions, labels, n_permut=10000, n_rec_per_la
     ax.set_yticklabels(regions, va='center', rotation=0)
     ax.set_xticklabels(labels, rotation=30, ha='right')
     return results
+
+
+def panel_decoding(ax, metrics, regions, n_shuffle):
+    df_ins = load_dataframe(df_name='ins')
+    """
+    df_filt = filter_recordings(df_ins, min_lab_region=3, min_rec_lab=0)
+    data = df_filt[df_filt['permute_include'] == 1]
+    """
+    #data['yield_per_channel'] = data['neuron_yield'] / data['n_channels']
+    #data.loc[data['lfp_power'] < -100000, 'lfp_power'] = np.nan
+    
+    # Restructure dataframe
+    df_ins.loc[df_ins['region'] == 'PPC', 'region'] = 1
+    df_ins.loc[df_ins['region'] == 'CA1', 'region'] = 2
+    df_ins.loc[df_ins['region'] == 'DG', 'region'] = 3
+    df_ins.loc[df_ins['region'] == 'LP', 'region'] = 4
+    df_ins.loc[df_ins['region'] == 'PO', 'region'] = 5
+    df_ins = df_ins[~df_ins['median_firing_rate'].isnull()]
+    data = df_ins[['region', 'median_firing_rate', 'spike_amp_median', 'rms_ap']].to_numpy()
+    
+    rf = RandomForestClassifier(random_state=42)
+    kfold = KFold(n_splits=5, shuffle=False)
+    
+    # Decode lab
+    lab_predict = np.empty(df_ins.shape[0]).astype(object)
+    for train_index, test_index in kfold.split(df_ins):
+        rf.fit(data[train_index], df_ins['lab'].values[train_index])
+        lab_predict[test_index] = rf.predict(data[test_index])
+    acc = accuracy_score(df_ins['lab'].values, lab_predict)
+    
+    # Decode lab with shuffled lab labels
+    shuf_acc = np.empty(n_shuffle)
+    for i in range(n_shuffle):
+        lab_shuf = shuffle(df_ins['lab'].values)
+        lab_predict = np.empty(df_ins.shape[0]).astype(object)
+        for train_index, test_index in kfold.split(df_ins):
+            rf.fit(data[train_index], lab_shuf[train_index])
+            lab_predict[test_index] = rf.predict(data[test_index])
+        accuracy_score(df_ins['lab'].values, lab_predict)
+        
+    

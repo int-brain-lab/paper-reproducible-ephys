@@ -8,9 +8,8 @@ By: Guido Meijer
 import numpy as np
 import pandas as pd
 from os.path import join
-from pathlib import Path
-import brainbox.io.one as bbone
 from scipy.optimize import curve_fit
+from brainbox.io.one import SpikeSortingLoader
 from brainbox.metrics.single_units import spike_sorting_metrics
 from reproducible_ephys_functions import query, data_path, combine_regions
 from one.api import ONE
@@ -44,23 +43,15 @@ for i in range(len(traj)):
     lab = traj[i]['session']['lab']
     subject = traj[i]['session']['subject']
 
-    # Get data collection
-    collections = one.list_collections(eid)
-    if f'alf/{probe}/pykilosort' in collections:
-        alf_path = one.eid2path(eid).joinpath('alf', probe, 'pykilosort')
-        collection = f'alf/{probe}/pykilosort'
-    else:
-        alf_path = one.eid2path(eid).joinpath('alf', probe)
-        collection = f'alf/{probe}'
-
     # Load in spikes
-    spikes, clusters, channels = bbone.load_spike_sorting_with_channel(
-        eid, aligned=True, one=one, dataset_types=['spikes.amps', 'spikes.depths'], brain_atlas=ba)
-
+    sl = SpikeSortingLoader(eid=eid, pname=probe, one=one, atlas=ba)
+    spikes, clusters, channels = sl.load_spike_sorting()
+    clusters = sl.merge_clusters(spikes, clusters, channels)
+    
     # Load in waveforms
     data = one.load_datasets(eid, datasets=['_phy_spikes_subset.waveforms', '_phy_spikes_subset.spikes',
                                             '_phy_spikes_subset.channels'],
-                             collections=[collection]*3)[0]
+                             collections=[f'alf/{probe}/pykilosort']*3)[0]
     waveforms, wf_spikes, wf_channels = data[0], data[1], data[2]
     waveforms = waveforms * 1000  # to uV
 
