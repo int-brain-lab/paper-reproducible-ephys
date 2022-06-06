@@ -19,7 +19,7 @@ br = BrainRegions()
 lab_number_map, institution_map, lab_colors = labs()
 
 def panel_sankey(fig, ax, one):
-    
+
     # Get number of recordings after freeze cutoff date
     after_freeze = len(get_insertions(one=one)) - len(get_insertions(one=one, freeze='biorxiv_2022_05'))
 
@@ -89,7 +89,7 @@ def panel_sankey(fig, ax, one):
     xy = text.get_position()
     text.set_position((xy[0] + 0.2, xy[1]))
     text.set_weight('bold')
-    
+
 
 def panel_probe_lfp(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-2000, 2000],
                     normalize=False, clim=[-190, -150]):
@@ -356,42 +356,37 @@ def panel_permutation(ax, metrics, regions, labels, n_permut=10000, n_rec_per_la
     return results
 
 
-def panel_decoding(ax, metrics, regions, n_shuffle):
-    df_ins = load_dataframe(df_name='ins')
-    """
-    df_filt = filter_recordings(df_ins, min_lab_region=3, min_rec_lab=0)
-    data = df_filt[df_filt['permute_include'] == 1]
-    """
-    #data['yield_per_channel'] = data['neuron_yield'] / data['n_channels']
-    #data.loc[data['lfp_power'] < -100000, 'lfp_power'] = np.nan
-    
-    # Restructure dataframe
-    df_ins.loc[df_ins['region'] == 'PPC', 'region'] = 1
-    df_ins.loc[df_ins['region'] == 'CA1', 'region'] = 2
-    df_ins.loc[df_ins['region'] == 'DG', 'region'] = 3
-    df_ins.loc[df_ins['region'] == 'LP', 'region'] = 4
-    df_ins.loc[df_ins['region'] == 'PO', 'region'] = 5
-    df_ins = df_ins[~df_ins['median_firing_rate'].isnull()]
-    data = df_ins[['region', 'median_firing_rate', 'spike_amp_median', 'rms_ap']].to_numpy()
-    
-    rf = RandomForestClassifier(random_state=42)
-    kfold = KFold(n_splits=5, shuffle=False)
-    
-    # Decode lab
-    lab_predict = np.empty(df_ins.shape[0]).astype(object)
-    for train_index, test_index in kfold.split(df_ins):
-        rf.fit(data[train_index], df_ins['lab'].values[train_index])
-        lab_predict[test_index] = rf.predict(data[test_index])
-    acc = accuracy_score(df_ins['lab'].values, lab_predict)
-    
-    # Decode lab with shuffled lab labels
-    shuf_acc = np.empty(n_shuffle)
-    for i in range(n_shuffle):
-        lab_shuf = shuffle(df_ins['lab'].values)
-        lab_predict = np.empty(df_ins.shape[0]).astype(object)
-        for train_index, test_index in kfold.split(df_ins):
-            rf.fit(data[train_index], lab_shuf[train_index])
-            lab_predict[test_index] = rf.predict(data[test_index])
-        accuracy_score(df_ins['lab'].values, lab_predict)
-        
-    
+def panel_decoding(ax):
+
+    # Load in data
+    decode_df = load_dataframe(df_name='decode')
+    decode_df['accuracy'] = decode_df['accuracy']*100
+    shuffle_df = load_dataframe(df_name='decode_shuf')
+    shuffle_df['accuracy_shuffle'] = shuffle_df['accuracy_shuffle']*100
+
+    # Plot
+    sns.violinplot(x='region', y='accuracy_shuffle', data=shuffle_df, ax=ax, color='grey')
+    sns.swarmplot(x='region', y='accuracy', data=decode_df, ax=ax, color='red')
+
+    # Get p-values
+    p_values = dict()
+    for i, region in enumerate(decode_df['region']):
+        p_values[region] = (np.sum(decode_df.loc[decode_df['region'] == region, 'accuracy'].values
+                                  < shuffle_df.loc[shuffle_df['region'] == region, 'accuracy_shuffle'].values)
+                            / shuffle_df.loc[shuffle_df['region'] == region, 'accuracy_shuffle'].shape[0])
+
+    # Correct for multiple comparisons
+    _, p_values_corr, _, _ = multipletests(list(p_values.values()), 0.05, method='fdr_bh')
+    for i, region in enumerate(list(p_values.keys())):
+        p_values[region] = p_values_corr[i]
+
+    # Plot significance star
+    for i, region in enumerate(list(p_values.keys())):
+        if p_values[region] < 0.05:
+            ax.plot(i, 75, '*', color='k', markersize=5)
+
+    # Settings
+    ax.set(ylim=[0, 80], xlabel='', ylabel='Decoding accuracy (%)')
+    sns.despine(trim=True)
+
+    return p_values

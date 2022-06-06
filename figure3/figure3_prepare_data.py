@@ -1,5 +1,11 @@
 import numpy as np
 import pandas as pd
+from os.path import isfile
+
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import KFold
+from sklearn.metrics import accuracy_score
+from sklearn.utils import shuffle
 
 from one.api import ONE
 from ibllib.atlas import AllenAtlas
@@ -8,7 +14,8 @@ from iblutil.numerical import ismember
 from brainbox.processing import compute_cluster_average
 from brainbox.io.one import SpikeSortingLoader
 
-from reproducible_ephys_functions import get_insertions, combine_regions, BRAIN_REGIONS, save_data_path, save_dataset_info
+from reproducible_ephys_functions import (get_insertions, combine_regions, BRAIN_REGIONS, save_data_path,
+                                          save_dataset_info, filter_recordings)
 from reproducible_ephys_processing import compute_new_label
 from figure3.figure3_load_data import load_dataframe
 
@@ -189,9 +196,98 @@ def prepare_data(insertions, one, recompute=False, new_metrics=True):
     return all_df_chns, all_df_clust, metrics
 
 
+def run_decoding(n_shuffle=500, recompute=False):
+    save_path = save_data_path(figure='figure3')
+    if recompute or ~isfile(save_path.joinpath('figure3_decoding_results.csv')):
+
+        # Initialize
+        rf = RandomForestClassifier(random_state=42, n_estimators=100, n_jobs=-1)
+        kfold = KFold(n_splits=5, shuffle=False)
+
+        # Load in data
+        df_ins = load_dataframe(df_name='ins')
+        data = filter_recordings(df_ins, min_lab_region=3, min_rec_lab=0)
+        #data = data[data['permute_include'] == 1]
+        data['yield_per_channel'] = data['neuron_yield'] / data['n_channels']
+        data.loc[data['lfp_power'] < -100000, 'lfp_power'] = np.nan
+
+        # Restructure dataframe
+        data.loc[data['region'] == 'PPC', 'region_number'] = 1
+        data.loc[data['region'] == 'CA1', 'region_number'] = 2
+        data.loc[data['region'] == 'DG', 'region_number'] = 3
+        data.loc[data['region'] == 'LP', 'region_number'] = 4
+        data.loc[data['region'] == 'PO', 'region_number'] = 5
+        data = data[~data['median_firing_rate'].isnull()]
+
+        # Decode per brain region
+        accuracy_df, shuffle_df = pd.DataFrame(), pd.DataFrame()
+        for r in ['PPC', 'CA1', 'DG', 'LP', 'PO']:
+            print(f'\nDecoding lab for region {r}..\n')
+            region_data = data[data['region'] == r]
+            decode_data = region_data[['yield_per_channel', 'median_firing_rate', 'lfp_power',
+                                       'rms_ap', 'spike_amp_mean']].to_numpy()
+            decode_labs = region_data['institute'].values
+
+            # Decode lab
+            lab_predict = np.empty(decode_data.shape[0]).astype(object)
+            for train_index, test_index in kfold.split(decode_data):
+                rf.fit(decode_data[train_index], decode_labs[train_index])
+                lab_predict[test_index] = rf.predict(decode_data[test_index])
+            accuracy_df = pd.concat((accuracy_df, pd.DataFrame(index=[accuracy_df.shape[0]+1], data={
+                'region': r, 'accuracy': accuracy_score(decode_labs, lab_predict)})))
+
+            # Decode lab with shuffled lab labels
+            shuf_acc = np.empty(n_shuffle)
+            for i in range(n_shuffle):
+                if np.mod(i, 100) == 0:
+                    print(f'Shuffle {i} of {n_shuffle}')
+                lab_shuf = shuffle(decode_labs)
+                lab_predict = np.empty(decode_data.shape[0]).astype(object)
+                for train_index, test_index in kfold.split(decode_data):
+                    rf.fit(decode_data[train_index], lab_shuf[train_index])
+                    lab_predict[test_index] = rf.predict(decode_data[test_index])
+                shuf_acc[i] = accuracy_score(decode_labs, lab_predict)
+
+            shuffle_df = pd.concat((shuffle_df, pd.DataFrame(data={
+                'region': r, 'accuracy_shuffle': shuf_acc})), ignore_index=True)
+
+        # Decode region
+        print('\nDecoding brain region..\n')
+        decode_data = data[['yield_per_channel', 'median_firing_rate', 'lfp_power', 'rms_ap',
+                            'spike_amp_mean']].to_numpy()
+        decode_regions = data['region'].values
+        region_predict = np.empty(data.shape[0]).astype(object)
+        for train_index, test_index in kfold.split(decode_data):
+            rf.fit(decode_data[train_index], decode_regions[train_index])
+            region_predict[test_index] = rf.predict(decode_data[test_index])
+        accuracy_df = pd.concat((accuracy_df, pd.DataFrame(index=[accuracy_df.shape[0]+1], data={
+            'region': 'all', 'accuracy': accuracy_score(decode_regions, region_predict)})))
+
+        # Decode lab with shuffled lab labels
+        shuf_acc = np.empty(n_shuffle)
+        for i in range(n_shuffle):
+            if np.mod(i, 100) == 0:
+                print(f'Shuffle {i} of {n_shuffle}')
+            region_shuf = shuffle(decode_regions)
+            region_predict = np.empty(data.shape[0]).astype(object)
+            for train_index, test_index in kfold.split(decode_data):
+                rf.fit(decode_data[train_index], region_shuf[train_index])
+                region_predict[test_index] = rf.predict(decode_data[test_index])
+            shuf_acc[i] = accuracy_score(decode_regions, region_predict)
+
+        shuffle_df = pd.concat((shuffle_df, pd.DataFrame(data={
+            'region': 'all', 'accuracy_shuffle': shuf_acc})), ignore_index=True)
+
+
+    # Save results
+    accuracy_df.to_csv(save_path.joinpath('figure3_dataframe_decode.csv'))
+    shuffle_df.to_csv(save_path.joinpath('figure3_dataframe_decode_shuf.csv'))
+
+
 if __name__ == '__main__':
     one = ONE()
     one.record_loaded = True
     insertions = get_insertions(level=0, one=one, freeze='biorxiv_2022_05')
     all_df_chns, all_df_clust, metrics = prepare_data(insertions, one=one)
     save_dataset_info(one, figure='figure3')
+    run_decoding(n_shuffle=500, recompute=True)
