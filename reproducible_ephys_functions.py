@@ -114,7 +114,7 @@ def traj_list_to_dataframe(trajectories):
     return trajectories
 
 
-def get_insertions(level=2, recompute=False, as_dataframe=False, one=None, freeze='biorxiv_2022_05', new_metrics=True):
+def get_insertions(level=2, recompute=False, as_dataframe=False, one=None, freeze=None, new_metrics=True):
     """
     Find insertions used for analysis based on different exclusion levels
     Level 0: minimum_regions = 0, resolved = True, behavior = False, n_trial >= 0, exclude_critical = True
@@ -436,7 +436,7 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', ne
 
 def filter_recordings(df=None, max_ap_rms=40, max_lfp_power=-140, min_neurons_per_channel=0.1, min_channels_region=5,
                       min_regions=3, min_neuron_region=4, min_lab_region=3, min_rec_lab=4, n_trials=400, behavior=False,
-                      exclude_subjects=['DY013', 'ibl_witten_26'], recompute=True, freeze='biorxiv_2022_05', new_metrics=True):
+                      exclude_subjects=['DY013', 'ibl_witten_26'], recompute=True, freeze=None, new_metrics=True):
     """
     Filter values in dataframe according to different exclusion criteria
     :param df: pandas dataframe

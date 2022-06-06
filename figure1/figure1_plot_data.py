@@ -32,7 +32,7 @@ def plot_supp2_figure(one, ba=None):
 def plot_repeated_site_slice(one, ba=None):
     ba = ba or AllenAtlas()
     ba.regions.rgb[0] = [255, 255, 255]
-    insertions = get_insertions(level=0, one=one, freeze='biorxiv_2022_05')
+    insertions = get_insertions(level=0, one=one, freeze=None)
     traj = insertions[0]
     ins = Insertion.from_dict(traj)
     depths = SITES_COORDINATES[:, 1]
@@ -100,7 +100,7 @@ def plot_3D_repeated_site_trajectories(one, ba=None):
     ba = ba or AllenAtlas()
     fig = mlab.figure(bgcolor=(1, 1, 1))
 
-    insertions = get_insertions(level=0, one=one, freeze='biorxiv_2022_05')
+    insertions = get_insertions(level=0, one=one, freeze=None)
     for ins in insertions:
         traj = one.alyx.rest('trajectories', 'list', provenance='Ephys aligned histology track',
                              probe_insertion=ins['probe_insertion'])[0]

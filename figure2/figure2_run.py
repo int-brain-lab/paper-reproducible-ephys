@@ -9,8 +9,8 @@ from one.api import ONE
 
 
 def run_figure2(one, recompute=False, supplementary=False):
-    _ = get_insertions(level=0, one=one, freeze='biorxiv_2022_05')
-    insertions = get_histology_insertions(one=one, freeze='biorxiv_2022_05')
+    _ = get_insertions(level=0, one=one, freeze=None)
+    insertions = get_histology_insertions(one=one, freeze=None)
     prepare_data(insertions, one=one, recompute=recompute)
     plot_hist_figure(raw_histology=False)
     if supplementary:
