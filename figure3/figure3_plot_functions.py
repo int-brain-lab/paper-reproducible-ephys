@@ -21,7 +21,7 @@ lab_number_map, institution_map, lab_colors = labs()
 def panel_sankey(fig, ax, one):
     
     # Get number of recordings after freeze cutoff date
-    after_freeze = len(get_insertions(one=one)) - len(get_insertions(one=one, freeze='biorxiv_2022_05'))
+    after_freeze = len(get_insertions(one=one)) - len(get_insertions(one=one, freeze=None))
 
     # Get number of failed recordings (CRITICAL)
     crit = (len(query(behavior=False, n_trials=0, resolved=False, min_regions=0, exclude_critical=False, one=one))
