@@ -386,7 +386,7 @@ def panel_decoding(ax):
             ax.plot(i, 75, '*', color='k', markersize=5)
 
     # Settings
-    ax.set(ylim=[0, 80], xlabel='', ylabel='Decoding accuracy (%)')
+    ax.set(ylim=[0, 80], xlabel='', ylabel='Decoding accuracy (%)', yticks=[0, 25, 50, 75])
     sns.despine(trim=True)
 
     return p_values

@@ -107,7 +107,11 @@ def prepare_data(insertions, one, recompute=False, new_metrics=True):
         df_clust['lab'] = ins['session']['lab']
 
         # Data for channel dataframe
-        lfp = one.load_object(eid, 'ephysSpectralDensityLF', collection=f'raw_ephys_data/{probe}')
+        try:
+            lfp = one.load_object(eid, 'ephysSpectralDensityLF', collection=f'raw_ephys_data/{probe}')
+        except Exception as err:
+            print(err)
+            print(f'eid: {eid}\n')
         freqs = ((lfp['freqs'] > LFP_BAND[0])
                  & (lfp['freqs'] < LFP_BAND[1]))
         power = lfp['power'][:, channels['rawInd']]
@@ -198,7 +202,7 @@ def prepare_data(insertions, one, recompute=False, new_metrics=True):
 
 def run_decoding(n_shuffle=500, recompute=False):
     save_path = save_data_path(figure='figure3')
-    if recompute or ~isfile(save_path.joinpath('figure3_decoding_results.csv')):
+    if recompute or not isfile(save_path.joinpath('figure3_dataframe_decode.csv')):
 
         # Initialize
         rf = RandomForestClassifier(random_state=42, n_estimators=100, n_jobs=-1)
@@ -279,15 +283,15 @@ def run_decoding(n_shuffle=500, recompute=False):
             'region': 'all', 'accuracy_shuffle': shuf_acc})), ignore_index=True)
 
 
-    # Save results
-    accuracy_df.to_csv(save_path.joinpath('figure3_dataframe_decode.csv'))
-    shuffle_df.to_csv(save_path.joinpath('figure3_dataframe_decode_shuf.csv'))
+        # Save results
+        accuracy_df.to_csv(save_path.joinpath('figure3_dataframe_decode.csv'))
+        shuffle_df.to_csv(save_path.joinpath('figure3_dataframe_decode_shuf.csv'))
 
 
 if __name__ == '__main__':
     one = ONE()
     one.record_loaded = True
     insertions = get_insertions(level=0, one=one, freeze=None)
-    all_df_chns, all_df_clust, metrics = prepare_data(insertions, one=one)
+    all_df_chns, all_df_clust, metrics = prepare_data(insertions, recompute=True, one=one)
     save_dataset_info(one, figure='figure3')
-    run_decoding(n_shuffle=500, recompute=True)
+    run_decoding(n_shuffle=500, recompute=False)

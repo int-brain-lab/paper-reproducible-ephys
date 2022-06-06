@@ -65,9 +65,11 @@ def plot_main_figure(one=None):
     panel_sankey(fig, ax['panel_A'], one)
     panel_probe_lfp(fig, ax['panel_B'], n_rec_per_lab=MIN_REC_PER_LAB, boundary_align=BOUNDARY)
     panel_probe_neurons(fig, ax['panel_C'], n_rec_per_lab=MIN_REC_PER_LAB, boundary_align=BOUNDARY)
-    panel_example(ax['panel_D'], n_rec_per_lab=MIN_REC_PER_LAB, example_region='CA1',
-                  example_metric='spike_amp_mean', ylim=[75, 225], ylabel='Spike amplitude in CA1 (uV)',
-                  yticks=[75, 125, 175, 225])
+    panel_example(ax['panel_D'], n_rec_per_lab=MIN_REC_PER_LAB, example_region='LP',
+              example_metric='median_firing_rate', ylim=[0, 10], ylabel='Firing rate in LP (spks/s)',
+              yticks=[0, 2, 4, 6, 8, 10])
+    #panel_example(ax['panel_D'], n_rec_per_lab=MIN_REC_PER_LAB, example_region='CA1',
+    #              example_metric='spike_amp_mean', ylim=[0, 0.01], ylabel='Spike amplitude in CA1 (uV)')
     p_decoding = panel_decoding(ax['panel_E'])
     p_permut = panel_permutation(ax['panel_F'], METRICS, REGIONS, LABELS, n_permut=N_PERMUT,
                                  n_rec_per_lab=MIN_REC_PER_LAB, n_rec_per_region=MIN_REC_PER_REGION)
@@ -75,8 +77,8 @@ def plot_main_figure(one=None):
     # Save figure
     save_path = save_figure_path(figure='figure3')
     print(f'Saving figures to {save_path}')
-    #plt.savefig(save_path.joinpath('figure3.png'))
-    #plt.savefig(save_path.joinpath('figure3.pdf'))
+    plt.savefig(save_path.joinpath('figure3.png'))
+    plt.savefig(save_path.joinpath('figure3.pdf'))
 
     return p_decoding, p_permut
 
