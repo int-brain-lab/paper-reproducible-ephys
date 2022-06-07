@@ -200,7 +200,7 @@ def prepare_data(insertions, one, recompute=False, new_metrics=True):
     return all_df_chns, all_df_clust, metrics
 
 
-def run_decoding(n_shuffle=500, recompute=False):
+def run_decoding(n_shuffle=500, min_lab_region=3, recompute=False):
     save_path = save_data_path(figure='figure3')
     if recompute or not isfile(save_path.joinpath('figure3_dataframe_decode.csv')):
 
@@ -210,10 +210,10 @@ def run_decoding(n_shuffle=500, recompute=False):
 
         # Load in data
         df_ins = load_dataframe(df_name='ins')
-        data = filter_recordings(df_ins, min_lab_region=3, min_rec_lab=0)
-        #data = data[data['permute_include'] == 1]
+        data = filter_recordings(df_ins, min_lab_region=min_lab_region, min_rec_lab=0)
+        data = data[data['include'] == 1]
         data['yield_per_channel'] = data['neuron_yield'] / data['n_channels']
-        data.loc[data['lfp_power'] < -100000, 'lfp_power'] = np.nan
+        data = data[data['lfp_power'].notna()]
 
         # Restructure dataframe
         data.loc[data['region'] == 'PPC', 'region_number'] = 1
@@ -294,4 +294,4 @@ if __name__ == '__main__':
     insertions = get_insertions(level=0, one=one, freeze=None)
     all_df_chns, all_df_clust, metrics = prepare_data(insertions, recompute=True, one=one)
     save_dataset_info(one, figure='figure3')
-    run_decoding(n_shuffle=500, recompute=False)
+    run_decoding(n_shuffle=500, recompute=True)

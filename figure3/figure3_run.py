@@ -23,5 +23,5 @@ def run_figure3(one, recompute=False, supplementary=True, new_metrics=True):
 
 
 if __name__ == '__main__':
-    one = ONE()
+    one = ONE(base_url='https://openalyx.internationalbrainlab.org', password='international', silent=True)
     run_figure3(one)

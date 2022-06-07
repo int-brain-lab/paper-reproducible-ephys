@@ -259,12 +259,15 @@ def panel_probe_neurons(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[
     cbar.set_label('Firing rate (spks/s)', rotation=270, labelpad=-2)
 
 
-def panel_example(ax, n_rec_per_lab=4, example_region='CA1', example_metric='lfp_power_high',
+def panel_example(ax, n_rec_per_lab=0, n_rec_per_region=3,
+                  example_region='CA1', example_metric='lfp_power',
                   ylim=None, ylabel='LFP power in CA1 (db)', yticks=None):
 
     df_ins = load_dataframe(df_name='ins')
-    df_filt = filter_recordings(df_ins, min_rec_lab=n_rec_per_lab)
+    df_filt = filter_recordings(df_ins, min_rec_lab=n_rec_per_lab, min_lab_region=n_rec_per_region)
     df_filt['lab_number'] = df_filt['lab'].map(lab_number_map)
+    df_filt['yield_per_channel'] = df_filt['neuron_yield'] / df_filt['n_channels']
+    df_filt.loc[df_filt['lfp_power'] < -100000, 'lfp_power'] = np.nan
     data = df_filt[df_filt['permute_include'] == 1]
 
     data_example = pd.DataFrame(data={
@@ -295,7 +298,7 @@ def panel_example(ax, n_rec_per_lab=4, example_region='CA1', example_metric='lfp
     sns.despine(trim=True)
 
 
-def panel_permutation(ax, metrics, regions, labels, n_permut=10000, n_rec_per_lab=4,
+def panel_permutation(ax, metrics, regions, labels, n_permut=10000, n_rec_per_lab=0,
                       n_rec_per_region=3):
 
     df_ins = load_dataframe(df_name='ins')
