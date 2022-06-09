@@ -6,6 +6,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import KFold
 from sklearn.metrics import accuracy_score
 from sklearn.utils import shuffle
+from sklearn.metrics import confusion_matrix
 
 from one.api import ONE
 from ibllib.atlas import AllenAtlas
@@ -200,20 +201,27 @@ def prepare_data(insertions, one, recompute=False, new_metrics=True):
     return all_df_chns, all_df_clust, metrics
 
 
-def run_decoding(n_shuffle=500, min_lab_region=3, recompute=False):
+def run_decoding(metrics=['yield_per_channel', 'median_firing_rate', 'lfp_power', 'rms_ap', 'spike_amp_mean'],
+                 pass_qc=True, n_shuffle=500, min_lab_region=2, recompute=False):
     save_path = save_data_path(figure='figure3')
-    if recompute or not isfile(save_path.joinpath('figure3_dataframe_decode.csv')):
+    if pass_qc:
+        file_name = 'figure3_dataframe_decode.csv'
+    else:
+        file_name = 'figure3_dataframe_decode_no_qc.csv'
+    if recompute or not isfile(save_path.joinpath(file_name)):
 
         # Initialize
-        rf = RandomForestClassifier(random_state=42, n_estimators=100, n_jobs=-1)
+        rf = RandomForestClassifier(random_state=42, n_estimators=100)
         kfold = KFold(n_splits=5, shuffle=False)
 
         # Load in data
         df_ins = load_dataframe(df_name='ins')
-        data = filter_recordings(df_ins, min_lab_region=min_lab_region, min_rec_lab=0)
-        data = data[data['include'] == 1]
+        data = filter_recordings(df_ins, min_lab_region=min_lab_region, min_rec_lab=0,
+                                 min_neuron_region=2)
+        if pass_qc:
+            data = data[data['include'] == 1]  # select recordings that pass QC
+        data = data[data['lfp_power'].notna()]  # exclude recordings that miss LFP data
         data['yield_per_channel'] = data['neuron_yield'] / data['n_channels']
-        data = data[data['lfp_power'].notna()]
 
         # Restructure dataframe
         data.loc[data['region'] == 'PPC', 'region_number'] = 1
@@ -224,12 +232,11 @@ def run_decoding(n_shuffle=500, min_lab_region=3, recompute=False):
         data = data[~data['median_firing_rate'].isnull()]
 
         # Decode per brain region
-        accuracy_df, shuffle_df = pd.DataFrame(), pd.DataFrame()
+        decode_df, shuffle_df = pd.DataFrame(), pd.DataFrame()
         for r in ['PPC', 'CA1', 'DG', 'LP', 'PO']:
             print(f'\nDecoding lab for region {r}..\n')
             region_data = data[data['region'] == r]
-            decode_data = region_data[['yield_per_channel', 'median_firing_rate', 'lfp_power',
-                                       'rms_ap', 'spike_amp_mean']].to_numpy()
+            decode_data = region_data[metrics].to_numpy()
             decode_labs = region_data['institute'].values
 
             # Decode lab
@@ -237,8 +244,19 @@ def run_decoding(n_shuffle=500, min_lab_region=3, recompute=False):
             for train_index, test_index in kfold.split(decode_data):
                 rf.fit(decode_data[train_index], decode_labs[train_index])
                 lab_predict[test_index] = rf.predict(decode_data[test_index])
-            accuracy_df = pd.concat((accuracy_df, pd.DataFrame(index=[accuracy_df.shape[0]+1], data={
-                'region': r, 'accuracy': accuracy_score(decode_labs, lab_predict)})))
+
+            # Get confusion matrix
+            matrix = confusion_matrix(decode_labs, lab_predict, labels=np.unique(decode_labs))
+            matrix.diagonal()/matrix.sum(axis=1)
+            matrix_df = pd.DataFrame(data=matrix, index=np.unique(decode_labs),
+                                     columns=np.unique(decode_labs))
+
+            # Save results in dataframe
+            dict_df = dict(zip(metrics, rf.feature_importances_))
+            dict_df['region'] = r
+            dict_df['n_labs'] = np.unique(decode_labs).shape[0]
+            dict_df['accuracy'] = accuracy_score(decode_labs, lab_predict)
+            decode_df = pd.concat((decode_df, pd.DataFrame(index=[decode_df.shape[0]+1], data=dict_df)))
 
             # Decode lab with shuffled lab labels
             shuf_acc = np.empty(n_shuffle)
@@ -264,7 +282,7 @@ def run_decoding(n_shuffle=500, min_lab_region=3, recompute=False):
         for train_index, test_index in kfold.split(decode_data):
             rf.fit(decode_data[train_index], decode_regions[train_index])
             region_predict[test_index] = rf.predict(decode_data[test_index])
-        accuracy_df = pd.concat((accuracy_df, pd.DataFrame(index=[accuracy_df.shape[0]+1], data={
+        decode_df = pd.concat((decode_df, pd.DataFrame(index=[decode_df.shape[0]+1], data={
             'region': 'all', 'accuracy': accuracy_score(decode_regions, region_predict)})))
 
         # Decode lab with shuffled lab labels
@@ -282,16 +300,24 @@ def run_decoding(n_shuffle=500, min_lab_region=3, recompute=False):
         shuffle_df = pd.concat((shuffle_df, pd.DataFrame(data={
             'region': 'all', 'accuracy_shuffle': shuf_acc})), ignore_index=True)
 
-
         # Save results
-        accuracy_df.to_csv(save_path.joinpath('figure3_dataframe_decode.csv'))
-        shuffle_df.to_csv(save_path.joinpath('figure3_dataframe_decode_shuf.csv'))
+        #decode_df.to_csv(save_path.joinpath(file_name))
+        if pass_qc:
+            #shuffle_df.to_csv(save_path.joinpath('figure3_dataframe_decode_shuf.csv'))
+            matrix_df.to_csv(save_path.joinpath('figure3_dataframe_conf_mat.csv'))
+        else:
+            #shuffle_df.to_csv(save_path.joinpath('figure3_dataframe_decode_shuf_no_qc.csv'))
+            matrix_df.to_csv(save_path.joinpath('figure3_dataframe_conf_mat_no_qc.csv'))
+
+    else:
+        print('Decoding results found, not running again')
 
 
 if __name__ == '__main__':
     one = ONE()
     one.record_loaded = True
     insertions = get_insertions(level=0, one=one, freeze=None)
-    all_df_chns, all_df_clust, metrics = prepare_data(insertions, recompute=True, one=one)
+    all_df_chns, all_df_clust, metrics = prepare_data(insertions, recompute=False, one=one)
     save_dataset_info(one, figure='figure3')
-    run_decoding(n_shuffle=500, recompute=True)
+    run_decoding(n_shuffle=2, recompute=True)
+    run_decoding(n_shuffle=2, pass_qc=False, recompute=True)

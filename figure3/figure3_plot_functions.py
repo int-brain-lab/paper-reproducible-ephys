@@ -260,11 +260,12 @@ def panel_probe_neurons(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[
 
 
 def panel_example(ax, n_rec_per_lab=0, n_rec_per_region=3,
-                  example_region='CA1', example_metric='lfp_power',
-                  ylim=None, ylabel='LFP power in CA1 (db)', yticks=None):
+                  example_region='CA1', example_metric='lfp_power', ylabel='LFP power in CA1 (db)',
+                  ylim=None, yticks=None, despine=True):
 
     df_ins = load_dataframe(df_name='ins')
-    df_filt = filter_recordings(df_ins, min_rec_lab=n_rec_per_lab, min_lab_region=n_rec_per_region)
+    df_filt = filter_recordings(df_ins, min_rec_lab=n_rec_per_lab, min_lab_region=n_rec_per_region,
+                                min_neuron_region=2)
     df_filt['lab_number'] = df_filt['lab'].map(lab_number_map)
     df_filt['yield_per_channel'] = df_filt['neuron_yield'] / df_filt['n_channels']
     df_filt.loc[df_filt['lfp_power'] < -100000, 'lfp_power'] = np.nan
@@ -294,15 +295,18 @@ def panel_example(ax, n_rec_per_lab=0, n_rec_per_region=3,
         ax.set(ylim=ylim)
     if yticks is not None:
         ax.set(yticks=yticks)
-    ax.set_xticklabels(data_example['institute'].unique(), rotation=30, ha='right')
-    sns.despine(trim=True)
+    ax.set_xticklabels(data_example['institute'].unique(), rotation=90, ha='right')
+
+    if despine:
+        sns.despine(trim=True)
 
 
 def panel_permutation(ax, metrics, regions, labels, n_permut=10000, n_rec_per_lab=0,
                       n_rec_per_region=3):
 
     df_ins = load_dataframe(df_name='ins')
-    df_filt = filter_recordings(df_ins, min_lab_region=n_rec_per_region, min_rec_lab=n_rec_per_lab)
+    df_filt = filter_recordings(df_ins, min_lab_region=n_rec_per_region, min_rec_lab=n_rec_per_lab,
+                                min_neuron_region=2)
     data = df_filt[df_filt['permute_include'] == 1]
     data['yield_per_channel'] = data['neuron_yield'] / data['n_channels']
     data.loc[data['lfp_power'] < -100000, 'lfp_power'] = np.nan
@@ -359,17 +363,21 @@ def panel_permutation(ax, metrics, regions, labels, n_permut=10000, n_rec_per_la
     return results
 
 
-def panel_decoding(ax):
+def panel_decoding(ax, qc=True):
 
     # Load in data
-    decode_df = load_dataframe(df_name='decode')
+    if qc:
+        decode_df = load_dataframe(df_name='decode')
+        shuffle_df = load_dataframe(df_name='decode_shuf')
+    else:
+        decode_df = load_dataframe(df_name='decode_no_qc')
+        shuffle_df = load_dataframe(df_name='decode_shuf_no_qc')
     decode_df['accuracy'] = decode_df['accuracy']*100
-    shuffle_df = load_dataframe(df_name='decode_shuf')
     shuffle_df['accuracy_shuffle'] = shuffle_df['accuracy_shuffle']*100
 
     # Plot
     sns.violinplot(x='region', y='accuracy_shuffle', data=shuffle_df, ax=ax, color='grey')
-    sns.swarmplot(x='region', y='accuracy', data=decode_df, ax=ax, color='red')
+    sns.swarmplot(x='region', y='accuracy', data=decode_df, ax=ax, color='red', size=4)
 
     # Get p-values
     p_values = dict()
@@ -391,5 +399,6 @@ def panel_decoding(ax):
     # Settings
     ax.set(ylim=[0, 80], xlabel='', ylabel='Decoding accuracy (%)', yticks=[0, 25, 50, 75])
     sns.despine(trim=True)
+    ax.set_xticklabels(ax.get_xticklabels(), rotation=30, ha='right')
 
     return p_values
