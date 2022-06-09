@@ -530,7 +530,7 @@ def filter_recordings(df=None, max_ap_rms=40, max_lfp_power=-140, min_neurons_pe
     for key in df_red.groups.keys():
         df_k = df_red.get_group(key)
         # needs to be based on the neuron_yield
-        if df_k.iloc[0]['neuron_yield'] > min_neuron_region:
+        if df_k.iloc[0]['neuron_yield'] >= min_neuron_region:
             labreg[key[0]][key[2]] += 1
 
     for lab, regs in labreg.items():
