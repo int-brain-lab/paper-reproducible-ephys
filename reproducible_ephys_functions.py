@@ -9,6 +9,7 @@ import numpy as np
 import logging
 from pathlib import Path
 import shutil
+from datetime import datetime
 
 from one.api import ONE
 from one.alf.exceptions import ALFObjectNotFound
@@ -336,10 +337,19 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', ne
         eid = ins['session']['id']
         lab = ins['session']['lab']
         subject = ins['session']['subject']
-        date = ins['session']['start_time'][:10]
+        sess_date = ins['session']['start_time'][:10]
         pid = ins['probe_insertion']
         probe = ins['probe_name']
         collection = f'alf/{probe}/{spike_sorter}'
+
+        try:
+            subj = one.alyx.rest('subjects', 'list', nickname=subject)
+            subj_dob = subj[0]['birth_date']
+            age_at_recording = (datetime.strptime(sess_date, '%Y-%m-%d') - datetime.strptime(subj_dob, '%Y-%m-%d')).days
+            n_sess = len(one.search(subject=subject, date_range=[subj_dob, sess_date]))
+        except Exception:
+            age_at_recording = np.nan
+            n_sess = np.nan
 
         try:
             trials = one.load_object(eid, 'trials', collection='alf', attribute=training.TRIALS_KEYS)
@@ -418,13 +428,15 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', ne
                     index=[metrics.shape[0] + 1], data={'pid': pid, 'eid': eid, 'probe': probe,
                                                         'lab': lab, 'subject': subject, 'institute': institution_map[lab],
                                                         'lab_number': lab_number_map[lab],
-                                                        'region': region, 'date': date,
+                                                        'region': region, 'date': sess_date,
                                                         'n_channels': region_chan.shape[0],
                                                         'neuron_yield': region_clusters.shape[0],
                                                         'lfp_power': lfp_region,
                                                         'rms_ap_p90': ap_rms,
                                                         'n_trials': n_trials,
-                                                        'behavior': behav})))
+                                                        'behavior': behav,
+                                                        'age_at_recording': age_at_recording,
+                                                        'n_sess_before_recording': n_sess})))
         except Exception as err:
             logger.error(f'{pid}: {err}')
 
