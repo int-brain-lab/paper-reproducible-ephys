@@ -51,7 +51,7 @@ def labs():
 
 
 def query(behavior=False, n_trials=400, resolved=True, min_regions=2, exclude_critical=True, one=None, str_query=None,
-          as_dataframe=False):
+          as_dataframe=False, bilateral=False):
 
     one = one or ONE()
 
@@ -73,9 +73,24 @@ def query(behavior=False, n_trials=400, resolved=True, min_regions=2, exclude_cr
 
     django_query = ','.join(django_queries)
 
-    trajectories = one.alyx.rest('trajectories', 'list', provenance='Planned',
-                                 x=-2243, y=-2000, theta=15, project='ibl_neuropixel_brainwide_01',
-                                 django=django_query)
+    if bilateral:
+        # Query bilateral insertions
+        right_ins = one.alyx.rest('trajectories', 'list', provenance='Planned',
+                                  x=2243, y=-2000, theta=15, project='ibl_neuropixel_brainwide_01',
+                                  django=django_query)
+        trajectories = []
+        for i, eid in enumerate([j['session']['id'] for j in right_ins]):
+            left_ins = one.alyx.rest('trajectories', 'list', provenance='Planned',
+                                     x=-2243, y=-2000, theta=15, project='ibl_neuropixel_brainwide_01',
+                                     django=django_query, session=eid)
+            if len(left_ins) == 1:
+                trajectories.append(left_ins[0])
+                trajectories.append(right_ins[i])
+
+    else:
+        trajectories = one.alyx.rest('trajectories', 'list', provenance='Planned',
+                                     x=-2243, y=-2000, theta=15, project='ibl_neuropixel_brainwide_01',
+                                     django=django_query)
     pids = [traj['probe_insertion'] for traj in trajectories]
 
     if min_regions > 0:
@@ -144,7 +159,8 @@ def get_insertions(level=2, recompute=False, as_dataframe=False, one=None, freez
         return insertions
 
     if level == 0:
-        insertions = query(min_regions=0, n_trials=0, behavior=False, exclude_critical=True, one=one, as_dataframe=as_dataframe)
+        insertions = query(min_regions=0, n_trials=0, behavior=False, exclude_critical=True, one=one,
+                           as_dataframe=as_dataframe)
         if recompute:
             _ = recompute_metrics(insertions, one, new_metrics=new_metrics)
         return insertions

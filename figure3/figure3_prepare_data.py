@@ -301,12 +301,12 @@ def run_decoding(metrics=['yield_per_channel', 'median_firing_rate', 'lfp_power'
             'region': 'all', 'accuracy_shuffle': shuf_acc})), ignore_index=True)
 
         # Save results
-        #decode_df.to_csv(save_path.joinpath(file_name))
+        decode_df.to_csv(save_path.joinpath(file_name))
         if pass_qc:
-            #shuffle_df.to_csv(save_path.joinpath('figure3_dataframe_decode_shuf.csv'))
+            shuffle_df.to_csv(save_path.joinpath('figure3_dataframe_decode_shuf.csv'))
             matrix_df.to_csv(save_path.joinpath('figure3_dataframe_conf_mat.csv'))
         else:
-            #shuffle_df.to_csv(save_path.joinpath('figure3_dataframe_decode_shuf_no_qc.csv'))
+            shuffle_df.to_csv(save_path.joinpath('figure3_dataframe_decode_shuf_no_qc.csv'))
             matrix_df.to_csv(save_path.joinpath('figure3_dataframe_conf_mat_no_qc.csv'))
 
     else:
@@ -319,5 +319,5 @@ if __name__ == '__main__':
     insertions = get_insertions(level=0, one=one, freeze=None)
     all_df_chns, all_df_clust, metrics = prepare_data(insertions, recompute=False, one=one)
     save_dataset_info(one, figure='figure3')
-    run_decoding(n_shuffle=2, recompute=True)
-    run_decoding(n_shuffle=2, pass_qc=False, recompute=True)
+    run_decoding(n_shuffle=2, recompute=False)
+    run_decoding(n_shuffle=2, pass_qc=False, recompute=False)

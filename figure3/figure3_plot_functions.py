@@ -1,15 +1,12 @@
 from reproducible_ephys_functions import filter_recordings, labs, BRAIN_REGIONS, query, get_insertions
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 from figure3.figure3_functions import get_brain_boundaries, plot_probe
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from ibllib.atlas.regions import BrainRegions
 from figure3.figure3_load_data import load_dataframe
 import seaborn as sns
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import KFold
-from sklearn.metrics import accuracy_score
-from sklearn.utils import shuffle
 from matplotlib.sankey import Sankey
 from permutation_test import permut_test, permut_dist
 from statsmodels.stats.multitest import multipletests
@@ -95,7 +92,6 @@ def panel_probe_lfp(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-200
                     normalize=False, clim=[-190, -150]):
 
     df_chns = load_dataframe(df_name='chns')
-
     df_filt = filter_recordings(min_rec_lab=n_rec_per_lab, min_neuron_region=0)
     df_filt = df_filt[df_filt['lab_include'] == 1]
     df_filt['lab_number'] = df_filt['lab'].map(lab_number_map)
@@ -135,6 +131,17 @@ def panel_probe_lfp(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-200
             ax[iR].set_axis_off()
         ax[iR].set(ylim=ylim)
     ax[-1].set_axis_off()
+
+    # Add lab names
+    plt.figtext(0.245, 0.715, 'Berkeley', va="center", ha="center", size=7, color=lab_colors['Berkeley'])
+    plt.figtext(0.345, 0.715, 'Champalimaud', va="center", ha="center", size=7, color=lab_colors['CCU'])
+    plt.figtext(0.45, 0.715, 'CSHL (C)', va="center", ha="center", size=7, color=lab_colors['CSHL (C)'])
+    plt.figtext(0.495, 0.715, '(Z)', va="center", ha="center", size=7, color=lab_colors['CSHL (Z)'])
+    plt.figtext(0.56, 0.715, 'NYU', va="center", ha="center", size=7, color=lab_colors['NYU'])
+    plt.figtext(0.64, 0.715, 'Princeton', va="center", ha="center", size=7, color=lab_colors['Princeton'])
+    plt.figtext(0.715, 0.715, 'SWC', va="center", ha="center", size=7, color=lab_colors['SWC'])
+    plt.figtext(0.8, 0.715, 'UCL', va="center", ha="center", size=7, color=lab_colors['UCL'])
+    plt.figtext(0.86, 0.715, 'UCLA', va="center", ha="center", size=7, color=lab_colors['UCLA'])
 
     # Add colorbar
     axin = inset_axes(ax[-1], width="50%", height="90%", loc='lower right', borderpad=0,
@@ -275,6 +282,7 @@ def panel_example(ax, n_rec_per_lab=0, n_rec_per_region=3,
         'institute': data.loc[data['region'] == example_region, 'institute'],
         'lab_number': data.loc[data['region'] == example_region, 'lab_number'],
         example_metric: data.loc[data['region'] == example_region, example_metric].values})
+    data_example = data_example[~data_example[example_metric].isnull()]
 
     data_example = data_example.sort_values('lab_number')
     cmap = []
@@ -282,23 +290,29 @@ def panel_example(ax, n_rec_per_lab=0, n_rec_per_region=3,
         cmap.append(lab_colors[inst])
 
     sns.stripplot(data=data_example, x='institute', y=example_metric, palette=cmap, s=3, ax=ax)
+
     ax_lines = sns.pointplot(x='institute', y=example_metric, data=data_example,
                              ci=0, join=False, estimator=np.mean, color='k',
                              markers="_", scale=1, ax=ax)
 
-    #plt.setp(ax_lines.collections, zorder=100, label="")
+    plt.setp(ax_lines.collections, zorder=100, label="")
+
     ax.plot(np.arange(data_example['institute'].unique().shape[0]),
              [data_example[example_metric].mean()] * data_example['institute'].unique().shape[0],
              color='r', lw=1)
-    ax.set(ylabel=ylabel, xlabel='', xlim=[-.5, len(data['institute'].unique()) + .5])
+
+    ax.set(ylabel=ylabel, xlabel='', xlim=[-.5, len(data_example['institute'].unique())])
     if ylim is not None:
         ax.set(ylim=ylim)
     if yticks is not None:
         ax.set(yticks=yticks)
-    ax.set_xticklabels(data_example['institute'].unique(), rotation=90, ha='right')
+    ax.set_xticklabels(data_example['institute'].unique(), rotation=90, ha='center')
+    #ax.plot([-.5, len(data['institute'].unique()) + .5], [-165, -165], lw=0.5, color='k')
+    #ax.plot([-0.5, -0.5], ax.get_ylim(),  lw=0.5, color='k')
 
     if despine:
         sns.despine(trim=True)
+
 
 
 def panel_permutation(ax, metrics, regions, labels, n_permut=10000, n_rec_per_lab=0,
@@ -359,7 +373,7 @@ def panel_permutation(ax, metrics, regions, labels, n_permut=10000, n_rec_per_la
     cbar.set_label('log p-value', rotation=270, labelpad=8)
     ax.set(xlabel='', ylabel='', xticks=np.arange(len(labels)) + 0.5, yticks=np.arange(len(regions)) + 0.5)
     ax.set_yticklabels(regions, va='center', rotation=0)
-    ax.set_xticklabels(labels, rotation=30, ha='right')
+    ax.set_xticklabels(labels, rotation=45, ha='right')
     return results
 
 
@@ -399,6 +413,6 @@ def panel_decoding(ax, qc=True):
     # Settings
     ax.set(ylim=[0, 80], xlabel='', ylabel='Decoding accuracy (%)', yticks=[0, 25, 50, 75])
     sns.despine(trim=True)
-    ax.set_xticklabels(ax.get_xticklabels(), rotation=30, ha='right')
+    ax.set_xticklabels(np.concatenate((ax.get_xticklabels()[:-1], ['Regions'])), rotation=45, ha='right')
 
     return p_values
