@@ -29,7 +29,7 @@ conf_mat_noqc = conf_mat_noqc.drop(['Unnamed: 0'], axis=1)
 # Plot
 f, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3, figsize=(9, 5), dpi=400)
 
-panel_decoding(ax1, qc=True)
+p_qc = panel_decoding(ax1, qc=True)
 ax1.set(title='QC recordings')
 
 ax2.imshow(decode_qc_df.loc[0:4, METRICS].to_numpy())
@@ -46,7 +46,7 @@ ax3.set_xticklabels(ax3.get_xticklabels(), rotation=90, ha='right')
 #cbar.set_label('', rotation=270)
 #cbar.ax.get_yaxis().labelpad = 8
 
-panel_decoding(ax4, qc=False)
+p_all = panel_decoding(ax4, qc=False)
 ax4.set(title='All recordings')
 
 ax5.imshow(decode_noqc_df.loc[0:4, METRICS].to_numpy())

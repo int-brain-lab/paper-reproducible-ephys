@@ -390,7 +390,7 @@ def panel_decoding(ax, qc=True):
     shuffle_df['accuracy_shuffle'] = shuffle_df['accuracy_shuffle']*100
 
     # Plot
-    sns.violinplot(x='region', y='accuracy_shuffle', data=shuffle_df, ax=ax, color='grey')
+    sns.violinplot(x='region', y='accuracy_shuffle', data=shuffle_df, ax=ax, color=[.7, .7, .7])
     sns.swarmplot(x='region', y='accuracy', data=decode_df, ax=ax, color='red', size=4)
 
     # Get p-values
@@ -407,8 +407,12 @@ def panel_decoding(ax, qc=True):
 
     # Plot significance star
     for i, region in enumerate(list(p_values.keys())):
-        if p_values[region] < 0.05:
-            ax.plot(i, 75, '*', color='k', markersize=5)
+        if p_values[region] < 0.001:
+            ax.text(i, 75, '***', color='k', size=10, ha='center')
+        elif p_values[region] < 0.01:
+            ax.text(i, 75, '**', color='k', size=10, ha='center')
+        elif p_values[region] < 0.05:
+            ax.text(i, 75, '*', color='k', size=10, ha='center')
 
     # Settings
     ax.set(ylim=[0, 80], xlabel='', ylabel='Decoding accuracy (%)', yticks=[0, 25, 50, 75])
