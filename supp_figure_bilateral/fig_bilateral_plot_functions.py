@@ -4,15 +4,9 @@ import numpy as np
 from figure3.figure3_functions import get_brain_boundaries, plot_probe
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from ibllib.atlas.regions import BrainRegions
+from scipy.stats import mannwhitneyu, iqr
 from supp_figure_bilateral.load_data import load_dataframe
 import seaborn as sns
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import KFold
-from sklearn.metrics import accuracy_score
-from sklearn.utils import shuffle
-from matplotlib.sankey import Sankey
-from permutation_test import permut_test, permut_dist
-from statsmodels.stats.multitest import multipletests
 
 br = BrainRegions()
 
@@ -184,46 +178,162 @@ def panel_probe_neurons(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[
     cbar.set_label('Firing rate (spks/s)', rotation=270, labelpad=-2)
 
 
-def panel_example(ax, n_rec_per_lab=0, n_rec_per_region=3,
-                  example_region='CA1', example_metric='lfp_power', ylabel='LFP power in CA1 (db)',
+def panel_boxplot(ax, example_region='CA1', example_metric='lfp_power',
+                  ylabel='LFP power diff. in CA1 (db)',
                   ylim=None, yticks=None, despine=True):
 
     df_ins = load_dataframe(df_name='ins')
-    df_chns = load_dataframe(df_name='chns')
+    df_slice = df_ins[(df_ins['region'] == example_region)]
 
+    # Calculate within animal variability
+    within_var = np.empty(np.unique(df_slice['subject']).shape[0])
+    across_var = []
+    for i, subject in enumerate(np.unique(df_slice['subject'])):
+        within_var[i] = np.abs(df_slice[(df_slice['subject'] == subject)
+                                        & (df_slice['probe'] == 'probe00')][example_metric].values[0]
+                               - df_slice[(df_slice['subject'] == subject)
+                                          & (df_slice['probe'] == 'probe01')][example_metric].values[0])
 
+        for j, other_sub in enumerate(np.unique(df_slice.loc[df_slice['subject'] != subject, 'subject'])):
+            # Probe 00
+            across_var.append(np.abs(df_slice[(df_slice['subject'] == subject)
+                                        & (df_slice['probe'] == 'probe00')][example_metric].values[0]
+                               - df_slice[(df_slice['subject'] == other_sub)
+                                          & (df_slice['probe'] == 'probe00')][example_metric].values[0]))
 
-    df_ins['lab_number'] = df_ins['lab'].map(lab_number_map)
-    df_ins['yield_per_channel'] = df_ins['neuron_yield'] / df_ins['n_channels']
-    df_ins.loc[df_ins['lfp_power'] < -100000, 'lfp_power'] = np.nan
-    data = df_ins.copy()
+            # Probe 01
+            across_var.append(np.abs(df_slice[(df_slice['subject'] == subject)
+                                        & (df_slice['probe'] == 'probe01')][example_metric].values[0]
+                               - df_slice[(df_slice['subject'] == other_sub)
+                                          & (df_slice['probe'] == 'probe01')][example_metric].values[0]))
+    across_var = np.array(across_var)
+    within_var = within_var[~np.isnan(within_var)]
+    across_var = across_var[~np.isnan(across_var)]
 
-    data_example = pd.DataFrame(data={
-        'institute': data.loc[data['region'] == example_region, 'institute'],
-        'lab_number': data.loc[data['region'] == example_region, 'lab_number'],
-        example_metric: data.loc[data['region'] == example_region, example_metric].values})
-
-    data_example = data_example.sort_values('lab_number')
-    cmap = []
-    for i, inst in enumerate(data_example['institute'].unique()):
-        cmap.append(lab_colors[inst])
-
-    sns.stripplot(data=data_example, x='institute', y=example_metric, palette=cmap, s=3, ax=ax)
-    ax_lines = sns.pointplot(x='institute', y=example_metric, data=data_example,
-                             ci=0, join=False, estimator=np.mean, color='k',
-                             markers="_", scale=1, ax=ax)
-
-    #plt.setp(ax_lines.collections, zorder=100, label="")
-    ax.plot(np.arange(data_example['institute'].unique().shape[0]),
-             [data_example[example_metric].mean()] * data_example['institute'].unique().shape[0],
-             color='r', lw=1)
-    ax.set(ylabel=ylabel, xlabel='', xlim=[-.5, len(data['institute'].unique()) + .5])
-    if ylim is not None:
-        ax.set(ylim=ylim)
+    # Plot
+    ax.boxplot([within_var, across_var], medianprops=dict(color='k'), showfliers=False, widths=0.5)
+    ax.set(xticks=[1, 2], xticklabels=['Within', 'Across'], ylabel=ylabel)
+    ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
     if yticks is not None:
         ax.set(yticks=yticks)
-    ax.set_xticklabels(data_example['institute'].unique(), rotation=90, ha='right')
+    sns.despine(trim=True)
 
-    if despine:
-        sns.despine(trim=True)
+def panel_statistics(ax):
+
+    df_ins = load_dataframe(df_name='ins')
+    regions = ['PPC', 'CA1', 'DG', 'PO', 'LP']
+
+    # Get p-values
+    p_value_df = pd.DataFrame()
+    for r, region in enumerate(regions):
+        df_slice = df_ins[(df_ins['region'] == region)]
+        for m, metric in enumerate(['median_firing_rate', 'spike_amp_median', 'rms_ap', 'lfp_power',
+                                    'yield_per_channel']):
+            within_var = np.empty(np.unique(df_slice['subject']).shape[0])
+            across_var = []
+            for i, subject in enumerate(np.unique(df_slice['subject'])):
+                within_var[i] = np.abs(df_slice[(df_slice['subject'] == subject)
+                                                & (df_slice['probe'] == 'probe00')][metric].values[0]
+                                       - df_slice[(df_slice['subject'] == subject)
+                                                  & (df_slice['probe'] == 'probe01')][metric].values[0])
+
+                for j, other_sub in enumerate(np.unique(df_slice.loc[df_slice['subject'] != subject, 'subject'])):
+                    # Probe 00
+                    across_var.append(np.abs(df_slice[(df_slice['subject'] == subject)
+                                                & (df_slice['probe'] == 'probe00')][metric].values[0]
+                                       - df_slice[(df_slice['subject'] == other_sub)
+                                                  & (df_slice['probe'] == 'probe00')][metric].values[0]))
+
+                    # Probe 01
+                    across_var.append(np.abs(df_slice[(df_slice['subject'] == subject)
+                                                & (df_slice['probe'] == 'probe01')][metric].values[0]
+                                       - df_slice[(df_slice['subject'] == other_sub)
+                                                  & (df_slice['probe'] == 'probe01')][metric].values[0]))
+            across_var = np.array(across_var)
+            within_var = within_var[~np.isnan(within_var)]
+            across_var = across_var[~np.isnan(across_var)]
+            p_value = mannwhitneyu(within_var, across_var)[1]
+            p_value_df = pd.concat((p_value_df, pd.DataFrame(index=[p_value_df.shape[0] + 1], data={
+                'p_value': p_value, 'region': region, 'metric': metric})))
+
+    p_value_table = p_value_df.pivot(index='region', columns='metric', values='p_value')
+    results_plot = p_value_table.reindex(columns=['yield_per_channel', 'median_firing_rate', 'lfp_power', 'rms_ap', 'spike_amp_median'])
+    results_plot = np.log10(results_plot)
+
+    axin = inset_axes(ax, width="5%", height="80%", loc='lower right', borderpad=0,
+                      bbox_to_anchor=(0.1, 0.1, 1, 1), bbox_transform=ax.transAxes)
+    # cmap = sns.color_palette('viridis_r', n_colors=20)
+    # cmap[0] = [1, 0, 0]
+    sns.heatmap(results_plot, cmap='RdYlGn', square=True,
+                cbar=True, cbar_ax=axin,
+                annot=False, annot_kws={"size": 5},
+                linewidths=.5, fmt='.2f', vmin=-1.5, vmax=np.log10(1), ax=ax)
+    cbar = ax.collections[0].colorbar
+    cbar.set_ticks(np.log10([0.05, 0.1, 0.2, 0.4, 0.8]))
+    cbar.set_ticklabels([0.05, 0.1, 0.2, 0.4, 0.8])
+    cbar.set_label('log p-value', rotation=270, labelpad=8)
+    labels = ['Neuron yield', 'Firing rate', 'LFP power', 'AP band RMS', 'Spike amp.']
+    ax.set(xlabel='', ylabel='', xticks=np.arange(len(labels)) + 0.5, yticks=np.arange(len(regions)) + 0.5)
+    ax.set_yticklabels(regions, va='center', rotation=0)
+    ax.set_xticklabels(labels, rotation=45, ha='right')
+
+def panel_summary(ax):
+
+    df_ins = load_dataframe(df_name='ins')
+    regions = ['PPC', 'CA1', 'DG']
+
+    # Get p-values
+    diff_df = pd.DataFrame()
+    for r, region in enumerate(regions):
+        df_slice = df_ins[(df_ins['region'] == region)]
+        for m, metric in enumerate(['median_firing_rate', 'spike_amp_median', 'rms_ap', 'lfp_power',
+                                    'yield_per_channel']):
+            within_var = np.empty(np.unique(df_slice['subject']).shape[0])
+            across_var = []
+            for i, subject in enumerate(np.unique(df_slice['subject'])):
+                within_var[i] = np.abs(df_slice[(df_slice['subject'] == subject)
+                                                & (df_slice['probe'] == 'probe00')][metric].values[0]
+                                       - df_slice[(df_slice['subject'] == subject)
+                                                  & (df_slice['probe'] == 'probe01')][metric].values[0])
+
+                for j, other_sub in enumerate(np.unique(df_slice.loc[df_slice['subject'] != subject, 'subject'])):
+                    # Probe 00
+                    across_var.append(np.abs(df_slice[(df_slice['subject'] == subject)
+                                                & (df_slice['probe'] == 'probe00')][metric].values[0]
+                                       - df_slice[(df_slice['subject'] == other_sub)
+                                                  & (df_slice['probe'] == 'probe00')][metric].values[0]))
+
+                    # Probe 01
+                    across_var.append(np.abs(df_slice[(df_slice['subject'] == subject)
+                                                & (df_slice['probe'] == 'probe01')][metric].values[0]
+                                       - df_slice[(df_slice['subject'] == other_sub)
+                                                  & (df_slice['probe'] == 'probe01')][metric].values[0]))
+            across_var = np.array(across_var)
+            within_var = within_var[~np.isnan(within_var)]
+            across_var = across_var[~np.isnan(across_var)]
+            diff = (iqr(within_var) - iqr(across_var)) / (iqr(within_var) + iqr(across_var))
+            diff_df = pd.concat((diff_df, pd.DataFrame(index=[diff_df.shape[0] + 1], data={
+                'diff': diff, 'region': region, 'metric': metric})))
+
+    diff_table = diff_df.pivot(index='region', columns='metric', values='diff')
+    results_plot = diff_table.reindex(columns=['yield_per_channel', 'median_firing_rate', 'lfp_power', 'rms_ap', 'spike_amp_median'])
+    results_plot = diff_table.reindex(index=regions)
+
+    axin = inset_axes(ax, width="5%", height="80%", loc='lower right', borderpad=0,
+                      bbox_to_anchor=(0.1, 0.1, 1, 1), bbox_transform=ax.transAxes)
+    # cmap = sns.color_palette('viridis_r', n_colors=20)
+    # cmap[0] = [1, 0, 0]
+    sns.heatmap(results_plot, cmap='RdYlGn', square=True,
+                cbar=True, cbar_ax=axin, vmin=-0.3, vmax=0.3,
+                annot=False, annot_kws={"size": 5},
+                linewidths=.5, fmt='.2f', ax=ax)
+    cbar = ax.collections[0].colorbar
+    #cbar.set_ticks(np.log10([0.05, 0.1, 0.2, 0.4, 0.8]))
+    #cbar.set_ticklabels([0.05, 0.1, 0.2, 0.4, 0.8])
+    cbar.set_label('Ratio var. within / across', rotation=270, labelpad=8)
+    labels = ['Neuron yield', 'Firing rate', 'LFP power', 'AP band RMS', 'Spike amp.']
+    ax.set(xlabel='', ylabel='', xticks=np.arange(len(labels)) + 0.5, yticks=np.arange(len(regions)) + 0.5)
+    ax.set_yticklabels(regions, va='center', rotation=0)
+    ax.set_xticklabels(labels, rotation=45, ha='right')
+
 

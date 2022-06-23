@@ -8,6 +8,7 @@ from ibllib.atlas.regions import BrainRegions
 from figure3.figure3_load_data import load_dataframe
 import seaborn as sns
 from matplotlib.sankey import Sankey
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 from permutation_test import permut_test, permut_dist
 from statsmodels.stats.multitest import multipletests
 
@@ -388,10 +389,10 @@ def panel_decoding(ax, qc=True):
         shuffle_df = load_dataframe(df_name='decode_shuf_no_qc')
     decode_df['accuracy'] = decode_df['accuracy']*100
     shuffle_df['accuracy_shuffle'] = shuffle_df['accuracy_shuffle']*100
-
-    # Plot
-    sns.violinplot(x='region', y='accuracy_shuffle', data=shuffle_df, ax=ax, color=[.7, .7, .7])
-    sns.swarmplot(x='region', y='accuracy', data=decode_df, ax=ax, color='red', size=4)
+    decode_regions_df = decode_df[decode_df['region'] == 'all']
+    shuffle_regions_df = shuffle_df[shuffle_df['region'] == 'all']
+    decode_df = decode_df[decode_df['region'] != 'all']
+    shuffle_df = shuffle_df[shuffle_df['region'] != 'all']
 
     # Get p-values
     p_values = dict()
@@ -405,18 +406,33 @@ def panel_decoding(ax, qc=True):
     for i, region in enumerate(list(p_values.keys())):
         p_values[region] = p_values_corr[i]
 
+    # Plot
+    divider = make_axes_locatable(ax)
+    ax_left = divider.append_axes("left", size='25%', pad='60%', sharey=ax)
+
+    # Plot region decoding
+    sns.violinplot(x='region', y='accuracy_shuffle', data=shuffle_regions_df, ax=ax_left, color=[.7, .7, .7])
+    sns.swarmplot(x='region', y='accuracy', data=decode_regions_df, ax=ax_left, color='red', size=4)
+    ax_left.set(xlabel='', ylabel='Region decoding perf. (%)', xticks=[])
+    ax_left.text(0, 75, '***', size=10, color='k', ha='center')
+
+    # Plot decoding of lab per region
+    sns.violinplot(x='region', y='accuracy_shuffle', data=shuffle_df, ax=ax, color=[.7, .7, .7])
+    sns.swarmplot(x='region', y='accuracy', data=decode_df, ax=ax, color='red', size=4)
+
     # Plot significance star
     for i, region in enumerate(list(p_values.keys())):
         if p_values[region] < 0.001:
-            ax.text(i, 75, '***', color='k', size=10, ha='center')
+            ax.text(i, 50, '***', color='k', size=10, ha='center')
         elif p_values[region] < 0.01:
-            ax.text(i, 75, '**', color='k', size=10, ha='center')
+            ax.text(i, 50, '**', color='k', size=10, ha='center')
         elif p_values[region] < 0.05:
-            ax.text(i, 75, '*', color='k', size=10, ha='center')
+            ax.text(i, 50, '*', color='k', size=10, ha='center')
 
     # Settings
-    ax.set(ylim=[0, 80], xlabel='', ylabel='Decoding accuracy (%)', yticks=[0, 25, 50, 75])
+    ax.set(ylim=[0, 80], xlabel='', ylabel='Lab decoding perf. (%)', yticks=[0, 75])
     sns.despine(trim=True)
-    ax.set_xticklabels(np.concatenate((ax.get_xticklabels()[:-1], ['Regions'])), rotation=45, ha='right')
+    ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
+    ax_left.spines['bottom'].set_visible(False)
 
     return p_values

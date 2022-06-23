@@ -42,9 +42,9 @@ def plot_main_figure(one=None):
                                           dim=[1, n_columns + 1], wspace=0.3),
          'panel_C': fg.place_axes_on_grid(fig, xspan=[0.1, 1], yspan=[0.55, 0.8],
                                           dim=[1, n_columns + 1], wspace=0.3),
-         'panel_D': fg.place_axes_on_grid(fig, xspan=[0.1, 0.3], yspan=[0.85, 1]),
-         'panel_E': fg.place_axes_on_grid(fig, xspan=[0.4, 0.6], yspan=[0.85, 1]),
-         'panel_F': fg.place_axes_on_grid(fig, xspan=[0.8, 1], yspan=[0.85, 1])}
+         'panel_D': fg.place_axes_on_grid(fig, xspan=[0.1, 0.25], yspan=[0.85, 1]),
+         'panel_E': fg.place_axes_on_grid(fig, xspan=[0.32, 0.55], yspan=[0.85, 1]),
+         'panel_F': fg.place_axes_on_grid(fig, xspan=[0.74, 1], yspan=[0.85, 1])}
 
     # Add subplot labels
     labels = [{'label_text':'a', 'xpos':0, 'ypos':0, 'fontsize':10, 'weight': 'bold',
@@ -55,9 +55,9 @@ def plot_main_figure(one=None):
                'ha': 'right', 'va': 'bottom'},
               {'label_text':'d', 'xpos':0, 'ypos':0.85, 'fontsize':10, 'weight': 'bold',
                'ha': 'right', 'va': 'bottom'},
-              {'label_text':'e', 'xpos':0.31, 'ypos':0.85, 'fontsize':10, 'weight': 'bold',
+              {'label_text':'e', 'xpos':0.27, 'ypos':0.85, 'fontsize':10, 'weight': 'bold',
                'ha': 'right', 'va': 'bottom'},
-              {'label_text':'f', 'xpos':0.7, 'ypos':0.85, 'fontsize':10, 'weight': 'bold',
+              {'label_text':'f', 'xpos':0.64, 'ypos':0.85, 'fontsize':10, 'weight': 'bold',
                'ha': 'right', 'va': 'bottom'}]
     fg.add_labels(fig, labels)
 

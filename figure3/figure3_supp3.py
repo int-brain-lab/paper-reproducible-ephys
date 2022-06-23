@@ -32,10 +32,10 @@ conf_mat_noqc = conf_mat_noqc.drop(['Unnamed: 0'], axis=1)
 # Set up figure
 figure_style()
 fig = plt.figure(figsize=(8, 5), dpi=200)  # full width figure is 7 inches
-ax = {'panel_A': fg.place_axes_on_grid(fig, xspan=[0.05, 0.25], yspan=[0.05, 0.4]),
+ax = {'panel_A': fg.place_axes_on_grid(fig, xspan=[0.05, 0.28], yspan=[0.05, 0.4]),
       'panel_B': fg.place_axes_on_grid(fig, xspan=[0.32, 0.62], yspan=[0.05, 0.4]),
       'panel_C': fg.place_axes_on_grid(fig, xspan=[0.7, 1], yspan=[0.05, 0.4]),
-      'panel_D': fg.place_axes_on_grid(fig, xspan=[0.05, 0.25], yspan=[0.65, 1]),
+      'panel_D': fg.place_axes_on_grid(fig, xspan=[0.05, 0.28], yspan=[0.65, 1]),
       'panel_E': fg.place_axes_on_grid(fig, xspan=[0.32, 0.62], yspan=[0.65, 1]),
       'panel_F': fg.place_axes_on_grid(fig, xspan=[0.7, 1], yspan=[0.65, 1])}
 
@@ -43,13 +43,13 @@ ax = {'panel_A': fg.place_axes_on_grid(fig, xspan=[0.05, 0.25], yspan=[0.05, 0.4
 # Add subplot labels
 labels = [{'label_text':'a', 'xpos':0, 'ypos':0, 'fontsize':10, 'weight': 'bold',
            'ha': 'left', 'va': 'bottom'},
-          {'label_text':'b', 'xpos':0.28, 'ypos':0, 'fontsize':10, 'weight': 'bold',
+          {'label_text':'b', 'xpos':0.32, 'ypos':0, 'fontsize':10, 'weight': 'bold',
            'ha': 'right', 'va': 'bottom'},
           {'label_text':'c', 'xpos':0.65, 'ypos':0, 'fontsize':10, 'weight': 'bold',
            'ha': 'right', 'va': 'bottom'},
           {'label_text':'d', 'xpos':0, 'ypos':0.6, 'fontsize':10, 'weight': 'bold',
            'ha': 'left', 'va': 'bottom'},
-          {'label_text':'e', 'xpos':0.28, 'ypos':0.6, 'fontsize':10, 'weight': 'bold',
+          {'label_text':'e', 'xpos':0.32, 'ypos':0.6, 'fontsize':10, 'weight': 'bold',
            'ha': 'right', 'va': 'bottom'},
           {'label_text':'f', 'xpos':0.65, 'ypos':0.6, 'fontsize':10, 'weight': 'bold',
            'ha': 'right', 'va': 'bottom'}]

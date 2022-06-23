@@ -172,17 +172,18 @@ def prepare_data(insertions, one, recompute=False, new_metrics=True):
 
                 # Add to dataframe
                 metrics = pd.concat((metrics, pd.DataFrame(
-                    index=[metrics.shape[0] + 1], data={'pid': pid, 'eid': eid, 'probe': probe,
-                                                        'lab': lab, 'subject': subject,
-                                                        'region': region, 'date': date,
-                                                        'median_firing_rate': np.median(neuron_fr),
-                                                        'mean_firing_rate': np.mean(neuron_fr),
-                                                        'spike_amp_mean': np.nanmean(spike_amp) * 1e6,
-                                                        'spike_amp_median': np.nanmedian(spike_amp),
-                                                        'spike_amp_90': np.percentile(spike_amp, 95),
-                                                        'rms_ap': rms_ap_region,
-                                                        'lfp_power': lfp_region,
-                                                        'neuron_yield': len(region_clusters)})))
+                    index=[metrics.shape[0] + 1], data={
+                        'pid': pid, 'eid': eid, 'probe': probe,
+                        'lab': lab, 'subject': subject,
+                        'region': region, 'date': date,
+                        'median_firing_rate': np.median(neuron_fr),
+                        'mean_firing_rate': np.mean(neuron_fr),
+                        'spike_amp_mean': np.nanmean(spike_amp) * 1e6,
+                        'spike_amp_median': np.nanmedian(spike_amp),
+                        'spike_amp_90': np.percentile(spike_amp, 95),
+                        'rms_ap': rms_ap_region,
+                        'lfp_power': lfp_region,
+                        'yield_per_channel': len(region_clusters) / len(region_chan)})))
 
 
 
