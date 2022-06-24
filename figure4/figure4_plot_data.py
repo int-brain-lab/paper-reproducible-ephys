@@ -103,7 +103,7 @@ def plot_panel_single_subject(event='move', norm='subtract', smoothing='kernel',
     propagated_error = np.sqrt(propagated_error) / idx.shape[0]
     ax.fill_between(time, fr_mean - propagated_error, fr_mean + propagated_error, color=lab_colors[lab], alpha=0.25)
 
-    ax.set_title("Single mouse, {}".format(region))
+    # ax.set_title("Single mouse, {}".format(region))
     ax.set_xlabel("Time from movement onset (s)")
     ax.set_ylabel("Baselined firing rate (sp/s)")
     ax.spines["right"].set_visible(False)
