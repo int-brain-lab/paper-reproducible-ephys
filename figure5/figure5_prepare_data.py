@@ -179,17 +179,19 @@ def prepare_data(insertions, one, figure='figure5', recompute=False, new_metrics
             fr_pre_move_tw = counts / (intervals[:, 1] - intervals[:, 0])
             data['avg_fr_pre_move_tw'] = np.nanmean(fr_pre_move_tw, axis=1)
 
+            # MT: This needs further fixing so that any neuron can be selected
             # Save the data that we need for the
-            if pid == 'ce397420-3cd2-4a55-8fd1-5e28321981f4' and figure == 'figure5':
+            #if pid == 'ce397420-3cd2-4a55-8fd1-5e28321981f4' and figure == 'figure5':
+            if pid == '36362f75-96d8-4ed4-a728-5e72284d0995' and figure == 'figure5':
                 intervals = np.c_[eventStim[rxn_idx] - 0.2, eventStim[rxn_idx]]
                 counts, cluster_ids = get_spike_counts_in_bins(spikes.times[spike_idx], spikes.clusters[spike_idx], intervals)
                 assert np.array_equal(cluster_ids, data['cluster_ids'])
                 fr_base_example = counts / (intervals[:, 1] - intervals[:, 0])
-                neuron_id = 614
+                neuron_id = 265 #614
                 clu_idx = np.where(cluster_ids == neuron_id)[0]
                 fr_example = np.c_[fr_base_example[clu_idx, :][0], fr_pre_move_tw[clu_idx, :][0]]
                 np.save(save_data_path(figure=figure).joinpath(f'figure5_example_neuron{neuron_id}_{pid}.npy'), fr_example)
-
+                
 
             # Post-move firing rate
             intervals = np.c_[eventMove - 0.05, eventMove + 0.2]

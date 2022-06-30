@@ -128,8 +128,8 @@ def plot_supp_figure():
 
 
 def plot_panel_example_neurons(ax1=None, ax2=None, save=True):
-    neuron = 614
-    pid = 'ce397420-3cd2-4a55-8fd1-5e28321981f4'  # SWC_054
+    neuron = 265 #144 #614
+    pid = '36362f75-96d8-4ed4-a728-5e72284d0995'#'31f3e083-a324-4b88-b0a4-7788ec37b191' #'ce397420-3cd2-4a55-8fd1-5e28321981f4'  # SWC_054
     side = 'right'
     feedback = 'correct'
     align_event = 'stim'
@@ -154,15 +154,19 @@ def plot_panel_example_neurons(ax1=None, ax2=None, save=True):
 
 def plot_panel_modulation_comparison(ax=None, save=True):
 
-    frs = load_example_neuron()
+    #frs = load_example_neuron()
+    #frs = load_example_neuron(id=144, pid = '31f3e083-a324-4b88-b0a4-7788ec37b191')
+    frs = load_example_neuron(id=265, pid = '36362f75-96d8-4ed4-a728-5e72284d0995')
     fr_pre_stim = frs[:, 0]
     fr_pre_stim_mean = np.mean(fr_pre_stim)
     fr_pre_stim_std = np.std(fr_pre_stim)
+    #fr_pre_stim_sem = fr_pre_stim_std/np.sqrt(np.size(fr_pre_stim))
     x1 = np.ones_like(fr_pre_stim)
 
     fr_pre_move = frs[:, 1]
     fr_pre_move_mean = np.mean(fr_pre_move)
     fr_pre_move_std = np.std(fr_pre_move)
+    #fr_pre_move_sem = fr_pre_move_std/np.sqrt(np.size(fr_pre_move))
     x2 = np.ones_like(fr_pre_move) * 4
 
     x = np.c_[x1, x2].T
@@ -174,6 +178,10 @@ def plot_panel_modulation_comparison(ax=None, save=True):
     ax.errorbar(x1[0] - 0.15, fr_pre_stim_mean, fr_pre_stim_std, marker="o", markersize=8, c=(0, 0.5, 1), ecolor=(0, 0.5, 1),
                 capsize=3)
     ax.errorbar(x2[0] + 0.15, fr_pre_move_mean, fr_pre_move_std, marker="o", markersize=8, c='g', ecolor='g', capsize=3)
+    # ax.errorbar(x1[0] - 0.15, fr_pre_stim_mean, fr_pre_stim_sem, marker="o", markersize=8, c=(0, 0.5, 1), ecolor=(0, 0.5, 1),
+    #             capsize=3)
+    #             capsize=3)
+    # ax.errorbar(x2[0] + 0.15, fr_pre_move_mean, fr_pre_move_sem, marker="o", markersize=8, c='g', ecolor='g', capsize=3)
     ax.set_ylabel('Avg. Firing Rate (Sp/s)')
     ax.set_xticks([1, 4])
     ax.set_xticklabels(['Pre-stim', 'Pre-movement'])
