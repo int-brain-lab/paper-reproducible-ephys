@@ -136,7 +136,7 @@ def plot_panel_example_neurons(ax1=None, ax2=None, save=True):
 
     ax = plot_raster_and_psth(pid, neuron, event_epoch=[-0.4, 0.6], fr_bin_size=0.06, align_event=align_event, side=side,
                               feedback=feedback, smoothing='sliding', slide_kwargs_fr={'n_win': 3, 'causal': 1},
-                              zero_line_c=(0, 0.5, 1), labelsize=16, ax=ax1)
+                              zero_line_c=(0, 0.5, 1), labelsize=16, ax=ax1, rxn_time=True)
     ax[0].set_title(f'Contrast: {side}, {feedback}, Aligned to {align_event}', loc='left')
 
     if save:
@@ -144,8 +144,8 @@ def plot_panel_example_neurons(ax1=None, ax2=None, save=True):
 
     align_event = 'move'
     ax = plot_raster_and_psth(pid, neuron, event_epoch=[-0.4, 0.6], fr_bin_size=0.06, align_event=align_event, side=side,
-                              feedback=feedback, smoothing='sliding', slide_kwargs_fr={'n_win': 2, 'causal': 1},
-                              zero_line_c='g', labelsize=16, ax=ax2)
+                              feedback=feedback, smoothing='sliding', slide_kwargs_fr={'n_win': 3, 'causal': 1},
+                              zero_line_c='g', labelsize=16, ax=ax2, rxn_time=True)
     ax[0].set_title(f'Contrast: {side}, {feedback}, Aligned to {align_event}', loc='left')
 
     if save:

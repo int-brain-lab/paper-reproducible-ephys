@@ -9,7 +9,7 @@ from one.api import ONE
 from ibllib.atlas import AllenAtlas
 from brainbox.io.one import SpikeSortingLoader
 from brainbox.task.trials import find_trial_ids
-from reproducible_ephys_processing import compute_psth
+from reproducible_ephys_processing import compute_psth,  compute_psth_rxn_time
 
 # Defaults parameters for psth computation
 default_params = {'fr_bin_size': 0.01,
@@ -26,7 +26,7 @@ default_params = {'fr_bin_size': 0.01,
 
 
 def plot_raster_and_psth(pid, neuron, contrasts=(1, 0.25, 0.125, 0.0625, 0), side='all', feedback='all',
-                         ax=None, one=None, ba=None, plot_ff=False, **kwargs):
+                         ax=None, one=None, ba=None, plot_ff=False, rxn_time=False, **kwargs):
 
     one = one or ONE()
     ba = ba or AllenAtlas()
@@ -98,11 +98,41 @@ def plot_raster_and_psth(pid, neuron, contrasts=(1, 0.25, 0.125, 0.0625, 0), sid
     # Plot the individual spikes
     for c in contrasts:
         events = eventTimes[trials['contrast'] == c]
-        for i, time in enumerate(events):
-            idx = np.bitwise_and(spikes.times[spike_idx] >= time + pre_time, spikes.times[spike_idx] <= time + post_time)
-            ax[0].vlines(spikes.times[spike_idx][idx] - time, counter + i, counter + i + 1, color='k')
-        counter += len(events)
-        contrast_count_list.append(counter)
+        
+        if rxn_time==True:
+            #Find the rxn time intervals:
+            eventTimes_Stim = trials['stimOn_times']
+            #eventTimes_Move = trials['firstMovement_times']
+            eventsStim = eventTimes_Stim[trials['contrast'] == c]
+            #eventsMove = eventTimes_Move[trials['contrast'] == c]            
+            
+            if align_event == 'move':
+                post_time_adjusted = 0.2
+                #If needed, also remove the trials that will not be included, i.e., rxn time<50 ms (MT)
+                for i, time in enumerate(events):
+                    pre_time_adjusted = - min(time - eventsStim[i], 0.2)
+                    
+                    idx = np.bitwise_and(spikes.times[spike_idx] >= time + pre_time_adjusted, spikes.times[spike_idx] <= time + post_time_adjusted)
+                    ax[0].vlines(spikes.times[spike_idx][idx] - time, counter + i, counter + i + 1, color='k')
+                counter += len(events)
+                contrast_count_list.append(counter)
+
+            else:
+                post_time_adjusted = 0.1
+                pre_time_adjusted = -0.2
+                for i, time in enumerate(events):
+                    idx = np.bitwise_and(spikes.times[spike_idx] >= time + pre_time_adjusted, spikes.times[spike_idx] <= time + post_time_adjusted)
+                    ax[0].vlines(spikes.times[spike_idx][idx] - time, counter + i, counter + i + 1, color='k')
+                counter += len(events)
+                contrast_count_list.append(counter)
+                
+        else:
+            for i, time in enumerate(events):
+                idx = np.bitwise_and(spikes.times[spike_idx] >= time + pre_time, spikes.times[spike_idx] <= time + post_time)
+                ax[0].vlines(spikes.times[spike_idx][idx] - time, counter + i, counter + i + 1, color='k')
+            counter += len(events)
+            contrast_count_list.append(counter)
+
 
     # Plot the contrast bar at the side of figure
     for i, c in enumerate(contrasts):
@@ -127,15 +157,49 @@ def plot_raster_and_psth(pid, neuron, contrasts=(1, 0.25, 0.125, 0.0625, 0), sid
 
     # Comppute the psths for firing rate for each contrast
     for c in contrasts:
-
         events = eventTimes[trials['contrast'] == c]
-        fr, fr_std, t = compute_psth(spikes['times'][spike_idx], spikes['clusters'][spike_idx], np.array([neuron]),
-                                     events, align_epoch=event_epoch, bin_size=fr_bin_size,
-                                     baseline_events=eventBase, base_epoch=base_epoch, smoothing=smoothing, norm=norm,
-                                     slide_kwargs=slide_kwargs_fr, kernel_kwargs=kernel_kwargs)
-        ax[1].plot(t, fr[0], c=str(1 - (base_grey + c * (1 - base_grey))))
-        ax[1].fill_between(t, fr[0] + fr_std[0] / np.sqrt(len(events)), fr[0] - fr_std[0] / np.sqrt(len(events)),
-                           color=str(1 - (base_grey + c * (1 - base_grey))), alpha=0.3)
+        if rxn_time==True:
+            #Find the rxn time intervals:
+            eventTimes_Stim = trials['stimOn_times']
+            eventTimes_Move = trials['firstMovement_times']
+            eventsStim = eventTimes_Stim[trials['contrast'] == c]
+            eventsMove = eventTimes_Move[trials['contrast'] == c]
+            
+                
+            # fr, fr_std, t = compute_psth(spikes['times'][spike_idx], spikes['clusters'][spike_idx], np.array([neuron]),
+            #                              events, align_epoch=event_epoch, bin_size=fr_bin_size,
+            #                              baseline_events=eventBase, base_epoch=base_epoch, smoothing=smoothing, norm=norm,
+            #                              slide_kwargs=slide_kwargs_fr, kernel_kwargs=kernel_kwargs)
+            
+            if align_event == 'move':
+                fr, fr_std, t = compute_psth_rxn_time(spikes['times'][spike_idx], spikes['clusters'][spike_idx], np.array([neuron]),
+                                                      events, eventsStim, eventsMove,
+                                                      align_epoch=[-0.2, 0.2], bin_size=fr_bin_size,
+                                                      baseline_events=eventBase, base_epoch=base_epoch, smoothing=smoothing, norm=norm,
+                                                      slide_kwargs=slide_kwargs_fr, kernel_kwargs=kernel_kwargs)
+            else:
+                fr, fr_std, t = compute_psth(spikes['times'][spike_idx], spikes['clusters'][spike_idx], np.array([neuron]),
+                                             events, align_epoch=[-0.2, 0.05], bin_size=fr_bin_size,
+                                             baseline_events=eventBase, base_epoch=base_epoch, smoothing=smoothing, norm=norm,
+                                             slide_kwargs=slide_kwargs_fr, kernel_kwargs=kernel_kwargs)
+    
+                
+            ax[1].plot(t, fr[0], c=str(1 - (base_grey + c * (1 - base_grey))))
+            ax[1].fill_between(t, fr[0] + fr_std[0] / np.sqrt(len(events)), fr[0] - fr_std[0] / np.sqrt(len(events)),
+                               color=str(1 - (base_grey + c * (1 - base_grey))), alpha=0.3)
+            #ax[1].set_xlim(left=-0.2, right=0.25) #Adjust later (MT)
+            ax[1].set_ylim(-0.5, 24) #Adjust later (MT)
+
+        else:
+            fr, fr_std, t = compute_psth(spikes['times'][spike_idx], spikes['clusters'][spike_idx], np.array([neuron]),
+                                         events, align_epoch=event_epoch, bin_size=fr_bin_size,
+                                         baseline_events=eventBase, base_epoch=base_epoch, smoothing=smoothing, norm=norm,
+                                         slide_kwargs=slide_kwargs_fr, kernel_kwargs=kernel_kwargs)
+            ax[1].plot(t, fr[0], c=str(1 - (base_grey + c * (1 - base_grey))))
+            ax[1].fill_between(t, fr[0] + fr_std[0] / np.sqrt(len(events)), fr[0] - fr_std[0] / np.sqrt(len(events)),
+                               color=str(1 - (base_grey + c * (1 - base_grey))), alpha=0.3)
+            #ax[1].set_xlim(left=pre_time, right=post_time)
+
 
     ax[1].axvline(0, color=zero_line_c, ls='--')
     ax[1].spines['right'].set_visible(False)
