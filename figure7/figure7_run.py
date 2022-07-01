@@ -10,11 +10,11 @@ from one.api import ONE
 
 def run_figure7(one, recompute=False, new_metrics=True):
 
-    insertions = get_insertions(level=2, one=one, freeze=None, new_metrics=new_metrics)
+    insertions = get_insertions(level=2, recompute=recompute, one=one, freeze=None, new_metrics=new_metrics)
     prepare_data(insertions, one=one, **default_params, recompute=recompute, new_metrics=new_metrics)
     plot_supp_figure()
 
 
 if __name__ == '__main__':
     one = ONE()
-    run_figure7(one)
+    run_figure7(one, recompute=True)
