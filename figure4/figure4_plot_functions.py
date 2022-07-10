@@ -123,7 +123,7 @@ def plot_raster_and_psth(pid, neuron, contrasts=(1, 0.25, 0.125, 0.0625, 0), sid
     ax[0].spines['left'].set_visible(False)
     ax[0].spines['bottom'].set_visible(False)
     ax[0].tick_params(left=False, right=False, labelbottom=False, bottom=False)  # , labelsize=labelsize)
-    # ax[0].set_title("Contrast", loc='left')  # , size=labelsize)
+    ax[0].set_title("Contrast", loc='left')  # , size=labelsize)
 
     # Comppute the psths for firing rate for each contrast
     for c in contrasts:
