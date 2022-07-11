@@ -125,7 +125,7 @@ def distribution_dist(data, labs, mice):
         prev_point = 0
         lab_points = data[labs == lab]
         for i, (p, c) in enumerate(zip(sorted_points, sorted_counts)):
-            dist_sum += (p - prev_point) * np.abs(i / n - lab_count / lab_total)
+            dist_sum += (p - prev_point) * np.abs(overall_count / n - lab_count / lab_total)
             prev_point = p
             lab_count += np.sum(lab_points == p)
             overall_count += c
@@ -149,6 +149,7 @@ def helper(n, points1, points2):
     for p in points2:
         p2_array[min(int((p - low) / (high - low) * n), n-1):] += 1
     return np.sum(np.abs(p1_array / p1_array[-1] - p2_array / p2_array[-1])) / n * (high - low)
+
 
 if __name__ == '__main__':
     rng = np.random.RandomState(2)
