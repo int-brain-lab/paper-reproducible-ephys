@@ -112,11 +112,49 @@ def permut_dist(data, labs, mice):
     return np.sum(np.abs(lab_means - np.mean(lab_means)))
 
 
+def distribution_dist(data, labs, mice):
+    # Don't just consider means, but take entire distribution into account
+    # we compare the overall dist with the individual labs
+    sorted_points, sorted_counts = np.unique(data, return_counts=True)
+    n = data.shape[0]
+    dist_sum = 0
+    for lab in np.unique(labs):
+        lab_total = np.sum(labs == lab)
+        lab_count = 0
+        overall_count = 0
+        prev_point = 0
+        lab_points = data[labs == lab]
+        for i, (p, c) in enumerate(zip(sorted_points, sorted_counts)):
+            dist_sum += (p - prev_point) * np.abs(i / n - lab_count / lab_total)
+            prev_point = p
+            lab_count += np.sum(lab_points == p)
+            overall_count += c
+    return dist_sum
+
+
+def distribution_dist_test(data, labs, mice):
+    dist_sum = 0
+    for lab in np.unique(labs):
+        dist_sum += helper(100, data, data[labs == lab])
+    return dist_sum
+
+
+def helper(n, points1, points2):
+    low = min(points1.min(), points2.min())
+    high = max(points1.max(), points2.max())
+    p1_array = np.zeros(n)
+    p2_array = np.zeros(n)
+    for p in points1:
+        p1_array[min(int((p - low) / (high - low) * n), n-1):] += 1
+    for p in points2:
+        p2_array[min(int((p - low) / (high - low) * n), n-1):] += 1
+    return np.sum(np.abs(p1_array / p1_array[-1] - p2_array / p2_array[-1])) / n * (high - low)
+
 if __name__ == '__main__':
     rng = np.random.RandomState(2)
     data = rng.normal(0, 1, 25)
     t = time.time()
     p = permut_test(data, metric=example_metric, labels1=np.tile(np.arange(5), 5), labels2=np.ones(25, dtype=np.int),
-                    n_permut=1000, plot=True)
+                    n_permut=1000, plot=False)
     print(time.time() - t)
     print(p)

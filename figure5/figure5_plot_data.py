@@ -230,6 +230,17 @@ def plot_panel_task_modulated_neurons(specific_tests=None, ax=None, save=True):
             plt.savefig(fig_path.joinpath(test))
 
 
+def plot_lab_means(data, labs, subjects):
+    # takes input like the permutation test and plots it
+    counter = 0
+    for l in np.unique(labs):
+        points = data[labs == l]
+        plt.plot(np.arange(counter, counter + len(points)), points, 'o', color=lab_colors[l])
+        plt.plot([counter, counter + len(points) - 1], [np.mean(points), np.mean(points)])
+        counter += len(points)
+    plt.plot([0, counter], [np.mean(data), np.mean(data)])
+
+
 def plot_panel_permutation(ax=None):
 
     # Figure 5d permutation tests
@@ -249,14 +260,19 @@ def plot_panel_permutation(ax=None):
             subjects = vals.index.get_level_values('subject')
             data = vals.values
 
-            lab_names, this_n_labs = np.unique(labs, return_counts=True)
+            # lab_names, this_n_labs = np.unique(labs, return_counts=True)  # what is this for?
 
+            if test == 'post_reward' and reg == "CA1":
+                return data, permut_dist, labs, subjects
+            else:
+                continue
             p = permut_test(data, metric=permut_dist, labels1=labs,
                             labels2=subjects)
             results = pd.concat((results, pd.DataFrame(index=[results.shape[0] + 1],
                                                       data={'test': test, 'region': reg, 'p_value_permut': p})))
 
     shape = (len(tests.keys()), len(BRAIN_REGIONS))
+    # return results
     _, corrected_p_vals, _, _ = multipletests(results.p_value_permut.values, 0.05, method='fdr_bh')
     corrected_p_vals = corrected_p_vals.reshape(shape)
     # corrected_p_vals = results.p_value_permut.values.reshape(shape)
@@ -274,7 +290,7 @@ def plot_panel_permutation(ax=None):
 
     return results
 
-
+quit()
 if __name__ == '__main__':
     plot_main_figure()
     plot_supp_figure()

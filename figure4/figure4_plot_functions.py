@@ -10,12 +10,13 @@ from ibllib.atlas import AllenAtlas
 from brainbox.io.one import SpikeSortingLoader
 from brainbox.task.trials import find_trial_ids
 from reproducible_ephys_processing import compute_psth,  compute_psth_rxn_time
+import seaborn as sns
 
 # Defaults parameters for psth computation
 default_params = {'fr_bin_size': 0.01,
                   'ff_bin_size': 0.1,
                   'align_event': 'move',
-                  'event_epoch': [-0.4, 0.2],
+                  'event_epoch': [-0.4, 0.22],
                   'base_event': None,
                   'base_epoch': None,
                   'norm': None,
@@ -98,25 +99,25 @@ def plot_raster_and_psth(pid, neuron, contrasts=(1, 0.25, 0.125, 0.0625, 0), sid
     # Plot the individual spikes
     for c in contrasts:
         events = eventTimes[trials['contrast'] == c]
-        
+
         if rxn_time==True:
             #Find the rxn time intervals:
             eventTimes_Stim = trials['stimOn_times']
             #eventTimes_Move = trials['firstMovement_times']
             eventsStim = eventTimes_Stim[trials['contrast'] == c]
-            #eventsMove = eventTimes_Move[trials['contrast'] == c]            
-            
+            #eventsMove = eventTimes_Move[trials['contrast'] == c]
+
             if align_event == 'move':
                 post_time_adjusted = 0.2
                 #If needed, also remove the trials that will not be included, i.e., rxn time<50 ms (MT)
                 for i, time in enumerate(events):
                     pre_time_adjusted = - min(time - eventsStim[i], 0.2)
-                    
+
                     idx = np.bitwise_and(spikes.times[spike_idx] >= time + pre_time_adjusted, spikes.times[spike_idx] <= time + post_time_adjusted)
                     ax[0].vlines(spikes.times[spike_idx][idx] - time, counter + i, counter + i + 1, color='k')
                 counter += len(events)
                 contrast_count_list.append(counter)
-                
+
                 ax[0].set_xlim(-0.2 - fr_bin_size / 2, post_time_adjusted + fr_bin_size / 2)
 
             else:
@@ -127,16 +128,16 @@ def plot_raster_and_psth(pid, neuron, contrasts=(1, 0.25, 0.125, 0.0625, 0), sid
                     ax[0].vlines(spikes.times[spike_idx][idx] - time, counter + i, counter + i + 1, color='k')
                 counter += len(events)
                 contrast_count_list.append(counter)
-                
+
                 ax[0].set_xlim(pre_time_adjusted - fr_bin_size / 2, post_time_adjusted + fr_bin_size / 2)
-                
+
         else:
             for i, time in enumerate(events):
                 idx = np.bitwise_and(spikes.times[spike_idx] >= time + pre_time, spikes.times[spike_idx] <= time + post_time)
                 ax[0].vlines(spikes.times[spike_idx][idx] - time, counter + i, counter + i + 1, color='k')
             counter += len(events)
             contrast_count_list.append(counter)
-            
+
             ax[0].set_xlim(pre_time - fr_bin_size / 2, post_time + fr_bin_size / 2)
 
 
@@ -163,7 +164,7 @@ def plot_raster_and_psth(pid, neuron, contrasts=(1, 0.25, 0.125, 0.0625, 0), sid
     ax[0].spines['left'].set_visible(False)
     ax[0].spines['bottom'].set_visible(False)
     ax[0].tick_params(left=False, right=False, labelbottom=False, bottom=False)  # , labelsize=labelsize)
-    ax[0].set_title("Contrast", loc='left')  # , size=labelsize)
+    # ax[0].set_title("Contrast", loc='left')  # , size=labelsize)
 
     # Comppute the psths for firing rate for each contrast
     for c in contrasts:
@@ -174,13 +175,13 @@ def plot_raster_and_psth(pid, neuron, contrasts=(1, 0.25, 0.125, 0.0625, 0), sid
             eventTimes_Move = trials['firstMovement_times']
             eventsStim = eventTimes_Stim[trials['contrast'] == c]
             eventsMove = eventTimes_Move[trials['contrast'] == c]
-            
-                
+
+
             # fr, fr_std, t = compute_psth(spikes['times'][spike_idx], spikes['clusters'][spike_idx], np.array([neuron]),
             #                              events, align_epoch=event_epoch, bin_size=fr_bin_size,
             #                              baseline_events=eventBase, base_epoch=base_epoch, smoothing=smoothing, norm=norm,
             #                              slide_kwargs=slide_kwargs_fr, kernel_kwargs=kernel_kwargs)
-            
+
             if align_event == 'move':
                 fr, fr_std, t = compute_psth_rxn_time(spikes['times'][spike_idx], spikes['clusters'][spike_idx], np.array([neuron]),
                                                       events, eventsStim, eventsMove,
@@ -194,7 +195,7 @@ def plot_raster_and_psth(pid, neuron, contrasts=(1, 0.25, 0.125, 0.0625, 0), sid
                                              baseline_events=eventBase, base_epoch=base_epoch, smoothing=smoothing, norm=norm,
                                              slide_kwargs=slide_kwargs_fr, kernel_kwargs=kernel_kwargs)
                 #ax[1].set_xlim(left= -0.2 - fr_bin_size / 2, right= post_time_adjusted + fr_bin_size / 2) #Adjust later (MT)
-                
+
             ax[1].plot(t, fr[0], c=str(1 - (base_grey + c * (1 - base_grey))))
             ax[1].fill_between(t, fr[0] + fr_std[0] / np.sqrt(len(events)), fr[0] - fr_std[0] / np.sqrt(len(events)),
                                color=str(1 - (base_grey + c * (1 - base_grey))), alpha=0.3)
@@ -211,12 +212,12 @@ def plot_raster_and_psth(pid, neuron, contrasts=(1, 0.25, 0.125, 0.0625, 0), sid
                                color=str(1 - (base_grey + c * (1 - base_grey))), alpha=0.3)
             ax[1].set_xlim(left=pre_time, right=post_time)
 
-
     ax[1].axvline(0, color=zero_line_c, ls='--')
     ax[1].spines['right'].set_visible(False)
     ax[1].spines['top'].set_visible(False)
     ax[1].set_ylabel("Firing rate (sp/s)")  # , size=labelsize + 3)
-    #ax[1].set_xlim(left=pre_time, right=post_time)
+    ax[1].set_xlim(left=pre_time, right=post_time)
+    sns.despine(trim=True, ax=ax[1])
     # ax[1].tick_params(labelsize=labelsize)
 
     if plot_ff:
