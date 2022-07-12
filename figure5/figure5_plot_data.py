@@ -129,24 +129,24 @@ def plot_supp_figure():
 
 
 def plot_panel_example_neurons(ax1=None, ax2=None, save=True):
-    neuron = 265 #144 #614
-    pid = '36362f75-96d8-4ed4-a728-5e72284d0995'#'31f3e083-a324-4b88-b0a4-7788ec37b191' #'ce397420-3cd2-4a55-8fd1-5e28321981f4'  # SWC_054
+    neuron = 241 #323 #265 #144 #614
+    pid = 'f26a6ab1-7e37-4f8d-bb50-295c056e1062' #'a12c8ae8-d5ad-4d15-b805-436ad23e5ad1' #'36362f75-96d8-4ed4-a728-5e72284d0995'#'31f3e083-a324-4b88-b0a4-7788ec37b191' #'ce397420-3cd2-4a55-8fd1-5e28321981f4'  # SWC_054
     side = 'right'
     feedback = 'correct'
     align_event = 'stim'
 
-    ax = plot_raster_and_psth(pid, neuron, event_epoch=[-0.4, 0.6], fr_bin_size=0.06, align_event=align_event, side=side,
+    ax = plot_raster_and_psth(pid, neuron, event_epoch=[-0.2, 0.2], fr_bin_size=0.06, align_event=align_event, side=side,
                               feedback=feedback, smoothing='sliding', slide_kwargs_fr={'n_win': 3, 'causal': 1},
-                              zero_line_c=(0, 0.5, 1), labelsize=16, ax=ax1, rxn_time=True)
+                              zero_line_c=(0, 0.5, 1), labelsize=16, ax=ax1, rxn_time=False) #rxn_time=True) #prev: event_epoch=[-0.4, 0.6]
     ax[0].set_title(f'Contrast: {side}, {feedback}, Aligned to {align_event}', loc='left')
 
     if save:
         plt.savefig(fig_path.joinpath(f'figure5_{pid}_neuron{neuron}_align_{align_event}.png'))
 
     align_event = 'move'
-    ax = plot_raster_and_psth(pid, neuron, event_epoch=[-0.4, 0.6], fr_bin_size=0.06, align_event=align_event, side=side,
+    ax = plot_raster_and_psth(pid, neuron, event_epoch=[-0.2, 0.2], fr_bin_size=0.06, align_event=align_event, side=side,
                               feedback=feedback, smoothing='sliding', slide_kwargs_fr={'n_win': 3, 'causal': 1},
-                              zero_line_c='g', labelsize=16, ax=ax2, rxn_time=True)
+                              zero_line_c='g', labelsize=16, ax=ax2, rxn_time=False) #rxn_time=True)
     ax[0].set_title(f'Contrast: {side}, {feedback}, Aligned to {align_event}', loc='left')
 
     if save:
