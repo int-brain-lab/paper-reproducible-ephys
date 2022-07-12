@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 from reproducible_ephys_functions import BRAIN_REGIONS, labs, filter_recordings, save_figure_path, figure_style, save_data_path
-from permutation_test import permut_test, permut_dist
+from permutation_test import permut_test, permut_dist, distribution_dist, distribution_dist_test
 from figure5.figure5_load_data import load_dataframe, load_example_neuron
 from figure4.figure4_plot_functions import plot_raster_and_psth
 import numpy as np
@@ -8,6 +8,7 @@ import pandas as pd
 import figrid as fg
 import seaborn as sns
 from statsmodels.stats.multitest import multipletests
+import time
 
 _, _, lab_colors = labs()
 fig_path = save_figure_path(figure='figure5')
@@ -262,16 +263,16 @@ def plot_panel_permutation(ax=None):
 
             # lab_names, this_n_labs = np.unique(labs, return_counts=True)  # what is this for?
 
-            if test == 'post_reward' and reg == "CA1":
-                return data, permut_dist, labs, subjects
-            else:
-                continue
-            p = permut_test(data, metric=permut_dist, labels1=labs,
+            a = time.time()
+            p = permut_test(data, metric=distribution_dist_test, labels1=labs,
                             labels2=subjects)
+            print(time.time() - a)
             results = pd.concat((results, pd.DataFrame(index=[results.shape[0] + 1],
                                                       data={'test': test, 'region': reg, 'p_value_permut': p})))
 
     shape = (len(tests.keys()), len(BRAIN_REGIONS))
+    print(results.p_value_permut.values)
+    return
     # return results
     _, corrected_p_vals, _, _ = multipletests(results.p_value_permut.values, 0.05, method='fdr_bh')
     corrected_p_vals = corrected_p_vals.reshape(shape)
@@ -290,7 +291,7 @@ def plot_panel_permutation(ax=None):
 
     return results
 
-quit()
+
 if __name__ == '__main__':
     plot_main_figure()
     plot_supp_figure()
