@@ -217,7 +217,7 @@ def plot_raster_and_psth(pid, neuron, contrasts=(1, 0.25, 0.125, 0.0625, 0), sid
     ax[1].spines['top'].set_visible(False)
     ax[1].set_ylabel("Firing rate (sp/s)")  # , size=labelsize + 3)
     ax[1].set_xlim(left=pre_time, right=post_time)
-    sns.despine(trim=True, ax=ax[1])
+    #sns.despine(trim=True, ax=ax[1])
     # ax[1].tick_params(labelsize=labelsize)
 
     if plot_ff:

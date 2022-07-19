@@ -44,9 +44,9 @@ def plot_main_figure():
     #                                          wspace=0.3),
     #       'panel_D_4': fg.place_axes_on_grid(fig, xspan=[0.70125, 0.9], yspan=[0.38, 0.65],
     #                                          wspace=0.3)}
-    ax = {'panel_A_1': fg.place_axes_on_grid(fig, xspan=[0.08, 0.328], yspan=[0.045, 0.13],
+    ax = {'panel_A_1': fg.place_axes_on_grid(fig, xspan=[0.08, 0.328], yspan=[0.045, 0.125],
                                              wspace=0.3),
-          'panel_A_2': fg.place_axes_on_grid(fig, xspan=[0.08, 0.328], yspan=[0.13, 0.27],
+          'panel_A_2': fg.place_axes_on_grid(fig, xspan=[0.08, 0.328], yspan=[0.135, 0.27],
                                              wspace=0.3),
           'panel_B': fg.place_axes_on_grid(fig, xspan=[0.428, 0.64], yspan=[0.045, 0.27],
                                            wspace=0.3),
@@ -337,7 +337,7 @@ def plot_panel_permutation(ax=None):
 
     shape = (len(tests.keys()), len(BRAIN_REGIONS))
     print(results.p_value_permut.values)
-    return
+    #return
     # return results
     _, corrected_p_vals, _, _ = multipletests(results.p_value_permut.values, 0.05, method='fdr_bh')
     corrected_p_vals = corrected_p_vals.reshape(shape)
