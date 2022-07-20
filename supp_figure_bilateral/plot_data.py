@@ -7,7 +7,8 @@ By: Guido Meijer
 
 import figrid as fg
 from supp_figure_bilateral.fig_bilateral_plot_functions import (panel_probe_lfp, panel_probe_neurons,
-                                                                panel_boxplot, panel_summary)
+                                                                panel_boxplot, panel_summary,
+                                                                panel_distribution)
 import matplotlib.pyplot as plt
 from reproducible_ephys_functions import figure_style, filter_recordings, save_figure_path, query
 from one.api import ONE
@@ -58,11 +59,19 @@ def plot_main_figure(one=None):
     # Call functions to plot panels
     panel_probe_lfp(fig, ax['panel_A'], boundary_align=BOUNDARY)
     panel_probe_neurons(fig, ax['panel_B'], boundary_align=BOUNDARY)
-    panel_boxplot(ax['panel_C'], example_region='DG', example_metric='lfp_power', yticks=[0, 5, 10, 15])
-    panel_boxplot(ax['panel_D'], example_region='PPC', example_metric='median_firing_rate',
-                  ylabel='Firing rate diff. in PPC (spks/s)', yticks=[0, 5])
-    panel_boxplot(ax['panel_E'], example_region='PPC', example_metric='spike_amp_median',
-                  ylabel='Spike amp. diff. in PPC (uV)', yticks=[0, 0.0003])
+    panel_distribution(ax['panel_C'], example_region='CA1', example_metric='lfp_power',
+                       ylabel='LFP power diff. in CA1 (db)')
+    panel_distribution(ax['panel_D'], example_region='PPC', example_metric='median_firing_rate',
+                       ylabel='Firing rate diff. in PPC (spks/s)', yticks=[0, 5, 10])
+    panel_distribution(ax['panel_E'], example_region='PPC', example_metric='spike_amp_median',
+                       ylabel='Spike amp. diff. in PPC (uV)', yticks=[0, 0.0003])
+    #panel_distribution(ax['panel_E'], example_region='PPC', example_metric='rms_ap',
+    #                   ylabel='Spike amp. diff. in PPC (uV)')
+    #panel_boxplot(ax['panel_C'], example_region='DG', example_metric='lfp_power', yticks=[0, 5, 10, 15])
+    #panel_boxplot(ax['panel_D'], example_region='PPC', example_metric='median_firing_rate',
+    #              ylabel='Firing rate diff. in PPC (spks/s)', yticks=[0, 5])
+    #panel_boxplot(ax['panel_E'], example_region='PPC', example_metric='spike_amp_median',
+    #              ylabel='Spike amp. diff. in PPC (uV)', yticks=[0, 0.0003])
     panel_summary(ax['panel_F'])
 
 
@@ -70,8 +79,8 @@ def plot_main_figure(one=None):
     # Save figure
     save_path = save_figure_path(figure='supp_fig_bilateral')
     #print(f'Saving figures to {save_path}')
-    #plt.savefig(save_path.joinpath('supp_figure_bilateral.png'))
-    #plt.savefig(save_path.joinpath('supp_figure_bilateral.pdf'))
+    plt.savefig(save_path.joinpath('supp_figure_bilateral.png'))
+    plt.savefig(save_path.joinpath('supp_figure_bilateral.pdf'))
 
 
 

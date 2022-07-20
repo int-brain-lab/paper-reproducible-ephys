@@ -140,9 +140,9 @@ def panel_probe_lfp(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-200
     plt.figtext(0.495, 0.715, '(Z)', va="center", ha="center", size=7, color=lab_colors['CSHL (Z)'])
     plt.figtext(0.56, 0.715, 'NYU', va="center", ha="center", size=7, color=lab_colors['NYU'])
     plt.figtext(0.64, 0.715, 'Princeton', va="center", ha="center", size=7, color=lab_colors['Princeton'])
-    plt.figtext(0.715, 0.715, 'SWC', va="center", ha="center", size=7, color=lab_colors['SWC'])
-    plt.figtext(0.8, 0.715, 'UCL', va="center", ha="center", size=7, color=lab_colors['UCL'])
-    plt.figtext(0.86, 0.715, 'UCLA', va="center", ha="center", size=7, color=lab_colors['UCLA'])
+    plt.figtext(0.71, 0.715, 'SWC', va="center", ha="center", size=7, color=lab_colors['SWC'])
+    plt.figtext(0.785, 0.715, 'UCL', va="center", ha="center", size=7, color=lab_colors['UCL'])
+    plt.figtext(0.85, 0.715, 'UCLA', va="center", ha="center", size=7, color=lab_colors['UCLA'])
 
     # Add colorbar
     axin = inset_axes(ax[-1], width="50%", height="90%", loc='lower right', borderpad=0,
@@ -273,7 +273,7 @@ def panel_example(ax, n_rec_per_lab=0, n_rec_per_region=3,
 
     df_ins = load_dataframe(df_name='ins')
     df_filt = filter_recordings(df_ins, min_rec_lab=n_rec_per_lab, min_lab_region=n_rec_per_region,
-                                min_neuron_region=2)
+                                min_neuron_region=2, recompute=False)
     df_filt['lab_number'] = df_filt['lab'].map(lab_number_map)
     df_filt['yield_per_channel'] = df_filt['neuron_yield'] / df_filt['n_channels']
     df_filt.loc[df_filt['lfp_power'] < -100000, 'lfp_power'] = np.nan
@@ -285,7 +285,7 @@ def panel_example(ax, n_rec_per_lab=0, n_rec_per_region=3,
         example_metric: data.loc[data['region'] == example_region, example_metric].values})
     data_example = data_example[~data_example[example_metric].isnull()]
 
-    data_example = data_example.sort_values('lab_number')
+    data_example = data_example.sort_values('institute')
     cmap = []
     for i, inst in enumerate(data_example['institute'].unique()):
         cmap.append(lab_colors[inst])
@@ -321,7 +321,7 @@ def panel_permutation(ax, metrics, regions, labels, n_permut=10000, n_rec_per_la
 
     df_ins = load_dataframe(df_name='ins')
     df_filt = filter_recordings(df_ins, min_lab_region=n_rec_per_region, min_rec_lab=n_rec_per_lab,
-                                min_neuron_region=2)
+                                min_neuron_region=2, recompute=False)
     data = df_filt[df_filt['permute_include'] == 1]
     data['yield_per_channel'] = data['neuron_yield'] / data['n_channels']
     data.loc[data['lfp_power'] < -100000, 'lfp_power'] = np.nan

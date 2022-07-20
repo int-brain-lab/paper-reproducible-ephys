@@ -5,7 +5,8 @@ from figure3.figure3_functions import get_brain_boundaries, plot_probe
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from ibllib.atlas.regions import BrainRegions
 from scipy.stats import mannwhitneyu, iqr
-from supp_figure_bilateral.load_data import load_dataframe
+from supp_figure_bilateral.load_data import load_dataframe as load_bilateral_data
+from figure3.figure3_load_data import load_dataframe as load_all_data
 import seaborn as sns
 
 br = BrainRegions()
@@ -16,7 +17,7 @@ lab_number_map, institution_map, lab_colors = labs()
 def panel_probe_lfp(fig, ax, boundary_align='DG-TH', ylim=[-2000, 2000],
                     normalize=False, clim=[-190, -150]):
 
-    df_chns = load_dataframe(df_name='chns')
+    df_chns = load_bilateral_data(df_name='chns')
     df_chns['institute'] = df_chns['lab'].map(institution_map)
     df_chns['lab_number'] = df_chns['lab'].map(lab_number_map)
     df_filt = df_chns.copy()
@@ -69,8 +70,8 @@ def panel_probe_lfp(fig, ax, boundary_align='DG-TH', ylim=[-2000, 2000],
 
 def panel_probe_neurons(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-2000, 2000]):
 
-    df_chns = load_dataframe(df_name='chns')
-    df_clust = load_dataframe(df_name='clust')
+    df_chns = load_bilateral_data(df_name='chns')
+    df_clust = load_bilateral_data(df_name='clust')
 
     df_chns['institute'] = df_chns['lab'].map(institution_map)
     df_chns['lab_number'] = df_chns['lab'].map(lab_number_map)
@@ -79,6 +80,9 @@ def panel_probe_neurons(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[
     df_filt = df_filt.drop_duplicates(subset=['subject', 'pid']).reset_index()
     df_filt['recording'] = [i[-1] for i in df_filt['probe']]
     df_filt['recording'] = df_filt['recording'].map({'0': 'L', '1': 'R'})
+
+    df_bilateral_ins = load_bilateral_data(df_name='ins')
+    df_select = filter_recordings(df_bilateral_ins, min_lab_region=0, min_rec_lab=0, min_neuron_region=2)
 
     for iR, data in df_filt.iterrows():
         df_ch = df_chns[df_chns['pid'] == data['pid']]
@@ -123,7 +127,7 @@ def panel_probe_neurons(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[
         region_labels[region_labels[:, 1] == 'VISa', 1] = 'PPC'
         region_colours = region_info.rgb[boundaries[1:]]
         reg_idx = np.where(np.isin(region_labels[:, 1], BRAIN_REGIONS))[0]
-#
+
         for i, (reg, col, lab) in enumerate(zip(regions, region_colours, region_labels)):
             height = np.abs(reg[1] - reg[0])
             if np.isin(i, reg_idx):
@@ -182,7 +186,7 @@ def panel_boxplot(ax, example_region='CA1', example_metric='lfp_power',
                   ylabel='LFP power diff. in CA1 (db)',
                   ylim=None, yticks=None, despine=True):
 
-    df_ins = load_dataframe(df_name='ins')
+    df_ins = load_bilateral_data(df_name='ins')
     df_slice = df_ins[(df_ins['region'] == example_region)]
 
     # Calculate within animal variability
@@ -218,9 +222,52 @@ def panel_boxplot(ax, example_region='CA1', example_metric='lfp_power',
         ax.set(yticks=yticks)
     sns.despine(trim=True)
 
+
+def panel_distribution(ax, example_region='CA1', example_metric='lfp_power',
+                       ylabel='LFP power diff. in CA1 (db)', yticks=None):
+
+    # Load in bilateral data
+    df_bilateral_ins = load_bilateral_data(df_name='ins')
+    df_bl_slice = df_bilateral_ins[(df_bilateral_ins['region'] == example_region)]
+
+    # Load in all data
+    df_all_ins = load_all_data(df_name='ins')
+    df_filt = filter_recordings(df_all_ins, min_lab_region=0, min_rec_lab=0, min_neuron_region=2)
+    df_all_slice = df_filt[(df_filt['region'] == example_region)]
+
+    # Calculate within animal variability
+    within_var = np.empty(np.unique(df_bl_slice['subject']).shape[0])
+    for i, subject in enumerate(np.unique(df_bl_slice['subject'])):
+        within_var[i] = np.abs(df_bl_slice[(df_bl_slice['subject'] == subject)
+                                        & (df_bl_slice['probe'] == 'probe00')][example_metric].values[0]
+                               - df_bl_slice[(df_bl_slice['subject'] == subject)
+                                          & (df_bl_slice['probe'] == 'probe01')][example_metric].values[0])
+    within_var = within_var[~np.isnan(within_var)]
+
+    # Calculate across animal variability
+    across_var = []
+    for i, subject in enumerate(np.unique(df_all_slice['subject'])):
+        across_var.append(np.abs(df_all_slice[df_all_slice['subject'] == subject][example_metric].values[0]
+                          - df_bl_slice[df_bl_slice['subject'] != subject][example_metric].values))
+    across_var = np.concatenate(across_var)
+    across_var = across_var[~np.isnan(across_var)]
+
+    # Plot
+    ax.violinplot(across_var, showextrema=False)
+    ax.plot(np.ones(within_var.shape[0]), within_var, '_', color='k', markersize=10)
+    #ax.spines['bottom'].set_visible(False)
+    ax.set(ylabel=ylabel, xticks=[1])
+    if yticks is not None:
+        ax.set(yticks=yticks)
+    ax.tick_params(bottom=False, labelbottom=False)
+    sns.despine(trim=True)
+
+    #ax.spines['bottom'].set_visible(False)
+
+
 def panel_statistics(ax):
 
-    df_ins = load_dataframe(df_name='ins')
+    df_ins = load_bilateral_data(df_name='ins')
     regions = ['PPC', 'CA1', 'DG', 'PO', 'LP']
 
     # Get p-values
@@ -279,7 +326,7 @@ def panel_statistics(ax):
 
 def panel_summary(ax):
 
-    df_ins = load_dataframe(df_name='ins')
+    df_ins = load_bilateral_data(df_name='ins')
     regions = ['PPC', 'CA1', 'DG']
 
     # Get p-values

@@ -26,7 +26,7 @@ ba = AllenAtlas()
 LFP_BAND = [20, 80]
 
 
-def prepare_data(insertions, one, recompute=False, new_metrics=True):
+def prepare_data(insertions, one, recompute=False, new_metrics=False):
 
     if not recompute:
         data_clust = load_dataframe(df_name='clust', exists_only=True)
@@ -47,11 +47,8 @@ def prepare_data(insertions, one, recompute=False, new_metrics=True):
     metrics = pd.DataFrame()
 
     for iIns, ins in enumerate(insertions):
-
-        print(f'processing {iIns + 1}/{len(insertions)}')
-        data_clust = {}
-        data_chns = {}
-
+        print(f'Processing recording {iIns + 1} of {len(insertions)}')
+        data_clust, data_chns = {}, {}
         eid = ins['session']['id']
         lab = ins['session']['lab']
         subject = ins['session']['subject']
@@ -113,6 +110,7 @@ def prepare_data(insertions, one, recompute=False, new_metrics=True):
         except Exception as err:
             print(err)
             print(f'eid: {eid}\n')
+            continue
         freqs = ((lfp['freqs'] > LFP_BAND[0])
                  & (lfp['freqs'] < LFP_BAND[1]))
         power = lfp['power'][:, channels['rawInd']]
@@ -139,56 +137,56 @@ def prepare_data(insertions, one, recompute=False, new_metrics=True):
         all_df_clust.append(df_clust)
         all_df_chns.append(df_chns)
 
-        # Data for insertion dataframe
-        rms_ap = one.load_object(eid, 'ephysTimeRmsAP', collection=f'raw_ephys_data/{probe}',
-                                 attribute=['rms'])
+        try:
+            # Data for insertion dataframe
+            rms_ap = one.load_object(eid, 'ephysTimeRmsAP', collection=f'raw_ephys_data/{probe}',
+                                     attribute=['rms'])
+        except Exception as err:
+            print(err)
+            print(f'eid: {eid}\n')
         rms_ap_data = rms_ap['rms'] * 1e6  # convert to uV
         median = np.mean(np.apply_along_axis(lambda x: np.median(x), 1, rms_ap_data))
         rms_ap_data_median = (np.apply_along_axis(lambda x: x - np.median(x), 1, rms_ap_data)
-                              + median)
+                                  + median)
 
-        try:
-            for region in BRAIN_REGIONS:
-                region_clusters = np.where(np.bitwise_and(clusters['rep_site_acronym'] == region,
-                                                          clusters['label'] == 1))[0]
-                region_chan = channels['rawInd'][np.where(channels['rep_site_acronym'] == region)[0]]
+        for region in BRAIN_REGIONS:
+            region_clusters = np.where(np.bitwise_and(clusters['rep_site_acronym'] == region,
+                                                      clusters['label'] == 1))[0]
+            region_chan = channels['rawInd'][np.where(channels['rep_site_acronym'] == region)[0]]
 
-                # Get AP band rms
-                rms_ap_region = np.median(rms_ap_data_median[:, region_chan])
+            # Get AP band rms
+            rms_ap_region = np.median(rms_ap_data_median[:, region_chan])
 
-                if region_clusters.size == 0:
-                    metrics = pd.concat((metrics, pd.DataFrame(
-                        index=[metrics.shape[0] + 1], data={'pid': pid, 'eid': eid, 'probe': probe,
-                                                            'lab': lab, 'subject': subject,
-                                                            'region': region, 'date': date,
-                                                            'median_firing_rate': np.nan,
-                                                            'mean_firing_rate': np.nan,
-                                                            'spike_amp_mean': np.nan,
-                                                            'spike_amp_median': np.nan,
-                                                            'spike_amp_90': np.nan,
-                                                            'rms_ap': rms_ap_region})))
-                else:
-                    # Get firing rate and spike amplitude
-                    neuron_fr = np.empty(len(region_clusters))
-                    spike_amp = np.empty(len(region_clusters))
-                    for n, neuron_id in enumerate(region_clusters):
-                        neuron_fr[n] = np.sum(spikes['clusters'] == neuron_id) / np.max(spikes['times'])
-                        spike_amp[n] = np.median(spikes.amps[spikes['clusters'] == neuron_id])
+            if region_clusters.size == 0:
+                metrics = pd.concat((metrics, pd.DataFrame(
+                    index=[metrics.shape[0] + 1], data={'pid': pid, 'eid': eid, 'probe': probe,
+                                                        'lab': lab, 'subject': subject,
+                                                        'region': region, 'date': date,
+                                                        'median_firing_rate': np.nan,
+                                                        'mean_firing_rate': np.nan,
+                                                        'spike_amp_mean': np.nan,
+                                                        'spike_amp_median': np.nan,
+                                                        'spike_amp_90': np.nan,
+                                                        'rms_ap': rms_ap_region})))
+            else:
+                # Get firing rate and spike amplitude
+                neuron_fr = np.empty(len(region_clusters))
+                spike_amp = np.empty(len(region_clusters))
+                for n, neuron_id in enumerate(region_clusters):
+                    neuron_fr[n] = np.sum(spikes['clusters'] == neuron_id) / np.max(spikes['times'])
+                    spike_amp[n] = np.median(spikes.amps[spikes['clusters'] == neuron_id])
 
-                    # Add to dataframe
-                    metrics = pd.concat((metrics, pd.DataFrame(
-                        index=[metrics.shape[0] + 1], data={'pid': pid, 'eid': eid, 'probe': probe,
-                                                            'lab': lab, 'subject': subject,
-                                                            'region': region, 'date': date,
-                                                            'median_firing_rate': np.median(neuron_fr),
-                                                            'mean_firing_rate': np.mean(neuron_fr),
-                                                            'spike_amp_mean': np.nanmean(spike_amp) * 1e6,
-                                                            'spike_amp_median': np.nanmedian(spike_amp),
-                                                            'spike_amp_90': np.percentile(spike_amp, 95),
-                                                            'rms_ap': rms_ap_region})))
-
-        except Exception as err:
-            print(err)
+                # Add to dataframe
+                metrics = pd.concat((metrics, pd.DataFrame(
+                    index=[metrics.shape[0] + 1], data={'pid': pid, 'eid': eid, 'probe': probe,
+                                                        'lab': lab, 'subject': subject,
+                                                        'region': region, 'date': date,
+                                                        'median_firing_rate': np.median(neuron_fr),
+                                                        'mean_firing_rate': np.mean(neuron_fr),
+                                                        'spike_amp_mean': np.nanmean(spike_amp) * 1e6,
+                                                        'spike_amp_median': np.nanmedian(spike_amp),
+                                                        'spike_amp_90': np.percentile(spike_amp, 95),
+                                                        'rms_ap': rms_ap_region})))
 
     concat_df_clust = pd.concat(all_df_clust, ignore_index=True)
     concat_df_chns = pd.concat(all_df_chns, ignore_index=True)
@@ -317,7 +315,7 @@ if __name__ == '__main__':
     one = ONE()
     one.record_loaded = True
     insertions = get_insertions(level=0, one=one, freeze=None)
-    all_df_chns, all_df_clust, metrics = prepare_data(insertions, recompute=False, one=one)
+    all_df_chns, all_df_clust, metrics = prepare_data(insertions, recompute=True, one=one)
     save_dataset_info(one, figure='figure3')
-    run_decoding(n_shuffle=2, recompute=False)
-    run_decoding(n_shuffle=2, pass_qc=False, recompute=False)
+    run_decoding(n_shuffle=500, recompute=False)
+    run_decoding(n_shuffle=500, pass_qc=False, recompute=False)

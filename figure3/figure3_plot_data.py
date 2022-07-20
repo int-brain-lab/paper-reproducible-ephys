@@ -66,8 +66,8 @@ def plot_main_figure(one=None):
     panel_probe_lfp(fig, ax['panel_B'], n_rec_per_lab=MIN_REC_PER_LAB, boundary_align=BOUNDARY)
     panel_probe_neurons(fig, ax['panel_C'], n_rec_per_lab=MIN_REC_PER_LAB, boundary_align=BOUNDARY)
     panel_example(ax['panel_D'], n_rec_per_lab=MIN_REC_PER_LAB, example_region='DG',
-              example_metric='lfp_power', ylim=[-170, -140], ylabel='LFP power in DG (db)',
-              despine=True, yticks=[-170, -160, -150, -140])
+                  example_metric='lfp_power', ylim=[-170, -140], ylabel='LFP power in DG (db)',
+                  despine=True, yticks=[-170, -160, -150, -140])
     p_permut = panel_permutation(ax['panel_E'], METRICS, REGIONS, LABELS, n_permut=N_PERMUT,
                                  n_rec_per_lab=MIN_REC_PER_LAB, n_rec_per_region=MIN_REC_PER_REGION)
     p_decoding = panel_decoding(ax['panel_F'], qc=True)
