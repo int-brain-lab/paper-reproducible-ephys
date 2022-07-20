@@ -41,9 +41,11 @@ def labs():
                        'churchlandlab': 'CSHL (C)', 'angelakilab': 'NYU',
                        'wittenlab': 'Princeton', 'hoferlab': 'SWC', 'mrsicflogellab': 'SWC',
                        'danlab': 'Berkeley', 'steinmetzlab': 'UW', 'churchlandlab_ucla': 'UCLA'}
-    colors = np.concatenate([sns.color_palette("Dark2"), sns.color_palette('Set2')[0:2]])
-    institutions = ['UCL', 'CCU', 'CSHL (C)', 'NYU', 'Princeton', 'SWC', 'Berkeley', 'CSHL (Z)',
-                    'UW', 'UCLA']
+    #colors = np.concatenate((sns.color_palette("Dark2")[:-1], sns.color_palette('Set1')[0:2],
+    #                         [sns.color_palette('Set1')[3]]))
+    colors = sns.color_palette('tab10')
+    institutions = ['Berkeley', 'CCU', 'CSHL (C)', 'CSHL (Z)', 'NYU', 'Princeton', 'SWC', 'UCL',
+                    'UCLA', 'UW']
     institution_colors = {}
     for i, inst in enumerate(institutions):
         institution_colors[inst] = colors[i]
@@ -464,7 +466,7 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', ne
 
 def filter_recordings(df=None, max_ap_rms=40, max_lfp_power=-140, min_neurons_per_channel=0.1, min_channels_region=5,
                       min_regions=3, min_neuron_region=4, min_lab_region=3, min_rec_lab=4, n_trials=400, behavior=False,
-                      exclude_subjects=['DY013', 'ibl_witten_26'], recompute=True, freeze=None, new_metrics=True):
+                      exclude_subjects=['DY013', 'ibl_witten_26', 'KS084'], recompute=True, freeze=None, new_metrics=True):
     """
     Filter values in dataframe according to different exclusion criteria
     :param df: pandas dataframe
