@@ -79,7 +79,7 @@ def plot_main_figure():
                                       ax=[ax['panel_E_1'], ax['panel_E_2'], ax['panel_E_3'], ax['panel_E_4'], ax['panel_E_5']],
                                       save=False)
     plot_panel_permutation(ax=ax['panel_F'])
-    
+
     # we have to find out max and min neurons here now, because plots are split
     df = load_dataframe()
     df_filt = filter_recordings(df)
@@ -114,27 +114,27 @@ def plot_main_figure():
 
 def plot_panel_single_neuron(ax=None, save=True):
     # Code to plot figure similar to figure 4a
-    pid = 'f26a6ab1-7e37-4f8d-bb50-295c056e1062' 
+    pid = 'f26a6ab1-7e37-4f8d-bb50-295c056e1062'
     neuron = 241 #386
     align_event = 'move'
     params = {'smoothing': 'sliding',
               'fr_bin_size': 0.06,
               'event_epoch': [-0.2, 0.2], #[-0.3, 0.22],
               'slide_kwargs_fr': {'n_win': 3, 'causal': 1}}
-    
+
     # neuron = 241 #323 #265 #144 #614
     # pid = 'a12c8ae8-d5ad-4d15-b805-436ad23e5ad1' #'36362f75-96d8-4ed4-a728-5e72284d0995'#'31f3e083-a324-4b88-b0a4-7788ec37b191' #'ce397420-3cd2-4a55-8fd1-5e28321981f4'  # SWC_054
     side = 'right' #'left' #'all'
     feedback = 'correct' #'all'
-    
+
     ax = plot_raster_and_psth(pid, neuron, align_event=align_event, side=side, feedback=feedback,
-                              labelsize=16, ax=ax, **params) #fr_bin_size=0.06, zero_line_c='g', 
-    
+                              labelsize=16, ax=ax, **params) #fr_bin_size=0.06, zero_line_c='g',
+
     # ax = plot_raster_and_psth(pid, neuron, align_event=align_event, side='left', ax=ax, **params)
     # ax = plot_raster_and_psth(pid, neuron, event_epoch=[-0.2, 0.2], fr_bin_size=0.06, align_event=align_event, side=side,
     #                           feedback=feedback, smoothing='sliding', slide_kwargs_fr={'n_win': 3, 'causal': 1},
     #                           zero_line_c='g', labelsize=16, ax=ax)
-    
+
     if save:
         plt.savefig(fig_path.joinpath(f'figure4_5_{pid}_neuron{neuron}_align_{align_event}.png'))
 
@@ -142,7 +142,7 @@ def plot_panel_single_neuron(ax=None, save=True):
     #ax[0].set_title(f'{side} stim., {feedback} choices', loc='left')
     ax[0].set_title('Example LP neuron', loc='left')
     #Need to put legend for colorbar/contrasts
-    
+
 
 def plot_panel_single_subject(event='move', norm='subtract', smoothing='kernel', ax=None, save=True):
     # Code to plot figure similar to figure 4b
@@ -197,7 +197,7 @@ def plot_panel_single_subject(event='move', norm='subtract', smoothing='kernel',
 
     if save:
         plt.savefig(fig_path.joinpath('figure4_5_example_subject.png'))
-        
+
     ax.set_title('Example recording in LP', loc='left')
 
 
@@ -291,6 +291,7 @@ def plot_panel_task_modulated_neurons(specific_tests=None, ax=None, save=True):
                 plt.ylim(bottom=0, top=1)
                 plt.ylabel(br)
                 plt.xticks([])
+                sns.despine()
                 if i == 4:
                     plt.xlabel('Mice')
             else:
@@ -298,13 +299,14 @@ def plot_panel_task_modulated_neurons(specific_tests=None, ax=None, save=True):
                 ax[i].set_ylim(bottom=0, top=1)
                 ax[i].set_ylabel(br)
                 ax[i].set_xticks([])
+                sns.despine()
                 if i == 4:
                     ax[i].set_xlabel('Mice')
         if specific_tests is None:
             plt.suptitle(tests[test], size=22)
         if save:
             plt.savefig(fig_path.joinpath(test))
-            
+
 
 def plot_panel_permutation(ax=None):
 
@@ -354,7 +356,7 @@ def plot_panel_permutation(ax=None):
     ax.set_yticklabels(BRAIN_REGIONS, va='center', rotation=0)
     ax.set_xticklabels(test_names, rotation=30, ha='right')
 
-    return results            
-            
+    return results
+
 if __name__ == '__main__':
     plot_main_figure()
