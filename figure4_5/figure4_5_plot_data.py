@@ -9,7 +9,7 @@ import seaborn as sns
 import pandas as pd
 from statsmodels.stats.multitest import multipletests
 import time
-from permutation_test import permut_test, permut_dist, distribution_dist, distribution_dist_test
+from permutation_test import permut_test, distribution_dist_approx
 
 
 lab_number_map, institution_map, lab_colors = labs()
@@ -44,21 +44,21 @@ def plot_main_figure():
     #                                          wspace=0.3),
     #       'panel_D_4': fg.place_axes_on_grid(fig, xspan=[0.70125, 0.9], yspan=[0.38, 0.65],
     #                                          wspace=0.3)}
-    ax = {'panel_A_1': fg.place_axes_on_grid(fig, xspan=[0.08, 0.328], yspan=[0.045, 0.125],
+    ax = {'panel_A_1': fg.place_axes_on_grid(fig, xspan=[0.08, 0.288], yspan=[0.045, 0.125],
                                              wspace=0.3),
-          'panel_A_2': fg.place_axes_on_grid(fig, xspan=[0.08, 0.328], yspan=[0.135, 0.27],
+          'panel_A_2': fg.place_axes_on_grid(fig, xspan=[0.08, 0.288], yspan=[0.135, 0.27],
                                              wspace=0.3),
-          'panel_B': fg.place_axes_on_grid(fig, xspan=[0.428, 0.64], yspan=[0.045, 0.27],
+          'panel_B': fg.place_axes_on_grid(fig, xspan=[0.388, 0.631], yspan=[0.045, 0.27],
                                            wspace=0.3),
-          'panel_C': fg.place_axes_on_grid(fig, xspan=[0.761, 0.971], yspan=[0.05, 0.27],
+          'panel_C': fg.place_axes_on_grid(fig, xspan=[0.741, 1.], yspan=[0.05, 0.27],
                                            wspace=0.3),
-          'panel_D_1': fg.place_axes_on_grid(fig, xspan=[0.087,  0.297], yspan=[0.37, 0.58],
+          'panel_D_1': fg.place_axes_on_grid(fig, xspan=[0.087,  0.277], yspan=[0.37, 0.58],
                                              wspace=0.3),
-          'panel_D_2': fg.place_axes_on_grid(fig, xspan=[0.318, 0.528], yspan=[0.37, 0.58],
+          'panel_D_2': fg.place_axes_on_grid(fig, xspan=[0.298, 0.488], yspan=[0.37, 0.58],
                                              wspace=0.3),
-          'panel_D_3': fg.place_axes_on_grid(fig, xspan=[0.549, 0.759], yspan=[0.37, 0.58],
+          'panel_D_3': fg.place_axes_on_grid(fig, xspan=[0.509, 0.699], yspan=[0.37, 0.58],
                                              wspace=0.3),
-          'panel_D_4': fg.place_axes_on_grid(fig, xspan=[0.78, .99], yspan=[0.37, 0.58],
+          'panel_D_4': fg.place_axes_on_grid(fig, xspan=[0.72, .91], yspan=[0.37, 0.58],
                                              wspace=0.3),
           'panel_E_1': fg.place_axes_on_grid(fig, xspan=[0.075, 0.46], yspan=[0.66, 0.72],
                                              wspace=0.3),
@@ -254,7 +254,7 @@ def plot_panel_all_subjects(max_neurons, min_neurons, ax=None, save=True, plotte
         if iR == 1 or len(plotted_regions) == 1:
             ax[iR].set_xlabel("Time from movement onset (s)")
 
-        if iR == len(plotted_regions) - 1: #and len(plotted_regions) != 1:
+        if iR == len(plotted_regions) - 1 and len(plotted_regions) != 1:
             # this is a hack for the legend
             for lab in all_present_labs:
                 ax[iR].plot(data['time'], np.zeros_like(data['time']) - 100, c=lab_colors[lab], label=lab)
@@ -290,6 +290,7 @@ def plot_panel_task_modulated_neurons(specific_tests=None, ax=None, save=True):
                 plt.bar(np.arange(vals[test].values.shape[0]), vals[test].values, color=colors)
                 plt.ylim(bottom=0, top=1)
                 plt.ylabel(br)
+                plt.yticks([0, 1], [0, 1])
                 plt.xticks([])
                 sns.despine()
                 if i == 4:
@@ -298,6 +299,7 @@ def plot_panel_task_modulated_neurons(specific_tests=None, ax=None, save=True):
                 ax[i].bar(np.arange(vals[test].values.shape[0]), vals[test].values, color=colors)
                 ax[i].set_ylim(bottom=0, top=1)
                 ax[i].set_ylabel(br)
+                ax[i].set_yticks([0, 1], [0, 1])
                 ax[i].set_xticks([])
                 sns.despine()
                 if i == 4:
@@ -313,7 +315,7 @@ def plot_panel_permutation(ax=None):
     # load dataframe from prev fig. 5 (To be combined with new Fig 4)
     # Prev Figure 5d permutation tests
     df = load_dataframeFig5()
-    df_filt = filter_recordings(df)
+    df_filt = filter_recordings(df, recompute=False)
     df_filt = df_filt[df_filt['permute_include'] == 1]
 
     df_filt_reg = df_filt.groupby('region')
@@ -323,16 +325,26 @@ def plot_panel_permutation(ax=None):
         test_names.append(tests[test])
         for reg in BRAIN_REGIONS:
             df_reg = df_filt_reg.get_group(reg)
-            vals = df_reg.groupby(['institute', 'subject'])[test].mean()
-            labs = vals.index.get_level_values('institute')
-            subjects = vals.index.get_level_values('subject')
-            data = vals.values
+            # vals = df_reg.groupby(['institute', 'subject'])[test].mean()
+            # labs = vals.index.get_level_values('institute')
+            # subjects = vals.index.get_level_values('subject')
+            # data = vals.values
+            if test == 'avg_ff_post_move':
+                data = df_reg[test].values
+            else:
+                data = df_reg['mean_fr_diff_{}'.format(test)].values
+            labs = df_reg['institute'].values
+            subjects = df_reg['subject'].values
 
+            labs = labs[~np.isnan(data)]
+            subjects = subjects[~np.isnan(data)]
+            data = data[~np.isnan(data)]
             # lab_names, this_n_labs = np.unique(labs, return_counts=True)  # what is this for?
 
+            print("permutation n warning")
             a = time.time()
-            p = permut_test(data, metric=distribution_dist_test, labels1=labs,
-                            labels2=subjects)
+            p = permut_test(data, metric=distribution_dist_approx, labels1=labs,
+                            labels2=subjects, shuffling='labels1_based_on_2', n_permut=1000)
             print(time.time() - a)
             results = pd.concat((results, pd.DataFrame(index=[results.shape[0] + 1],
                                                       data={'test': test, 'region': reg, 'p_value_permut': p})))
@@ -340,23 +352,44 @@ def plot_panel_permutation(ax=None):
     shape = (len(tests.keys()), len(BRAIN_REGIONS))
     print(results.p_value_permut.values)
     #return
-    # return results
+    return results
     _, corrected_p_vals, _, _ = multipletests(results.p_value_permut.values, 0.05, method='fdr_bh')
     corrected_p_vals = corrected_p_vals.reshape(shape)
     # corrected_p_vals = results.p_value_permut.values.reshape(shape)
 
-    sns.heatmap(np.log10(corrected_p_vals.T), cmap='RdYlGn', square=True,
-                cbar=True, annot=False, annot_kws={"size": 12}, ax=ax,
-                linewidths=.5, fmt='.2f', vmin=-1.5, vmax=np.log10(1), cbar_kws={"shrink": .7})
+    ax = sns.heatmap(np.log10(corrected_p_vals.T), cmap='RdYlGn', square=True,
+                     cbar=True, annot=False, annot_kws={"size": 12}, ax=ax,
+                     linewidths=.5, fmt='.2f', vmin=-1.5, vmax=np.log10(1), cbar_kws={"shrink": .7})
     cbar = ax.collections[0].colorbar
     cbar.set_ticks(np.log10([0.05, 0.1, 0.2, 0.4, 0.8]))
     cbar.set_ticklabels([0.05, 0.1, 0.2, 0.4, 0.8])
 
-    ax.set(xlabel='', ylabel='', title='Permutation p-values')
+    # ax.set(xlabel='', ylabel='', title='Permutation p-values')
     ax.set_yticklabels(BRAIN_REGIONS, va='center', rotation=0)
     ax.set_xticklabels(test_names, rotation=30, ha='right')
 
     return results
 
+# 
+# df = load_dataframeFig5()
+# df_filt = filter_recordings(df, recompute=False)
+# df_filt = df_filt[df_filt['permute_include'] == 1]
+#
+# df_filt_reg = df_filt.groupby('region')
+#
+# reg = BRAIN_REGIONS[-4]
+# test = list(tests.keys())[-1]
+# df_reg = df_filt_reg.get_group(reg)
+# data = df_reg[test].values
+# labs = df_reg['institute'].values
+# subjects = df_reg['subject'].values
+# labs = labs[~np.isnan(data)]
+# subjects = subjects[~np.isnan(data)]
+# data = data[~np.isnan(data)]
+# p = permut_test(data, metric=distribution_dist_approx, labels1=labs,
+#                 labels2=subjects, shuffling='labels1_based_on_2', n_permut=10000, plot=True, mark_p=0.004)
+# quit()
+# results = plot_panel_permutation()
+# quit()
 if __name__ == '__main__':
     plot_main_figure()

@@ -191,7 +191,7 @@ def prepare_data(insertions, one, figure='figure5', recompute=False, new_metrics
                 clu_idx = np.where(cluster_ids == neuron_id)[0]
                 fr_example = np.c_[fr_base_example[clu_idx, :][0], fr_pre_move_tw[clu_idx, :][0]]
                 np.save(save_data_path(figure=figure).joinpath(f'figure5_example_neuron{neuron_id}_{pid}.npy'), fr_example)
-                
+
 
             # Post-move firing rate
             intervals = np.c_[eventMove - 0.05, eventMove + 0.2]
@@ -210,30 +210,37 @@ def prepare_data(insertions, one, figure='figure5', recompute=False, new_metrics
 
             # COMPARE FIRING RATES TO FIND RESPONSIVE UNITS
             # Trial vs Baseline
+            data['mean_fr_diff_trial'] = np.mean(fr_trial - fr_base, axis=1)
             data['trial'], _, data['p_trial'] = \
                 compute_comparison_statistics(fr_base, fr_trial, test='signrank')
 
             # Post-stimulus vs Baseline
+            data['mean_fr_diff_post_stim'] = np.mean(fr_post_stim - fr_base, axis=1)
             data['post_stim'], _, data['p_post_stim'] = \
                 compute_comparison_statistics(fr_base, fr_post_stim, test='signrank')
 
             # Pre-movement vs Baseline
+            data['mean_fr_diff_pre_move'] = np.mean(fr_pre_move - fr_base, axis=1)
             data['pre_move'], _, data['p_pre_move'] = \
                 compute_comparison_statistics(fr_base, fr_pre_move, test='signrank')
 
             # Pre-movement left versus right
+            data['mean_fr_diff_pre_move_lr'] = np.mean(fr_pre_moveL, axis=1) - np.mean(fr_pre_moveR, axis=1)
             data['pre_move_lr'], _, data['p_pre_move_lr'] = \
                 compute_comparison_statistics(fr_pre_moveL, fr_pre_moveR, test='ranksums')
 
             # Time warped start-to-move vs Baseline
+            data['mean_fr_diff_start_to_move'] = np.mean(fr_pre_move_tw - fr_base[:, rxn_idx], axis=1)
             data['start_to_move'], _, data['p_start_to_move'] = \
                 compute_comparison_statistics(fr_base[:, rxn_idx], fr_pre_move_tw, test='signrank')
 
             # Post-movement vs Baseline
+            data['mean_fr_diff_post_move'] = np.mean(fr_post_move - fr_base, axis=1)
             data['post_move'], _, data['p_post_move'] = \
                 compute_comparison_statistics(fr_base, fr_post_move, test='signrank')
 
             # Post-reward vs Baseline
+            data['mean_fr_diff_post_reward'] = np.mean(fr_post_reward - fr_base, axis=1)
             data['post_reward'], _, data['p_post_reward'] = \
                 compute_comparison_statistics(fr_base, fr_post_reward, test='signrank')
 
