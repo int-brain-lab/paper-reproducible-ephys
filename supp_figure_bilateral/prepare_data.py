@@ -11,7 +11,7 @@ from brainbox.io.one import SpikeSortingLoader
 
 from reproducible_ephys_functions import (get_insertions, combine_regions, BRAIN_REGIONS, save_data_path,
                                           save_dataset_info, filter_recordings, query)
-from reproducible_ephys_processing import compute_new_label
+from reproducible_ephys_processing import compute_new_label, compute_psth
 from figure3.figure3_load_data import load_dataframe
 
 
@@ -198,6 +198,173 @@ def prepare_data(insertions, one, recompute=False, new_metrics=True):
     return all_df_chns, all_df_clust, metrics
 
 
+default_params = {'bin_size': 0.06,
+                  'align_event': 'move',
+                  'event_epoch': [-0.35, 0.22], #[-0.4, 0.22],
+                  'base_event': 'stim',
+                  'base_epoch': [-0.4, -0.2], #Check (MT)
+                  'norm': 'subtract',
+                  'smoothing': 'sliding',
+                  'slide_kwargs': {'n_win': 5, 'causal': 1},
+                  'slide_kwargs_fr': {'n_win': 3, 'causal': 1}}
+
+
+def prepare_neural_data(insertions, one, recompute=False, new_metrics=True, **kwargs):
+
+    bin_size = kwargs.get('bin_size', default_params['bin_size'])
+    align_event = kwargs.get('align_event', default_params['align_event'])
+    event_epoch = kwargs.get('event_epoch', default_params['event_epoch'])
+    base_event = kwargs.get('base_event', default_params['base_event'])
+    base_epoch = kwargs.get('base_epoch', default_params['base_epoch'])
+    norm = kwargs.get('norm', default_params['norm'])
+    smoothing = kwargs.get('smoothing', default_params['smoothing'])
+    slide_kwargs = kwargs.get('slide_kwargs', default_params['slide_kwargs'])
+    slide_kwargs_fr = kwargs.get('slide_kwargs_fr', default_params['slide_kwargs_fr'])
+
+    params = {'bin_size': bin_size,
+              'align_event': align_event,
+              'event_epoch': event_epoch,
+              'base_event': base_event,
+              'base_epoch': base_epoch,
+              'norm': norm,
+              'smoothing': smoothing,
+              'slide_kwargs': slide_kwargs,
+              'slide_kwargs_fr': slide_kwargs_fr}
+
+    if not recompute:
+        print("Not implemented")
+        quit()
+        # TODO comparison based on the params used
+        # data_exists = load_data(event=align_event, norm=norm, smoothing=smoothing, exists_only=True)
+        # if data_exists:
+        #     df = load_dataframe()
+        #     pids = np.array([p['probe_insertion'] for p in insertions])
+        #     isin, _ = ismember(pids, df['pid'].unique())
+        #     if np.all(isin):
+        #         print('Already computed data for set of insertions. Will load in data. To recompute set recompute=True')
+        #         data = load_data()
+        #         return df, data
+
+    all_df = []
+    for iIns, ins in enumerate(insertions):
+
+        try:
+            print(f'processing {iIns + 1}/{len(insertions)}')
+            eid = ins['session']['id']
+            probe = ins['probe_name']
+            pid = ins['probe_insertion']
+
+            data = {}
+
+            # Load in spikesorting
+            sl = SpikeSortingLoader(eid=eid, pname=probe, one=one, atlas=ba)
+            spikes, clusters, channels = sl.load_spike_sorting()
+            clusters = sl.merge_clusters(spikes, clusters, channels)
+
+            if new_metrics:
+                try:
+                    clusters['label'] = np.load(sl.files['clusters'][0].parent.joinpath('clusters.new_labels.npy'))
+                except FileNotFoundError:
+                    new_labels = compute_new_label(spikes, clusters, save_path=sl.files['spikes'][0].parent)
+                    clusters['label'] = new_labels
+
+            clusters['rep_site_acronym'] = combine_regions(clusters['acronym'])
+            # Find clusters that are in the repeated site brain regions and that have been labelled as good
+            cluster_idx = np.sort(np.where(np.bitwise_and(np.isin(clusters['rep_site_acronym'], BRAIN_REGIONS),
+                                                          clusters['label'] == 1))[0])
+            data['cluster_ids'] = clusters['cluster_id'][cluster_idx]
+
+            # Find spikes that are from the clusterIDs
+            spike_idx = np.isin(spikes['clusters'], data['cluster_ids'])
+            if np.sum(spike_idx) == 0:
+                continue
+
+            # Load in trials data
+            trials = one.load_object(eid, 'trials', collection='alf')
+            # For this computation we use correct, non zero contrast trials
+            trial_idx = np.bitwise_and(trials['feedbackType'] == 1,
+                                       np.bitwise_or(trials['contrastLeft'] > 0, trials['contrastRight'] > 0))
+            # Find nan trials
+            nan_trials = np.bitwise_or(np.isnan(trials['stimOn_times']), np.isnan(trials['firstMovement_times']))
+
+            eventMove = trials['firstMovement_times'][np.bitwise_and(trial_idx, ~nan_trials)]
+            eventStim = trials['stimOn_times'][np.bitwise_and(trial_idx, ~nan_trials)]
+
+            # Find align events
+            if align_event == 'move':
+                eventTimes = eventMove
+                trial_l_idx = np.where(trials['choice'][np.bitwise_and(trial_idx, ~nan_trials)] == 1)[0]
+                trial_r_idx = np.where(trials['choice'][np.bitwise_and(trial_idx, ~nan_trials)] == -1)[0]
+            elif align_event == 'stim':
+                eventTimes = eventStim
+                trial_l_idx = np.where(trials['contrastLeft'][np.bitwise_and(trial_idx, ~nan_trials)] > 0)[0]
+                trial_r_idx = np.where(trials['contrastRight'][np.bitwise_and(trial_idx, ~nan_trials)] > 0)[0]
+
+            # Find baseline event times
+            if base_event == 'move':
+                eventBase = eventMove
+            elif base_event == 'stim':
+                eventBase = eventStim
+
+            # Compute firing rates for left side events
+            fr_l, fr_l_std, t = compute_psth(spikes['times'][spike_idx], spikes['clusters'][spike_idx], data['cluster_ids'],
+                                             eventTimes[trial_l_idx], align_epoch=event_epoch, bin_size=bin_size,
+                                             baseline_events=eventBase[trial_l_idx], base_epoch=base_epoch,
+                                             smoothing=smoothing, norm=norm)
+            fr_l_std = fr_l_std / np.sqrt(trial_l_idx.size)  # convert to standard error
+
+            # Compute firing rates for right side events
+            fr_r, fr_r_std, t = compute_psth(spikes['times'][spike_idx], spikes['clusters'][spike_idx], data['cluster_ids'],
+                                             eventTimes[trial_r_idx], align_epoch=event_epoch, bin_size=bin_size,
+                                             baseline_events=eventBase[trial_r_idx], base_epoch=base_epoch,
+                                             smoothing=smoothing, norm=norm)
+            fr_r_std = fr_r_std / np.sqrt(trial_r_idx.size)  # convert to standard error
+
+            # Add other cluster information
+            data['region'] = clusters['rep_site_acronym'][cluster_idx]
+
+            df = pd.DataFrame.from_dict(data)
+            df['eid'] = eid
+            df['pid'] = pid
+            df['subject'] = ins['session']['subject']
+            df['probe'] = ins['probe_name']
+            df['date'] = ins['session']['start_time'][:10]
+            df['lab'] = ins['session']['lab']
+
+            all_df.append(df)
+
+            if iIns == 0:
+                all_frs_l = fr_l
+                all_frs_l_std = fr_l_std
+                all_frs_r = fr_r
+                all_frs_r_std = fr_r_std
+            else:
+                all_frs_l = np.r_[all_frs_l, fr_l]
+                all_frs_l_std = np.r_[all_frs_l_std, fr_l_std]
+                all_frs_r = np.r_[all_frs_r, fr_r]
+                all_frs_r_std = np.r_[all_frs_r_std, fr_r_std]
+
+        except Exception as err:
+            print(f'{pid} errored: {err}')
+
+    concat_df = pd.concat(all_df, ignore_index=True)
+    data = {'all_frs_l': all_frs_l,
+            'all_frs_l_std': all_frs_l_std,
+            'all_frs_r': all_frs_r,
+            'all_frs_r_std': all_frs_r_std,
+            'time': t,
+            'params': params}
+
+    save_path = save_data_path(figure='supp_figure_bilateral')
+    print(f'Saving data to {save_path}')
+    concat_df.to_csv(save_path.joinpath('supp_figure_bilateral_dataframe.csv'))
+    smoothing = smoothing or 'none'
+    norm = norm or 'none'
+    np.savez(save_path.joinpath(f'supp_figure_bilateral_data_event_{align_event}_smoothing_{smoothing}_norm_{norm}.npz'), **data)
+
+    return concat_df, data
+
+
 if __name__ == '__main__':
     one = ONE()
     one.record_loaded = True
@@ -207,4 +374,5 @@ if __name__ == '__main__':
                        as_dataframe=False, bilateral=True)
     #_ = recompute_metrics(insertions, one, new_metrics=new_metrics)
     all_df_chns, all_df_clust, metrics = prepare_data(insertions, recompute=True, one=one)
+    prepare_neural_data(insertions, recompute=True, one=one)
     save_dataset_info(one, figure='supp_figure_bilateral')
