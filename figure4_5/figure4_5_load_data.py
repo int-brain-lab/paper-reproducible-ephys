@@ -14,7 +14,7 @@ def load_dataframe(exists_only=False):
             return None
 
 
-def load_data(event='move', norm='subtract', smoothing='kernel', exists_only=False):
+def load_data(event='move', norm='subtract', smoothing='sliding', exists_only=False):
 
     smoothing = smoothing or 'none'
     norm = norm or 'none'

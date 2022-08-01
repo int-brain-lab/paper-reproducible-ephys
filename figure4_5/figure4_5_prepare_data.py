@@ -13,14 +13,15 @@ from figure4_5.figure4_5_load_data import load_data, load_dataframe
 ba = AllenAtlas()
 
 # Defaults parameters for psth computation
-default_params = {'bin_size': 0.01,
+default_params = {'bin_size': 0.06,
                   'align_event': 'move',
                   'event_epoch': [-0.35, 0.22], #[-0.4, 0.22],
                   'base_event': 'stim',
                   'base_epoch': [-0.4, -0.2], #Check (MT)
                   'norm': 'subtract',
-                  'smoothing': 'kernel',
-                  'slide_kwargs': {'n_win': 5, 'causal': 1}}
+                  'smoothing': 'sliding',
+                  'slide_kwargs': {'n_win': 5, 'causal': 1},
+                  'slide_kwargs_fr': {'n_win': 3, 'causal': 1}}
 
 
 def prepare_data(insertions, one, recompute=False, new_metrics=True, **kwargs):
@@ -33,6 +34,7 @@ def prepare_data(insertions, one, recompute=False, new_metrics=True, **kwargs):
     norm = kwargs.get('norm', default_params['norm'])
     smoothing = kwargs.get('smoothing', default_params['smoothing'])
     slide_kwargs = kwargs.get('slide_kwargs', default_params['slide_kwargs'])
+    slide_kwargs_fr = kwargs.get('slide_kwargs_fr', default_params['slide_kwargs_fr'])
 
     params = {'bin_size': bin_size,
               'align_event': align_event,
@@ -41,7 +43,8 @@ def prepare_data(insertions, one, recompute=False, new_metrics=True, **kwargs):
               'base_epoch': base_epoch,
               'norm': norm,
               'smoothing': smoothing,
-              'slide_kwargs': slide_kwargs}
+              'slide_kwargs': slide_kwargs,
+              'slide_kwargs_fr': slide_kwargs_fr}
 
     if not recompute:
         # TODO comparison based on the params used
@@ -179,5 +182,5 @@ if __name__ == '__main__':
     one = ONE()
     one.record_loaded = True
     insertions = get_insertions(level=2, one=one, freeze=None, recompute=True, new_metrics=True)
-    prepare_data(insertions, one=one, recompute=False, **default_params)
+    prepare_data(insertions, one=one, recompute=True, **default_params)
     save_dataset_info(one, figure='figure4_5')

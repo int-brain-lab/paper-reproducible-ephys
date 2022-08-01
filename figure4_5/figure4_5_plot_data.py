@@ -144,7 +144,7 @@ def plot_panel_single_neuron(ax=None, save=True):
     #Need to put legend for colorbar/contrasts
 
 
-def plot_panel_single_subject(event='move', norm='subtract', smoothing='kernel', ax=None, save=True):
+def plot_panel_single_subject(event='move', norm='subtract', smoothing='sliding', ax=None, save=True):
     # Code to plot figure similar to figure 4b
     df = load_dataframe()
     data = load_data(event=event, norm=norm, smoothing=smoothing)
@@ -204,7 +204,7 @@ def plot_panel_single_subject(event='move', norm='subtract', smoothing='kernel',
 def plot_panel_all_subjects(max_neurons, min_neurons, ax=None, save=True, plotted_regions=BRAIN_REGIONS):
     # Code to plot figure similar to figure 4c
     df = load_dataframe()
-    data = load_data(event='move', norm='subtract', smoothing='kernel')
+    data = load_data(event='move', norm='subtract', smoothing='sliding')
 
     df_filt = filter_recordings(df)
     all_frs_l = data['all_frs_l'][df_filt['include'] == 1]
@@ -236,7 +236,7 @@ def plot_panel_all_subjects(max_neurons, min_neurons, ax=None, save=True, plotte
             ax[iR].plot(data['time'], np.mean(frs_subj, axis=0), c=lab_colors[df_subj.iloc[0]['institute']],
                         lw=min_lw + ((subj_idx.shape[0] - min_neurons) / (max_neurons - min_neurons)) * max_lw,
                         alpha=0.8)
-        ax[iR].set_ylim(bottom=-10, top=12.5)
+        ax[iR].set_ylim(bottom=-9, top=13.5)
         ax[iR].axvline(0, color='k', ls='--')
         ax[iR].spines["right"].set_visible(False)
         ax[iR].spines["top"].set_visible(False)
@@ -315,7 +315,7 @@ def plot_panel_permutation(ax=None):
     # load dataframe from prev fig. 5 (To be combined with new Fig 4)
     # Prev Figure 5d permutation tests
     df = load_dataframeFig5()
-    df_filt = filter_recordings(df, recompute=False)
+    df_filt = filter_recordings(df, recompute=True)
     df_filt = df_filt[df_filt['permute_include'] == 1]
 
     df_filt_reg = df_filt.groupby('region')
@@ -341,18 +341,13 @@ def plot_panel_permutation(ax=None):
             data = data[~np.isnan(data)]
             # lab_names, this_n_labs = np.unique(labs, return_counts=True)  # what is this for?
 
-            print("permutation n warning")
-            a = time.time()
             p = permut_test(data, metric=distribution_dist_approx, labels1=labs,
-                            labels2=subjects, shuffling='labels1_based_on_2', n_permut=1000)
-            print(time.time() - a)
+                            labels2=subjects, shuffling='labels1_based_on_2')
             results = pd.concat((results, pd.DataFrame(index=[results.shape[0] + 1],
                                                       data={'test': test, 'region': reg, 'p_value_permut': p})))
 
     shape = (len(tests.keys()), len(BRAIN_REGIONS))
     print(results.p_value_permut.values)
-    #return
-    return results
     _, corrected_p_vals, _, _ = multipletests(results.p_value_permut.values, 0.05, method='fdr_bh')
     corrected_p_vals = corrected_p_vals.reshape(shape)
     # corrected_p_vals = results.p_value_permut.values.reshape(shape)
