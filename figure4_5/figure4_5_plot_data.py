@@ -370,21 +370,7 @@ def plot_panel_permutation(ax=None):
 
     return results
 
-# 
-# df = load_dataframeFig5()
-# df_filt = filter_recordings(df, recompute=False)
-# df_filt = df_filt[df_filt['permute_include'] == 1]
-#
-# df_filt_reg = df_filt.groupby('region')
-#
-# reg = BRAIN_REGIONS[-4]
-# test = list(tests.keys())[-1]
-# df_reg = df_filt_reg.get_group(reg)
-# data = df_reg[test].values
-# labs = df_reg['institute'].values
-# subjects = df_reg['subject'].values
-# labs = labs[~np.isnan(data)]
-# subjects = subjects[~np.isnan(data)]
+
 # data = data[~np.isnan(data)]
 # p = permut_test(data, metric=distribution_dist_approx, labels1=labs,
 #                 labels2=subjects, shuffling='labels1_based_on_2', n_permut=10000, plot=True, mark_p=0.004)

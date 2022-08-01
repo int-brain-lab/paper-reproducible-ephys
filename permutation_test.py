@@ -127,7 +127,7 @@ def plot_permut_test(null_dist, observed_val, p, mark_p, title=None):
     plt.title("p = {}".format(p))
 
     plt.savefig("temp")
-    plt.show()
+    plt.close()
 
 
 def example_metric(data, labels1, labels2):
@@ -191,10 +191,105 @@ def helper(n, p1_array, points2, low, high):
     p2_array = np.zeros(n)
     for p in points2:
         p2_array[min(int((p - low) / (high - low) * n), n-1):] += 1
-    return np.sum(np.abs(p1_array - p2_array / p2_array[-1])) / n * (high - low)
+    return np.max(np.abs(p1_array - p2_array / p2_array[-1]))
 
+
+def power_test(n_simul, dist, labels1, labels2, diff_labels1, metric=distribution_dist_approx, shuffling='labels1_based_on_2'):
+    ps = np.zeros(n_simul)
+    for i in range(n_simul):
+        if i % 20 == 0:
+            print(i)
+        data = np.random.normal(size=labels2.shape)
+        data[labels1 == diff_labels1] += dist
+        p = permut_test(data, metric=metric, labels1=labels1, labels2=labels2,
+                        shuffling=shuffling, n_permut=5000, plot=False)
+        ps[i] = p
+    # plt.hist(ps)
+    # plt.show()
+    return ps
 
 if __name__ == '__main__':
+    import pickle
+    labels1, labels2 = pickle.load(open("temp", 'rb'))
+
+    # mean comparison
+    # new_labels1, new_labels2 = [], []
+    # for i in range(len(labels2)):
+    #     if labels2[i] not in new_labels2:
+    #         new_labels2.append(labels2[i])
+    #         new_labels1.append(labels1[i])
+    # labels1, labels2 = np.array(new_labels1), np.array(new_labels2)
+    # metric, shuffling = permut_dist, 'labels1'
+
+    metric, shuffling = distribution_dist_approx, 'labels1_based_on_2'
+    n_tests = 100
+    print('started')
+    ps1 = power_test(n_tests, dist=0, labels1=labels1, labels2=labels2, diff_labels1='NYU', metric=metric, shuffling=shuffling)
+    print('done')
+    ps2 = power_test(n_tests, dist=0.2, labels1=labels1, labels2=labels2, diff_labels1='NYU', metric=metric, shuffling=shuffling)
+    print('done')
+    ps3 = power_test(n_tests, dist=0.4, labels1=labels1, labels2=labels2, diff_labels1='NYU', metric=metric, shuffling=shuffling)
+    print('done')
+    ps4 = power_test(n_tests, dist=0.6, labels1=labels1, labels2=labels2, diff_labels1='NYU', metric=metric, shuffling=shuffling)
+    print('done')
+    ps5 = power_test(n_tests, dist=0.8, labels1=labels1, labels2=labels2, diff_labels1='NYU', metric=metric, shuffling=shuffling)
+    print('done')
+    ps6 = power_test(n_tests, dist=1, labels1=labels1, labels2=labels2, diff_labels1='NYU', metric=metric, shuffling=shuffling)
+    print('done')
+    ps7 = power_test(n_tests, dist=1.5, labels1=labels1, labels2=labels2, diff_labels1='NYU', metric=metric, shuffling=shuffling)
+    print('done')
+    ps8 = power_test(n_tests, dist=2, labels1=labels1, labels2=labels2, diff_labels1='NYU', metric=metric, shuffling=shuffling)
+    print('done')
+    ps9 = power_test(n_tests, dist=3, labels1=labels1, labels2=labels2, diff_labels1='NYU', metric=metric, shuffling=shuffling)
+    print('done')
+    ps0 = power_test(n_tests, dist=4, labels1=labels1, labels2=labels2, diff_labels1='NYU', metric=metric, shuffling=shuffling)
+    print('done')
+    diffs = [0, 0.2, 0.4, 0.6, 0.8, 1, 1.5, 2, 3, 4]
+
+    below_05 = np.zeros(10)
+    below_05[0] = (ps1 < 0.05).sum()
+    below_05[1] = (ps2 < 0.05).sum()
+    below_05[2] = (ps3 < 0.05).sum()
+    below_05[3] = (ps4 < 0.05).sum()
+    below_05[4] = (ps5 < 0.05).sum()
+    below_05[5] = (ps6 < 0.05).sum()
+    below_05[6] = (ps7 < 0.05).sum()
+    below_05[7] = (ps8 < 0.05).sum()
+    below_05[8] = (ps9 < 0.05).sum()
+    below_05[9] = (ps0 < 0.05).sum()
+
+    below_004 = np.zeros(10)
+    below_004[0] = (ps1 < 0.004).sum()
+    below_004[1] = (ps2 < 0.004).sum()
+    below_004[2] = (ps3 < 0.004).sum()
+    below_004[3] = (ps4 < 0.004).sum()
+    below_004[4] = (ps5 < 0.004).sum()
+    below_004[5] = (ps6 < 0.004).sum()
+    below_004[6] = (ps7 < 0.004).sum()
+    below_004[7] = (ps8 < 0.004).sum()
+    below_004[8] = (ps9 < 0.004).sum()
+    below_004[9] = (ps0 < 0.004).sum()
+
+
+    import matplotlib
+    matplotlib.use('Agg')
+    plt.plot(diffs, below_05 / n_tests,  label="p<0.05", color="b")
+    plt.plot(diffs, below_05 / n_tests, '*', color="b")
+    plt.plot(diffs, below_004 / n_tests, label="p<0.004", color="red")
+    plt.plot(diffs, below_004 / n_tests, '*', color="red")
+    plt.legend(frameon=False, fontsize=16)
+    plt.xlabel("Deviation", fontsize=18)
+    plt.ylabel("% significant", fontsize=18)
+    plt.xlim(left=0, right=4)
+    plt.ylim(bottom=0, top=1)
+    plt.tight_layout()
+    # sns.despine()
+    plt.gca().spines.right.set_visible(False)
+    plt.gca().spines.top.set_visible(False)
+    plt.savefig("p descent (means)")
+    plt.close()
+    quit()
+
     rng = np.random.RandomState(4)
     data = rng.normal(0, 1, 25)
     t = time.time()
