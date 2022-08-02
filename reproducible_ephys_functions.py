@@ -132,7 +132,7 @@ def traj_list_to_dataframe(trajectories):
     return trajectories
 
 
-def get_insertions(level=2, recompute=False, as_dataframe=False, one=None, freeze=None, new_metrics=True):
+def get_insertions(level=2, recompute=False, as_dataframe=False, one=None, freeze=None, new_metrics=True, bilateral=False):
     """
     Find insertions used for analysis based on different exclusion levels
     Level 0: minimum_regions = 0, resolved = True, behavior = False, n_trial >= 0, exclude_critical = True
@@ -149,6 +149,7 @@ def get_insertions(level=2, recompute=False, as_dataframe=False, one=None, freez
     one = one or ONE()
 
     if freeze is not None:
+        # TODO for next freeze need to think about how to deal with bilateral
         ins_df = pd.read_csv(data_release_path().joinpath(f'{freeze}.csv'))
         pids = ins_df[ins_df['level'] >= level].pid.values
         insertions = one.alyx.rest('trajectories', 'list', provenance='Planned', django=f'probe_insertion__in,{list(pids)}')
@@ -158,6 +159,11 @@ def get_insertions(level=2, recompute=False, as_dataframe=False, one=None, freez
         if as_dataframe:
             insertions = traj_list_to_dataframe(insertions)
 
+        return insertions
+
+    if bilateral:
+        insertions = query(min_regions=0, n_trials=0, behavior=False, exclude_critical=True, one=one,
+                           as_dataframe=as_dataframe, bilateral=True)
         return insertions
 
     if level == 0:
@@ -200,7 +206,7 @@ def get_histology_insertions(one=None, freeze=None):
     return insertions
 
 
-def recompute_metrics(insertions, one, new_metrics=True):
+def recompute_metrics(insertions, one, new_metrics=True, bilateral=False):
     """
     Determine whether metrics need to be recomputed or not for given list of insertions
     :param insertions: list of insertions
@@ -209,13 +215,13 @@ def recompute_metrics(insertions, one, new_metrics=True):
     """
 
     pids = np.array([ins['probe_insertion'] for ins in insertions])
-    metrics = load_metrics()
+    metrics = load_metrics(bilateral=bilateral)
     if (metrics is None) or (metrics.shape[0] == 0):
-        metrics = compute_metrics(insertions, one=one, new_metrics=new_metrics)
+        metrics = compute_metrics(insertions, one=one, new_metrics=new_metrics, bilateral=bilateral)
     else:
         isin, _ = ismember(pids, metrics['pid'].unique())
         if not np.all(isin):
-            metrics = compute_metrics(insertions, one=one, new_metrics=new_metrics)
+            metrics = compute_metrics(insertions, one=one, new_metrics=new_metrics, bilateral=bilateral)
 
     return metrics
 
@@ -284,9 +290,10 @@ def combine_regions(regions):
     return regions
 
 
-def load_metrics():
-    if save_data_path().joinpath('insertion_metrics.csv').exists():
-        metrics = pd.read_csv(save_data_path().joinpath('insertion_metrics.csv'))
+def load_metrics(bilateral=False):
+    fname = 'insertion_metrics_bilateral.csv' if bilateral else 'insertion_metrics.csv'
+    if save_data_path().joinpath(fname).exists():
+        metrics = pd.read_csv(save_data_path().joinpath(fname))
     else:
         metrics = None
     return metrics
@@ -344,7 +351,7 @@ def save_figure_path(figure=None):
     return fig_path
 
 
-def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', new_metrics=True, save=True):
+def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', new_metrics=True, save=True, bilateral=False):
     one = one or ONE()
     ba = ba or AllenAtlas()
     lab_number_map, institution_map, _ = labs()
@@ -459,14 +466,16 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', ne
             logger.error(f'{pid}: {err}')
 
     if save:
-        metrics.to_csv(save_data_path().joinpath('insertion_metrics.csv'))
+        fname = 'insertion_metrics_bilateral.csv' if bilateral else 'insertion_metrics.csv'
+        metrics.to_csv(save_data_path().joinpath(fname))
 
     return metrics
 
 
 def filter_recordings(df=None, max_ap_rms=40, max_lfp_power=-140, min_neurons_per_channel=0.1, min_channels_region=5,
                       min_regions=3, min_neuron_region=4, min_lab_region=3, min_rec_lab=4, n_trials=400, behavior=False,
-                      exclude_subjects=['DY013', 'ibl_witten_26', 'KS084'], recompute=True, freeze=None, new_metrics=True):
+                      exclude_subjects=['DY013', 'ibl_witten_26', 'KS084'], recompute=True, freeze=None, new_metrics=True,
+                      bilateral=False):
     """
     Filter values in dataframe according to different exclusion criteria
     :param df: pandas dataframe
@@ -483,28 +492,28 @@ def filter_recordings(df=None, max_ap_rms=40, max_lfp_power=-140, min_neurons_pe
     """
 
     # Load in the insertion metrics
-    metrics = load_metrics()
+    metrics = load_metrics(bilateral=bilateral)
 
     if df is None:
         df = metrics
         if df is None:
-            ins = get_insertions(level=0, recompute=False, freeze=freeze)
-            df = compute_metrics(ins, one=ONE(), save=True, new_metrics=new_metrics)
+            ins = get_insertions(level=0, recompute=False, freeze=freeze, bilateral=bilateral)
+            df = compute_metrics(ins, one=ONE(), save=True, new_metrics=new_metrics, bilateral=bilateral)
         df['original_index'] = df.index
     else:
         # make sure that all pids in the dataframe df are included in metrics otherwise recompute metrics
         if metrics is None:
             one = ONE()
-            ins = get_insertions(level=0, one=one, recompute=False, freeze=freeze)
-            metrics = compute_metrics(ins, one=ONE(), save=True, new_metrics=new_metrics)
+            ins = get_insertions(level=0, one=one, recompute=False, freeze=freeze, bilateral=bilateral)
+            metrics = compute_metrics(ins, one=ONE(), save=True, new_metrics=new_metrics, bilateral=bilateral)
 
         isin, _ = ismember(df['pid'].unique(), metrics['pid'].unique())
         if ~np.all(isin):
             logger.warning(f'Warning: {np.sum(~isin)} recordings are missing metrics')
             if recompute:
                 one = ONE()
-                ins = get_insertions(level=0, one=one, recompute=False, freeze=freeze)
-                metrics = compute_metrics(ins, one=ONE(), save=True, new_metrics=new_metrics)
+                ins = get_insertions(level=0, one=one, recompute=False, freeze=freeze, bilateral=bilateral)
+                metrics = compute_metrics(ins, one=ONE(), save=True, new_metrics=new_metrics, bilateral=bilateral)
 
         # merge the two dataframes
         df['original_index'] = df.index
