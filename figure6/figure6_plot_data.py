@@ -11,7 +11,7 @@ from matplotlib.patches import Patch
 from sklearn.metrics import r2_score
 
 from matplotlib.lines import Line2D
-
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from matplotlib.patches import Ellipse
 import matplotlib.transforms as transforms
 import string
@@ -147,7 +147,7 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
     sess = np.array(sess)
 
     fig = plt.figure(figsize=(8, 7), facecolor='w')
-    figs = plt.figure(figsize=(8, 10), facecolor='w')
+    figs = plt.figure(figsize=(11, 10), facecolor='w')
 
     inner = [['Ea'],
              ['Eb']]
@@ -156,10 +156,11 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
               ['B', 'D'],
               ['G', 'Ga']]
 
-    mosaic_supp = [['Ha', 'H'],
-                   ['Ia', 'I'],
-                   ['Ja', 'J'],
-                   ['Ka', 'K']]
+    mosaic_supp = [['Ga', 'Gb', 'G'],
+                   ['Ha', 'Hb', 'H'],
+                   ['Ia', 'Ib', 'I'],
+                   ['Ja', 'Jb', 'J'],
+                   ['Ka', 'Kb', 'K']]
 
     mf = np.array(mosaic, dtype=object).flatten()
     mf[0] = 'Ea'
@@ -197,7 +198,7 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
 
 
     # shuffle test
-    nrand = 1000  # random region allocations
+    nrand = 10  # random region allocations
     if nrand < 1000:
         print('put nrand back to 1000')
         
@@ -370,16 +371,19 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
                   va='top', ha='right', weight='bold')
 
     # per region dim red
-    ms = ['G', 'H', 'I', 'J', 'K']
-    ms2 = ['Ga', 'Ha', 'Ia', 'Ja', 'Ka']
+    ms = ['G', 'H', 'I', 'J', 'K','G']  # 2PCs scatter
+    ms2 = ['Ga', 'Ha', 'Ia', 'Ja', 'Ka','Ga']  # average PETH
+    ms3 = ['Gb', 'Hb', 'Ib', 'Jb', 'Kb','Gb']  # CDFs
 
     k = 0
     p_ = {}  # Guido's permutation test score
     p_ks = {}
     D = sorted(list(Counter(regs)))
-    
+    D.append('CA1')
     
     nns = {}
+    
+    axsi = []  # inset axes
     for reg in D:
         if reg is None:
             continue
@@ -400,6 +404,8 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
         cols_lab = [lab_cols[b[x]] for x in labs2]
         axs3[ms[k]].scatter(emb2[:, 0], emb2[:, 1], marker='o', 
                             c=cols_lab, s=2)
+
+
 
         labs_ = Counter(labs2)
 
@@ -449,40 +455,40 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
         for lab in labs_:
             g_labs[lab] = emb2[labs2 == lab][:,0]
             
-        dist = sum([ks_2samp(g_all, g_labs[lab])[0] for lab in g_labs]) 
-        
-        # get null_d by shuffling lab labels
-        null_d = []
-        for shuf in range(nrand):
-            labsr = labs2.copy()
-            random.shuffle(labsr)
-            g_labsr = {}
-            for lab in labs_:
-                g_labsr[lab] = emb2[labsr == lab][:,0]    
-            null_d.append(sum([ks_2samp(g_all, g_labsr[lab])[0] 
-                               for lab in g_labsr])) 
+#        dist = sum([ks_2samp(g_all, g_labs[lab])[0] for lab in g_labs]) 
+#        
+#        # get null_d by shuffling lab labels
+#        null_d = []
+#        for shuf in range(nrand):
+#            labsr = labs2.copy()
+#            random.shuffle(labsr)
+#            g_labsr = {}
+#            for lab in labs_:
+#                g_labsr[lab] = emb2[labsr == lab][:,0]    
+#            null_d.append(sum([ks_2samp(g_all, g_labsr[lab])[0] 
+#                               for lab in g_labsr])) 
 
-        p = 1 - (0.01 * percentileofscore(null_d, dist))
-        p_ks[reg] = np.round(p, 3)
+#        p = 1 - (0.01 * percentileofscore(null_d, dist))
+#        p_ks[reg] = np.round(p, 3)
 
 
-        # plot distributions of first PCs
-        fig, ax = plt.subplots(nrows=1 , ncols=2, figsize=(14,8))
-        ax[0].hist(x=g_all, color = 'b', 
-                  bins='auto', label=f'all cells in {reg}', 
-                  alpha=0.7, rwidth=0.85, 
-                  histtype=u'step', lw=2)
-                                  
-        for lab in labs_:
-            ax[0].hist(x=g_labs[lab], color=lab_cols[b[lab]],
-                      bins='auto', label=f'{lab}', 
-                      alpha=0.7, rwidth=0.85, 
-                      histtype=u'step', lw=1)
-                              
-        ax[0].set_title(f'Histogram \n First PCs of cells in {reg}')
-        ax[0].set_xlabel('PC1')
-        ax[0].set_ylabel('frequency')
-        ax[0].legend()
+#        # plot distributions of first PCs
+#        _, ax = plt.subplots(nrows=1 , ncols=2, figsize=(14,8))
+#        ax[0].hist(x=g_all, color = 'b', 
+#                  bins='auto', label=f'all cells in {reg}', 
+#                  alpha=0.7, rwidth=0.85, 
+#                  histtype=u'step', lw=2)
+#                                  
+#        for lab in labs_:
+#            ax[0].hist(x=g_labs[lab], color=lab_cols[b[lab]],
+#                      bins='auto', label=f'{lab}', 
+#                      alpha=0.7, rwidth=0.85, 
+#                      histtype=u'step', lw=1)
+#                              
+#        ax[0].set_title(f'Histogram \n First PCs of cells in {reg}')
+#        ax[0].set_xlabel('PC1')
+#        ax[0].set_ylabel('frequency')
+#        ax[0].legend()
         
         # plot CDFs of first PCs distributions and KS metrics
         def ecdf(a):
@@ -490,32 +496,76 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
             cusum = np.cumsum(counts)
             return x, cusum / cusum[-1]
         
-        
-        x0, x1 = ecdf(g_all)
-        ax[1].plot(x0, x1,
-                       label=f'all cells in {reg}', lw=4,
-                       color = 'b', drawstyle='steps-post')
-                                  
-        for lab in labs_:
-            x0, x1 = ecdf(g_labs[lab])
-            ks,p = ks_2samp(g_all, g_labs[lab])
-            if p < 0.01:
-                print(reg, lab, ks, p)
-                 
-            ax[1].plot(x0, x1, color=lab_cols[b[lab]], 
-                       drawstyle='steps-post', lw=2,
-                       label=f'{lab}, (ks,p) = '
-                       f'{np.round(ks,3), np.round(p,3)}') 
-        
-                              
-        ax[1].set_title(f'CDF \n First PCs of cells in {reg}')
-        ax[1].set_xlabel('PC1')
-        ax[1].set_ylabel('P(PC1 < x)')
-        ax[1].legend()        
+        if k != 0:
+            x0, x1 = ecdf(g_all)
+            axs3[ms3[k]].plot(x0, x1,
+                           label=f'all cells', lw=2,
+                           color = 'k', drawstyle='steps-post')
+            ksr = {}                          
+            for lab in labs_:
+                x0, x1 = ecdf(g_labs[lab])
+                ks,p = ks_2samp(g_all, g_labs[lab])
+                ksr[lab] = [ks,p]
+
+                     
+                axs3[ms3[k]].plot(x0, x1, color=lab_cols[b[lab]], 
+                           drawstyle='steps-post', lw=1)
+            
+            # per region do multiple comparison correction of p-values                
+            pvals_ = [ksr[lab][1] for lab in ksr]
+            _, pvals_c_, _, _ = multipletests(pvals_, 0.05, method='fdr_bh')
+            
+            kk = 0
+            for lab in ksr:
+                ksr[lab][1] = pvals_c_[kk]
+                kk += 1
+                if ksr[lab][1] < 0.01:
+                    print(reg, lab, ksr[lab][0], ksr[lab][1])
+                           
+            axs3[ms3[k]].set_title(reg)
+            axs3[ms3[k]].set_xlabel('PC1')
+            axs3[ms3[k]].set_ylabel('P(PC1 < x)')
+            axs3[ms3[k]].text(-0.1, 1.30, panel_n3[ms3[k]],
+                             transform=axs3[ms3[k]].transAxes,
+                             fontsize=16, va='top',
+                             ha='right', weight='bold')            
+            
+            if k == 1:
+                    axs3[ms3[k]].legend(frameon=False).set_draggable(True)
+
+            # plot ks scores as bar plot inset with asterics for small p 
+            axsi.append(inset_axes(axs3[ms3[k]], width="30%", height="35%", 
+                                   loc=4, borderpad=1,
+                                   bbox_to_anchor=(-0.02,0.1,1,1), 
+                                   bbox_transform=axs3[ms3[k]].transAxes))
+                       
+            bars = axsi[k-1].bar(range(len(ksr)), [ksr[lab][0] for lab in ksr], 
+                          color = [lab_cols[b[lab]] for lab in ksr])
+                          
+            axsi[k-1].set_xlabel('labs')
+            axsi[k-1].set_xticks([])
+            axsi[k-1].set_xticklabels([])
+            axsi[k-1].set_ylabel('KS')
+            axsi[k-1].spines['top'].set_visible(False)
+            axsi[k-1].spines['right'].set_visible(False)
+                         
+            # put * on bars that are significant
+            ii = 0
+            for lab in ksr:
+                ba = bars.patches[ii]
+                if ksr[lab][1] < 0.01:             
+                    axsi[k-1].annotate('*',
+                                       (ba.get_x() + ba.get_width() / 2,
+                                        ba.get_height()), ha='center', 
+                                        va='center', size=16, 
+                                        xytext=(0, 1),
+                                        textcoords='offset points')
+                ii += 1                                                              
         
 
         axs3[ms[k]].set_title(reg, loc='left')
-        axs3[ms[k]].set_xlabel('embedding dim 1')
+        axs3[ms[k]].set_xlabel('embedding dim 1 (PC1)' if k > 0 else
+                               'embedding dim 1' )
         axs3[ms[k]].set_ylabel('embedding dim 2')
         axs3[ms[k]].text(-0.1, 1.30, panel_n3[ms[k]],
                          transform=axs3[ms[k]].transAxes,
@@ -572,11 +622,11 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
     print(dict(zip(list(p_.keys()), [np.round(p, 3) for p in pvals_c_])))
 
 
-    pvals_ks = [p_ks[reg] for reg in p_]
-    _, pvals_c_ks, _, _ = multipletests(pvals_ks, 0.05, method='fdr_bh')
+#    pvals_ks = [p_ks[reg] for reg in p_]
+#    _, pvals_c_ks, _, _ = multipletests(pvals_ks, 0.05, method='fdr_bh')
 
-    print('KS permutation test labs per region, corrected:')
-    print(dict(zip(list(p_ks.keys()), [np.round(p, 3) for p in pvals_c_ks])))
+#    print('KS permutation test labs per region, corrected:')
+#    print(dict(zip(list(p_ks.keys()), [np.round(p, 3) for p in pvals_c_ks])))
 
     # print numbers of cells per region per lab
     #print(nns)
