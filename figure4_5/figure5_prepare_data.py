@@ -355,6 +355,6 @@ def prepare_data(insertions, one, figure='figure5', recompute=False, new_metrics
 if __name__ == '__main__':
     one = ONE()
     one.record_loaded = True
-    insertions = get_insertions(level=2, one=one, freeze=None)
+    insertions = get_insertions(level=2, one=one, freeze=None, recompute=True, new_metrics=True)
     prepare_data(insertions, one=one, recompute=True, **default_params)
     save_dataset_info(one, figure='figure5')
