@@ -128,7 +128,7 @@ def plot_raster_and_psth_LvsR(pid, neuron, contrasts=(1, 0.25, 0.125, 0.0625, 0)
 
            
     ax[0].set_yticks(ylabel_pos)
-    ax[0].set_yticklabels(['Left','Right'])
+    ax[0].set_yticklabels(['Right', 'Left'])
     ax[0].axvline(0, color=zero_line_c, ls='--')
     #ax[0].set_xlim(pre_time - fr_bin_size / 2, post_time + fr_bin_size / 2)
     ax[0].set_ylim(0, counter)

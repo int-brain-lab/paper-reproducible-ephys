@@ -79,7 +79,7 @@ def plot_main_figure():
     plot_panel_task_modulated_neurons(specific_tests=['pre_move'],
                                       ax=[ax['panel_E_1'], ax['panel_E_2'], ax['panel_E_3'], ax['panel_E_4'], ax['panel_E_5']],
                                       save=False)
-    plot_panel_permutation(ax=ax['panel_F'])
+    #plot_panel_permutation(ax=ax['panel_F'])
 
     # we have to find out max and min neurons here now, because plots are split
     df = load_dataframe()
@@ -200,14 +200,18 @@ def plot_panel_single_subject(event='move', norm='subtract', smoothing='sliding'
     # print(lab)
     # quit()
     time = data['time']
-    propagated_error = np.zeros_like(all_frs_l[idx][0])
-    for fr, fr_std in zip(all_frs_l[idx], all_frs_l_std[idx]):
+    # To easily switch between sides for plotting:
+    all_frs_side = all_frs_l #all_frs_r #
+    all_frs_side_std = all_frs_l_std #all_frs_r_std #
+    
+    propagated_error = np.zeros_like(all_frs_side[idx][0])
+    for fr, fr_std in zip(all_frs_side[idx], all_frs_side_std[idx]):
         ax.plot(time, fr, 'k')
         propagated_error += fr_std ** 2
         ax.fill_between(time, fr - fr_std, fr + fr_std, color='k', alpha=0.25)
 
-    fr_mean = np.mean(all_frs_l[idx], axis=0)
-    fr_std = np.std(all_frs_l[idx], axis=0)
+    fr_mean = np.mean(all_frs_side[idx], axis=0)
+    fr_std = np.std(all_frs_side[idx], axis=0)
     ax.plot(time, fr_mean, c=lab_colors[lab], lw=1.5)
     propagated_error = np.sqrt(propagated_error) / idx.shape[0]
     ax.fill_between(time, fr_mean - propagated_error, fr_mean + propagated_error, color=lab_colors[lab], alpha=0.25)
@@ -258,7 +262,9 @@ def plot_panel_all_subjects(max_neurons, min_neurons, ax=None, save=True, plotte
         for subj in df_reg_subj.groups.keys():
             df_subj = df_reg_subj.get_group(subj)
             subj_idx = df_reg_subj.groups[subj]
+            #Select L vs R side:
             frs_subj = all_frs_l[subj_idx, :]
+            #frs_subj = all_frs_r[subj_idx, :]
             if df_subj.iloc[0]['institute'] not in all_present_labs:
                 all_present_labs.append(df_subj.iloc[0]['institute'])
             ax[iR].plot(data['time'], np.mean(frs_subj, axis=0), c=lab_colors[df_subj.iloc[0]['institute']],
@@ -389,7 +395,7 @@ def plot_panel_permutation(ax=None):
 
     shape = (len(tests.keys()), len(BRAIN_REGIONS))
     print(results.p_value_permut.values)
-    return
+    #return
 
     _, corrected_p_vals, _, _ = multipletests(results.p_value_permut.values, 0.05, method='fdr_bh')
     corrected_p_vals = corrected_p_vals.reshape(shape)
@@ -405,7 +411,7 @@ def plot_panel_permutation(ax=None):
     # ax.set(xlabel='', ylabel='', title='Permutation p-values')
     ax.set_yticklabels(BRAIN_REGIONS, va='center', rotation=0)
     ax.set_xticklabels(test_names, rotation=30, ha='right')
-    ax.set_title('Tsk-driven activity: Comparison across labs', loc='left')
+    ax.set_title('Task-driven activity: Comparison across labs', loc='left')
     
     return results
 
