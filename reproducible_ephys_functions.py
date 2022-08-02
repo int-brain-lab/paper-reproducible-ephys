@@ -164,6 +164,9 @@ def get_insertions(level=2, recompute=False, as_dataframe=False, one=None, freez
     if bilateral:
         insertions = query(min_regions=0, n_trials=0, behavior=False, exclude_critical=True, one=one,
                            as_dataframe=as_dataframe, bilateral=True)
+        if recompute:
+            _ = recompute_metrics(insertions, one, new_metrics=new_metrics, bilateral=bilateral)
+
         return insertions
 
     if level == 0:
