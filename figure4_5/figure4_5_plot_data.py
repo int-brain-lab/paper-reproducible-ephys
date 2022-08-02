@@ -15,14 +15,23 @@ from permutation_test import permut_test, distribution_dist_approx
 lab_number_map, institution_map, lab_colors = labs()
 fig_path = save_figure_path(figure='figure4_5')
 
-tests = {'trial': 'Trial',
-         'start_to_move': 'Pre move (TW)',
-         'post_stim': 'Post stim',
-         'pre_move': 'Pre move',
-         'pre_move_lr': 'Move LvR',
-         'post_move': 'Post move',
-         'post_reward': 'Post reward',
-         'avg_ff_post_move': 'FanoFactor'}
+# tests = {'trial': 'Trial',
+#          'start_to_move': 'Pre move (TW)',
+#          'post_stim': 'Post stim',
+#          'pre_move': 'Pre move',
+#          'pre_move_lr': 'Move LvR',
+#          'post_move': 'Post move',
+#          'post_reward': 'Post reward',
+#          'avg_ff_post_move': 'FanoFactor'}
+
+tests = {'trial': 'Trial post-stim.',
+          'start_to_move': 'Reaction period',
+          'post_stim': 'Post-stim.',
+          'pre_move': 'Pre-move.',
+          'pre_move_lr': 'L vs. R pre-move.',
+          'post_move': 'Post-move.',
+          'post_reward': 'Post-reward',
+          'avg_ff_post_move': 'Fano Factor'}
 
 def plot_main_figure():
     DPI = 400  # if the figure is too big on your screen, lower this number
@@ -44,9 +53,9 @@ def plot_main_figure():
     #                                          wspace=0.3),
     #       'panel_D_4': fg.place_axes_on_grid(fig, xspan=[0.70125, 0.9], yspan=[0.38, 0.65],
     #                                          wspace=0.3)}
-    ax = {'panel_A_1': fg.place_axes_on_grid(fig, xspan=[0.08, 0.288], yspan=[0.045, 0.125],
+    ax = {'panel_A_1': fg.place_axes_on_grid(fig, xspan=[0.08, 0.288], yspan=[0.045, 0.13],
                                              wspace=0.3),
-          'panel_A_2': fg.place_axes_on_grid(fig, xspan=[0.08, 0.288], yspan=[0.135, 0.27],
+          'panel_A_2': fg.place_axes_on_grid(fig, xspan=[0.08, 0.288], yspan=[0.14, 0.27],
                                              wspace=0.3),
           'panel_B': fg.place_axes_on_grid(fig, xspan=[0.388, 0.631], yspan=[0.045, 0.27],
                                            wspace=0.3),
@@ -70,7 +79,7 @@ def plot_main_figure():
                                              wspace=0.3),
           'panel_E_5': fg.place_axes_on_grid(fig, xspan=[0.075, 0.46], yspan=[0.94, 1.],
                                              wspace=0.3),
-          'panel_F': fg.place_axes_on_grid(fig, xspan=[0.56, 1.], yspan=[0.7, .9],
+          'panel_F': fg.place_axes_on_grid(fig, xspan=[0.55, .98], yspan=[0.67, .91],
                                            wspace=0.3)}
 
     #plot_panel_single_neuron(ax=[ax['panel_A_1'], ax['panel_A_2']], save=False)
@@ -79,7 +88,7 @@ def plot_main_figure():
     plot_panel_task_modulated_neurons(specific_tests=['pre_move'],
                                       ax=[ax['panel_E_1'], ax['panel_E_2'], ax['panel_E_3'], ax['panel_E_4'], ax['panel_E_5']],
                                       save=False)
-    #plot_panel_permutation(ax=ax['panel_F'])
+    plot_panel_permutation(ax=ax['panel_F'])
 
     # we have to find out max and min neurons here now, because plots are split
     df = load_dataframe()
@@ -100,11 +109,11 @@ def plot_main_figure():
     plot_panel_all_subjects(max_neurons=max_neurons, min_neurons=min_neurons, ax=[ax['panel_D_1'], ax['panel_D_2'], ax['panel_D_3'], ax['panel_D_4']], save=False, plotted_regions=D_regions)
 
     labels = [{'label_text': 'a', 'xpos': 0, 'ypos': 0, 'fontsize': 10, 'weight': 'bold'},
-              {'label_text': 'b', 'xpos': 0.35, 'ypos': 0, 'fontsize': 10, 'weight': 'bold'},
-              {'label_text': 'c', 'xpos': 0.671, 'ypos': 0, 'fontsize': 10, 'weight': 'bold'},
+              {'label_text': 'b', 'xpos': 0.305, 'ypos': 0, 'fontsize': 10, 'weight': 'bold'},
+              {'label_text': 'c', 'xpos': 0.66, 'ypos': 0, 'fontsize': 10, 'weight': 'bold'},
               {'label_text': 'd', 'xpos': 0, 'ypos': 0.34, 'fontsize': 10, 'weight': 'bold'},
               {'label_text': 'e', 'xpos': 0, 'ypos': 0.645, 'fontsize': 10, 'weight': 'bold'},
-              {'label_text': 'f', 'xpos': 0.54, 'ypos': 0.645, 'fontsize': 10, 'weight': 'bold'}]
+              {'label_text': 'f', 'xpos': 0.5, 'ypos': 0.645, 'fontsize': 10, 'weight': 'bold'}]
 
     fg.add_labels(fig, labels)
     print(f'Saving figures to {fig_path}')
@@ -271,6 +280,7 @@ def plot_panel_all_subjects(max_neurons, min_neurons, ax=None, save=True, plotte
                         lw=min_lw + ((subj_idx.shape[0] - min_neurons) / (max_neurons - min_neurons)) * max_lw,
                         alpha=0.8)
         ax[iR].set_ylim(bottom=-9, top=13.5)
+        ax[iR].set_yticks([-5, 0, 5, 10]) 
         ax[iR].axvline(0, color='k', ls='--')
         ax[iR].spines["right"].set_visible(False)
         ax[iR].spines["top"].set_visible(False)
@@ -292,7 +302,7 @@ def plot_panel_all_subjects(max_neurons, min_neurons, ax=None, save=True, plotte
             ax[iR].set_xlabel("Time from movement onset (s)")
             
         if len(plotted_regions) == 1:
-            ax[iR].set_title('Recording averages from LP', loc='left')
+            ax[iR].set_title('Recording averages in LP', loc='left')
         else:
             ax[iR].set_title(reg)
 
@@ -410,7 +420,7 @@ def plot_panel_permutation(ax=None):
 
     # ax.set(xlabel='', ylabel='', title='Permutation p-values')
     ax.set_yticklabels(BRAIN_REGIONS, va='center', rotation=0)
-    ax.set_xticklabels(test_names, rotation=30, ha='right')
+    ax.set_xticklabels(test_names, rotation=90, ha='right') #rotation=30, ha='right')
     ax.set_title('Task-driven activity: Comparison across labs', loc='left')
     
     return results

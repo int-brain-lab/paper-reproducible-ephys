@@ -113,10 +113,10 @@ def plot_raster_and_psth_LvsR(pid, neuron, contrasts=(1, 0.25, 0.125, 0.0625, 0)
     # Plot the bar indicating stim/choice side on the left side of figure
     for ch in [-1, 1]:
         # Determine color of the trace
-        if ch==1:
-            ch_color = 0.35
+        if ch == -1:
+            ch_color = 0.3 #since no alpha here, we adjust this number: 0.45
             i=0 # fix later
-        else:
+        elif ch == 1:
             ch_color = 1
             i=1
         top = count_list[i]
@@ -143,9 +143,9 @@ def plot_raster_and_psth_LvsR(pid, neuron, contrasts=(1, 0.25, 0.125, 0.0625, 0)
     # Comppute the psths for firing rate for each contrast
     for ch in [-1, 1]:
         # Determine color of the trace
-        if ch==1:
-            ch_color = 0.35
-        else:
+        if ch == -1:
+            ch_color = 0.45
+        elif ch == 1:
             ch_color = 1
         events = eventTimes[trials['choice'] == ch] #when only correct feedback, then ch=1 means left side stim and choice
         fr, fr_std, t = compute_psth(spikes['times'][spike_idx], spikes['clusters'][spike_idx], np.array([neuron]),
@@ -168,13 +168,18 @@ def plot_raster_and_psth_LvsR(pid, neuron, contrasts=(1, 0.25, 0.125, 0.0625, 0)
 
     #FIX this part later:
     if plot_ff:
-        for c in contrasts:
-            events = eventTimes[trials['contrast'] == c]
+        for ch in [-1, 1]:
+            # Determine color of the trace
+            if ch == -1:
+                ch_color = 0.35
+            elif ch == 1:
+                ch_color = 1
+            events = eventTimes[trials['choice'] == ch] #when only correct feedback, then ch=1 means left side stim and choice
             _, _, ff, t = compute_psth(spikes['times'][spike_idx], spikes['clusters'][spike_idx], np.array([neuron]),
                                        events, align_epoch=event_epoch, bin_size=ff_bin_size,
                                        baseline_events=eventBase, base_epoch=base_epoch, smoothing=smoothing, norm=norm,
                                        slide_kwargs=slide_kwargs_ff, return_ff=True)
-            ax[2].plot(t, ff[0], c=str(1 - (base_grey + c * (1 - base_grey))))
+            ax[2].plot(t, ff[0],ch_color=str(1 - (base_grey + ch_color * (1 - base_grey))))
 
         ax[2].axvline(0, color=zero_line_c, ls='--')
         ax[2].spines['right'].set_visible(False)
