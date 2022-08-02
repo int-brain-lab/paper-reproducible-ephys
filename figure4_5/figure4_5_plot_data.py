@@ -73,13 +73,13 @@ def plot_main_figure():
           'panel_F': fg.place_axes_on_grid(fig, xspan=[0.56, 1.], yspan=[0.7, .9],
                                            wspace=0.3)}
 
-    plot_panel_single_neuron(ax=[ax['panel_A_1'], ax['panel_A_2']], save=False)
-    #plot_panel_single_neuron_LvsR(ax=[ax['panel_A_1'], ax['panel_A_2']], save=False)
+    #plot_panel_single_neuron(ax=[ax['panel_A_1'], ax['panel_A_2']], save=False)
+    plot_panel_single_neuron_LvsR(ax=[ax['panel_A_1'], ax['panel_A_2']], save=False)
     plot_panel_single_subject(ax=ax['panel_B'], save=False)
     plot_panel_task_modulated_neurons(specific_tests=['pre_move'],
                                       ax=[ax['panel_E_1'], ax['panel_E_2'], ax['panel_E_3'], ax['panel_E_4'], ax['panel_E_5']],
                                       save=False)
-    #plot_panel_permutation(ax=ax['panel_F'])
+    plot_panel_permutation(ax=ax['panel_F'])
 
     # we have to find out max and min neurons here now, because plots are split
     df = load_dataframe()
@@ -125,24 +125,17 @@ def plot_panel_single_neuron_LvsR(ax=None, save=True):
 
     # neuron = 241 #323 #265 #144 #614
     # pid = 'a12c8ae8-d5ad-4d15-b805-436ad23e5ad1' #'36362f75-96d8-4ed4-a728-5e72284d0995'#'31f3e083-a324-4b88-b0a4-7788ec37b191' #'ce397420-3cd2-4a55-8fd1-5e28321981f4'  # SWC_054
-    side = 'right' #'left' #'all'
+    #side = 'right' #'left' #'all'
     feedback = 'correct' #'all'
 
-    ax = plot_raster_and_psth_LvsR(pid, neuron, align_event=align_event, side=side, feedback=feedback,
+    ax = plot_raster_and_psth_LvsR(pid, neuron, align_event=align_event, feedback=feedback,
                               labelsize=16, ax=ax, **params) #fr_bin_size=0.06, zero_line_c='g',
-
-    # ax = plot_raster_and_psth(pid, neuron, align_event=align_event, side='left', ax=ax, **params)
-    # ax = plot_raster_and_psth(pid, neuron, event_epoch=[-0.2, 0.2], fr_bin_size=0.06, align_event=align_event, side=side,
-    #                           feedback=feedback, smoothing='sliding', slide_kwargs_fr={'n_win': 3, 'causal': 1},
-    #                           zero_line_c='g', labelsize=16, ax=ax)
+    ax[0].set_title('Example LP neuron', loc='left')
 
     if save:
         plt.savefig(fig_path.joinpath(f'figure4_5_{pid}_neuron{neuron}_align_{align_event}.png'))
 
-    #ax[0].set_title(f'Contrast: {side}, {feedback} choices', loc='left')
-    #ax[0].set_title(f'{side} stim., {feedback} choices', loc='left')
-    ax[0].set_title('Example LP neuron', loc='left')
-    #Need to put legend for colorbar/contrasts
+    #Need to put legend for colorbar/side
 
 
 def plot_panel_single_neuron(ax=None, save=True):
