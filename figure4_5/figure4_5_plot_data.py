@@ -79,7 +79,7 @@ def plot_main_figure():
                                              wspace=0.3),
           'panel_E_5': fg.place_axes_on_grid(fig, xspan=[0.075, 0.46], yspan=[0.94, 1.],
                                              wspace=0.3),
-          'panel_F': fg.place_axes_on_grid(fig, xspan=[0.55, .98], yspan=[0.67, .91],
+          'panel_F': fg.place_axes_on_grid(fig, xspan=[0.59, 1.], yspan=[0.67, .91],
                                            wspace=0.3)}
 
     #plot_panel_single_neuron(ax=[ax['panel_A_1'], ax['panel_A_2']], save=False)
@@ -113,7 +113,7 @@ def plot_main_figure():
               {'label_text': 'c', 'xpos': 0.66, 'ypos': 0, 'fontsize': 10, 'weight': 'bold'},
               {'label_text': 'd', 'xpos': 0, 'ypos': 0.34, 'fontsize': 10, 'weight': 'bold'},
               {'label_text': 'e', 'xpos': 0, 'ypos': 0.645, 'fontsize': 10, 'weight': 'bold'},
-              {'label_text': 'f', 'xpos': 0.5, 'ypos': 0.645, 'fontsize': 10, 'weight': 'bold'}]
+              {'label_text': 'f', 'xpos': 0.535, 'ypos': 0.645, 'fontsize': 10, 'weight': 'bold'}]
 
     fg.add_labels(fig, labels)
     print(f'Saving figures to {fig_path}')
@@ -359,7 +359,7 @@ def plot_panel_task_modulated_neurons(specific_tests=None, ax=None, save=True):
                 if i == 4:
                     ax[i].set_xlabel('Mice')
                 elif i==0:
-                    ax[i].set_title('Proportion of modulated neurons', loc='left')
+                    ax[i].set_title('Proportion of modulated neurons (Pre-move. test)', loc='left')
         if specific_tests is None:
             plt.suptitle(tests[test], size=22)
         if save:
@@ -420,8 +420,8 @@ def plot_panel_permutation(ax=None):
 
     # ax.set(xlabel='', ylabel='', title='Permutation p-values')
     ax.set_yticklabels(BRAIN_REGIONS, va='center', rotation=0)
-    ax.set_xticklabels(test_names, rotation=90, ha='right') #rotation=30, ha='right')
-    ax.set_title('Task-driven activity: Comparison across labs', loc='left')
+    ax.set_xticklabels(test_names, rotation=90, ha='center') #rotation=30, ha='right')
+    ax.set_title('Task-driven activity: Comparison across labs', loc='left', pad=15)
     
     return results
 
