@@ -156,12 +156,12 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
               ['B', 'D'],
               ['G', 'Ga']]
 
-    mosaic_supp = [['Ga', 'Gb', 'G'],
-                   ['Ha', 'Hb', 'H'],
+    mosaic_supp = [['Ha', 'Hb', 'H'],
                    ['Ia', 'Ib', 'I'],
                    ['Ja', 'Jb', 'J'],
-                   ['Ka', 'Kb', 'K']]
-
+                   ['Ka', 'Kb', 'K'],
+                   ['Ga', 'Gb', 'G']]
+                   
     mf = np.array(mosaic, dtype=object).flatten()
     mf[0] = 'Ea'
     panel_n = dict(zip(mf, string.ascii_lowercase))
@@ -171,7 +171,15 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
 
     axs = fig.subplot_mosaic(mosaic)
     axss = figs.subplot_mosaic(mosaic_supp)
-
+    
+    # despine all plots
+    for key in axs:
+        axs[key].spines['top'].set_visible(False)
+        axs[key].spines['right'].set_visible(False)
+    for key in axss:
+        axss[key].spines['top'].set_visible(False)
+        axss[key].spines['right'].set_visible(False)        
+            
     labs_ = Counter(labs)
     # Euclidean distance of points for permutation test
     #return labs_
@@ -182,7 +190,7 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
                edgecolor=lab_cols[b[lab]], label=b[lab]) for lab in labs_]
 
     axs['G'].legend(handles=le_labs, loc='lower left', 
-                    bbox_to_anchor=(0.1, 1), ncol=3, 
+                    bbox_to_anchor=(0.1, 1), ncol=3, frameon=False, 
                     prop={'size': 8}).set_draggable(True)
 
     Dc = figure_style(return_colors=True)
@@ -263,10 +271,10 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
     le = [Patch(facecolor=Dc[reg], edgecolor=Dc[reg], label=reg) for reg in regs_]
 
     axs['B'].legend(handles=le, bbox_to_anchor=(0.3, 1), 
-                    loc='lower left', ncol=3, 
+                    loc='lower left', ncol=3, frameon=False,
                     prop={'size': 7}).set_draggable(True)
 
-    axs['B'].set_title('all cells', loc='left')
+    #axs['B'].set_title('all cells', loc='left')
     axs['B'].set_xlabel('embedding dim 1')
     axs['B'].set_ylabel('embedding dim 2')
     axs['B'].text(-0.1, 1.30, panel_n['B'], 
@@ -298,16 +306,16 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
         axs['D'].axvline(x=0, linewidth=0.5, linestyle='--', 
                          c='g', label='movement onset')
 
-    axs['D'].set_xlabel('time from movement onset [sec]')
-    axs['D'].set_ylabel('firing rate [Hz]')
+    axs['D'].set_xlabel('time from movement onset (s)')
+    axs['D'].set_ylabel('Firing rate (spikes/s)')
     axs['D'].text(-0.1, 1.30, panel_n['D'], 
                   transform=axs['D'].transAxes, fontsize=16, 
                   va='top', ha='right', weight='bold')
 
     le = [Line2D([0], [0], color='g', lw=0.5, ls='--', label='movement onset')]
 
-    axs['D'].legend(handles=le, bbox_to_anchor=(0.3, 1), 
-                    loc='lower left', ncol=1, prop={'size': 7}).set_draggable(True)
+#    axs['D'].legend(handles=le, bbox_to_anchor=(0.3, 1), frameon=False, 
+#                    loc='lower left', ncol=1, prop={'size': 7}).set_draggable(True)
 
     # illustrate example cells
     # 1 with great, 1 with bad reconstruction
@@ -339,21 +347,23 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
             axs[ms[k]].axvline(x=0, linewidth=0.5, linestyle='--',
                                c='g', label='movement onset')
 
-        axs[ms[k]].set_ylabel('firing rate \n [Hz]')
+        axs[ms[k]].set_ylabel('Firing rate \n (Spikes/s)')
         stext = rf'$r^2$={np.round(r2_score(y[idxs[k]], y_res[2][idxs[k]]), 2)}'
         axs[ms[k]].text(0.2, 1, stext, transform=axs[ms[k]].transAxes,
                         fontsize=7, va='top', ha='right')
 
         if k == 1:
-            axs[ms[k]].set_xlabel('time from movement onset [sec]')
+            axs[ms[k]].set_xlabel('time from movement onset (s)')
 
         if k == 0:
             axs[ms[k]].text(-0.1, 1.6, panel_n[ms[k]],
                             transform=axs[ms[k]].transAxes,
                             fontsize=16, va='top',
                             ha='right', weight='bold')
-            axs[ms[k]].legend(loc='lower left', bbox_to_anchor=(0, 0.9), 
-                              ncol=3, prop={'size': 7}).set_draggable(True)
+#            axs[ms[k]].legend(loc='lower left', frameon=False,
+#                              bbox_to_anchor=(0, 0.9), 
+#                              ncol=3, prop={'size': 7}).set_draggable(True)
+                              
         k += 1
 
     for re_rank in r2s_:
@@ -363,7 +373,9 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
                                       histtype=u'step', lw=2)
 
     leg = axs['F'].legend(ncol=len(r2s_[re_rank]) / 
-                          4, prop={'size': 7}).set_draggable(True)
+                          4,frameon=False,
+                          prop={'size': 7}).set_draggable(True)
+                          
     axs['F'].set_xlabel(r'$r^2$')
     axs['F'].set_ylabel('number of neurons')
     axs['F'].text(-0.1, 1.30, panel_n['F'], 
@@ -378,9 +390,7 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
     k = 0
     p_ = {}  # Guido's permutation test score
     p_ks = {}
-    D = sorted(list(Counter(regs)))
-    D.append('CA1')
-    
+    D = ['CA1', 'PPC', 'CA1', 'DG', 'LP', 'PO']
     nns = {}
     
     axsi = []  # inset axes
@@ -531,7 +541,8 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
                              ha='right', weight='bold')            
             
             if k == 1:
-                    axs3[ms3[k]].legend(frameon=False).set_draggable(True)
+                    axs3[ms3[k]].legend(frameon=False, 
+                                        loc='upper left').set_draggable(True)
 
             # plot ks scores as bar plot inset with asterics for small p 
             axsi.append(inset_axes(axs3[ms3[k]], width="30%", height="35%", 
@@ -574,7 +585,7 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
 
         if k == 1:
             axs3[ms[k]].legend(handles=le_labs, loc='lower left', 
-                               bbox_to_anchor=(0.1, 1), ncol=3,
+                               bbox_to_anchor=(0.1, 1), ncol=3,frameon=False,
                                prop={'size': 8}).set_draggable(True)
 
         # plot average PSTHs across labs
@@ -594,8 +605,8 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
                                       color=lab_cols[b[lab]], alpha=0.2)
 
         axs3[ms2[k]].set_title(reg)
-        axs3[ms2[k]].set_xlabel('time from movement onset [sec]')
-        axs3[ms2[k]].set_ylabel('firing rate [Hz]')
+        axs3[ms2[k]].set_xlabel('time from movement onset (s)')
+        axs3[ms2[k]].set_ylabel('Firing rate (spikes/s)')
         
         for x in np.array([25]) * T_BIN:
             axs3[ms2[k]].axvline(x=0, lw=0.5, linestyle='--', 
