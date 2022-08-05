@@ -111,14 +111,14 @@ def plot_raster_and_psth_LvsR(pid, neuron, contrasts=(1, 0.25, 0.125, 0.0625, 0)
  
 
     # Plot the bar indicating stim/choice side on the left side of figure
-    for ch in [-1, 1]:
-        # Determine color of the trace
+    for i, ch in enumerate([-1, 1]):
+        # Determine color of the colorbar
         if ch == -1:
-            ch_color = 0.3 #since no alpha here, we adjust this number: 0.45
-            i=0 # fix later
-        elif ch == 1:
             ch_color = 1
-            i=1
+            #i=0 
+        elif ch == 1:
+            ch_color = 0.1 #since no alpha here, we adjust this number from 0.45
+            #i=1
         top = count_list[i]
         bottom = count_list[i + 1]
         # Position of the contrast colorbar:
@@ -137,16 +137,15 @@ def plot_raster_and_psth_LvsR(pid, neuron, contrasts=(1, 0.25, 0.125, 0.0625, 0)
     ax[0].spines['left'].set_visible(False)
     ax[0].spines['bottom'].set_visible(False)
     ax[0].tick_params(left=False, right=False, labelbottom=False, bottom=False)  # , labelsize=labelsize)
-    # ax[0].set_title("Contrast", loc='left')  # , size=labelsize)
      
     
     # Comppute the psths for firing rate for each contrast
     for ch in [-1, 1]:
         # Determine color of the trace
         if ch == -1:
-            ch_color = 0.45
-        elif ch == 1:
             ch_color = 1
+        elif ch == 1:
+            ch_color = 0.45
         events = eventTimes[trials['choice'] == ch] #when only correct feedback, then ch=1 means left side stim and choice
         fr, fr_std, t = compute_psth(spikes['times'][spike_idx], spikes['clusters'][spike_idx], np.array([neuron]),
                                      events, align_epoch=event_epoch, bin_size=fr_bin_size,
@@ -170,9 +169,9 @@ def plot_raster_and_psth_LvsR(pid, neuron, contrasts=(1, 0.25, 0.125, 0.0625, 0)
     if plot_ff:
         for ch in [-1, 1]:
             # Determine color of the trace
-            if ch == -1:
+            if ch == 1:
                 ch_color = 0.35
-            elif ch == 1:
+            elif ch == -1:
                 ch_color = 1
             events = eventTimes[trials['choice'] == ch] #when only correct feedback, then ch=1 means left side stim and choice
             _, _, ff, t = compute_psth(spikes['times'][spike_idx], spikes['clusters'][spike_idx], np.array([neuron]),

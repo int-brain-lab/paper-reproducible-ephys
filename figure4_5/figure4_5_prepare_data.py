@@ -17,7 +17,7 @@ default_params = {'bin_size': 0.06,
                   'align_event': 'move',
                   'event_epoch': [-0.2, 0.2], #[-0.35, 0.22],
                   'base_event': 'stim',
-                  'base_epoch': [-0.4, -0.2], #Check
+                  'base_epoch': [-0.2, 0.0], #[-0.4, -0.2], #Check
                   'norm': 'subtract',
                   'smoothing': 'sliding',
                   'slide_kwargs': {'n_win': 5, 'causal': 1},
