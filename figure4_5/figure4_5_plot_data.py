@@ -32,7 +32,6 @@ tests = {'trial': 'Post-stimulus (0-400 ms)',
           'post_move': 'Post-movement',
           'post_reward': 'Post-reward',
           'avg_ff_post_move': 'Fano Factor'}
->>>>>>> dd9d612e067daa3c94140a8f82f36db80cf00392
 
 def plot_main_figure():
     DPI = 400  # if the figure is too big on your screen, lower this number
