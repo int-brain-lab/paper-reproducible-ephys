@@ -357,7 +357,7 @@ def prepare_neural_data(insertions, one, recompute=False, new_metrics=True, **kw
 
     save_path = save_data_path(figure='supp_figure_bilateral')
     print(f'Saving data to {save_path}')
-    concat_df.to_csv(save_path.joinpath('supp_figure_bilateral_dataframe.csv'))
+    concat_df.to_csv(save_path.joinpath('supp_figure_bilateral_dataframe_neural.csv'))
     smoothing = smoothing or 'none'
     norm = norm or 'none'
     np.savez(save_path.joinpath(f'supp_figure_bilateral_data_event_{align_event}_smoothing_{smoothing}_norm_{norm}.npz'), **data)
@@ -372,7 +372,8 @@ if __name__ == '__main__':
     # Query bilateral insertions in the right hemisphere
     insertions = query(min_regions=0, n_trials=0, behavior=False, exclude_critical=True, one=one,
                        as_dataframe=False, bilateral=True)
-    #_ = recompute_metrics(insertions, one, new_metrics=new_metrics)
+    # insertions = get_insertions(one=one, bilateral=True, recompute=True) # only need recompute for the first time you run this
+    # _ = recompute_metrics(insertions, one, new_metrics=new_metrics)
     all_df_chns, all_df_clust, metrics = prepare_data(insertions, recompute=True, one=one)
     prepare_neural_data(insertions, recompute=True, one=one)
     save_dataset_info(one, figure='supp_figure_bilateral')
