@@ -15,14 +15,24 @@ from permutation_test import permut_test, distribution_dist_approx
 lab_number_map, institution_map, lab_colors = labs()
 fig_path = save_figure_path(figure='figure4_5')
 
-tests = {'trial': 'Trial',
-         'start_to_move': 'Pre move (TW)',
-         'post_stim': 'Post stim',
-         'pre_move': 'Pre move',
-         'pre_move_lr': 'Move LvR',
-         'post_move': 'Post move',
-         'post_reward': 'Post reward',
-         'avg_ff_post_move': 'FanoFactor'}
+# tests = {'trial': 'Trial',
+#          'start_to_move': 'Pre move (TW)',
+#          'post_stim': 'Post stim',
+#          'pre_move': 'Pre move',
+#          'pre_move_lr': 'Move LvR',
+#          'post_move': 'Post move',
+#          'post_reward': 'Post reward',
+#          'avg_ff_post_move': 'FanoFactor'}
+
+tests = {'trial': 'Post-stimulus (0-400 ms)',
+          'start_to_move': 'Reaction period',
+          'post_stim': 'Post-stimulus (50-150 ms)',
+          'pre_move': 'Pre-movement',
+          'pre_move_lr': 'L vs. R pre-movement',
+          'post_move': 'Post-movement',
+          'post_reward': 'Post-reward',
+          'avg_ff_post_move': 'Fano Factor'}
+>>>>>>> dd9d612e067daa3c94140a8f82f36db80cf00392
 
 def plot_main_figure():
     DPI = 400  # if the figure is too big on your screen, lower this number
@@ -70,7 +80,7 @@ def plot_main_figure():
                                              wspace=0.3),
           'panel_E_5': fg.place_axes_on_grid(fig, xspan=[0.075, 0.46], yspan=[0.94, 1.],
                                              wspace=0.3),
-          'panel_F': fg.place_axes_on_grid(fig, xspan=[0.56, 1.], yspan=[0.7, .9],
+          'panel_F': fg.place_axes_on_grid(fig, xspan=[0.59, .99], yspan=[0.67, .91],
                                            wspace=0.3)}
 
     plot_panel_single_neuron(ax=[ax['panel_A_1'], ax['panel_A_2']], save=False)
@@ -103,13 +113,39 @@ def plot_main_figure():
               {'label_text': 'c', 'xpos': 0.671, 'ypos': 0, 'fontsize': 10, 'weight': 'bold'},
               {'label_text': 'd', 'xpos': 0, 'ypos': 0.34, 'fontsize': 10, 'weight': 'bold'},
               {'label_text': 'e', 'xpos': 0, 'ypos': 0.645, 'fontsize': 10, 'weight': 'bold'},
-              {'label_text': 'f', 'xpos': 0.54, 'ypos': 0.645, 'fontsize': 10, 'weight': 'bold'}]
+              {'label_text': 'f', 'xpos': 0.538, 'ypos': 0.645, 'fontsize': 10, 'weight': 'bold'}]
+
 
     fg.add_labels(fig, labels)
     print(f'Saving figures to {fig_path}')
     plt.savefig(fig_path.joinpath('figure4_5_combined.png'), bbox_inches='tight', pad_inches=0)
     plt.savefig(fig_path.joinpath('figure4_5_combined.pdf'), bbox_inches='tight', pad_inches=0)
     plt.close()
+
+
+def plot_panel_single_neuron_LvsR(ax=None, save=True):
+    # Does not distinguish between contrasts, but distinguishes by side
+    pid = 'f26a6ab1-7e37-4f8d-bb50-295c056e1062'
+    neuron = 241 #386
+    align_event = 'move'
+    params = {'smoothing': 'sliding',
+              'fr_bin_size': 0.06,
+              'event_epoch': [-0.2, 0.2], #[-0.3, 0.22],
+              'slide_kwargs_fr': {'n_win': 3, 'causal': 1}}
+
+    # neuron = 241 #323 #265 #144 #614
+    # pid = 'a12c8ae8-d5ad-4d15-b805-436ad23e5ad1' #'36362f75-96d8-4ed4-a728-5e72284d0995'#'31f3e083-a324-4b88-b0a4-7788ec37b191' #'ce397420-3cd2-4a55-8fd1-5e28321981f4'  # SWC_054
+    #side = 'right' #'left' #'all'
+    feedback = 'correct' #'all'
+
+    ax = plot_raster_and_psth_LvsR(pid, neuron, align_event=align_event, feedback=feedback,
+                              labelsize=16, ax=ax, contrasts=(1, 0.25, 0.125, 0.0625), **params) #excluding 0 contrasts
+    ax[0].set_title('Example LP neuron', loc='left')
+
+    if save:
+        plt.savefig(fig_path.joinpath(f'figure4_5_{pid}_neuron{neuron}_align_{align_event}.png'))
+
+    #Need to put legend for colorbar/side
 
 
 def plot_panel_single_neuron(ax=None, save=True):
@@ -174,8 +210,12 @@ def plot_panel_single_subject(event='move', norm='subtract', smoothing='sliding'
     # print(lab)
     # quit()
     time = data['time']
-    propagated_error = np.zeros_like(all_frs_l[idx][0])
-    for fr, fr_std in zip(all_frs_l[idx], all_frs_l_std[idx]):
+    # To easily switch between sides for plotting:
+    all_frs_side = all_frs_r #all_frs_l #
+    all_frs_side_std = all_frs_r_std #all_frs_l_std #
+
+    propagated_error = np.zeros_like(all_frs_side[idx][0])
+    for fr, fr_std in zip(all_frs_side[idx], all_frs_side_std[idx]):
         ax.plot(time, fr, 'k')
         propagated_error += fr_std ** 2
         ax.fill_between(time, fr - fr_std, fr + fr_std, color='k', alpha=0.25)
@@ -230,7 +270,11 @@ def plot_panel_all_subjects(max_neurons, min_neurons, ax=None, save=True, plotte
         for subj in df_reg_subj.groups.keys():
             df_subj = df_reg_subj.get_group(subj)
             subj_idx = df_reg_subj.groups[subj]
-            frs_subj = all_frs_l[subj_idx, :]
+
+            #Select L vs R side:
+            #frs_subj = all_frs_l[subj_idx, :]
+            frs_subj = all_frs_r[subj_idx, :]
+
             if df_subj.iloc[0]['institute'] not in all_present_labs:
                 all_present_labs.append(df_subj.iloc[0]['institute'])
             ax[iR].plot(data['time'], np.mean(frs_subj, axis=0), c=lab_colors[df_subj.iloc[0]['institute']],
