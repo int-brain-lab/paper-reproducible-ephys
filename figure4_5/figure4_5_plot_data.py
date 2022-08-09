@@ -369,7 +369,6 @@ def plot_panel_task_modulated_neurons(specific_tests=None, ax=None, save=True):
 
 
 def plot_panel_permutation(ax=None):
-
     # load dataframe from prev fig. 5 (To be combined with new Fig 4)
     # Prev Figure 5d permutation tests
     df = load_dataframeFig5()

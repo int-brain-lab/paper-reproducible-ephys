@@ -293,12 +293,14 @@ def prepare_neural_data(insertions, one, recompute=False, new_metrics=True, **kw
             # Find align events
             if align_event == 'move':
                 eventTimes = eventMove
-                trial_l_idx = np.where(trials['choice'][np.bitwise_and(trial_idx, ~nan_trials)] == 1)[0]
                 trial_r_idx = np.where(trials['choice'][np.bitwise_and(trial_idx, ~nan_trials)] == -1)[0]
+                trial_l_idx = np.where(trials['choice'][np.bitwise_and(trial_idx, ~nan_trials)] == 1)[0]
+                trial_idx = np.concatenate((trial_r_idx, trial_l_idx))
             elif align_event == 'stim':
                 eventTimes = eventStim
-                trial_l_idx = np.where(trials['contrastLeft'][np.bitwise_and(trial_idx, ~nan_trials)] > 0)[0]
                 trial_r_idx = np.where(trials['contrastRight'][np.bitwise_and(trial_idx, ~nan_trials)] > 0)[0]
+                trial_l_idx = np.where(trials['contrastLeft'][np.bitwise_and(trial_idx, ~nan_trials)] > 0)[0]
+                trial_idx = np.concatenate((trial_r_idx, trial_l_idx))
 
             # Find baseline event times
             if base_event == 'move':
@@ -307,18 +309,19 @@ def prepare_neural_data(insertions, one, recompute=False, new_metrics=True, **kw
                 eventBase = eventStim
 
             # Compute firing rates for left side events
-            fr_l, fr_l_std, t = compute_psth(spikes['times'][spike_idx], spikes['clusters'][spike_idx], data['cluster_ids'],
-                                             eventTimes[trial_l_idx], align_epoch=event_epoch, bin_size=bin_size,
-                                             baseline_events=eventBase[trial_l_idx], base_epoch=base_epoch,
-                                             smoothing=smoothing, norm=norm)
-            fr_l_std = fr_l_std / np.sqrt(trial_l_idx.size)  # convert to standard error
+            fr, fr_std, t = compute_psth(spikes['times'][spike_idx], spikes['clusters'][spike_idx], data['cluster_ids'],
+                                         eventTimes[trial_idx], align_epoch=event_epoch, bin_size=bin_size,
+                                         baseline_events=eventBase[trial_idx], base_epoch=base_epoch,
+                                         smoothing=smoothing, norm=norm)
+
+            fr_std = fr_std / np.sqrt(trial_idx.size)  # convert to standard error
 
             # Compute firing rates for right side events
-            fr_r, fr_r_std, t = compute_psth(spikes['times'][spike_idx], spikes['clusters'][spike_idx], data['cluster_ids'],
-                                             eventTimes[trial_r_idx], align_epoch=event_epoch, bin_size=bin_size,
-                                             baseline_events=eventBase[trial_r_idx], base_epoch=base_epoch,
-                                             smoothing=smoothing, norm=norm)
-            fr_r_std = fr_r_std / np.sqrt(trial_r_idx.size)  # convert to standard error
+            # fr_r, fr_r_std, t = compute_psth(spikes['times'][spike_idx], spikes['clusters'][spike_idx], data['cluster_ids'],
+            #                                  eventTimes[trial_r_idx], align_epoch=event_epoch, bin_size=bin_size,
+            #                                  baseline_events=eventBase[trial_r_idx], base_epoch=base_epoch,
+            #                                  smoothing=smoothing, norm=norm)
+            # fr_r_std = fr_r_std / np.sqrt(trial_r_idx.size)  # convert to standard error
 
             # Add other cluster information
             data['region'] = clusters['rep_site_acronym'][cluster_idx]
@@ -334,24 +337,24 @@ def prepare_neural_data(insertions, one, recompute=False, new_metrics=True, **kw
             all_df.append(df)
 
             if iIns == 0:
-                all_frs_l = fr_l
-                all_frs_l_std = fr_l_std
-                all_frs_r = fr_r
-                all_frs_r_std = fr_r_std
+                all_frs = fr
+                all_frs_std = fr_std
+                # all_frs_r = fr_r
+                # all_frs_r_std = fr_r_std
             else:
-                all_frs_l = np.r_[all_frs_l, fr_l]
-                all_frs_l_std = np.r_[all_frs_l_std, fr_l_std]
-                all_frs_r = np.r_[all_frs_r, fr_r]
-                all_frs_r_std = np.r_[all_frs_r_std, fr_r_std]
+                all_frs = np.r_[all_frs, fr]
+                all_frs_std = np.r_[all_frs_std, fr_std]
+                # all_frs_r = np.r_[all_frs_r, fr_r]
+                # all_frs_r_std = np.r_[all_frs_r_std, fr_r_std]
 
         except Exception as err:
             print(f'{pid} errored: {err}')
 
     concat_df = pd.concat(all_df, ignore_index=True)
-    data = {'all_frs_l': all_frs_l,
-            'all_frs_l_std': all_frs_l_std,
-            'all_frs_r': all_frs_r,
-            'all_frs_r_std': all_frs_r_std,
+    data = {'all_frs': all_frs,
+            'all_frs_std': all_frs_std,
+            # 'all_frs_r': all_frs_r,
+            # 'all_frs_r_std': all_frs_r_std,
             'time': t,
             'params': params}
 
@@ -374,6 +377,6 @@ if __name__ == '__main__':
                        as_dataframe=False, bilateral=True)
     # insertions = get_insertions(one=one, bilateral=True, recompute=True) # only need recompute for the first time you run this
     # _ = recompute_metrics(insertions, one, new_metrics=new_metrics)
-    all_df_chns, all_df_clust, metrics = prepare_data(insertions, recompute=True, one=one)
     prepare_neural_data(insertions, recompute=True, one=one)
+    all_df_chns, all_df_clust, metrics = prepare_data(insertions, recompute=True, one=one)
     save_dataset_info(one, figure='supp_figure_bilateral')
