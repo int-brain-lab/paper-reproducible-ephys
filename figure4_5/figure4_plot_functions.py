@@ -98,7 +98,7 @@ def plot_raster_and_psth_LvsR(pid, neuron, contrasts=(1, 0.25, 0.125, 0.0625, 0)
     post_time = event_epoch[1]
 
 
-    # Plot the individual spikes    
+    # Plot the individual spikes
     for ch in [-1, 1]:
         events = eventTimes[trials['choice'] == ch] #when only correct feedback, then ch=1 means left side stim and choice
         for i, time in enumerate(events):
@@ -108,14 +108,14 @@ def plot_raster_and_psth_LvsR(pid, neuron, contrasts=(1, 0.25, 0.125, 0.0625, 0)
         #contrast_count_list.append(counter)
         count_list.append(counter)
         ax[0].set_xlim(pre_time - fr_bin_size / 2, post_time + fr_bin_size / 2)
- 
+
 
     # Plot the bar indicating stim/choice side on the left side of figure
     for i, ch in enumerate([-1, 1]):
         # Determine color of the colorbar
         if ch == -1:
             ch_color = 1
-            #i=0 
+            #i=0
         elif ch == 1:
             ch_color = 0.1 #since no alpha here, we adjust this number from 0.45
             #i=1
@@ -126,7 +126,7 @@ def plot_raster_and_psth_LvsR(pid, neuron, contrasts=(1, 0.25, 0.125, 0.0625, 0)
                             [top, top], [bottom, bottom], color=str(1 - (base_grey + ch_color * (1 - base_grey))))
         ylabel_pos.append((top - bottom) / 2 + bottom)
 
-           
+
     ax[0].set_yticks(ylabel_pos)
     ax[0].set_yticklabels(['Right', 'Left'])
     ax[0].axvline(0, color=zero_line_c, ls='--')
@@ -137,8 +137,8 @@ def plot_raster_and_psth_LvsR(pid, neuron, contrasts=(1, 0.25, 0.125, 0.0625, 0)
     ax[0].spines['left'].set_visible(False)
     ax[0].spines['bottom'].set_visible(False)
     ax[0].tick_params(left=False, right=False, labelbottom=False, bottom=False)  # , labelsize=labelsize)
-     
-    
+
+
     # Comppute the psths for firing rate for each contrast
     for ch in [-1, 1]:
         # Determine color of the trace
@@ -161,9 +161,10 @@ def plot_raster_and_psth_LvsR(pid, neuron, contrasts=(1, 0.25, 0.125, 0.0625, 0)
     ax[1].spines['top'].set_visible(False)
     ax[1].set_ylabel("Firing rate (sp/s)")  # , size=labelsize + 3)
     ax[1].set_xlim(left=pre_time, right=post_time)
+    ax[1].set_xticks([-0.15, 0, 0.15])
     #sns.despine(trim=True, ax=ax[1])
     # ax[1].tick_params(labelsize=labelsize)
-    
+
 
     #FIX this part later:
     if plot_ff:

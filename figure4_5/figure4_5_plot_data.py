@@ -24,9 +24,9 @@ fig_path = save_figure_path(figure='figure4_5')
 #          'post_reward': 'Post reward',
 #          'avg_ff_post_move': 'FanoFactor'}
 
-tests = {'trial': 'Post-stimulus (0-400 ms)',
+tests = {'trial': 'Trial',
           'start_to_move': 'Reaction period',
-          'post_stim': 'Post-stimulus (50-150 ms)',
+          'post_stim': 'Post-stimulus',
           'pre_move': 'Pre-movement',
           'pre_move_lr': 'L vs. R pre-movement',
           'post_move': 'Post-movement',
@@ -61,13 +61,13 @@ def plot_main_figure():
                                            wspace=0.3),
           'panel_C': fg.place_axes_on_grid(fig, xspan=[0.741, 1.], yspan=[0.045, 0.27],
                                            wspace=0.3),
-          'panel_D_1': fg.place_axes_on_grid(fig, xspan=[0.087,  0.277], yspan=[0.37, 0.58],
+          'panel_D_1': fg.place_axes_on_grid(fig, xspan=[0.075,  0.27375], yspan=[0.37, 0.58],
                                              wspace=0.3),
-          'panel_D_2': fg.place_axes_on_grid(fig, xspan=[0.3, 0.49], yspan=[0.37, 0.58],
+          'panel_D_2': fg.place_axes_on_grid(fig, xspan=[0.28375, 0.4825], yspan=[0.37, 0.58],
                                              wspace=0.3),
-          'panel_D_3': fg.place_axes_on_grid(fig, xspan=[0.523, 0.713], yspan=[0.37, 0.58],
+          'panel_D_3': fg.place_axes_on_grid(fig, xspan=[0.4925, 0.69125], yspan=[0.37, 0.58],
                                              wspace=0.3),
-          'panel_D_4': fg.place_axes_on_grid(fig, xspan=[0.746, .936], yspan=[0.37, 0.58],
+          'panel_D_4': fg.place_axes_on_grid(fig, xspan=[0.70125, .9], yspan=[0.37, 0.58],
                                              wspace=0.3),
           'panel_E_1': fg.place_axes_on_grid(fig, xspan=[0.075, 0.46], yspan=[0.66, 0.72],
                                              wspace=0.3),
@@ -231,9 +231,9 @@ def plot_panel_single_subject(event='move', norm='subtract', smoothing='sliding'
     ax.set_ylabel("Baselined firing rate (sp/s)", labelpad=-0)
     ax.spines["right"].set_visible(False)
     ax.spines["top"].set_visible(False)
-    # ax.set_xlim(left=time[0], right=time[-1])
-    ax.set_xticks([-0.2, 0, 0.2]) #change this later
-    ax.set_xlim(left=-0.2, right=0.2) #change this later
+    ax.set_xlim(left=time[0], right=time[-1])
+    ax.set_xticks([-0.15, 0, 0.15], [-0.15, 0, 0.15]) #change this later
+    # ax.set_xlim(left=-0.2, right=0.2) #change this later
     # sns.despine(trim=True, ax=ax)
 
     if save:
@@ -286,9 +286,9 @@ def plot_panel_all_subjects(max_neurons, min_neurons, ax=None, save=True, plotte
         ax[iR].axvline(0, color='k', ls='--')
         ax[iR].spines["right"].set_visible(False)
         ax[iR].spines["top"].set_visible(False)
-        # ax[iR].set_xlim(left=data['time'][0], right=data['time'][-1])
-        ax[iR].set_xticks([-0.2, 0, 0.2])  # change this later
-        ax[iR].set_xlim(left=-0.2, right=0.2)  # change this later
+        ax[iR].set_xlim(left=data['time'][0], right=data['time'][-1])
+        ax[iR].set_xticks([-0.15, 0, 0.15], [-0.15, 0, 0.15])  # change this later
+        # ax[iR].set_xlim(left=-0.2, right=0.2)  # change this later
         # sns.despine(trim=True, ax=ax[iR])
         if iR >= 1:
             ax[iR].set_yticklabels([])
@@ -361,7 +361,7 @@ def plot_panel_task_modulated_neurons(specific_tests=None, ax=None, save=True):
                 if i == 4:
                     ax[i].set_xlabel('Mice')
                 elif i == 0:
-                    ax[i].set_title('Proportion of modulated neurons (Pre-move. test)', loc='left')
+                    ax[i].set_title('Proportion modulated neurons (Pre-move.)', loc='left')
         if specific_tests is None:
             plt.suptitle(tests[test], size=22)
         if save:
@@ -400,11 +400,16 @@ def plot_panel_permutation(ax=None):
 
             p = permut_test(data, metric=distribution_dist_approx, labels1=labs,
                             labels2=subjects, shuffling='labels1_based_on_2')
+            # print(p)
+            # if p > 0.05:
+            #     return data, labs, subjects
             results = pd.concat((results, pd.DataFrame(index=[results.shape[0] + 1],
                                                        data={'test': test, 'region': reg, 'p_value_permut': p})))
 
     shape = (len(tests.keys()), len(BRAIN_REGIONS))
-    print(results.p_value_permut.values)
+    # import pickle
+    # pickle.dump(results.p_value_permut.values, open("p_values", 'wb'))
+    # print(results.p_value_permut.values)
     _, corrected_p_vals, _, _ = multipletests(results.p_value_permut.values, 0.05, method='fdr_bh')
     corrected_p_vals = corrected_p_vals.reshape(shape)
     # corrected_p_vals = results.p_value_permut.values.reshape(shape)
@@ -424,6 +429,30 @@ def plot_panel_permutation(ax=None):
     return results
 
 
+# data, labs, subjects = plot_panel_permutation()
+# p = permut_test(data, metric=distribution_dist_approx, labels1=labs, labels2=subjects, shuffling='labels1_based_on_2')
+# for i, lab in enumerate(np.unique(labs)):
+#     temp = np.mean(data[labs == lab])
+#     plt.plot([2*i, 2*i+1], [temp, temp])
+# plt.show()
+# for i, lab in enumerate(np.unique(labs)):
+#     plt.hist(data[labs == lab], label=lab, alpha=0.5)
+# plt.legend()
+# plt.show()
+# lab_names = np.unique(labs)
+# p = np.zeros(50)
+# for i in range(50):
+#     if i % 10 == 0:
+#         print(i)
+#     data[labs == lab_names[0]] += 0.1
+#     p[i] = permut_test(data, metric=distribution_dist_approx, labels1=labs, n_permut=4000,
+#                        labels2=subjects, shuffling='labels1_based_on_2')
+# plt.plot(np.arange(50) * 0.1, p)
+# plt.axvline(np.where(p < 0.05)[0][0] * 0.1, label="p<0.05", color='black')
+# plt.axvline(np.where(p < 0.005)[0][0] * 0.1, label="p<0.005", color='red')
+# plt.legend()
+# plt.show()
+# quit()
 # data = data[~np.isnan(data)]
 # p = permut_test(data, metric=distribution_dist_approx, labels1=labs,
 #                 labels2=subjects, shuffling='labels1_based_on_2', n_permut=10000, plot=True, mark_p=0.004)
