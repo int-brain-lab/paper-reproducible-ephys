@@ -27,7 +27,7 @@ def plot_main_figure(one=None):
 
     # Get amount of probe plots
     n_columns = len(query(min_regions=0, n_trials=0, behavior=False, exclude_critical=True, one=one,
-                          as_dataframe=False, bilateral=True))
+                          as_dataframe=False, bilateral=True)) - 6
 
     # Set up figure
     figure_style()
@@ -60,7 +60,7 @@ def plot_main_figure(one=None):
     panel_probe_lfp(fig, ax['panel_A'], boundary_align=BOUNDARY)
     panel_probe_neurons(fig, ax['panel_B'], boundary_align=BOUNDARY)
     panel_distribution(ax['panel_C'], example_region='CA1', example_metric='lfp_power',
-                       ylabel='LFP power diff. in CA1 (db)')
+                       ylabel='LFP power diff. in CA1 (db)', yticks=[0, 30, 60])
     panel_distribution(ax['panel_D'], example_region='PPC', example_metric='median_firing_rate',
                        ylabel='Firing rate diff. in PPC (spks/s)', yticks=[0, 5, 10])
     panel_distribution(ax['panel_E'], example_region='PPC', example_metric='spike_amp_median',

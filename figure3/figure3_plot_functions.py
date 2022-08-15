@@ -9,7 +9,7 @@ from figure3.figure3_load_data import load_dataframe
 import seaborn as sns
 from matplotlib.sankey import Sankey
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-from permutation_test import permut_test, permut_dist
+from permutation_test import permut_test, distribution_dist_approx
 from statsmodels.stats.multitest import multipletests
 
 br = BrainRegions()
@@ -60,7 +60,7 @@ def panel_sankey(fig, ax, one):
     # Sankey plot
     sankey = Sankey(ax=ax, scale=0.005, offset=0.1, head_angle=90, shoulder=0.025, gap=0.5, radius=0.05)
     sankey.add(flows=num_trajectories,
-               labels=['All sessions',
+               labels=['All insertions',
                        'Recording failure',
                        'Off target',
                        'Too few trials',
@@ -131,6 +131,11 @@ def panel_probe_lfp(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-200
         else:
             ax[iR].set_axis_off()
         ax[iR].set(ylim=ylim)
+
+        # Add squigly line if probe plot is cut off
+        if np.min(z) < np.min(ylim):
+            ax[iR].text(ax[iR].get_xlim()[1] / 2, ylim[0] - 180, '~', fontsize=10, ha='center')
+
     ax[-1].set_axis_off()
 
     # Add lab names
@@ -183,10 +188,11 @@ def panel_probe_neurons(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[
             z_subtract = 0
 
         levels = [0, 30]
-        im = ax[iR].scatter(np.log10(df_clu['amps'] * 1e6), df_clu['depths_aligned'] - z_subtract, c=df_clu['fr'], s=1,
+        im = ax[iR].scatter(np.random.uniform(low=0.25, high=0.75, size=df_clu.shape[0]),
+                            df_clu['depths_aligned'] - z_subtract, c=df_clu['fr'], s=1,
                             cmap='hot', vmin=levels[0], vmax=levels[1], zorder=2)
         ax[iR].images.append(im)
-        ax[iR].set_xlim(1.3, 3)
+        ax[iR].set_xlim(0, 1)
 
         # First for all regions
         region_info = br.get(df_ch['region_id'].values)
@@ -238,6 +244,10 @@ def panel_probe_neurons(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[
         else:
             ax[iR].set_axis_off()
         ax[iR].set(ylim=ylim)
+
+        # Add squigly line if probe plot is cut off
+        if np.min(z) < np.min(ylim):
+            ax[iR].text(ax[iR].get_xlim()[1] / 2, ylim[0] - 180, '~', fontsize=10, ha='center')
 
     # Add brain regions
     width = ax[-1].get_xlim()[1]
@@ -345,7 +355,7 @@ def panel_permutation(ax, metrics, regions, labels, n_permut=10000, n_rec_per_la
             this_labs = this_labs[~np.isin(this_labs, excl_labs)]
 
             # Do permutation test
-            p = permut_test(this_data, metric=permut_dist, labels1=this_labs,
+            p = permut_test(this_data, metric=distribution_dist_approx, labels1=this_labs,
                             labels2=this_subjects, n_permut=n_permut)
             results = pd.concat((results, pd.DataFrame(index=[results.shape[0] + 1], data={
                 'metric': metric, 'region': region, 'p_value_permut': p})))
