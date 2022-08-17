@@ -47,7 +47,7 @@ def permut_test(data, metric, labels1, labels2, n_permut=10000, shuffling='label
     TODO:
     """
     # Calculate metric
-    observed_val = metric(data, labels1, labels2, plot_it=True)
+    observed_val = metric(data, labels1, labels2)
 
     # Prepare permutations
     permuted_labels1, permuted_labels2 = shuffle_labels(labels1, labels2, n_permut, shuffling, n_cores=n_cores)
@@ -56,7 +56,7 @@ def permut_test(data, metric, labels1, labels2, n_permut=10000, shuffling='label
     null_dist = np.zeros(n_permut)
     if n_cores == 1:
         for i in range(n_permut):
-            null_dist[i] = metric(data, permuted_labels1[i], permuted_labels2[i])
+            null_dist[i] = metric(data, permuted_labels1[i], permuted_labels2[i], print_it=False)
     else:
         size = n_permut // n_cores
         arg_list = [(metric, data, permuted_labels1[i*size:(i+1)*size], permuted_labels2[i*size:(i+1)*size]) for i in range(n_cores)]
@@ -209,47 +209,29 @@ def distribution_dist(data, labs, mice):
     return dist_sum
 
 
-def distribution_dist_approx(data, labs, mice, n=400, print_it=False, plot_it=False):
+def distribution_dist_approx(data, labs, mice, n=400, print_it=False):
     dist_sum = 0
     low = data.min()
     high = data.max()
-    p1_array = np.zeros(n)
-    # for p in data:
-    #     p1_array[min(int((p - low) / (high - low) * n), n-1):] += 1
-    p1_array = np.bincount(np.clip(((data - low) / (high - low) * n).astype(int), a_min=None, a_max=n-1), minlength=n)
-    p1_array = np.cumsum(p1_array)
-    p1_array = p1_array / p1_array[-1]
-    if plot_it:
-        plt.figure(figsize=(16 * 0.75, 9 * 0.75))
-        plt.plot(p1_array, 'k', lw=3)
-    # if print_it:
-    #     print("p1: {}".format(p1_array))
+
     for lab in np.unique(labs):
-        temp = helper(n, p1_array, data[labs == lab], low, high, print_it=print_it, plot_it=plot_it, lab=lab)
-        # if print_it:
-        #     print(temp)
-        dist_sum += temp
-    if plot_it:
-        plt.xticks(np.arange(0, n, n // 8), np.round(np.arange(0, n, n // 8) / n * (high - low) + low, 2))
-        plt.title(dist_sum)
-        plt.legend()
-        plt.savefig("temp")
-        plt.show()
+        p1_array = np.zeros(n)
+        p1_array = np.bincount(np.clip(((data[labs != lab] - low) / (high - low) * n).astype(int), a_min=None, a_max=n-1), minlength=n)
+        p1_array = np.cumsum(p1_array)
+        p1_array = p1_array / p1_array[-1]
+        temp = helper(n, p1_array, data[labs == lab], low, high)
+
+        dist_sum += temp * (labs == lab).sum() / labs.shape[0]
+
     return dist_sum
 
 
-def helper(n, p1_array, points2, low, high, print_it=False, plot_it=False, lab=None):
+def helper(n, p1_array, points2, low, high):
     p2_array = np.zeros(n)
-    # for p in points2:
-    #     p2_array[min(int((p - low) / (high - low) * n), n-1):] += 1
+
     p2_array = np.bincount(np.clip(((points2 - low) / (high - low) * n).astype(int), a_min=None, a_max=n-1), minlength=n)
     p2_array = np.cumsum(p2_array)
-    # if print_it:
-    #     print("one p2_array: {}".format(p2_array / p2_array[-1]))
-    if plot_it:
-        plt.plot(p2_array / p2_array[-1], label=lab + " ({})".format(np.round(np.max(np.abs(p1_array - p2_array / p2_array[-1])), 3)))
-        if lab == 'UCLA':
-            plt.axvline(np.argmax(np.abs(p1_array - p2_array / p2_array[-1])))
+
     return np.max(np.abs(p1_array - p2_array / p2_array[-1]))
 
 
@@ -266,6 +248,7 @@ def power_test(n_simul, dist, labels1, labels2, diff_labels1, metric=distributio
     # plt.hist(ps)
     # plt.show()
     return ps
+
 
 if __name__ == '__main__':
     import pickle
@@ -360,7 +343,7 @@ if __name__ == '__main__':
     data = rng.normal(0, 1, 15)
     t = time.time()
     p = permut_test(data, metric=distribution_dist_approx, labels2=np.array(["0", "0", "0", "1", "2", "2", "3", "3", "3", "3", "4", "4", "5", "5", "5"]), labels1=np.array([0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 2, 2, 1, 1, 1]),
-                    shuffling='labels1_based_on_2', n_permut=100000, plot=False)
+                    shuffling='labels1_based_on_2', n_permut=10000, plot=False)
     print(time.time() - t)
     print(p)
 

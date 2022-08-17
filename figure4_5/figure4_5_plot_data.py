@@ -409,7 +409,7 @@ def plot_panel_permutation(ax=None):
 
             print("Testing")
             p = permut_test(data, metric=distribution_dist_approx, labels1=labs,
-                            labels2=subjects, shuffling='labels1_based_on_2', n_permut=100000, n_cores=10)
+                            labels2=subjects, shuffling='labels1_based_on_2', n_cores=8, n_permut=50000)
             # print(p)
             # if p > 0.05:
             #     return data, labs, subjects
@@ -418,7 +418,7 @@ def plot_panel_permutation(ax=None):
 
     shape = (len(tests.keys()), len(BRAIN_REGIONS))
     import pickle
-    pickle.dump(results.p_value_permut.values, open("p_values", 'wb'))
+    pickle.dump(results.p_value_permut.values, open("p_values_new_metric", 'wb'))
     print(results.p_value_permut.values)
     _, corrected_p_vals, _, _ = multipletests(results.p_value_permut.values, 0.05, method='fdr_bh')
     corrected_p_vals = corrected_p_vals.reshape(shape)
@@ -454,13 +454,13 @@ def find_sig_p_value(p_values_to_copy, i):
         j += 1
         p_values[i] = np.round(p_attempt, 5)
         _, corrected_p_vals_low, _, _ = multipletests(p_values, 0.05, method='fdr_bh')
-        p_values[i] += 0.00001
+        p_values[i] += 0.00002
         _, corrected_p_vals_high, _, _ = multipletests(p_values, 0.05, method='fdr_bh')
         if corrected_p_vals_low[i] < 0.05 and corrected_p_vals_high[i] >= 0.05:
-            return p_values[i] - 0.00001, corrected_p_vals_low[i]
+            return p_values[i] - 0.00002, corrected_p_vals_low[i]
         if j == 100:
             print("Failed, current p_value is {}".format(corrected_p_vals_low[i]))
-            return p_values[i] - 0.00001, corrected_p_vals_low[i]
+            return p_values[i] - 0.00002, corrected_p_vals_low[i]
         if corrected_p_vals_low[i] >= 0.05:
             p_attempt -= step_unit * 0.5 ** j
         else:
@@ -474,10 +474,8 @@ def find_sig_manipulation(data, lab_to_manip, labs, subjects, p_to_reach, direct
     bound = 0
     while not found_bound:
         bound += 10 if direction == 'positive' else -10
-        print("Finding first bound, current: {}".format(bound))
         p = permut_test(data + (labs == lab_to_manip) * bound, metric=distribution_dist_approx, labels1=labs,
-                        labels2=subjects, shuffling='labels1_based_on_2', n_cores=10, n_permut=100000)
-        print("Giving us the p {} (versus p to reach {})".format(p, p_to_reach))
+                        labels2=subjects, shuffling='labels1_based_on_2', n_cores=8, n_permut=50000)
         if p < p_to_reach:
             found_bound = True
             if direction == 'positive':
@@ -503,7 +501,7 @@ def find_sig_manipulation(data, lab_to_manip, labs, subjects, p_to_reach, direct
 
         test = (lower_bound + higher_bound) / 2
         p = permut_test(data + (labs == lab_to_manip) * test, metric=distribution_dist_approx, labels1=labs,
-                        labels2=subjects, shuffling='labels1_based_on_2', n_cores=10, n_permut=100000)
+                        labels2=subjects, shuffling='labels1_based_on_2', n_cores=8, n_permut=50000)
         if p < p_to_reach:
             if direction == 'positive':
                 higher_bound = test
@@ -514,14 +512,15 @@ def find_sig_manipulation(data, lab_to_manip, labs, subjects, p_to_reach, direct
                 lower_bound = test
             else:
                 higher_bound = test
-        print("lower and higher bound are {}, {}".format(lower_bound, higher_bound))
     return lower_bound, higher_bound
 
-
+print("New code")
 # plot_panel_permutation()
 
 import pickle
-p_values = pickle.load(open("p_values", 'rb'))
+p_values = pickle.load(open("p_values_new_metric", 'rb'))
+_, corrected_p_vals, _, _ = multipletests(p_values, 0.05, method='fdr_bh')
+print(corrected_p_vals)
 
 df = load_dataframeFig5()
 df_filt = filter_recordings(df, recompute=False)
@@ -534,16 +533,16 @@ i = -1
 
 significant_disturbances = np.zeros((len(p_values), 6, 2))
 for test in tests.keys():
+    print(test, tests.keys(), time.time())
     for reg in BRAIN_REGIONS:
+        print(reg, BRAIN_REGIONS, time.time())
         i += 1
-        if shortened_tests[test] != "Pre-move" or reg != 'PPC':
-            continue
         df_reg = df_filt_reg.get_group(reg)
-        p_to_reach, _ = find_sig_p_value(p_values, i)
-        print("Determined p to reach: {}".format(p_to_reach))
-        if p_to_reach > p_values[i]:
+        if corrected_p_vals[i] < 0.05:
             print("test already significant {}, {}, {}".format(test, reg, i))
             continue
+        p_to_reach, _ = find_sig_p_value(p_values, i)
+        print("Determined p to reach: {}".format(p_to_reach))
 
         if test == 'avg_ff_post_move':
             data = df_reg[test].values
@@ -556,21 +555,13 @@ for test in tests.keys():
         subjects = subjects[~np.isnan(data)]
         data = data[~np.isnan(data)]
         for j, manipulate_lab in enumerate(np.unique(labs)):
-            if manipulate_lab != 'UCLA':
-                continue
-            p = permut_test(data + (labs == manipulate_lab) * 0., metric=distribution_dist_approx, labels1=labs,
-                            labels2=subjects, shuffling='labels1_based_on_2', n_permut=1000)
-            p = permut_test(data + (labs == manipulate_lab) * 0.18, metric=distribution_dist_approx, labels1=labs,
-                            labels2=subjects, shuffling='labels1_based_on_2', n_permut=1000)
-            p = permut_test(data + (labs == manipulate_lab) * -0.21, metric=distribution_dist_approx, labels1=labs,
-                            labels2=subjects, shuffling='labels1_based_on_2', n_permut=1000)
-            quit()
-            print("working on lab number {}".format(j))
             lower, higher = find_sig_manipulation(data.copy(), manipulate_lab, labs, subjects, p_to_reach, 'positive')
             significant_disturbances[i, j, 0] = higher
+            print("found bound: {}".format(higher))
             lower, higher = find_sig_manipulation(data.copy(), manipulate_lab, labs, subjects, p_to_reach, 'negative')
             significant_disturbances[i, j, 1] = lower
-        # pickle.dump(significant_disturbances, open("significant_disturbances_rest.p", 'wb'))
+            print("found bound: {}".format(lower))
+        pickle.dump(significant_disturbances, open("new_metric.p", 'wb'))
 quit()
 
 power_an_1 = pickle.load(open("significant_disturbances_rest.p", 'rb'))
