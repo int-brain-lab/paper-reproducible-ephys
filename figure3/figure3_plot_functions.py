@@ -300,17 +300,18 @@ def panel_example(ax, n_rec_per_lab=0, n_rec_per_region=3,
     for i, inst in enumerate(data_example['institute'].unique()):
         cmap.append(lab_colors[inst])
 
-    sns.stripplot(data=data_example, x='institute', y=example_metric, palette=cmap, s=3, ax=ax)
+    sns.swarmplot(data=data_example, x='institute', y=example_metric, palette=cmap, s=3, ax=ax)
 
+    """
+    # Plot lab means and overal mean
     ax_lines = sns.pointplot(x='institute', y=example_metric, data=data_example,
                              ci=0, join=False, estimator=np.mean, color='k',
                              markers="_", scale=1, ax=ax)
-
     plt.setp(ax_lines.collections, zorder=100, label="")
-
     ax.plot(np.arange(data_example['institute'].unique().shape[0]),
              [data_example[example_metric].mean()] * data_example['institute'].unique().shape[0],
              color='r', lw=1)
+    """
 
     ax.set(ylabel=ylabel, xlabel='', xlim=[-.5, len(data_example['institute'].unique())])
     if ylim is not None:
@@ -337,7 +338,8 @@ def panel_permutation(ax, metrics, regions, labels, n_permut=10000, n_rec_per_la
     data.loc[data['lfp_power'] < -100000, 'lfp_power'] = np.nan
 
     results = pd.DataFrame()
-    for metric in metrics:
+    for i, metric in enumerate(metrics):
+        print(f'Running permutation tests for metric {metric} ({i+1} of {len(metrics)})')
         for region in regions:
             # Select data for this region and metrics
             this_data = data.loc[data['region'] == region, metric].values
@@ -356,7 +358,7 @@ def panel_permutation(ax, metrics, regions, labels, n_permut=10000, n_rec_per_la
 
             # Do permutation test
             p = permut_test(this_data, metric=distribution_dist_approx, labels1=this_labs,
-                            labels2=this_subjects, n_permut=n_permut)
+                            labels2=this_subjects, n_permut=n_permut, plot=False)
             results = pd.concat((results, pd.DataFrame(index=[results.shape[0] + 1], data={
                 'metric': metric, 'region': region, 'p_value_permut': p})))
 
