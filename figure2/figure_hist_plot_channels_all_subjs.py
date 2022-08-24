@@ -16,7 +16,8 @@ import numpy as np
 import ibllib.atlas as atlas
 from figure2.figure2_load_data import load_dataframe
 from figure2.figure2_functions import df_to_traj_dict
-from reproducible_ephys_functions import save_figure_path
+from reproducible_ephys_functions import save_figure_path, filter_recordings
+from iblutil.numerical import ismember
 
 
 def plot_channels(figcor=None, figsag=None, subjects=None, n_cols=None, remove_axes=False, show_scalebar=False, marker_size=None):
@@ -29,6 +30,9 @@ def plot_channels(figcor=None, figsag=None, subjects=None, n_cols=None, remove_a
     if subjects is not None:
         # If specific list of subjects is specified filter the dataframe
         probe_data = probe_data.loc[probe_data['subject'].isin(subjects)]
+    else:
+        # if none get all subjects from trajectory data
+        subjects = probe_data['subject'].tolist()
 
     n_cols = n_cols or np.min([len(probe_data), 14]).astype(int)
     n_rows = np.ceil(len(probe_data) / n_cols).astype(int)
@@ -196,25 +200,42 @@ def plot_slice(ba_gr, ba_rd, axis, ins, plt_ax, roi=None, cmap=None, **kwargs):
     return plt_ax, sec_ax
 
 
-def plot_all_channels(subjects=None):
+def plot_all_channels(subjects=None, remove_exclusions=True):
     """
     Plot all subjects CORONAL & SAGITTAL histology and channels for repeated site
     Plots all coronal and all sagittal data in one large figure.
     :return:
     """
 
+    if subjects is None:
+        # grab subjects from trajectory data 
+        probe_data = load_dataframe('traj')
+        if remove_exclusions == True: # after exclusions
+            df = filter_recordings()
+            df = filter_recordings(min_neuron_region=0)
+            # Find the pids are that are passing the inclusion criteria
+            pids = df[df['include'] == 1]['pid'].unique()
+            isin, _ = ismember(probe_data.pid.values, pids)
+            probe_data['include'] = isin
+            probe_data['passed'] = np.full(len(probe_data), 'PASS')
+            probe_data.loc[~probe_data['include'], 'passed'] = 'FAIL'
+            subjects = probe_data['subject'][probe_data['include'] == 1]
+        else: # wihtout exclusions
+            subjects = probe_data['subject']
+    
     # create figures
-    figcor = plt.figure(figsize=(60, 20), dpi=72)
-    figsag = plt.figure(figsize=(60, 20), dpi=72)
+    figcor = plt.figure(figsize=(20, 12), dpi=72)
+    figsag = plt.figure(figsize=(20, 12), dpi=72)
 
-    figcor, figsag = plot_channels(figcor, figsag, subjects=subjects, remove_axes=False, show_scalebar=False)
+    figcor, figsag = plot_channels(figcor, figsag, subjects=subjects, n_cols = 15,
+                                   remove_axes=True, show_scalebar=True)
 
     # adjust spacing
-    wspace = 0.05
-    hspace = 0.1
+    #wspace = 0.3
+    #hspace = 0.1
 
-    figcor.subplots_adjust(wspace, hspace)
-    figsag.subplots_adjust(wspace, hspace)
+    #figcor.subplots_adjust(wspace, hspace)
+    #figsag.subplots_adjust(wspace, hspace)
 
     figcor.tight_layout()
     figsag.tight_layout()
@@ -223,6 +244,9 @@ def plot_all_channels(subjects=None):
     fig_path = save_figure_path(figure='figure2')
     figcor.savefig(fig_path.joinpath('all_channels_subj_hist_coronal.svg'), bbox_inches="tight")
     figsag.savefig(fig_path.joinpath('all_channels_subj_hist_sagittal.svg'), bbox_inches="tight")
+
+
+
 
 
 def plot_channels_n3():
@@ -240,7 +264,7 @@ def plot_channels_n3():
     figcor.set_size_inches(3, 2.15)
     figsag.set_size_inches(3, 2.15)
 
-    figcor, figsag = plot_channels(figcor, figsag, subjects=subjects, remove_axes=True, show_scalebar=True, marker_size=0.5)
+    figcor, figsag = plot_channels(figcor, figsag, subjects=subjects, remove_axes=True, show_scalebar=True, marker_size=0.3)
 
     # adjust spacing
     wspace = 0.3
