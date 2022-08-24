@@ -7,9 +7,10 @@ Written by Sebastian Bruijns
 import numpy as np
 import matplotlib.pyplot as plt
 import time
+import multiprocessing as mp
 
 
-def permut_test(data, metric, labels1, labels2, n_permut=10000, shuffling='labels1', plot=False, return_details=False, mark_p=None):
+def permut_test(data, metric, labels1, labels2, n_permut=10000, shuffling='labels1', plot=False, return_details=False, mark_p=None, n_cores=1):
     """
     Compute the probability of observating metric difference for datasets, via permutation testing.
 
@@ -49,13 +50,20 @@ def permut_test(data, metric, labels1, labels2, n_permut=10000, shuffling='label
     observed_val = metric(data, labels1, labels2)
 
     # Prepare permutations
-    permuted_labels1, permuted_labels2 = shuffle_labels(labels1, labels2, n_permut, shuffling)
+    permuted_labels1, permuted_labels2 = shuffle_labels(labels1, labels2, n_permut, shuffling, n_cores=n_cores)
 
     # Compute null dist (if this could be vectorized it would be a lot faster, but depends on metric...)
     null_dist = np.zeros(n_permut)
-    for i in range(n_permut):
-        null_dist[i] = metric(data, permuted_labels1[i], permuted_labels2[i])
-
+    if n_cores == 1:
+        for i in range(n_permut):
+            null_dist[i] = metric(data, permuted_labels1[i], permuted_labels2[i], print_it=False)
+    else:
+        size = n_permut // n_cores
+        arg_list = [(metric, data, permuted_labels1[i*size:(i+1)*size], permuted_labels2[i*size:(i+1)*size]) for i in range(n_cores)]
+        pool = mp.Pool(n_cores)
+        part_null_dist = pool.starmap(metric_helper, arg_list)
+        pool.close()
+        null_dist = np.concatenate(part_null_dist, axis=0)
     p = len(null_dist[null_dist > observed_val]) / n_permut
     if plot:
         plot_permut_test(null_dist=null_dist, observed_val=observed_val, p=p, mark_p=mark_p)
@@ -66,7 +74,15 @@ def permut_test(data, metric, labels1, labels2, n_permut=10000, shuffling='label
         return p
 
 
-def shuffle_labels(labels1, labels2, n_permut, shuffling):
+def metric_helper(metric, data, permuted_labels1, permuted_labels2):
+    n = len(permuted_labels1)
+    part_null_dist = np.zeros(n)
+    for i in range(n):
+        part_null_dist[i] = metric(data, permuted_labels1[i], permuted_labels2[i])
+    return part_null_dist
+
+
+def shuffle_labels(labels1, labels2, n_permut, shuffling, n_cores=1):
     """Shuffle labels according to demands."""
     if shuffling == 'labels1':
         permut_indices = np.tile(np.arange(labels1.size), (n_permut, 1))
@@ -97,14 +113,33 @@ def shuffle_labels(labels1, labels2, n_permut, shuffling):
             label1_values.append(labels1[labels2 == l2][0])
 
         permuted_labels1 = np.zeros((n_permut, len(labels1)))
-        for i in range(n_permut):
-            # shuffle associations between mice and labs
-            np.random.shuffle(label2_values)
-            mix_dict = dict(zip(label2_values, label1_values))
-            lab_mapping = np.vectorize(mix_dict.get)
-            permuted_labels1[i] = lab_mapping(labels2)
+        if n_cores == 1:
+            for i in range(n_permut):
+                # shuffle associations between mice and labs
+                np.random.shuffle(label2_values)
+                mix_dict = dict(zip(label2_values, label1_values))
+                lab_mapping = np.vectorize(mix_dict.get)
+                permuted_labels1[i] = lab_mapping(labels2)
+        else:
+            size = n_permut // n_cores
+            arg_list = [(size, label1_values, label2_values, labels1, labels2) for i in range(n_cores)]
+            pool = mp.Pool(n_cores)
+            part_permuted_labels1 = pool.starmap(shuffle_helper, arg_list)
+            pool.close()
+            permuted_labels1 = np.concatenate(part_permuted_labels1, axis=0)
 
         return permuted_labels1, np.tile(labels2, (n_permut, 1))
+
+
+def shuffle_helper(size, label1_values, label2_values, labels1, labels2):
+    # shuffle associations between mice and labs
+    part_permuted_labels1 = np.zeros((size, len(labels1)))
+    for i in range(size):
+        np.random.shuffle(label2_values)
+        mix_dict = dict(zip(label2_values, label1_values))
+        lab_mapping = np.vectorize(mix_dict.get)
+        part_permuted_labels1[i] = lab_mapping(labels2)
+    return part_permuted_labels1
 
 
 def plot_permut_test(null_dist, observed_val, p, mark_p, title=None):
@@ -127,7 +162,7 @@ def plot_permut_test(null_dist, observed_val, p, mark_p, title=None):
     plt.title("p = {}".format(p))
 
     plt.savefig("temp")
-    plt.close()
+    plt.show()
 
 
 def example_metric(data, labels1, labels2):
@@ -174,23 +209,29 @@ def distribution_dist(data, labs, mice):
     return dist_sum
 
 
-def distribution_dist_approx(data, labs, mice, n=400):
+def distribution_dist_approx(data, labs, mice, n=400, print_it=False):
     dist_sum = 0
     low = data.min()
     high = data.max()
-    p1_array = np.zeros(n)
-    for p in data:
-        p1_array[min(int((p - low) / (high - low) * n), n-1):] += 1
-    p1_array = p1_array / p1_array[-1]
+
     for lab in np.unique(labs):
-        dist_sum += helper(n, p1_array, data[labs == lab], low, high)
+        p1_array = np.zeros(n)
+        p1_array = np.bincount(np.clip(((data[labs != lab] - low) / (high - low) * n).astype(int), a_min=None, a_max=n-1), minlength=n)
+        p1_array = np.cumsum(p1_array)
+        p1_array = p1_array / p1_array[-1]
+        temp = helper(n, p1_array, data[labs == lab], low, high)
+
+        dist_sum += temp * (labs == lab).sum() / labs.shape[0]
+
     return dist_sum
 
 
 def helper(n, p1_array, points2, low, high):
     p2_array = np.zeros(n)
-    for p in points2:
-        p2_array[min(int((p - low) / (high - low) * n), n-1):] += 1
+
+    p2_array = np.bincount(np.clip(((points2 - low) / (high - low) * n).astype(int), a_min=None, a_max=n-1), minlength=n)
+    p2_array = np.cumsum(p2_array)
+
     return np.max(np.abs(p1_array - p2_array / p2_array[-1]))
 
 
@@ -207,6 +248,7 @@ def power_test(n_simul, dist, labels1, labels2, diff_labels1, metric=distributio
     # plt.hist(ps)
     # plt.show()
     return ps
+
 
 if __name__ == '__main__':
     import pickle
@@ -301,7 +343,7 @@ if __name__ == '__main__':
     data = rng.normal(0, 1, 15)
     t = time.time()
     p = permut_test(data, metric=distribution_dist_approx, labels2=np.array(["0", "0", "0", "1", "2", "2", "3", "3", "3", "3", "4", "4", "5", "5", "5"]), labels1=np.array([0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 2, 2, 1, 1, 1]),
-                    shuffling='labels1_based_on_2', n_permut=100000, plot=False)
+                    shuffling='labels1_based_on_2', n_permut=10000, plot=False)
     print(time.time() - t)
     print(p)
 
