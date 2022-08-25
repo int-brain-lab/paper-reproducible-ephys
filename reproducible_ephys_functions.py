@@ -251,7 +251,7 @@ def figure_style(return_colors=False):
                 "lines.markersize": 4,
                 "xtick.labelsize": 7,
                 "ytick.labelsize": 7,
-                "savefig.transparent": True,
+                "savefig.transparent": False,
                 "xtick.major.size": 2.5,
                 "ytick.major.size": 2.5,
                 "xtick.major.width": 0.5,
