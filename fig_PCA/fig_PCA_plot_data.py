@@ -20,7 +20,7 @@ from statsmodels.stats.multitest import multipletests
 from sklearn.linear_model import Ridge
 
 from reproducible_ephys_functions import filter_recordings, save_figure_path, labs, figure_style
-from figure6.figure6_load_data import load_dataframe, load_data
+from fig_PCA.fig_PCA_load_data import load_dataframe, load_data
 
 T_BIN = 0.02  # time bin size in seconds
 _, b, lab_cols = labs()
@@ -650,7 +650,7 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
     fig.tight_layout()
     figs.tight_layout()
 
-    fig_path = save_figure_path(figure='figure6')
+    fig_path = save_figure_path(figure='fig_PCA')
     print(f'Saving figures to {fig_path}')
-    fig.savefig(fig_path.joinpath('figure6.png'))
-    figs.savefig(fig_path.joinpath('figure6_supp1.png'))
+    fig.savefig(fig_path.joinpath('fig_PCA.png'))
+    figs.savefig(fig_path.joinpath('fig_PCA_supp1.png'))
