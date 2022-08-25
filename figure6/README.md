@@ -1,8 +1,8 @@
-## Figure 6
+## Figure PCA
 
-Figure 6 can be reproduced by executing figure6_run.py file 
+Figure PCA can be reproduced by executing fig_PCA_run.py file 
 ```
-python figure6_run.py
+python fig_PCA_run.py
 ```
 
 or by using the following code snippet in an ipython terminal
@@ -10,8 +10,8 @@ or by using the following code snippet in an ipython terminal
 ```python
 
 from one.api import ONE
-from figure6.figure6_run import run_figure6
+from fig_PCA.fig_PCA_run import run_fig_PCA
 one = ONE()
-run_figure6(one)
+run_fig_PCA(one)
 
 ```
