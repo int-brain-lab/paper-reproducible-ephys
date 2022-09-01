@@ -11,6 +11,7 @@ from figure3.figure3_plot_functions import (panel_probe_lfp, panel_probe_neurons
 import matplotlib.pyplot as plt
 from reproducible_ephys_functions import figure_style, filter_recordings, save_figure_path
 from one.api import ONE
+import numpy as np
 
 
 def plot_main_figure(one=None):
@@ -27,7 +28,8 @@ def plot_main_figure(one=None):
     LABELS = ['Neuron yield', 'Firing rate', 'LFP power',
               'AP band RMS', 'Spike amp.']
     N_PERMUT = 10000  # Amount of shuffles for permutation testing
-    DPI = 300  # if the figure is too big on your screen, lower this number
+    DPI = 150  # if the figure is too big on your screen, lower this number
+    np.random.seed(42)  # fix the random seed for reproducible permutatation results
 
     # Get amount of probe plots
     data = filter_recordings(min_rec_lab=MIN_REC_PER_LAB)
@@ -68,6 +70,17 @@ def plot_main_figure(one=None):
     panel_example(ax['panel_D'], n_rec_per_lab=MIN_REC_PER_LAB, example_region='DG',
                   example_metric='lfp_power', ylim=[-170, -140], ylabel='LFP power in DG (db)',
                   despine=True, yticks=[-170, -160, -150, -140])
+    """
+    panel_example(ax['panel_D'], n_rec_per_lab=MIN_REC_PER_LAB, example_region='LP',
+                  example_metric='lfp_power', ylim=[-190, -160], ylabel='LFP power in LP (db)',
+                  despine=True, yticks=[-190, -180, -170, -160])
+    panel_example(ax['panel_D'], n_rec_per_lab=MIN_REC_PER_LAB, example_region='PPC',
+                  example_metric='median_firing_rate', ylim=[0, 12], ylabel='Firing rate in PPC (spks/s)',
+                  despine=True, yticks=[0, 6, 12])
+    panel_example(ax['panel_D'], n_rec_per_lab=MIN_REC_PER_LAB, example_region='CA1',
+                  example_metric='lfp_power', ylim=[-190, -150], ylabel='LFP power in CA1 (db)',
+                  despine=True, yticks=[-190, -150])
+    """
     p_permut = panel_permutation(ax['panel_E'], METRICS, REGIONS, LABELS, n_permut=N_PERMUT,
                                  n_rec_per_lab=MIN_REC_PER_LAB, n_rec_per_region=MIN_REC_PER_REGION)
     p_decoding = panel_decoding(ax['panel_F'], qc=True)

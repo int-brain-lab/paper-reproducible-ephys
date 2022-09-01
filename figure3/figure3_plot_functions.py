@@ -7,6 +7,8 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from ibllib.atlas.regions import BrainRegions
 from figure3.figure3_load_data import load_dataframe
 import seaborn as sns
+from matplotlib import cm
+from matplotlib.colors import ListedColormap, to_rgb
 from matplotlib.sankey import Sankey
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from permutation_test import permut_test, distribution_dist_approx
@@ -141,13 +143,13 @@ def panel_probe_lfp(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-200
     # Add lab names
     plt.figtext(0.245, 0.715, 'Berkeley', va="center", ha="center", size=7, color=lab_colors['Berkeley'])
     plt.figtext(0.345, 0.715, 'Champalimaud', va="center", ha="center", size=7, color=lab_colors['CCU'])
-    plt.figtext(0.45, 0.715, 'CSHL (C)', va="center", ha="center", size=7, color=lab_colors['CSHL (C)'])
-    plt.figtext(0.495, 0.715, '(Z)', va="center", ha="center", size=7, color=lab_colors['CSHL (Z)'])
-    plt.figtext(0.56, 0.715, 'NYU', va="center", ha="center", size=7, color=lab_colors['NYU'])
-    plt.figtext(0.64, 0.715, 'Princeton', va="center", ha="center", size=7, color=lab_colors['Princeton'])
-    plt.figtext(0.71, 0.715, 'SWC', va="center", ha="center", size=7, color=lab_colors['SWC'])
-    plt.figtext(0.785, 0.715, 'UCL', va="center", ha="center", size=7, color=lab_colors['UCL'])
-    plt.figtext(0.85, 0.715, 'UCLA', va="center", ha="center", size=7, color=lab_colors['UCLA'])
+    plt.figtext(0.455, 0.715, 'CSHL (C)', va="center", ha="center", size=7, color=lab_colors['CSHL (C)'])
+    plt.figtext(0.505, 0.715, '(Z)', va="center", ha="center", size=7, color=lab_colors['CSHL (Z)'])
+    plt.figtext(0.57, 0.715, 'NYU', va="center", ha="center", size=7, color=lab_colors['NYU'])
+    plt.figtext(0.65, 0.715, 'Princeton', va="center", ha="center", size=7, color=lab_colors['Princeton'])
+    plt.figtext(0.725, 0.715, 'SWC', va="center", ha="center", size=7, color=lab_colors['SWC'])
+    plt.figtext(0.805, 0.715, 'UCL', va="center", ha="center", size=7, color=lab_colors['UCL'])
+    plt.figtext(0.86, 0.715, 'UCLA', va="center", ha="center", size=7, color=lab_colors['UCLA'])
 
     # Add colorbar
     axin = inset_axes(ax[-1], width="50%", height="90%", loc='lower right', borderpad=0,
@@ -328,7 +330,7 @@ def panel_example(ax, n_rec_per_lab=0, n_rec_per_region=3,
 
 
 def panel_permutation(ax, metrics, regions, labels, n_permut=10000, n_rec_per_lab=0,
-                      n_rec_per_region=3):
+                      n_rec_per_region=3, bh_correction=False):
 
     df_ins = load_dataframe(df_name='ins')
     df_filt = filter_recordings(df_ins, min_lab_region=n_rec_per_region, min_rec_lab=n_rec_per_lab,
@@ -365,8 +367,10 @@ def panel_permutation(ax, metrics, regions, labels, n_permut=10000, n_rec_per_la
     for i, region in enumerate(regions):
         results.loc[results['region'] == region, 'region_number'] = i
 
-    # Perform correction for multiple testing
-    _, results['p_value_permut'], _, _ = multipletests(results['p_value_permut'], 0.05, method='fdr_bh')
+    # Perform Benjamin-Hochman correction for multiple testing
+    if bh_correction:
+        _, results['p_value_permut'], _, _ = multipletests(results['p_value_permut'], 0.05,
+                                                           method='fdr_bh')
 
     results_plot = results.pivot(index='region_number', columns='metric', values='p_value_permut')
     results_plot = results_plot.reindex(columns=metrics)
@@ -374,16 +378,22 @@ def panel_permutation(ax, metrics, regions, labels, n_permut=10000, n_rec_per_la
 
     axin = inset_axes(ax, width="5%", height="80%", loc='lower right', borderpad=0,
                       bbox_to_anchor=(0.1, 0.1, 1, 1), bbox_transform=ax.transAxes)
-    # cmap = sns.color_palette('viridis_r', n_colors=20)
-    # cmap[0] = [1, 0, 0]
-    sns.heatmap(results_plot, cmap='RdYlGn', square=True,
+    
+    # Create colormap
+    RdYlGn = cm.get_cmap('RdYlGn', 256)(np.linspace(0, 1, 800))
+    
+    
+    color_array = np.vstack([np.tile(np.concatenate((to_rgb('darkviolet'), [1])), (200, 1)), RdYlGn])
+    newcmp = ListedColormap(color_array)
+    
+    sns.heatmap(results_plot, cmap=newcmp, square=True,
                 cbar=True, cbar_ax=axin,
                 annot=False, annot_kws={"size": 5},
-                linewidths=.5, fmt='.2f', vmin=-1.5, vmax=np.log10(1), ax=ax)
+                linewidths=.5, fmt='.2f', vmin=-2.5, vmax=np.log10(1), ax=ax)
     cbar = ax.collections[0].colorbar
-    cbar.set_ticks(np.log10([0.05, 0.1, 0.2, 0.4, 0.8]))
-    cbar.set_ticklabels([0.05, 0.1, 0.2, 0.4, 0.8])
-    cbar.set_label('log p-value', rotation=270, labelpad=8)
+    cbar.set_ticks(np.log10([0.01, 0.1, 1]))
+    cbar.set_ticklabels([0.01, 0.1, 1])
+    cbar.set_label('p-value (log scale)', rotation=270, labelpad=8)
     ax.set(xlabel='', ylabel='', xticks=np.arange(len(labels)) + 0.5, yticks=np.arange(len(regions)) + 0.5)
     ax.set_yticklabels(regions, va='center', rotation=0)
     ax.set_xticklabels(labels, rotation=45, ha='right')
