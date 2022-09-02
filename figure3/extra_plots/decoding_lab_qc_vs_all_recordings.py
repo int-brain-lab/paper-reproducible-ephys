@@ -91,6 +91,6 @@ ax['panel_F'].set_xticklabels(ax['panel_F'].get_xticklabels(), rotation=90, ha='
 
 
 plt.tight_layout()
-plt.savefig(save_path.joinpath('figure3_supp3.pdf'))
-plt.savefig(save_path.joinpath('figure3_supp3.png'))
+plt.savefig(save_path.joinpath('figure3_supp2.pdf'))
+plt.savefig(save_path.joinpath('figure3_supp2.png'))
 
