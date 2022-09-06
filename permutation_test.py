@@ -8,9 +8,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 import multiprocessing as mp
+from itertools import combinations
 
 
-def permut_test(data, metric, labels1, labels2, n_permut=10000, shuffling='labels1', plot=False, return_details=False, mark_p=None, n_cores=1):
+def permut_test(data, metric, labels1, labels2, n_permut=10000, shuffling='labels1', plot=False, return_details=False, mark_p=None, n_cores=1, title=None):
     """
     Compute the probability of observating metric difference for datasets, via permutation testing.
 
@@ -90,6 +91,13 @@ def shuffle_labels(labels1, labels2, n_permut, shuffling, n_cores=1):
         [np.random.shuffle(permut_indices[i]) for i in range(n_permut)]
         # TODO: save space of second array, since it's not used?
         return labels1[permut_indices], np.tile(labels2, (n_permut, 1))
+    if shuffling == 'all':
+        permut_indices = np.tile(np.arange(labels1.size), (n_permut, 1))
+        [np.random.shuffle(permut_indices[i]) for i in range(n_permut)]
+        permut_indices_2 = np.tile(np.arange(labels1.size), (n_permut, 1))
+        [np.random.shuffle(permut_indices_2[i]) for i in range(n_permut)]
+        # TODO: save space of second array, since it's not used?
+        return labels1[permut_indices], labels2[permut_indices_2]
     if shuffling == 'labels1_based_on_2':
         # e.g. shuffle labs based on subject (e.g. if you operate over neurons and want to leave collection of neuron withon one mouse intact)
         # note: this shuffles the lab labels, based on subjects, but the subjects themselves are not shuffled
@@ -209,7 +217,30 @@ def distribution_dist(data, labs, mice):
     return dist_sum
 
 
-def distribution_dist_approx(data, labs, mice, n=400, print_it=False):
+def distribution_dist_approx_max(data, labs, mice, n=400, print_it=False):
+    low = data.min()
+    high = data.max()
+
+    if print_it:
+        print()
+
+    cdf_dists = []
+    for lab in np.unique(labs):
+        p1_array = np.zeros(n)
+        p1_array = np.bincount(np.clip(((data[labs != lab] - low) / (high - low) * n).astype(int), a_min=None, a_max=n-1), minlength=n)
+        p1_array = np.cumsum(p1_array)
+        p1_array = p1_array / p1_array[-1]
+
+        temp = helper(n, p1_array, data[labs == lab], low, high)
+        cdf_dists.append(temp)
+
+    if print_it:
+        print(cdf_dists)
+
+    return max(cdf_dists)
+
+
+def distribution_dist_approx(data, labs, mice, n=400, print_it=False, plot_it=False, title=False):
     dist_sum = 0
     low = data.min()
     high = data.max()
@@ -219,9 +250,29 @@ def distribution_dist_approx(data, labs, mice, n=400, print_it=False):
         p1_array = np.bincount(np.clip(((data[labs != lab] - low) / (high - low) * n).astype(int), a_min=None, a_max=n-1), minlength=n)
         p1_array = np.cumsum(p1_array)
         p1_array = p1_array / p1_array[-1]
-        temp = helper(n, p1_array, data[labs == lab], low, high)
 
-        dist_sum += temp * (labs == lab).sum() / labs.shape[0]
+        if plot_it:
+            plt.plot(np.linspace(low, high, n), p1_array, label=lab)
+
+        temp = helper(n, p1_array, data[labs == lab], low, high)
+        if print_it:
+            print(temp)
+        dist_sum += temp
+
+    if print_it:
+        print(dist_sum)
+
+    if plot_it:
+        total_array = np.zeros(n)
+        total_array = np.bincount(np.clip(((data - low) / (high - low) * n).astype(int), a_min=None, a_max=n-1), minlength=n)
+        total_array = np.cumsum(total_array)
+        total_array = total_array / total_array[-1]
+        plt.plot(np.linspace(low, high, n), total_array, label='Overall')
+        plt.legend()
+        plt.xlim(-5, 10)
+        plt.title(title)
+        plt.savefig(title)
+        plt.show()
 
     return dist_sum
 
