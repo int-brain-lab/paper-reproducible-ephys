@@ -21,7 +21,7 @@ from iblutil.numerical import ismember
 
 from reproducible_ephys_functions import figure_style, save_figure_path, labs, filter_recordings
 from figure2.figure2_load_data import load_dataframe
-from permutation_test import permut_test, permut_dist
+from permutation_test import permut_test, distribution_dist_approx
 
 lab_number_map, institution_map, institution_colors = labs()
 
@@ -188,7 +188,7 @@ def plot_probe_surf_coord(traj='micro'):
 
     if traj == 'micro':
         ax1.set_xlim((-2500, -1800))
-        ax1.set_ylim((-3400, -1600))
+        ax1.set_ylim((-2500, -700))
     else:
         ax1.set_xlim((-3000, -1000))
         ax1.set_ylim((-3000, -0))
@@ -302,7 +302,7 @@ def plot_probe_distance_all_lab(traj='micro', min_rec_per_lab=4):
     remove_inst = ~probe_data['institute'].isin(remove_inst).values
 
     probe_data_permute = probe_data[remove_inst]
-    p_m = permut_test(probe_data_permute[f'{traj}_error_surf_xy'].values, metric=permut_dist,
+    p_m = permut_test(probe_data_permute[f'{traj}_error_surf_xy'].values, metric=distribution_dist_approx,
                        labels1=probe_data_permute['lab'].values, labels2=probe_data_permute['subject'].values)
     
     if traj == 'micro':
@@ -314,7 +314,7 @@ def plot_probe_distance_all_lab(traj='micro', min_rec_per_lab=4):
 
     # permutation testing - PASS DATA ONLY
     probe_data_permute = probe_data[probe_data['permute_include'] == 1]
-    pp_m = permut_test(probe_data_permute[f'{traj}_error_surf_xy'].values, metric=permut_dist,
+    pp_m = permut_test(probe_data_permute[f'{traj}_error_surf_xy'].values, metric=distribution_dist_approx,
                         labels1=probe_data_permute['lab'].values, labels2=probe_data_permute['subject'].values)
     
     print("PERMUTATION TEST PASS : ", pp_m)

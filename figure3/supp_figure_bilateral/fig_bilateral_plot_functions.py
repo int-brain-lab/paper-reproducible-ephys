@@ -5,7 +5,7 @@ from figure3.figure3_functions import get_brain_boundaries, plot_probe
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from ibllib.atlas.regions import BrainRegions
 from scipy.stats import mannwhitneyu, iqr
-from supp_figure_bilateral.load_data import load_dataframe as load_bilateral_data
+from figure3.supp_figure_bilateral.load_data import load_dataframe as load_bilateral_data
 from figure3.figure3_load_data import load_dataframe as load_all_data
 import seaborn as sns
 

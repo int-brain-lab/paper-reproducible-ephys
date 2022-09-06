@@ -4,7 +4,7 @@ from reproducible_ephys_functions import save_data_path
 
 
 def load_dataframe(exists_only=False):
-    df_path = save_data_path(figure='figure6').joinpath('figure6_dataframe.csv')
+    df_path = save_data_path(figure='fig_PCA').joinpath('fig_PCA_dataframe.csv')
     if exists_only:
         return df_path.exists()
     else:
@@ -19,8 +19,8 @@ def load_data(event='move', split='rt', norm='z_score', smoothing=None, exists_o
     smoothing = smoothing or None
     norm = norm or None
 
-    df_path = save_data_path(figure='figure6').joinpath(
-        f'figure6_data_event_{event}_split_{split}_smoothing_{smoothing}_norm_{norm}.npz')
+    df_path = save_data_path(figure='fig_PCA').joinpath(
+        f'fig_PCA_data_event_{event}_split_{split}_smoothing_{smoothing}_norm_{norm}.npz')
     if exists_only:
         return df_path.exists()
     else:

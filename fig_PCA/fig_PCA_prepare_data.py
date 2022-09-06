@@ -7,7 +7,7 @@ from reproducible_ephys_functions import combine_regions, BRAIN_REGIONS, get_ins
 from reproducible_ephys_processing import compute_psth, compute_new_label
 from brainbox.population.decode import get_spike_counts_in_bins
 from brainbox.task.closed_loop import compute_comparison_statistics
-from figure6.figure6_load_data import load_dataframe, load_data
+from fig_PCA.fig_PCA_load_data import load_dataframe, load_data
 from iblutil.numerical import ismember
 
 ba = AllenAtlas()
@@ -180,12 +180,12 @@ def prepare_data(insertions, one, recompute=False, new_metrics=True, **kwargs):
     concat_df = pd.concat(all_df, ignore_index=True)
     data = {'all_frs': all_frs, 'time': t, 'params': params}
 
-    save_path = save_data_path(figure='figure6')
+    save_path = save_data_path(figure='fig_PCA')
     print(f'Saving data to {save_path}')
-    concat_df.to_csv(save_path.joinpath('figure6_dataframe.csv'))
+    concat_df.to_csv(save_path.joinpath('fig_PCA_dataframe.csv'))
     smoothing = smoothing or 'none'
     norm = norm or 'none'
-    np.savez(save_path.joinpath(f'figure6_data_event_{align_event}_split_{split}_smoothing_{smoothing}_norm_{norm}.npz'), **data)
+    np.savez(save_path.joinpath(f'fig_PCA_data_event_{align_event}_split_{split}_smoothing_{smoothing}_norm_{norm}.npz'), **data)
 
     return concat_df, data
 
@@ -195,4 +195,4 @@ if __name__ == '__main__':
     one.record_loaded = True
     insertions = get_insertions(level=2, one=one, freeze=None)
     prepare_data(insertions, one=one, **default_params)
-    save_dataset_info(one, figure='figure6')
+    save_dataset_info(one, figure='fig_PCA')

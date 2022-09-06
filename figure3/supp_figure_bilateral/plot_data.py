@@ -6,9 +6,8 @@ By: Guido Meijer
 """
 
 import figrid as fg
-from supp_figure_bilateral.fig_bilateral_plot_functions import (panel_probe_lfp, panel_probe_neurons,
-                                                                panel_boxplot, panel_summary,
-                                                                panel_distribution)
+from figure3.supp_figure_bilateral.fig_bilateral_plot_functions import (
+    panel_probe_lfp, panel_probe_neurons, panel_boxplot, panel_summary, panel_distribution)
 import matplotlib.pyplot as plt
 from reproducible_ephys_functions import figure_style, filter_recordings, save_figure_path, query
 from one.api import ONE
@@ -77,10 +76,10 @@ def plot_main_figure(one=None):
 
 
     # Save figure
-    save_path = save_figure_path(figure='supp_fig_bilateral')
+    save_path = save_figure_path(figure='figure3')
     #print(f'Saving figures to {save_path}')
-    plt.savefig(save_path.joinpath('supp_figure_bilateral.png'))
-    plt.savefig(save_path.joinpath('supp_figure_bilateral.pdf'))
+    plt.savefig(save_path.joinpath('figure3_supp2_bilateral.png'))
+    plt.savefig(save_path.joinpath('figure3_supp2_bilateral.pdf'))
 
 
 

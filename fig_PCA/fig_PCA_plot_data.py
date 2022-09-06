@@ -20,7 +20,7 @@ from statsmodels.stats.multitest import multipletests
 from sklearn.linear_model import Ridge
 
 from reproducible_ephys_functions import filter_recordings, save_figure_path, labs, figure_style
-from figure6.figure6_load_data import load_dataframe, load_data
+from fig_PCA.fig_PCA_load_data import load_dataframe, load_data
 
 T_BIN = 0.02  # time bin size in seconds
 _, b, lab_cols = labs()
@@ -374,7 +374,8 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
 
     leg = axs['F'].legend(ncol=len(r2s_[re_rank]) / 
                           4,frameon=False,
-                          prop={'size': 7}).set_draggable(True)
+                          prop={'size': 7}, 
+                          title="number of PCs").set_draggable(True)
                           
     axs['F'].set_xlabel(r'$r^2$')
     axs['F'].set_ylabel('number of neurons')
@@ -532,7 +533,7 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
                 if ksr[lab][1] < 0.01:
                     print(reg, lab, ksr[lab][0], ksr[lab][1])
                            
-            axs3[ms3[k]].set_title(reg)
+            axs3[ms3[k]].set_title(reg, loc='left')
             axs3[ms3[k]].set_xlabel('PC1')
             axs3[ms3[k]].set_ylabel('P(PC1 < x)')
             axs3[ms3[k]].text(-0.1, 1.30, panel_n3[ms3[k]],
@@ -583,8 +584,8 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
                          fontsize=16, va='top',
                          ha='right', weight='bold')
 
-        if k == 1:
-            axs3[ms[k]].legend(handles=le_labs, loc='lower left', 
+        if ms2[k] == 'Ha':
+            axs3[ms2[k]].legend(handles=le_labs, loc='lower left', 
                                bbox_to_anchor=(0.1, 1), ncol=3,frameon=False,
                                prop={'size': 8}).set_draggable(True)
 
@@ -604,7 +605,7 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
             axs3[ms2[k]].fill_between(xs - 0.5, mes + ste, mes - ste,
                                       color=lab_cols[b[lab]], alpha=0.2)
 
-        axs3[ms2[k]].set_title(reg)
+        axs3[ms2[k]].set_title(reg, loc='left')
         axs3[ms2[k]].set_xlabel('time from movement onset (s)')
         axs3[ms2[k]].set_ylabel('Firing rate (spikes/s)')
         
@@ -650,7 +651,7 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
     fig.tight_layout()
     figs.tight_layout()
 
-    fig_path = save_figure_path(figure='figure6')
+    fig_path = save_figure_path(figure='fig_PCA')
     print(f'Saving figures to {fig_path}')
-    fig.savefig(fig_path.joinpath('figure6.png'))
-    figs.savefig(fig_path.joinpath('figure6_supp1.png'))
+    fig.savefig(fig_path.joinpath('fig_PCA.png'))
+    figs.savefig(fig_path.joinpath('fig_PCA_supp1.png'))
