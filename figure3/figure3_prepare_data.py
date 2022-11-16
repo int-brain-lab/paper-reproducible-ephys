@@ -23,7 +23,8 @@ from figure3.figure3_load_data import load_dataframe
 
 ba = AllenAtlas()
 
-LFP_BAND = [20, 80]
+LFP_BAND = [49, 61]
+THETA_BAND = [6, 12]
 
 
 def prepare_data(insertions, one, recompute=False, new_metrics=False):
@@ -57,7 +58,11 @@ def prepare_data(insertions, one, recompute=False, new_metrics=False):
         probe = ins['probe_name']
 
         sl = SpikeSortingLoader(eid=eid, pname=probe, one=one, atlas=ba)
-        spikes, clusters, channels = sl.load_spike_sorting(dataset_types=['clusters.amps', 'clusters.peakToTrough'])
+        try:
+            spikes, clusters, channels = sl.load_spike_sorting(dataset_types=['clusters.amps', 'clusters.peakToTrough'])
+        except Exception as err:
+            print(err)
+            continue
 
         channels['rawInd'] = one.load_dataset(eid, dataset='channels.rawInd.npy', collection=sl.collection)
         clusters = sl.merge_clusters(spikes, clusters, channels)
@@ -111,10 +116,16 @@ def prepare_data(insertions, one, recompute=False, new_metrics=False):
             print(err)
             print(f'eid: {eid}\n')
             continue
-        freqs = ((lfp['freqs'] > LFP_BAND[0])
-                 & (lfp['freqs'] < LFP_BAND[1]))
+
+        # Get broadband lfp power
+        freqs = (lfp['freqs'] >= LFP_BAND[0]) & (lfp['freqs'] <= LFP_BAND[1])
         power = lfp['power'][:, channels['rawInd']]
         lfp_power = np.nanmean(10 * np.log(power[freqs]), axis=0)
+
+        # Get theta band lfp power
+        freqs = (lfp['freqs'] >= THETA_BAND[0]) & (lfp['freqs'] <= THETA_BAND[1])
+        power = lfp['power'][:, channels['rawInd']]
+        theta_power = np.nanmean(10 * np.log(power[freqs]), axis=0)
 
         data_chns['x'] = channels['x']
         data_chns['y'] = channels['y']
@@ -122,6 +133,7 @@ def prepare_data(insertions, one, recompute=False, new_metrics=False):
         data_chns['axial_um'] = channels['axial_um']
         data_chns['lateral_um'] = channels['lateral_um']
         data_chns['lfp'] = lfp_power
+        data_chns['lfp_theta'] = theta_power
         data_chns['region_id'] = channels['atlas_id']
         data_chns['region_id_rep'] = channels['rep_site_id']
         data_chns['region'] = channels['rep_site_acronym']
