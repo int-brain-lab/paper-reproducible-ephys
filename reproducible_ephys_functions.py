@@ -45,7 +45,7 @@ def labs():
                        'hausserlab': 'UCL (H)'}
     #colors = np.concatenate((sns.color_palette("Dark2")[:-1], sns.color_palette('Set1')[0:2],
     #                         [sns.color_palette('Set1')[3]]))
-    colors = sns.color_palette('tab10')
+    colors = np.vstack((sns.color_palette('tab10'), (1, 1, 1)))
     institutions = ['Berkeley', 'CCU', 'CSHL (C)', 'CSHL (Z)', 'NYU', 'Princeton', 'SWC', 'UCL (C)',
                     'UCLA', 'UW', 'UCL (H)']
     institution_colors = {}
