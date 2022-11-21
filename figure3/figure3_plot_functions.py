@@ -11,7 +11,7 @@ from matplotlib import cm
 from matplotlib.colors import ListedColormap, to_rgb
 from matplotlib.sankey import Sankey
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-from permutation_test import permut_test, distribution_dist_approx
+from permutation_test import permut_test, distribution_dist_approx_max
 from statsmodels.stats.multitest import multipletests
 
 br = BrainRegions()
@@ -334,7 +334,7 @@ def panel_permutation(ax, metrics, regions, labels, n_permut=10000, n_rec_per_la
 
     df_ins = load_dataframe(df_name='ins')
     df_filt = filter_recordings(df_ins, min_lab_region=n_rec_per_region, min_rec_lab=n_rec_per_lab,
-                                min_neuron_region=2, recompute=False)
+                                min_neuron_region=2, recompute=True)
     data = df_filt[df_filt['permute_include'] == 1]
     data['yield_per_channel'] = data['neuron_yield'] / data['n_channels']
     data.loc[data['lfp_power'] < -100000, 'lfp_power'] = np.nan
@@ -359,8 +359,8 @@ def panel_permutation(ax, metrics, regions, labels, n_permut=10000, n_rec_per_la
             this_labs = this_labs[~np.isin(this_labs, excl_labs)]
 
             # Do permutation test
-            p = permut_test(this_data, metric=distribution_dist_approx, labels1=this_labs,
-                            labels2=this_subjects, n_permut=n_permut, plot=False)
+            p = permut_test(this_data, metric=distribution_dist_approx_max, labels1=this_labs,
+                            labels2=this_subjects, n_permut=n_permut, plot=False, n_cores=4)
             results = pd.concat((results, pd.DataFrame(index=[results.shape[0] + 1], data={
                 'metric': metric, 'region': region, 'p_value_permut': p})))
 
@@ -378,14 +378,14 @@ def panel_permutation(ax, metrics, regions, labels, n_permut=10000, n_rec_per_la
 
     axin = inset_axes(ax, width="5%", height="80%", loc='lower right', borderpad=0,
                       bbox_to_anchor=(0.1, 0.1, 1, 1), bbox_transform=ax.transAxes)
-    
+
     # Create colormap
     RdYlGn = cm.get_cmap('RdYlGn', 256)(np.linspace(0, 1, 800))
-    
-    
+
+
     color_array = np.vstack([np.tile(np.concatenate((to_rgb('darkviolet'), [1])), (200, 1)), RdYlGn])
     newcmp = ListedColormap(color_array)
-    
+
     sns.heatmap(results_plot, cmap=newcmp, square=True,
                 cbar=True, cbar_ax=axin,
                 annot=False, annot_kws={"size": 5},

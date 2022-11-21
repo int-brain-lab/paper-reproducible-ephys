@@ -36,16 +36,18 @@ def labs():
     lab_number_map = {'cortexlab': 'Lab 1', 'mainenlab': 'Lab 2', 'churchlandlab': 'Lab 3',
                       'angelakilab': 'Lab 4', 'wittenlab': 'Lab 5', 'hoferlab': 'Lab 6',
                       'mrsicflogellab': 'Lab 6', 'danlab': 'Lab 7', 'zadorlab': 'Lab 8',
-                      'steinmetzlab': 'Lab 9', 'churchlandlab_ucla': 'Lab 10'}
-    institution_map = {'cortexlab': 'UCL', 'mainenlab': 'CCU', 'zadorlab': 'CSHL (Z)',
+                      'steinmetzlab': 'Lab 9', 'churchlandlab_ucla': 'Lab 10',
+                      'hausserlab': 'Lab 11'}
+    institution_map = {'cortexlab': 'UCL (C)', 'mainenlab': 'CCU', 'zadorlab': 'CSHL (Z)',
                        'churchlandlab': 'CSHL (C)', 'angelakilab': 'NYU',
                        'wittenlab': 'Princeton', 'hoferlab': 'SWC', 'mrsicflogellab': 'SWC',
-                       'danlab': 'Berkeley', 'steinmetzlab': 'UW', 'churchlandlab_ucla': 'UCLA'}
+                       'danlab': 'Berkeley', 'steinmetzlab': 'UW', 'churchlandlab_ucla': 'UCLA',
+                       'hausserlab': 'UCL (H)'}
     #colors = np.concatenate((sns.color_palette("Dark2")[:-1], sns.color_palette('Set1')[0:2],
     #                         [sns.color_palette('Set1')[3]]))
-    colors = sns.color_palette('tab10')
-    institutions = ['Berkeley', 'CCU', 'CSHL (C)', 'CSHL (Z)', 'NYU', 'Princeton', 'SWC', 'UCL',
-                    'UCLA', 'UW']
+    colors = np.vstack((sns.color_palette('tab10'), (1, 1, 1)))
+    institutions = ['Berkeley', 'CCU', 'CSHL (C)', 'CSHL (Z)', 'NYU', 'Princeton', 'SWC', 'UCL (C)',
+                    'UCLA', 'UW', 'UCL (H)']
     institution_colors = {}
     for i, inst in enumerate(institutions):
         institution_colors[inst] = colors[i]
@@ -359,7 +361,8 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', ne
     ba = ba or AllenAtlas()
     lab_number_map, institution_map, _ = labs()
     metrics = pd.DataFrame()
-    LFP_BAND = [20, 80]
+    LFP_BAND = [49, 61]
+    THETA_BAND = [6, 12]
 
     for i, ins in enumerate(insertions):
         eid = ins['session']['id']
@@ -441,6 +444,10 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', ne
                     freqs = (lfp['freqs'] > LFP_BAND[0]) & (lfp['freqs'] < LFP_BAND[1])
                     chan_power = lfp['power'][:, region_chan]
                     lfp_region = np.mean(10 * np.log(chan_power[freqs]))  # convert to dB
+
+                    freqs = (lfp['freqs'] > THETA_BAND[0]) & (lfp['freqs'] < THETA_BAND[1])
+                    chan_power = lfp['power'][:, region_chan]
+                    lfp_theta_region = np.mean(10 * np.log(chan_power[freqs]))  # convert to dB
                 else:
                     # TO DO SEE IF THIS IS LEGIT
                     lfp_region = np.nan
@@ -460,6 +467,7 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', ne
                                                         'n_channels': region_chan.shape[0],
                                                         'neuron_yield': region_clusters.shape[0],
                                                         'lfp_power': lfp_region,
+                                                        'lfp_theta_power': lfp_theta_region,
                                                         'rms_ap_p90': ap_rms,
                                                         'n_trials': n_trials,
                                                         'behavior': behav,
