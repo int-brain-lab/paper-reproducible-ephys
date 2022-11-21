@@ -8,8 +8,8 @@ from figure4_5.figure4_plot_functions import plot_raster_and_psth, plot_raster_a
 import seaborn as sns
 import pandas as pd
 from statsmodels.stats.multitest import multipletests
-import time
-from permutation_test import permut_test, distribution_dist_approx
+import pickle
+from permutation_test import permut_test, distribution_dist_approx, shuffle_labels, distribution_dist_approx_max
 
 
 lab_number_map, institution_map, lab_colors = labs()
@@ -377,66 +377,68 @@ def plot_panel_task_modulated_neurons(specific_tests=None, ax=None, save=True):
             plt.savefig(fig_path.joinpath(test))
 
 
-def plot_panel_permutation(ax=None):
+def plot_panel_permutation(ax=None, recompute=False):
     # load dataframe from prev fig. 5 (To be combined with new Fig 4)
     # Prev Figure 5d permutation tests
     df = load_dataframeFig5()
     df_filt = filter_recordings(df, recompute=True)
     df_filt = df_filt[df_filt['permute_include'] == 1]
 
-    df_filt_reg = df_filt.groupby('region')
-    results = pd.DataFrame()
-    test_names = []
-    for test in tests.keys():
-        test_names.append(tests[test])
-        for reg in BRAIN_REGIONS:
-            df_reg = df_filt_reg.get_group(reg)
-            # vals = df_reg.groupby(['institute', 'subject'])[test].mean()
-            # labs = vals.index.get_level_values('institute')
-            # subjects = vals.index.get_level_values('subject')
-            # data = vals.values
-            if test == 'avg_ff_post_move':
-                data = df_reg[test].values
-            else:
-                data = df_reg['mean_fr_diff_{}'.format(test)].values
-            labs = df_reg['institute'].values
-            subjects = df_reg['subject'].values
+    test_names = [tests[test] for test in tests.keys()]
+    if recompute:
+        df_filt_reg = df_filt.groupby('region')
+        results = pd.DataFrame()
 
-            labs = labs[~np.isnan(data)]
-            subjects = subjects[~np.isnan(data)]
-            data = data[~np.isnan(data)]
-            # lab_names, this_n_labs = np.unique(labs, return_counts=True)  # what is this for?
+        for test in tests.keys():
+            for reg in BRAIN_REGIONS:
+                df_reg = df_filt_reg.get_group(reg)
+                # vals = df_reg.groupby(['institute', 'subject'])[test].mean()
+                # labs = vals.index.get_level_values('institute')
+                # subjects = vals.index.get_level_values('subject')
+                # data = vals.values
+                if test == 'avg_ff_post_move':
+                    data = df_reg[test].values
+                else:
+                    data = df_reg['mean_fr_diff_{}'.format(test)].values
+                labs = df_reg['institute'].values
+                subjects = df_reg['subject'].values
 
-            print("Testing")
-            p = permut_test(data, metric=distribution_dist_approx, labels1=labs,
-                            labels2=subjects, shuffling='labels1_based_on_2', n_cores=8, n_permut=50000)
-            # print(p)
-            # if p > 0.05:
-            #     return data, labs, subjects
-            results = pd.concat((results, pd.DataFrame(index=[results.shape[0] + 1],
-                                                       data={'test': test, 'region': reg, 'p_value_permut': p})))
+                labs = labs[~np.isnan(data)]
+                subjects = subjects[~np.isnan(data)]
+                data = data[~np.isnan(data)]
+                # lab_names, this_n_labs = np.unique(labs, return_counts=True)  # what is this for?
+
+                print("Testing")
+                p = permut_test(data, metric=distribution_dist_approx_max, labels1=labs,
+                                labels2=subjects, shuffling='labels1_based_on_2', n_cores=10, n_permut=100000)
+                # print(p)
+                # if p > 0.05:
+                #     return data, labs, subjects
+                results = pd.concat((results, pd.DataFrame(index=[results.shape[0] + 1],
+                                                           data={'test': test, 'region': reg, 'p_value_permut': p})))
+
+        pickle.dump(results.p_value_permut.values, open("p_values_new_max_metric", 'wb'))
 
     shape = (len(tests.keys()), len(BRAIN_REGIONS))
-    import pickle
-    pickle.dump(results.p_value_permut.values, open("p_values_new_metric", 'wb'))
-    print(results.p_value_permut.values)
-    _, corrected_p_vals, _, _ = multipletests(results.p_value_permut.values, 0.05, method='fdr_bh')
-    corrected_p_vals = corrected_p_vals.reshape(shape)
+    p_vals = pickle.load(open("p_values_new_max_metric", 'rb'))
+    print(p_vals)
+    # _, corrected_p_vals, _, _ = multipletests(results.p_value_permut.values, 0.05, method='fdr_bh')
+    p_vals = p_vals.reshape(shape)
     # corrected_p_vals = results.p_value_permut.values.reshape(shape)
 
-    ax = sns.heatmap(np.log10(corrected_p_vals.T), cmap='RdYlGn', square=True,
+    ax = sns.heatmap(np.log10(p_vals.T), cmap='RdYlGn', square=True,
                      cbar=True, annot=False, annot_kws={"size": 12}, ax=ax,
-                     linewidths=.5, fmt='.2f', vmin=-1.5, vmax=np.log10(1), cbar_kws={"shrink": .7})
+                     linewidths=.5, fmt='.2f', vmin=-2.5, vmax=np.log10(1), cbar_kws={"shrink": .7})
     cbar = ax.collections[0].colorbar
-    cbar.set_ticks(np.log10([0.05, 0.1, 0.2, 0.4, 0.8]))
-    cbar.set_ticklabels([0.05, 0.1, 0.2, 0.4, 0.8])
+    cbar.set_ticks(np.log10([0.01, 0.05, 0.25, 1]))
+    cbar.set_ticklabels([0.01, 0.05, 0.25, 1])
 
     # ax.set(xlabel='', ylabel='', title='Permutation p-values')
     ax.set_yticklabels(BRAIN_REGIONS, va='center', rotation=0)
     ax.set_xticklabels(test_names, rotation=90, ha='center')  # rotation=30, ha='right')
     ax.set_title('Task-driven activity: Comparison across labs', loc='left', pad=15)
 
-    return results
+    return p_vals
 
 
 def find_sig_p_value(p_values_to_copy, i):
@@ -474,7 +476,7 @@ def find_sig_manipulation(data, lab_to_manip, labs, subjects, p_to_reach, direct
     bound = 0
     while not found_bound:
         bound += 10 if direction == 'positive' else -10
-        p = permut_test(data + (labs == lab_to_manip) * bound, metric=distribution_dist_approx, labels1=labs,
+        p = permut_test(data + (labs == lab_to_manip) * bound, metric=distribution_dist_approx_max, labels1=labs,
                         labels2=subjects, shuffling='labels1_based_on_2', n_cores=8, n_permut=50000)
         if p < p_to_reach:
             found_bound = True
@@ -489,18 +491,18 @@ def find_sig_manipulation(data, lab_to_manip, labs, subjects, p_to_reach, direct
                 higher_bound = bound
         if not found_bound:
             if direction == 'positive':
-                if bound > data.max():
+                if bound > data.max() + 20:
                     print("Failed to find")
                     return -np.inf, np.inf
             else:
-                if bound < data.min():
+                if bound < data.min() - 20:
                     print("Failed to find")
                     return -np.inf, np.inf
 
     while np.abs(lower_bound - higher_bound) > sensitivity:
 
         test = (lower_bound + higher_bound) / 2
-        p = permut_test(data + (labs == lab_to_manip) * test, metric=distribution_dist_approx, labels1=labs,
+        p = permut_test(data + (labs == lab_to_manip) * test, metric=distribution_dist_approx_max, labels1=labs,
                         labels2=subjects, shuffling='labels1_based_on_2', n_cores=8, n_permut=50000)
         if p < p_to_reach:
             if direction == 'positive':
@@ -515,12 +517,15 @@ def find_sig_manipulation(data, lab_to_manip, labs, subjects, p_to_reach, direct
     return lower_bound, higher_bound
 
 print("New code")
+plot_main_figure()
+quit()
 # plot_panel_permutation()
 
 import pickle
-p_values = pickle.load(open("p_values_new_metric", 'rb'))
+p_values = pickle.load(open("p_values_new_max_metric", 'rb'))
 _, corrected_p_vals, _, _ = multipletests(p_values, 0.05, method='fdr_bh')
 print(corrected_p_vals)
+print(np.sum(corrected_p_vals < 0.05))
 
 df = load_dataframeFig5()
 df_filt = filter_recordings(df, recompute=False)
@@ -528,21 +533,26 @@ df_filt = df_filt[df_filt['permute_include'] == 1]
 
 df_filt_reg = df_filt.groupby('region')
 results = pd.DataFrame()
-i = -1
-
 
 significant_disturbances = np.zeros((len(p_values), 6, 2))
-for test in tests.keys():
-    print(test, tests.keys(), time.time())
-    for reg in BRAIN_REGIONS:
-        print(reg, BRAIN_REGIONS, time.time())
-        i += 1
+significant_disturbances = pickle.load(open("new_max_metric.p", 'rb'))
+
+
+lab_to_num = dict(zip(['Berkeley', 'CCU', 'CSHL (C)', 'NYU', 'SWC', 'UCLA'], list(range(6))))
+
+max_y, min_y = 9, -3
+
+obs_max, obs_min = -10, 10
+pad = 5 # in points
+i = -1
+fig = plt.figure(figsize=(1 * 12, 1.4142 * 12))
+for jj, test in enumerate(tests.keys()):
+    test_name = shortened_tests[test]
+    for ii, reg in enumerate(BRAIN_REGIONS):
+
+        plt.subplot(8, 5, ii + jj * 5 + 1)
         df_reg = df_filt_reg.get_group(reg)
-        if corrected_p_vals[i] < 0.05:
-            print("test already significant {}, {}, {}".format(test, reg, i))
-            continue
-        p_to_reach, _ = find_sig_p_value(p_values, i)
-        print("Determined p to reach: {}".format(p_to_reach))
+        i += 1
 
         if test == 'avg_ff_post_move':
             data = df_reg[test].values
@@ -554,14 +564,147 @@ for test in tests.keys():
         labs = labs[~np.isnan(data)]
         subjects = subjects[~np.isnan(data)]
         data = data[~np.isnan(data)]
+
+        plt.title("p={:.3f}".format(p_values[i]))
+        if significant_disturbances[i, 0, 0] == 0 and significant_disturbances[i, 0, 1] == 0:
+            plt.plot([-0.3, 5.3], [min_y, max_y], 'k')
+            plt.plot([-0.3, 5.3], [max_y, min_y], 'k')
+
+        for j, lab in enumerate(np.unique(labs)):
+            lab_mean = data[labs == lab].mean()
+            plt.plot([lab_to_num[lab] - 0.3, lab_to_num[lab] + 0.3], [lab_mean, lab_mean], color=lab_colors[lab])
+            val = significant_disturbances[i, j, 0]
+            temp_color = lab_colors[lab] if val < 1000 else 'red'
+            if temp_color == 'red':
+                val = max_y - lab_mean
+                print(ii + jj * 8 + 1)
+            plt.plot([lab_to_num[lab], lab_to_num[lab]], [lab_mean, lab_mean + val], color=temp_color)
+            obs_max = max(obs_max, lab_mean + val)
+            val = significant_disturbances[i, j, 1]
+            temp_color = lab_colors[lab] if val > -1000 else 'red'
+            if temp_color == 'red':
+                val = min_y - lab_mean
+                print(ii + jj * 8 + 1)
+            plt.plot([lab_to_num[lab], lab_to_num[lab]], [lab_mean, lab_mean + val], color=temp_color)
+            obs_min = min(obs_min, lab_mean + val)
+        plt.xlim(-0.3, 5.3)
+        plt.axhline(0, color='grey')
+        sns.despine()
+        if jj == 7:
+            if ii == 0:
+                plt.ylabel('Fano factor', fontsize=18)
+            plt.ylim(0, 2.5)
+        else:
+            plt.ylim(min_y, max_y)
+        if ii != 0 and ii != 7:
+            plt.gca().set_yticks([])
+        if ii == 0:
+            plt.gca().annotate(shortened_tests[test], xy=(-0.53, 0.5), xytext=(0, 0), xycoords='axes fraction', textcoords='offset points', size='x-large', ha='right', va='center', rotation='vertical')
+            if jj == 3:
+                plt.ylabel('Firing rate modulation (sp/s)', fontsize=24)
+        if jj == 0:
+            plt.gca().annotate(reg, xy=(0.5, 1.2), xytext=(0, pad), xycoords='axes fraction', textcoords='offset points', size='x-large', ha='center', va='baseline')
+        if jj != 7:
+            plt.gca().set_xticks([])
+        else:
+            plt.gca().set_xticks([])
+            plt.xlabel('Labs', fontsize=18)
+plt.tight_layout()
+fig.subplots_adjust(left=0.12)
+plt.savefig("power stripes", dpi=300)
+print(obs_min, obs_max)
+plt.show()
+quit()
+
+n_power_simulations = 1000
+p_values_from_null = np.zeros((5, n_power_simulations))
+power_ps = []
+i = -1
+for test in tests.keys():
+    print(test)
+    for jj, reg in enumerate(BRAIN_REGIONS):
+        i += 1
+
+        if test != 'post_reward' or reg != 'PPC':
+            continue
+
+        df_reg = df_filt_reg.get_group(reg)
+        # p_to_reach, _ = find_sig_p_value(p_values, i)
+        # print("Determined p to reach: {}".format(p_to_reach))
+
+        if test == 'avg_ff_post_move':
+            data = df_reg[test].values
+        else:
+            data = df_reg['mean_fr_diff_{}'.format(test)].values
+        labs = df_reg['institute'].values
+        subjects = df_reg['subject'].values
+
+        labs = labs[~np.isnan(data)]
+        subjects = subjects[~np.isnan(data)]
+        data = data[~np.isnan(data)]
+
+        if p_values[i] < 0.01:
+            print("test already significant {}, {}, {}".format(test, reg, i))
+            # p = permut_test(data, metric=distribution_dist_approx_max, labels1=labs, title="{} {}".format(test[:4], reg),
+            #                 labels2=subjects, shuffling='labels1_based_on_2', n_permut=10)
+            continue
+
+        # continue
+
+        #power_ps.append(pickle.load(open("ps_from_null_{}.p".format(test), 'rb')))
+        #continue
+
+        # print("power analysis")
+        # new_labs, new_subjects = shuffle_labels(labs, subjects, n_power_simulations, shuffling='labels1_based_on_2')
+        #
+        # for j in range(n_power_simulations):
+        #     a = time.time()
+        #     p = permut_test(data, metric=distribution_dist_approx_max, labels1=new_labs[j],
+        #                     labels2=new_subjects[j], shuffling='labels1_based_on_2', n_permut=10000)
+        #     p_values_from_null[jj, j] = p
+        #     print(time.time() - a)
+        #     quit()
+
+        # print("shuffle test")
+        # permuted_labels1, permuted_labels2 = shuffle_labels(labels1=labs, labels2=subjects, n_permut=100000, n_cores=5, shuffling='labels1_based_on_2')
+
+        # terrible_counter = 0
+        # iiis = []
+        # for iii in range(100000):
+        #     for local_lab in range(6):
+        #         if set(np.unique(permuted_labels2[0][permuted_labels1[iii] == local_lab])) <= set([0, 1, 2, 3]):
+        #             terrible_counter += 1
+        #             iiis.append(iii)
+
+        # print(terrible_counter)
+
+        # quit()
+
+        # print('normal test')
+        # p = permut_test(data, metric=distribution_dist_approx_max, labels1=labs,
+        #                 labels2=subjects, shuffling='labels1_based_on_2', n_cores=3, n_permut=30000)
+        #
+        # quit()
+
+        # for j, manipulate_lab in enumerate(np.unique(labs)):
+        #     if significant_disturbances[i, j, 0] > 100:
+        #         print('pos')
+        #     if significant_disturbances[i, j, 1] < -100:
+        #         print('neg')
+        #         quit()
+        # continue
+
         for j, manipulate_lab in enumerate(np.unique(labs)):
-            lower, higher = find_sig_manipulation(data.copy(), manipulate_lab, labs, subjects, p_to_reach, 'positive')
+            # if significant_disturbances[i, j, 0] < 100 and significant_disturbances[i, j, 1] > -100:
+            #     continue
+            lower, higher = find_sig_manipulation(data.copy(), manipulate_lab, labs, subjects, 0.01, 'positive')
             significant_disturbances[i, j, 0] = higher
             print("found bound: {}".format(higher))
-            lower, higher = find_sig_manipulation(data.copy(), manipulate_lab, labs, subjects, p_to_reach, 'negative')
+            lower, higher = find_sig_manipulation(data.copy(), manipulate_lab, labs, subjects, 0.01, 'negative')
             significant_disturbances[i, j, 1] = lower
             print("found bound: {}".format(lower))
-        pickle.dump(significant_disturbances, open("new_metric.p", 'wb'))
+        pickle.dump(significant_disturbances, open("new_max_metric.p", 'wb'))
+# pickle.dump(p_values_from_null, open("ps_from_null_{}.p".format(test), 'wb'))
 quit()
 
 power_an_1 = pickle.load(open("significant_disturbances_rest.p", 'rb'))
@@ -592,7 +735,7 @@ for test in tests.keys():
 
 quit()
 # data, labs, subjects = plot_panel_permutation()
-# p = permut_test(data, metric=distribution_dist_approx, labels1=labs, labels2=subjects, shuffling='labels1_based_on_2')
+# p = permut_test(data, metric=distribution_dist_approx_max, labels1=labs, labels2=subjects, shuffling='labels1_based_on_2')
 # for i, lab in enumerate(np.unique(labs)):
 #     temp = np.mean(data[labs == lab])
 #     plt.plot([2*i, 2*i+1], [temp, temp])
@@ -607,7 +750,7 @@ quit()
 #     if i % 10 == 0:
 #         print(i)
 #     data[labs == lab_names[0]] += 0.1
-#     p[i] = permut_test(data, metric=distribution_dist_approx, labels1=labs, n_permut=4000,
+#     p[i] = permut_test(data, metric=distribution_dist_approx_max, labels1=labs, n_permut=4000,
 #                        labels2=subjects, shuffling='labels1_based_on_2')
 # plt.plot(np.arange(50) * 0.1, p)
 # plt.axvline(np.where(p < 0.05)[0][0] * 0.1, label="p<0.05", color='black')
@@ -616,7 +759,7 @@ quit()
 # plt.show()
 # quit()
 # data = data[~np.isnan(data)]
-# p = permut_test(data, metric=distribution_dist_approx, labels1=labs,
+# p = permut_test(data, metric=distribution_dist_approx_max, labels1=labs,
 #                 labels2=subjects, shuffling='labels1_based_on_2', n_permut=10000, plot=True, mark_p=0.004)
 # quit()
 # results = plot_panel_permutation()

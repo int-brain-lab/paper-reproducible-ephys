@@ -57,7 +57,7 @@ def permut_test(data, metric, labels1, labels2, n_permut=10000, shuffling='label
     null_dist = np.zeros(n_permut)
     if n_cores == 1:
         for i in range(n_permut):
-            null_dist[i] = metric(data, permuted_labels1[i], permuted_labels2[i], print_it=False)
+            null_dist[i] = metric(data, permuted_labels1[i], permuted_labels2[i], print_it=False, plot_it=False)
     else:
         size = n_permut // n_cores
         arg_list = [(metric, data, permuted_labels1[i*size:(i+1)*size], permuted_labels2[i*size:(i+1)*size]) for i in range(n_cores)]
@@ -79,7 +79,7 @@ def metric_helper(metric, data, permuted_labels1, permuted_labels2):
     n = len(permuted_labels1)
     part_null_dist = np.zeros(n)
     for i in range(n):
-        part_null_dist[i] = metric(data, permuted_labels1[i], permuted_labels2[i])
+        part_null_dist[i] = metric(data, permuted_labels1[i], permuted_labels2[i], print_it=False, plot_it=False)
     return part_null_dist
 
 
@@ -217,7 +217,7 @@ def distribution_dist(data, labs, mice):
     return dist_sum
 
 
-def distribution_dist_approx_max(data, labs, mice, n=400, print_it=False):
+def distribution_dist_approx_max(data, labs, mice, n=400, print_it=True, plot_it=True):
     low = data.min()
     high = data.max()
 
@@ -225,17 +225,36 @@ def distribution_dist_approx_max(data, labs, mice, n=400, print_it=False):
         print()
 
     cdf_dists = []
+    dist_inds = []
     for lab in np.unique(labs):
         p1_array = np.zeros(n)
-        p1_array = np.bincount(np.clip(((data[labs != lab] - low) / (high - low) * n).astype(int), a_min=None, a_max=n-1), minlength=n)
+        p1_array = np.bincount(np.clip(((data[labs == lab] - low) / (high - low) * n).astype(int), a_min=None, a_max=n-1), minlength=n)
         p1_array = np.cumsum(p1_array)
         p1_array = p1_array / p1_array[-1]
 
-        temp = helper(n, p1_array, data[labs == lab], low, high)
+        if plot_it:
+            plt.plot(np.linspace(low, high, n), p1_array, label=lab)
+
+        temp, temp_ind = helper(n, p1_array, data[labs != lab], low, high)
         cdf_dists.append(temp)
+        dist_inds.append(temp_ind)
 
     if print_it:
-        print(cdf_dists)
+        max_diff_ind = np.argmax(cdf_dists)
+        print(cdf_dists, cdf_dists[max_diff_ind], max_diff_ind)
+
+    if plot_it:
+        max_diff_ind = np.argmax(cdf_dists)
+        total_array = np.zeros(n)
+        total_array = np.bincount(np.clip(((data - low) / (high - low) * n).astype(int), a_min=None, a_max=n-1), minlength=n)
+        total_array = np.cumsum(total_array)
+        total_array = total_array / total_array[-1]
+        plt.axvline(np.linspace(low, high, n)[dist_inds[max_diff_ind]])
+        plt.plot(np.linspace(low, high, n), total_array, label='Overall')
+        plt.legend()
+        plt.xlim(-5, 10)
+        plt.title("diff = {}".format(cdf_dists[max_diff_ind]))
+        plt.show()
 
     return max(cdf_dists)
 
@@ -247,14 +266,14 @@ def distribution_dist_approx(data, labs, mice, n=400, print_it=False, plot_it=Fa
 
     for lab in np.unique(labs):
         p1_array = np.zeros(n)
-        p1_array = np.bincount(np.clip(((data[labs != lab] - low) / (high - low) * n).astype(int), a_min=None, a_max=n-1), minlength=n)
+        p1_array = np.bincount(np.clip(((data[labs == lab] - low) / (high - low) * n).astype(int), a_min=None, a_max=n-1), minlength=n)
         p1_array = np.cumsum(p1_array)
         p1_array = p1_array / p1_array[-1]
 
         if plot_it:
             plt.plot(np.linspace(low, high, n), p1_array, label=lab)
 
-        temp = helper(n, p1_array, data[labs == lab], low, high)
+        temp = helper(n, p1_array, data[labs != lab], low, high)
         if print_it:
             print(temp)
         dist_sum += temp
@@ -271,7 +290,6 @@ def distribution_dist_approx(data, labs, mice, n=400, print_it=False, plot_it=Fa
         plt.legend()
         plt.xlim(-5, 10)
         plt.title(title)
-        plt.savefig(title)
         plt.show()
 
     return dist_sum
@@ -283,7 +301,9 @@ def helper(n, p1_array, points2, low, high):
     p2_array = np.bincount(np.clip(((points2 - low) / (high - low) * n).astype(int), a_min=None, a_max=n-1), minlength=n)
     p2_array = np.cumsum(p2_array)
 
-    return np.max(np.abs(p1_array - p2_array / p2_array[-1]))
+    diffs = np.abs(p1_array - p2_array / p2_array[-1])
+    max_ind = np.argmax(diffs)
+    return diffs[max_ind], max_ind
 
 
 def power_test(n_simul, dist, labels1, labels2, diff_labels1, metric=distribution_dist_approx, shuffling='labels1_based_on_2'):
