@@ -217,7 +217,7 @@ def distribution_dist(data, labs, mice):
     return dist_sum
 
 
-def distribution_dist_approx_max(data, labs, mice, n=400, print_it=True, plot_it=True):
+def distribution_dist_approx_max(data, labs, mice, n=400, print_it=False, plot_it=False):
     low = data.min()
     high = data.max()
 

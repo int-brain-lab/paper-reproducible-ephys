@@ -377,7 +377,7 @@ def plot_panel_task_modulated_neurons(specific_tests=None, ax=None, save=True):
             plt.savefig(fig_path.joinpath(test))
 
 
-def plot_panel_permutation(ax=None, recompute=False):
+def plot_panel_permutation(ax=None, recompute=True):
     # load dataframe from prev fig. 5 (To be combined with new Fig 4)
     # Prev Figure 5d permutation tests
     df = load_dataframeFig5()
@@ -410,7 +410,7 @@ def plot_panel_permutation(ax=None, recompute=False):
 
                 print("Testing")
                 p = permut_test(data, metric=distribution_dist_approx_max, labels1=labs,
-                                labels2=subjects, shuffling='labels1_based_on_2', n_cores=10, n_permut=100000)
+                                labels2=subjects, shuffling='labels1_based_on_2', n_cores=10, n_permut=1000)
                 # print(p)
                 # if p > 0.05:
                 #     return data, labs, subjects
