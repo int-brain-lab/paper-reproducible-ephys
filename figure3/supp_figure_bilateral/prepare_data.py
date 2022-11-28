@@ -20,7 +20,7 @@ ba = AllenAtlas()
 LFP_BAND = [20, 80]
 
 
-def prepare_data(insertions, one, recompute=False, new_metrics=True):
+def prepare_data(insertions, one, recompute=False):
 
     if not recompute:
         data_clust = load_dataframe(df_name='clust', exists_only=True)
@@ -58,13 +58,6 @@ def prepare_data(insertions, one, recompute=False, new_metrics=True):
 
         channels['rawInd'] = one.load_dataset(eid, dataset='channels.rawInd.npy', collection=sl.collection)
         clusters = sl.merge_clusters(spikes, clusters, channels)
-
-        if new_metrics:
-            try:
-                clusters['label'] = np.load(sl.files['clusters'][0].parent.joinpath('clusters.new_labels.npy'))
-            except FileNotFoundError:
-                new_labels = compute_new_label(spikes, clusters, save_path=sl.files['spikes'][0].parent)
-                clusters['label'] = new_labels
 
         channels['rep_site_acronym'] = combine_regions(channels['acronym'])
         channels['rep_site_acronym_alt'] = np.copy(channels['rep_site_acronym'])
@@ -209,7 +202,7 @@ default_params = {'bin_size': 0.06,
                   'slide_kwargs_fr': {'n_win': 3, 'causal': 1}}
 
 
-def prepare_neural_data(insertions, one, recompute=False, new_metrics=True, **kwargs):
+def prepare_neural_data(insertions, one, recompute=False, **kwargs):
 
     bin_size = kwargs.get('bin_size', default_params['bin_size'])
     align_event = kwargs.get('align_event', default_params['align_event'])
@@ -260,13 +253,6 @@ def prepare_neural_data(insertions, one, recompute=False, new_metrics=True, **kw
             sl = SpikeSortingLoader(eid=eid, pname=probe, one=one, atlas=ba)
             spikes, clusters, channels = sl.load_spike_sorting()
             clusters = sl.merge_clusters(spikes, clusters, channels)
-
-            if new_metrics:
-                try:
-                    clusters['label'] = np.load(sl.files['clusters'][0].parent.joinpath('clusters.new_labels.npy'))
-                except FileNotFoundError:
-                    new_labels = compute_new_label(spikes, clusters, save_path=sl.files['spikes'][0].parent)
-                    clusters['label'] = new_labels
 
             clusters['rep_site_acronym'] = combine_regions(clusters['acronym'])
             # Find clusters that are in the repeated site brain regions and that have been labelled as good
@@ -376,7 +362,7 @@ if __name__ == '__main__':
     insertions = query(min_regions=0, n_trials=0, behavior=False, exclude_critical=True, one=one,
                        as_dataframe=False, bilateral=True)
     # insertions = get_insertions(one=one, bilateral=True, recompute=True) # only need recompute for the first time you run this
-    # _ = recompute_metrics(insertions, one, new_metrics=new_metrics)
+    # _ = recompute_metrics(insertions, one)
     prepare_neural_data(insertions, recompute=True, one=one)
     all_df_chns, all_df_clust, metrics = prepare_data(insertions, recompute=True, one=one)
     save_dataset_info(one, figure='supp_figure_bilateral')

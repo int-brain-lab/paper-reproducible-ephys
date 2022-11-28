@@ -27,7 +27,7 @@ default_params = {'fr_bin_size': 0.04,
                   'slide_kwargs_fr': {'n_win': 2, 'causal': 1}}
 
 
-def prepare_data(insertions, one, figure='figure5', recompute=False, new_metrics=True, **kwargs):
+def prepare_data(insertions, one, figure='figure5', recompute=False, **kwargs):
 
     fr_bin_size = kwargs.get('fr_bin_size', default_params['fr_bin_size'])
     ff_bin_size = kwargs.get('ff_bin_size', default_params['ff_bin_size'])
@@ -76,13 +76,6 @@ def prepare_data(insertions, one, figure='figure5', recompute=False, new_metrics
             sl = SpikeSortingLoader(eid=eid, pname=probe, one=one, atlas=ba)
             spikes, clusters, channels = sl.load_spike_sorting(dataset_types=['clusters.amps', 'clusters.peakToTrough'])
             clusters = sl.merge_clusters(spikes, clusters, channels)
-
-            if new_metrics:
-                try:
-                    clusters['label'] = np.load(sl.files['clusters'][0].parent.joinpath('clusters.new_labels.npy'))
-                except FileNotFoundError:
-                    new_labels = compute_new_label(spikes, clusters, save_path=sl.files['spikes'][0].parent)
-                    clusters['label'] = new_labels
 
             clusters['rep_site_acronym'] = combine_regions(clusters['acronym'])
 
@@ -355,6 +348,6 @@ def prepare_data(insertions, one, figure='figure5', recompute=False, new_metrics
 if __name__ == '__main__':
     one = ONE()
     one.record_loaded = True
-    insertions = get_insertions(level=2, one=one, freeze=None, recompute=True, new_metrics=True)
+    insertions = get_insertions(level=2, one=one, freeze=None, recompute=True)
     prepare_data(insertions, one=one, recompute=True, **default_params)
     save_dataset_info(one, figure='figure5')

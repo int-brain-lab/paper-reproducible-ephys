@@ -317,7 +317,7 @@ def get_relevant_columns(data):
 
 # main function
 def featurize(i, trajectory, one, session_counter, bin_size=0.05, align_event='movement_onset', t_before=0.5, t_after=1.0,
-              brain_atlas=None, new_metrics=True):
+              brain_atlas=None):
 
     lab_number_map = get_lab_number_map()
     acronym_dict = get_acronym_dict()
@@ -339,12 +339,6 @@ def featurize(i, trajectory, one, session_counter, bin_size=0.05, align_event='m
     spikes, clusters, channels = sl.load_spike_sorting(dataset_types=['clusters.amps', 'clusters.peakToTrough'])
     clusters = sl.merge_clusters(spikes, clusters, channels)
 
-    if new_metrics:
-        try:
-            clusters['label'] = np.load(sl.files['clusters'][0].parent.joinpath('clusters.new_labels.npy'))
-        except FileNotFoundError:
-            new_labels = compute_new_label(spikes, clusters, save_path=sl.files['spikes'][0].parent)
-            clusters['label'] = new_labels
     clusters['rep_site_acronym'] = combine_regions(clusters['acronym'])
 
     # Find clusters that are in the repeated site brain regions and that have been labelled as good

@@ -27,7 +27,7 @@ LFP_BAND = [49, 61]
 THETA_BAND = [6, 12]
 
 
-def prepare_data(insertions, one, recompute=False, new_metrics=False):
+def prepare_data(insertions, one, recompute=False):
 
     if not recompute:
         data_clust = load_dataframe(df_name='clust', exists_only=True)
@@ -66,13 +66,6 @@ def prepare_data(insertions, one, recompute=False, new_metrics=False):
 
         channels['rawInd'] = one.load_dataset(eid, dataset='channels.rawInd.npy', collection=sl.collection)
         clusters = sl.merge_clusters(spikes, clusters, channels)
-
-        if new_metrics:
-            try:
-                clusters['label'] = np.load(sl.files['clusters'][0].parent.joinpath('clusters.new_labels.npy'))
-            except FileNotFoundError:
-                new_labels = compute_new_label(spikes, clusters, save_path=sl.files['spikes'][0].parent)
-                clusters['label'] = new_labels
 
         channels['rep_site_acronym'] = combine_regions(channels['acronym'])
         channels['rep_site_acronym_alt'] = np.copy(channels['rep_site_acronym'])
