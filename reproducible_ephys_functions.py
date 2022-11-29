@@ -38,15 +38,15 @@ def labs():
                       'mrsicflogellab': 'Lab 6', 'danlab': 'Lab 7', 'zadorlab': 'Lab 8',
                       'steinmetzlab': 'Lab 9', 'churchlandlab_ucla': 'Lab 10',
                       'hausserlab': 'Lab 11'}
-    institution_map = {'cortexlab': 'UCL (C)', 'mainenlab': 'CCU', 'zadorlab': 'CSHL (Z)',
+    institution_map = {'cortexlab': 'UCL', 'mainenlab': 'CCU', 'zadorlab': 'CSHL (Z)',
                        'churchlandlab': 'CSHL (C)', 'angelakilab': 'NYU',
                        'wittenlab': 'Princeton', 'hoferlab': 'SWC', 'mrsicflogellab': 'SWC',
                        'danlab': 'Berkeley', 'steinmetzlab': 'UW', 'churchlandlab_ucla': 'UCLA',
                        'hausserlab': 'UCL (H)'}
     #colors = np.concatenate((sns.color_palette("Dark2")[:-1], sns.color_palette('Set1')[0:2],
     #                         [sns.color_palette('Set1')[3]]))
-    colors = np.vstack((sns.color_palette('tab10'), (1, 1, 1)))
-    institutions = ['Berkeley', 'CCU', 'CSHL (C)', 'CSHL (Z)', 'NYU', 'Princeton', 'SWC', 'UCL (C)',
+    colors = np.vstack((sns.color_palette('tab10'), (0, 0, 0)))
+    institutions = ['Berkeley', 'CCU', 'CSHL (C)', 'CSHL (Z)', 'NYU', 'Princeton', 'SWC', 'UCL',
                     'UCLA', 'UW', 'UCL (H)']
     institution_colors = {}
     for i, inst in enumerate(institutions):

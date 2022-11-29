@@ -322,5 +322,5 @@ if __name__ == '__main__':
     insertions = get_insertions(level=0, one=one, freeze=None)
     all_df_chns, all_df_clust, metrics = prepare_data(insertions, recompute=True, one=one)
     save_dataset_info(one, figure='figure3')
-    run_decoding(n_shuffle=500, recompute=False)
-    run_decoding(n_shuffle=500, pass_qc=False, recompute=False)
+    run_decoding(n_shuffle=500, recompute=True)
+    run_decoding(n_shuffle=500, pass_qc=False, recompute=True)

@@ -19,7 +19,7 @@ def plot_main_figure(one=None):
     one = one or ONE()
 
     # Settings
-    MIN_REC_PER_LAB = 0  # for plotting of probe plots
+    MIN_REC_PER_LAB = 3  # for plotting of probe plots
     MIN_REC_PER_REGION = 3  # for permutation testing
     BOUNDARY = 'DG-TH'
     REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
@@ -27,7 +27,8 @@ def plot_main_figure(one=None):
                'rms_ap', 'spike_amp_mean']
     LABELS = ['Neuron yield', 'Firing rate', 'LFP power',
               'AP band RMS', 'Spike amp.']
-    N_PERMUT = 50000  # Amount of shuffles for permutation testing
+    #N_PERMUT = 50000  # Amount of shuffles for permutation testing
+    N_PERMUT = 500  # Amount of shuffles for permutation testing
     DPI = 200  # if the figure is too big on your screen, lower this number
     np.random.seed(42)  # fix the random seed for reproducible permutatation results
 
