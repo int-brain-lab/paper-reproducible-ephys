@@ -208,7 +208,7 @@ def run_decoding(metrics=['yield_per_channel', 'median_firing_rate', 'lfp_power'
                  qc='pass', n_shuffle=500, min_lab_region=2, recompute=False):
     """
     qc can be "pass" (only include recordings that pass QC)
-    "high_noise": add the recordings with high noise 
+    "high_noise": add the recordings with high noise
     "low_yield": add low yield recordings
     "missed_target": add recordings that missed the target regions
     "artifacts": add recordings with artifacts
@@ -232,7 +232,7 @@ def run_decoding(metrics=['yield_per_channel', 'median_firing_rate', 'lfp_power'
             data = data[data['include'] == 1]  # select recordings that pass QC
         elif qc != 'all':
             data = data[(data['include'] == 1) | (data[qc] == 1)]
-            
+
         data = data[data['lfp_power'].notna()]  # exclude recordings that miss LFP data
         data['yield_per_channel'] = data['neuron_yield'] / data['n_channels']
 
@@ -316,8 +316,8 @@ def run_decoding(metrics=['yield_per_channel', 'median_firing_rate', 'lfp_power'
         # Save results
         decode_df.to_csv(save_path.joinpath(file_name))
         shuffle_df.to_csv(save_path.joinpath(f'figure3_dataframe_decode_shuf_{qc}.csv'))
-        matrix_df.to_csv(save_path.joinpath('figure3_dataframe_conf_mat_{qc}.csv'))
-       
+        matrix_df.to_csv(save_path.joinpath(f'figure3_dataframe_conf_mat_{qc}.csv'))
+
     else:
         print('Decoding results found, not running again')
 
@@ -326,13 +326,13 @@ if __name__ == '__main__':
     one = ONE()
     one.record_loaded = True
     insertions = get_insertions(level=0, one=one, freeze=None)
-    all_df_chns, all_df_clust, metrics = prepare_data(insertions, recompute=True, one=one)
+    all_df_chns, all_df_clust, metrics = prepare_data(insertions, recompute=False, one=one)
     save_dataset_info(one, figure='figure3')
     run_decoding(n_shuffle=500, qc='pass', recompute=True)
     run_decoding(n_shuffle=500, qc='high_noise', recompute=True)
     run_decoding(n_shuffle=500, qc='low_yield', recompute=True)
     run_decoding(n_shuffle=500, qc='high_lfp', recompute=True)
-    run_decoding(n_shuffle=500, qc='artifact', recompute=True)
+    run_decoding(n_shuffle=500, qc='artifacts', recompute=True)
     run_decoding(n_shuffle=500, qc='missed_target', recompute=True)
     run_decoding(n_shuffle=500, qc='low_trials', recompute=True)
     run_decoding(n_shuffle=500, qc='all', recompute=True)

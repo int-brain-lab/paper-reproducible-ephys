@@ -400,15 +400,11 @@ def panel_permutation(ax, metrics, regions, labels, n_permut=10000, n_rec_per_la
     return results
 
 
-def panel_decoding(ax, qc=True):
+def panel_decoding(ax, qc='pass'):
 
     # Load in data
-    if qc:
-        decode_df = load_dataframe(df_name='decode')
-        shuffle_df = load_dataframe(df_name='decode_shuf')
-    else:
-        decode_df = load_dataframe(df_name='decode_no_qc')
-        shuffle_df = load_dataframe(df_name='decode_shuf_no_qc')
+    decode_df = load_dataframe(df_name=f'decode_{qc}')
+    shuffle_df = load_dataframe(df_name=f'decode_shuf_{qc}')
     decode_df['accuracy'] = decode_df['accuracy']*100
     shuffle_df['accuracy_shuffle'] = shuffle_df['accuracy_shuffle']*100
     decode_regions_df = decode_df[decode_df['region'] == 'all']
