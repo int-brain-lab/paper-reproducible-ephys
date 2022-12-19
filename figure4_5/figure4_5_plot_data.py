@@ -62,41 +62,41 @@ def plot_main_figure():
     #                                          wspace=0.3),
     #       'panel_D_4': fg.place_axes_on_grid(fig, xspan=[0.70125, 0.9], yspan=[0.38, 0.65],
     #                                          wspace=0.3)}
-    ax = {'panel_A_1': fg.place_axes_on_grid(fig, xspan=[0.08, 0.288], yspan=[0.045, 0.13],
+    ax = {'panel_A_1': fg.place_axes_on_grid(fig, xspan=[0.08, 0.288], yspan=[0.045, 0.15],
                                              wspace=0.3),
-          'panel_A_2': fg.place_axes_on_grid(fig, xspan=[0.08, 0.288], yspan=[0.14, 0.27],
+          'panel_A_2': fg.place_axes_on_grid(fig, xspan=[0.08, 0.288], yspan=[0.16, 0.31],
                                              wspace=0.3),
-          'panel_B': fg.place_axes_on_grid(fig, xspan=[0.388, 0.631], yspan=[0.045, 0.27],
+          'panel_B': fg.place_axes_on_grid(fig, xspan=[0.388, 0.631], yspan=[0.045, 0.31],
                                            wspace=0.3),
-          'panel_C': fg.place_axes_on_grid(fig, xspan=[0.741, 1.], yspan=[0.045, 0.27],
+          'panel_C': fg.place_axes_on_grid(fig, xspan=[0.741, 1.], yspan=[0.045, 0.31],
                                            wspace=0.3),
-          'panel_D_1': fg.place_axes_on_grid(fig, xspan=[0.075,  0.27375], yspan=[0.37, 0.58],
+          'panel_D_1': fg.place_axes_on_grid(fig, xspan=[0.075,  0.27375], yspan=[0.41, 0.66],
                                              wspace=0.3),
-          'panel_D_2': fg.place_axes_on_grid(fig, xspan=[0.28375, 0.4825], yspan=[0.37, 0.58],
+          'panel_D_2': fg.place_axes_on_grid(fig, xspan=[0.28375, 0.4825], yspan=[0.41, 0.66],
                                              wspace=0.3),
-          'panel_D_3': fg.place_axes_on_grid(fig, xspan=[0.4925, 0.69125], yspan=[0.37, 0.58],
+          'panel_D_3': fg.place_axes_on_grid(fig, xspan=[0.4925, 0.69125], yspan=[0.41, 0.66],
                                              wspace=0.3),
-          'panel_D_4': fg.place_axes_on_grid(fig, xspan=[0.70125, .9], yspan=[0.37, 0.58],
+          'panel_D_4': fg.place_axes_on_grid(fig, xspan=[0.70125, .9], yspan=[0.41, 0.66],
                                              wspace=0.3),
-          'panel_E_1': fg.place_axes_on_grid(fig, xspan=[0.075, 0.46], yspan=[0.66, 0.72],
-                                             wspace=0.3),
-          'panel_E_2': fg.place_axes_on_grid(fig, xspan=[0.075, 0.46], yspan=[0.73, 0.79],
-                                             wspace=0.3),
-          'panel_E_3': fg.place_axes_on_grid(fig, xspan=[0.075, 0.46], yspan=[0.8, 0.86],
-                                             wspace=0.3),
-          'panel_E_4': fg.place_axes_on_grid(fig, xspan=[0.075, 0.46], yspan=[0.87, 0.93],
-                                             wspace=0.3),
-          'panel_E_5': fg.place_axes_on_grid(fig, xspan=[0.075, 0.46], yspan=[0.94, 1.],
-                                             wspace=0.3),
-          'panel_F': fg.place_axes_on_grid(fig, xspan=[0.59, .99], yspan=[0.67, .91],
+          # 'panel_E_1': fg.place_axes_on_grid(fig, xspan=[0.075, 0.46], yspan=[0.66, 0.72],
+          #                                    wspace=0.3),
+          # 'panel_E_2': fg.place_axes_on_grid(fig, xspan=[0.075, 0.46], yspan=[0.73, 0.79],
+          #                                    wspace=0.3),
+          # 'panel_E_3': fg.place_axes_on_grid(fig, xspan=[0.075, 0.46], yspan=[0.8, 0.86],
+          #                                    wspace=0.3),
+          # 'panel_E_4': fg.place_axes_on_grid(fig, xspan=[0.075, 0.46], yspan=[0.87, 0.93],
+          #                                    wspace=0.3),
+          # 'panel_E_5': fg.place_axes_on_grid(fig, xspan=[0.075, 0.46], yspan=[0.94, 1.],
+          #                                    wspace=0.3),
+          'panel_F': fg.place_axes_on_grid(fig, xspan=[0.08, .99], yspan=[0.75, .91],
                                            wspace=0.3)}
 
     #plot_panel_single_neuron(ax=[ax['panel_A_1'], ax['panel_A_2']], save=False)
     plot_panel_single_neuron_LvsR(ax=[ax['panel_A_1'], ax['panel_A_2']], save=False)
     plot_panel_single_subject(ax=ax['panel_B'], save=False)
-    plot_panel_task_modulated_neurons(specific_tests=['pre_move'],
-                                      ax=[ax['panel_E_1'], ax['panel_E_2'], ax['panel_E_3'], ax['panel_E_4'], ax['panel_E_5']],
-                                      save=False)
+    # plot_panel_task_modulated_neurons(specific_tests=['pre_move'],
+    #                                   ax=[ax['panel_E_1'], ax['panel_E_2'], ax['panel_E_3'], ax['panel_E_4'], ax['panel_E_5']],
+    #                                   save=False)
     plot_panel_permutation(ax=ax['panel_F'])
 
     # we have to find out max and min neurons here now, because plots are split

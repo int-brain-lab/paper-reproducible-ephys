@@ -38,15 +38,15 @@ def labs():
                       'mrsicflogellab': 'Lab 6', 'danlab': 'Lab 7', 'zadorlab': 'Lab 8',
                       'steinmetzlab': 'Lab 9', 'churchlandlab_ucla': 'Lab 10',
                       'hausserlab': 'Lab 11'}
-    institution_map = {'cortexlab': 'UCL (C)', 'mainenlab': 'CCU', 'zadorlab': 'CSHL (Z)',
+    institution_map = {'cortexlab': 'UCL', 'mainenlab': 'CCU', 'zadorlab': 'CSHL (Z)',
                        'churchlandlab': 'CSHL (C)', 'angelakilab': 'NYU',
                        'wittenlab': 'Princeton', 'hoferlab': 'SWC', 'mrsicflogellab': 'SWC',
                        'danlab': 'Berkeley', 'steinmetzlab': 'UW', 'churchlandlab_ucla': 'UCLA',
                        'hausserlab': 'UCL (H)'}
     #colors = np.concatenate((sns.color_palette("Dark2")[:-1], sns.color_palette('Set1')[0:2],
     #                         [sns.color_palette('Set1')[3]]))
-    colors = np.vstack((sns.color_palette('tab10'), (1, 1, 1)))
-    institutions = ['Berkeley', 'CCU', 'CSHL (C)', 'CSHL (Z)', 'NYU', 'Princeton', 'SWC', 'UCL (C)',
+    colors = np.vstack((sns.color_palette('tab10'), (0, 0, 0)))
+    institutions = ['Berkeley', 'CCU', 'CSHL (C)', 'CSHL (Z)', 'NYU', 'Princeton', 'SWC', 'UCL',
                     'UCLA', 'UW', 'UCL (H)']
     institution_colors = {}
     for i, inst in enumerate(institutions):
@@ -185,7 +185,7 @@ def get_insertions(level=2, recompute=False, as_dataframe=False, one=None, freez
         pids = np.array([ins['probe_insertion'] for ins in insertions])
         if recompute:
             _ = recompute_metrics(insertions, one)
-        ins = filter_recordings(min_neuron_region=0)
+        ins = filter_recordings(min_neuron_region=0, one=one)
         ins = ins[ins['include']]
 
         if not as_dataframe:
@@ -473,7 +473,7 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
     return metrics
 
 
-def filter_recordings(df=None, max_ap_rms=40, max_lfp_power=-140, min_neurons_per_channel=0.1, min_channels_region=5,
+def filter_recordings(df=None, one=None, max_ap_rms=40, max_lfp_power=-150, min_neurons_per_channel=0.1, min_channels_region=5,
                       min_regions=3, min_neuron_region=4, min_lab_region=3, min_rec_lab=4, n_trials=400, behavior=False,
                       exclude_subjects=['DY013', 'ibl_witten_26', 'KS084'], recompute=True, freeze=None,
                       bilateral=False):
@@ -493,28 +493,28 @@ def filter_recordings(df=None, max_ap_rms=40, max_lfp_power=-140, min_neurons_pe
     """
 
     # Load in the insertion metrics
-    metrics = load_metrics(bilateral=bilateral)
+    metrics = load_metrics()
 
     if df is None:
         df = metrics
         if df is None:
-            ins = get_insertions(level=0, recompute=False, freeze=freeze, bilateral=bilateral)
-            df = compute_metrics(ins, one=ONE(), save=True, bilateral=bilateral)
+            ins = get_insertions(level=0, recompute=False, freeze=freeze)
+            df = compute_metrics(ins, one=ONE(), save=True)
         df['original_index'] = df.index
     else:
         # make sure that all pids in the dataframe df are included in metrics otherwise recompute metrics
         if metrics is None:
             one = ONE()
-            ins = get_insertions(level=0, one=one, recompute=False, freeze=freeze, bilateral=bilateral)
-            metrics = compute_metrics(ins, one=ONE(), save=True, bilateral=bilateral)
+            ins = get_insertions(level=0, one=one, recompute=False, freeze=freeze)
+            metrics = compute_metrics(ins, one=ONE(), save=True)
 
         isin, _ = ismember(df['pid'].unique(), metrics['pid'].unique())
         if ~np.all(isin):
             logger.warning(f'Warning: {np.sum(~isin)} recordings are missing metrics')
             if recompute:
                 one = ONE()
-                ins = get_insertions(level=0, one=one, recompute=False, freeze=freeze, bilateral=bilateral)
-                metrics = compute_metrics(ins, one=ONE(), save=True, bilateral=bilateral)
+                ins = get_insertions(level=0, one=one, recompute=False, freeze=freeze)
+                metrics = compute_metrics(ins, one=ONE(), save=True)
 
         # merge the two dataframes
         df['original_index'] = df.index

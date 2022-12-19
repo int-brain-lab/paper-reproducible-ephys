@@ -19,7 +19,7 @@ def plot_main_figure(one=None):
     one = one or ONE()
 
     # Settings
-    MIN_REC_PER_LAB = 0  # for plotting of probe plots
+    MIN_REC_PER_LAB = 3  # for plotting of probe plots
     MIN_REC_PER_REGION = 3  # for permutation testing
     BOUNDARY = 'DG-TH'
     REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
@@ -28,6 +28,7 @@ def plot_main_figure(one=None):
     LABELS = ['Neuron yield', 'Firing rate', 'LFP power',
               'AP band RMS', 'Spike amp.']
     N_PERMUT = 50000  # Amount of shuffles for permutation testing
+    #N_PERMUT = 50  # Amount of shuffles for permutation testing
     DPI = 200  # if the figure is too big on your screen, lower this number
     np.random.seed(42)  # fix the random seed for reproducible permutatation results
 
@@ -45,8 +46,8 @@ def plot_main_figure(one=None):
          'panel_C': fg.place_axes_on_grid(fig, xspan=[0.1, 1], yspan=[0.55, 0.8],
                                           dim=[1, n_columns + 1], wspace=0.3),
          'panel_D': fg.place_axes_on_grid(fig, xspan=[0.1, 0.25], yspan=[0.85, 1]),
-         'panel_E': fg.place_axes_on_grid(fig, xspan=[0.32, 0.55], yspan=[0.85, 1]),
-         'panel_F': fg.place_axes_on_grid(fig, xspan=[0.74, 1], yspan=[0.85, 1])}
+         'panel_E': fg.place_axes_on_grid(fig, xspan=[0.46, 0.68], yspan=[0.85, 1]),
+         'panel_F': fg.place_axes_on_grid(fig, xspan=[0.78, 1], yspan=[0.85, 1])}
 
     # Add subplot labels
     labels = [{'label_text':'a', 'xpos':0, 'ypos':0, 'fontsize':10, 'weight': 'bold',
@@ -57,9 +58,9 @@ def plot_main_figure(one=None):
                'ha': 'right', 'va': 'bottom'},
               {'label_text':'d', 'xpos':0, 'ypos':0.85, 'fontsize':10, 'weight': 'bold',
                'ha': 'right', 'va': 'bottom'},
-              {'label_text':'e', 'xpos':0.27, 'ypos':0.85, 'fontsize':10, 'weight': 'bold',
+              {'label_text':'e', 'xpos':0.37, 'ypos':0.85, 'fontsize':10, 'weight': 'bold',
                'ha': 'right', 'va': 'bottom'},
-              {'label_text':'f', 'xpos':0.64, 'ypos':0.85, 'fontsize':10, 'weight': 'bold',
+              {'label_text':'f', 'xpos':0.7, 'ypos':0.85, 'fontsize':10, 'weight': 'bold',
                'ha': 'right', 'va': 'bottom'}]
     fg.add_labels(fig, labels)
 
@@ -77,15 +78,18 @@ def plot_main_figure(one=None):
     panel_example(ax['panel_D'], n_rec_per_lab=MIN_REC_PER_LAB, example_region='PPC',
                   example_metric='median_firing_rate', ylim=[0, 12], ylabel='Firing rate in PPC (spks/s)',
                   despine=True, yticks=[0, 6, 12])
-    """
     panel_example(ax['panel_D'], n_rec_per_lab=MIN_REC_PER_LAB, example_region='CA1',
                   example_metric='lfp_theta_power', ylim=[-160, -100], ylabel='LFP power in CA1 (db)',
                   despine=True, yticks=[-160, -100])
-
-    p_permut = panel_permutation(ax['panel_E'], METRICS, REGIONS, LABELS, n_permut=N_PERMUT,
+    """
+    
+    p_permut = panel_permutation(ax['panel_D'], METRICS, REGIONS, LABELS, n_permut=N_PERMUT,
                                  n_rec_per_lab=MIN_REC_PER_LAB, n_rec_per_region=MIN_REC_PER_REGION)
-    p_decoding = panel_decoding(ax['panel_F'], qc=True)
-
+    p_decoding = panel_decoding(ax['panel_E'], qc='pass')
+    ax['panel_E'].set(title='QC pass')
+    _ = panel_decoding(ax['panel_F'], qc='all')
+    ax['panel_F'].set(title='All recordings')
+    
     # Save figure
     save_path = save_figure_path(figure='figure3')
     print(f'Saving figures to {save_path}')

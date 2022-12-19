@@ -1,10 +1,14 @@
 import numpy as np
 from collections import Counter
 
-from scipy.stats import percentileofscore, ks_2samp
+from scipy.stats import ks_2samp
 import random
+from copy import deepcopy
+import pandas as pd
 
 from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
+import umap
 
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
@@ -17,10 +21,17 @@ import matplotlib.transforms as transforms
 import string
 
 from statsmodels.stats.multitest import multipletests
-from sklearn.linear_model import Ridge
+from sklearn.linear_model import LogisticRegression, Ridge
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import KFold
+from datetime import datetime
 
 from reproducible_ephys_functions import filter_recordings, save_figure_path, labs, figure_style
 from fig_PCA.fig_PCA_load_data import load_dataframe, load_data
+
+import warnings
+warnings.filterwarnings("ignore")
 
 T_BIN = 0.02  # time bin size in seconds
 _, b, lab_cols = labs()
@@ -78,8 +89,25 @@ def confidence_ellipse(x, y, ax, n_std=3.0, facecolor='none', **kwargs):
     return ax.add_patch(ellipse)
 
 
-def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2, fdr=True, permute_include=True):
+def ecdf(a):
+    '''
+    get cummulative distribution function
+    '''
+    x, counts = np.unique(a, return_counts=True)
+    cusum = np.cumsum(counts)
+    return x, cusum / cusum[-1]
 
+
+def all_panels(rm_unre=True, align='move', split='rt', 
+               xyz_res=False, re_rank=2, fdr=True, permute_include=True,
+               min_lab = False, show_total = False, nrand = 1000,
+               sig_lev = 0.01):
+                             
+    '''
+    min_lab: restrict to two areas so that all labs have same #cells
+    show_total: in black plot mean and ellipse of all cells
+    '''
+               
     # load metainfo df, row per cell
     concat_df = load_dataframe()
     # load PSTHs, one per cell
@@ -100,15 +128,46 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
         all_frs = all_frs[concat_df['responsive']]
         concat_df = concat_df[concat_df["responsive"]].reset_index()
 
+    # all having same length of #cells
     y = all_frs
     regs = concat_df['region'].values
     labs = concat_df['lab'].values
     xyz = np.array([concat_df[g].values for g in ['x', 'y', 'z']]).T
 
+    # merge hofer and mirsicflogel labs
+    labs[labs == 'mrsicflogellab'] = 'hoferlab'
+
+    if min_lab:
+      
+        # sample cells to have same number from each lab                
+        labC = Counter(labs)
+        lr = {lab : dict(Counter(regs[labs == lab])) for lab in labC}
+        creg = set.intersection(*[set(np.unique(regs[labs == lab])) 
+                                 for lab in labC])                                 
+        
+        idc = np.arange(len(regs))                         
+        idc_ = []
+        for reg in creg:
+            mreg = min([lr[lab][reg] for lab in lr])
+            # sample mreg cells from each lab for region reg
+            for lab in lr:
+                idc_.append(random.sample(
+                            list(idc[np.bitwise_and(
+                            labs == lab, regs == reg)]), mreg))
+
+        idc_ = list(np.concatenate(idc_))
+        
+        # restric data to regs/labs have same #cells
+        y = y[idc_]
+        regs = regs[idc_]
+        labs = labs[idc_]
+        xyz = xyz[idc_]
+
     # PCA embedding
     pca = PCA(n_components=2)
     pca.fit(y)
     emb = pca.transform(y)
+
 
     if xyz_res:
         clf = Ridge(alpha=0)
@@ -131,9 +190,6 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
     xs = np.arange(len(y[0])) * T_BIN
     xs = xs[:len(xs) // 2]  # for just plotting first PSTH
 
-    # merge hofer and mirsicflogel labs
-    labs[labs == 'mrsicflogellab'] = 'hoferlab'
-
     # get a sessions idx per cell (for stats model)
     cps = [k for k in range(1, len(labs)) if labs[k] != labs[k - 1]]
     k = 0
@@ -154,7 +210,8 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
 
     mosaic = [[inner, 'F'],
               ['B', 'D'],
-              ['G', 'Ga']]
+              ['G', 'Ga'],
+              ['c_reg', 'c_ca1']]
 
     mosaic_supp = [['Ha', 'Hb', 'H'],
                    ['Ia', 'Ib', 'I'],
@@ -188,16 +245,14 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
 
     le_labs = [Patch(facecolor=lab_cols[b[lab]], 
                edgecolor=lab_cols[b[lab]], label=b[lab]) for lab in labs_]
+               
+    if show_total:
+        le_labs.append(Patch(facecolor='k',
+                       edgecolor='k', label='all cells'))
 
     axs['G'].legend(handles=le_labs, loc='lower left', 
                     bbox_to_anchor=(0.1, 1), ncol=3, frameon=False, 
                     prop={'size': 8}).set_draggable(True)
-
-    Dc = figure_style(return_colors=True)
-
-    regs_ = Counter(regs)
-    cols_reg = [Dc[x] for x in regs]
-    axs['B'].scatter(emb[:, 0], emb[:, 1], marker='o', c=cols_reg, s=2)
 
     regs_ = Counter(regs)
     cents = {}
@@ -205,9 +260,8 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
         cents[reg] = np.mean(emb[regs == reg], axis=0)
 
 
-    # shuffle test
-    nrand = 10  # random region allocations
-    if nrand < 1000:
+    # shuffle test 
+    if nrand < 1000: # random region allocations
         print('put nrand back to 1000')
         
     centsr = []
@@ -227,10 +281,44 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
               np.mean([cenr[l] for l in cenr], axis=0)) for reg in cenr])
               for cenr in centsr]
 
-    p = 1 - (0.01 * percentileofscore(null_d, dist))
-    p = np.round(p, )
-
+    p = np.mean(np.array(null_d + [dist]) >= dist) 
     print('region permutation test:', p)
+
+    '''
+    ###
+    plot scatter, all labs, colored by reg
+    ###
+    '''
+    Dc = figure_style(return_colors=True)
+
+    # scatter 2d PCs
+    cols_reg = [Dc[x] for x in regs]
+    axs['B'].scatter(emb[:, 0], emb[:, 1], marker='o', c=cols_reg, s=2)
+        
+    
+    for reg in cents:
+        # plot means
+        axs['B'].scatter(cents[reg][0], cents[reg][1], 
+                         s=500, marker='x', color=Dc[reg])
+                         
+        # plot confidence ellipses
+        x = emb[regs == reg]
+        confidence_ellipse(x[:, 0], x[:, 1], axs['B'], 
+                           n_std=1.0, edgecolor=Dc[reg])        
+
+    le = [Patch(facecolor=Dc[reg], edgecolor=Dc[reg], 
+                label=reg) for reg in regs_]
+
+    if show_total:
+        # plot mean of all points and ellipse
+        axs['B'].scatter(cs[0], cs[1], 
+                         s=500, marker='x', color='k')
+           
+        confidence_ellipse(emb[:, 0], emb[:, 1], axs['B'], 
+                           n_std=1.0, edgecolor='k') 
+                           
+        le.append(Patch(facecolor='k', edgecolor='k',
+                        label='all cells'))                       
 
 
     # additional test, instead of distance of means, KS of distrbs
@@ -254,21 +342,9 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
         null_d.append(sum([ks_2samp(g_all, g_regs[reg])[0] 
                            for reg in g_regs]))    
 
-    p = 1 - (0.01 * percentileofscore(null_d, dist))
-    p = np.round(p, )
-
+    p = np.mean(np.array(null_d + [dist]) >= dist) 
     print('region permutation test (KS using 1st PC):', p)
-        
-    # plot means
-    for reg in cents:
-        axs['B'].scatter(cents[reg][0], cents[reg][1], s=500, marker='x', color=Dc[reg])
 
-    # plot confidence ellipses
-    for reg in regs_:
-        x = emb[regs == reg]
-        confidence_ellipse(x[:, 0], x[:, 1], axs['B'], n_std=1.0, edgecolor=Dc[reg])
-
-    le = [Patch(facecolor=Dc[reg], edgecolor=Dc[reg], label=reg) for reg in regs_]
 
     axs['B'].legend(handles=le, bbox_to_anchor=(0.3, 1), 
                     loc='lower left', ncol=3, frameon=False,
@@ -286,7 +362,100 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
     axs['D'].sharex(axs['Ga'])
     axs['D'].sharey(axs['Ga'])
 
+
+    '''
+    ###
+    plot 1st PC and KS for all labs, split by region
+    ###
+    '''
+    # 1PCs and comparing distributions via KS - by regions 
+    
+    # plot CDFs of first PCs distributions and KS metrics
+
+    x0, x1 = ecdf(g_all)
+    axs['c_reg'].plot(x0, x1,
+                   label=f'all cells', lw=2,
+                   color = 'k', drawstyle='steps-post')
+                   
+    print(f'KS results per region across labs')               
+    ksr = {}                          
+    for reg in regs_:
+        x0, x1 = ecdf(g_regs[reg])
+        ks,p = ks_2samp(g_all, g_regs[reg])
+        ksr[reg] = [ks,p]
+        axs['c_reg'].plot(x0, x1, color=Dc[reg], 
+                   drawstyle='steps-post', lw=1)
+        print(reg, ks, p)          
+                   
+    
+    # per reg multiple comparison corr                
+    pvals_ = [ksr[reg][1] for reg in ksr]
+    if fdr:
+        _, pvals_c_, _, _ = multipletests(pvals_, sig_lev, method='fdr_bh')
+    else:
+        pvals_c_ = pvals_
+    
+    
+    
+    kk = 0
+    if fdr:
+        print('corrected')
+    else:
+        print('uncorrected')      
+    for reg in ksr:
+        ksr[reg][1] = pvals_c_[kk]
+        kk += 1
+        
+#        if ksr[reg][1] < sig_lev:
+  
+        print(reg, ksr[reg][0], ksr[reg][1])
+                   
+    axs['c_reg'].set_title(reg, loc='left')
+    axs['c_reg'].set_xlabel('PC1')
+    axs['c_reg'].set_ylabel('P(PC1 < x)')
+    axs['c_reg'].text(-0.1, 1.30, panel_n['c_reg'],
+                     transform=axs['c_reg'].transAxes,
+                     fontsize=16, va='top',
+                     ha='right', weight='bold')            
+
+    axs['c_reg'].legend(frameon=False, 
+                        loc='upper left').set_draggable(True)
+
+    # plot ks scores as bar plot inset with asterics for small p 
+    axsi0 = inset_axes(axs['c_reg'], width="30%", height="35%", 
+                           loc=4, borderpad=1,
+                           bbox_to_anchor=(-0.02,0.1,1,1), 
+                           bbox_transform=axs['c_reg'].transAxes)
+               
+    bars = axsi0.bar(range(len(ksr)), [ksr[reg][0] for reg in ksr], 
+                  color = [Dc[reg] for reg in ksr])
+                  
+    axsi0.set_xlabel('labs')
+    axsi0.set_xticks([])
+    axsi0.set_xticklabels([])
+    axsi0.set_ylabel('KS')
+    axsi0.spines['top'].set_visible(False)
+    axsi0.spines['right'].set_visible(False)
+                 
+    # put * on bars that are significant
+    ii = 0
+    for reg in ksr:
+        ba = bars.patches[ii]
+        if ksr[reg][1] < sig_lev:             
+            axsi0.annotate('*',
+                           (ba.get_x() + ba.get_width() / 2,
+                            ba.get_height()), ha='center', 
+                            va='center', size=16, 
+                            xytext=(0, 1),
+                            textcoords='offset points')
+        ii += 1
+
+    '''
+    ###
     # plot average PSTHs
+    ###
+    '''
+    
     for reg in regs_:
 
         labsinreg = len(Counter(labs[regs == reg]))
@@ -300,19 +469,21 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
         ste = ste[:len(xs)]
 
         axs['D'].plot(xs - 0.5, ms, color=Dc[reg])
-        axs['D'].fill_between(xs - 0.5, ms + ste, ms - ste, color=Dc[reg], alpha=0.2)
+        axs['D'].fill_between(xs - 0.5, ms + ste, ms - ste, 
+                              color=Dc[reg], alpha=0.2)
 
     for x in np.array([25]) * T_BIN:
         axs['D'].axvline(x=0, linewidth=0.5, linestyle='--', 
                          c='g', label='movement onset')
 
     axs['D'].set_xlabel('time from movement onset (s)')
-    axs['D'].set_ylabel('Firing rate (spikes/s)')
+    axs['D'].set_ylabel('Firing rate \n (spikes/s)')
     axs['D'].text(-0.1, 1.30, panel_n['D'], 
                   transform=axs['D'].transAxes, fontsize=16, 
                   va='top', ha='right', weight='bold')
 
-    le = [Line2D([0], [0], color='g', lw=0.5, ls='--', label='movement onset')]
+    le = [Line2D([0], [0], color='g', lw=0.5, ls='--', 
+                 label='movement onset')]
 
 #    axs['D'].legend(handles=le, bbox_to_anchor=(0.3, 1), frameon=False, 
 #                    loc='lower left', ncol=1, prop={'size': 7}).set_draggable(True)
@@ -330,7 +501,7 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
         r2s_[re_rank] = r2s
         if re_rank == 2:
             t = np.argsort(r2s)
-            t_ = np.concatenate([t[170:171], t[-4:-3]])
+            t_ = np.concatenate([t[169:170], t[-4:-3]])
             idxs = [iex[j] for j in t_]
 
     # split good and bad example cell into two panels
@@ -347,7 +518,7 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
             axs[ms[k]].axvline(x=0, linewidth=0.5, linestyle='--',
                                c='g', label='movement onset')
 
-        axs[ms[k]].set_ylabel('Firing rate \n (Spikes/s)')
+        axs[ms[k]].set_ylabel('Firing rate \n (spikes/s)')
         stext = rf'$r^2$={np.round(r2_score(y[idxs[k]], y_res[2][idxs[k]]), 2)}'
         axs[ms[k]].text(0.2, 1, stext, transform=axs[ms[k]].transAxes,
                         fontsize=7, va='top', ha='right')
@@ -390,8 +561,11 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
 
     k = 0
     p_ = {}  # Guido's permutation test score
-    p_ks = {}
-    D = ['CA1', 'PPC', 'CA1', 'DG', 'LP', 'PO']
+    p_ks = {}  # KS test on 1st PC
+    if min_lab:
+        D = ['CA1', 'LP']
+    else:
+        D = ['CA1', 'PPC', 'CA1', 'DG', 'LP', 'PO']
     nns = {}
     
     axsi = []  # inset axes
@@ -411,12 +585,9 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
         sess2 = sess[regs == reg]
         emb2 = emb[regs == reg]
         
-
         cols_lab = [lab_cols[b[x]] for x in labs2]
         axs3[ms[k]].scatter(emb2[:, 0], emb2[:, 1], marker='o', 
                             c=cols_lab, s=2)
-
-
 
         labs_ = Counter(labs2)
 
@@ -438,6 +609,16 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
             confidence_ellipse(x[:, 0], x[:, 1], axs3[ms[k]], 
                                n_std=1.0, edgecolor=lab_cols[b[lab]])
 
+        if show_total:
+            cs = np.mean(emb2, axis=0)
+            # plot mean of all points and ellipse
+            axs3[ms[k]].scatter(cs[0], cs[1], 
+                             s=500, marker='x', color='k')
+               
+            confidence_ellipse(emb2[:, 0], emb2[:, 1], axs3[ms[k]], 
+                               n_std=1.0, edgecolor='k') 
+                               
+
         # shuffle test
         centsr = []
         for shuf in range(nrand):
@@ -448,7 +629,6 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
                 cenr[lab] = np.mean(emb2[labsr == lab], axis=0)
             centsr.append(cenr)
 
-        # Guido's permutation test
         cs = np.mean([cents[lab] for lab in cents], axis=0)
         dist = sum([distE(cents[lab], cs) for lab in cents])
 
@@ -456,8 +636,8 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
                        np.mean([cenr[la] for la in cenr], axis=0)) 
                        for lab in cenr]) for cenr in centsr]
                        
-        p = 1 - (0.01 * percentileofscore(null_d, dist))
-        p_[reg] = np.round(p, 3)
+        p = np.mean(np.array(null_d + [dist]) >= dist) 
+        p_[reg] = p
 
 
         # additional test using 1PCs and comparing distributions via KS 
@@ -465,48 +645,9 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
         g_labs = {}
         for lab in labs_:
             g_labs[lab] = emb2[labs2 == lab][:,0]
-            
-#        dist = sum([ks_2samp(g_all, g_labs[lab])[0] for lab in g_labs]) 
-#        
-#        # get null_d by shuffling lab labels
-#        null_d = []
-#        for shuf in range(nrand):
-#            labsr = labs2.copy()
-#            random.shuffle(labsr)
-#            g_labsr = {}
-#            for lab in labs_:
-#                g_labsr[lab] = emb2[labsr == lab][:,0]    
-#            null_d.append(sum([ks_2samp(g_all, g_labsr[lab])[0] 
-#                               for lab in g_labsr])) 
 
-#        p = 1 - (0.01 * percentileofscore(null_d, dist))
-#        p_ks[reg] = np.round(p, 3)
-
-
-#        # plot distributions of first PCs
-#        _, ax = plt.subplots(nrows=1 , ncols=2, figsize=(14,8))
-#        ax[0].hist(x=g_all, color = 'b', 
-#                  bins='auto', label=f'all cells in {reg}', 
-#                  alpha=0.7, rwidth=0.85, 
-#                  histtype=u'step', lw=2)
-#                                  
-#        for lab in labs_:
-#            ax[0].hist(x=g_labs[lab], color=lab_cols[b[lab]],
-#                      bins='auto', label=f'{lab}', 
-#                      alpha=0.7, rwidth=0.85, 
-#                      histtype=u'step', lw=1)
-#                              
-#        ax[0].set_title(f'Histogram \n First PCs of cells in {reg}')
-#        ax[0].set_xlabel('PC1')
-#        ax[0].set_ylabel('frequency')
-#        ax[0].legend()
         
         # plot CDFs of first PCs distributions and KS metrics
-        def ecdf(a):
-            x, counts = np.unique(a, return_counts=True)
-            cusum = np.cumsum(counts)
-            return x, cusum / cusum[-1]
-        
         if k != 0:
             x0, x1 = ecdf(g_all)
             axs3[ms3[k]].plot(x0, x1,
@@ -522,16 +663,47 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
                 axs3[ms3[k]].plot(x0, x1, color=lab_cols[b[lab]], 
                            drawstyle='steps-post', lw=1)
             
-            # per region do multiple comparison correction of p-values                
+            # per reg multiple comparison corr                
             pvals_ = [ksr[lab][1] for lab in ksr]
-            _, pvals_c_, _, _ = multipletests(pvals_, 0.05, method='fdr_bh')
+            if fdr:
+                _, pvals_c_, _, _ = multipletests(pvals_, sig_lev, method='fdr_bh')
+            else:
+                pvals_c_ = pvals_
             
             kk = 0
+            if k == 1: print(f'KS results if p < {sig_lev}:')
+            
             for lab in ksr:
                 ksr[lab][1] = pvals_c_[kk]
                 kk += 1
-                if ksr[lab][1] < 0.01:
+                
+                if ksr[lab][1] < sig_lev:
+                    if fdr:
+                        print('corrected')
+                    else:
+                        print('uncorrected')    
                     print(reg, lab, ksr[lab][0], ksr[lab][1])
+            
+            
+            
+            # extra KS test, custum p value:
+            dist = sum([ks_2samp(g_all, g_labs[lab])[0] for lab in g_labs]) 
+      
+    
+            # get null_d by shuffling lab labels
+            null_d = []
+            for shuf in range(nrand):
+                labsr = labs2.copy()
+                random.shuffle(labsr)
+                g_labsr = {}
+                for lab in labs_:
+                    g_labsr[lab] = emb2[labsr == lab][:,0]    
+                null_d.append(sum([ks_2samp(g_all, g_labsr[lab])[0] 
+                                   for lab in g_labsr]))    
+            
+            p = np.mean(np.array(null_d + [dist]) >= dist) 
+            print(f'reg {reg}, lab sum permutation test (KS using 1st PC):', p) 
+
                            
             axs3[ms3[k]].set_title(reg, loc='left')
             axs3[ms3[k]].set_xlabel('PC1')
@@ -542,8 +714,8 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
                              ha='right', weight='bold')            
             
             if k == 1:
-                    axs3[ms3[k]].legend(frameon=False, 
-                                        loc='upper left').set_draggable(True)
+                axs3[ms3[k]].legend(frameon=False, 
+                                    loc='upper left').set_draggable(True)
 
             # plot ks scores as bar plot inset with asterics for small p 
             axsi.append(inset_axes(axs3[ms3[k]], width="30%", height="35%", 
@@ -565,16 +737,15 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
             ii = 0
             for lab in ksr:
                 ba = bars.patches[ii]
-                if ksr[lab][1] < 0.01:             
+                if ksr[lab][1] < sig_lev:             
                     axsi[k-1].annotate('*',
                                        (ba.get_x() + ba.get_width() / 2,
                                         ba.get_height()), ha='center', 
                                         va='center', size=16, 
                                         xytext=(0, 1),
                                         textcoords='offset points')
-                ii += 1                                                              
-        
-
+                ii += 1
+                
         axs3[ms[k]].set_title(reg, loc='left')
         axs3[ms[k]].set_xlabel('embedding dim 1 (PC1)' if k > 0 else
                                'embedding dim 1' )
@@ -607,7 +778,7 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
 
         axs3[ms2[k]].set_title(reg, loc='left')
         axs3[ms2[k]].set_xlabel('time from movement onset (s)')
-        axs3[ms2[k]].set_ylabel('Firing rate (spikes/s)')
+        axs3[ms2[k]].set_ylabel('Firing rate \n (spikes/s)')
         
         for x in np.array([25]) * T_BIN:
             axs3[ms2[k]].axvline(x=0, lw=0.5, linestyle='--', 
@@ -628,12 +799,17 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
         k += 1
 
     pvals_ = [p_[reg] for reg in p_]
-    _, pvals_c_, _, _ = multipletests(pvals_, 0.05, method='fdr_bh')
-
-    print('means permutation test labs per region, corrected:')
-    print(dict(zip(list(p_.keys()), [np.round(p, 3) for p in pvals_c_])))
-
-
+    
+    if fdr:
+        _, pvals_c_, _, _ = multipletests(pvals_, sig_lev, method='fdr_bh')
+        print('means permutation test labs per region, corrected:')
+    else:
+        pvals_c_ = pvals_
+        print('means permutation test labs per region, uncorrected:')
+    
+    
+    dp = dict(zip(list(p_.keys()), [p for p in pvals_c_]))
+    print(dp)
 #    pvals_ks = [p_ks[reg] for reg in p_]
 #    _, pvals_c_ks, _, _ = multipletests(pvals_ks, 0.05, method='fdr_bh')
 
@@ -651,7 +827,388 @@ def all_panels(rm_unre=True, align='move', split='rt', xyz_res=False, re_rank=2,
     fig.tight_layout()
     figs.tight_layout()
 
-    fig_path = save_figure_path(figure='fig_PCA')
-    print(f'Saving figures to {fig_path}')
-    fig.savefig(fig_path.joinpath('fig_PCA.png'))
-    figs.savefig(fig_path.joinpath('fig_PCA_supp1.png'))
+    if not min_lab:
+        fig_path = save_figure_path(figure='fig_PCA')
+        print(f'Saving figures to {fig_path}')
+        fig.savefig(fig_path.joinpath('figure_PCA.pdf'))
+        figs.savefig(fig_path.joinpath('figure_PCA_supp1.pdf'))
+        
+    #return dp
+    
+    
+    
+    
+def all_dim_reds(rm_unre=True, align='move', split='rt', 
+               xyz_res=False, re_rank=2, fdr=True, permute_include=True,
+               show_total = False, nrand = 1000, sig_lev = 0.01,
+               single = True):
+                             
+    '''
+    min_lab: restrict to two areas so that all labs have same #cells
+    show_total: in black plot mean and ellipse of all cells
+    '''
+               
+    # load metainfo df, row per cell
+    concat_df = load_dataframe()
+    # load PSTHs, one per cell
+    data = load_data(event=align, split=split, smoothing='none')
+    all_frs = data['all_frs']
+
+    ts = 'fast|slow RT PETH'
+
+    # include has minimum number of clusters as being 3
+    concat_df = filter_recordings(concat_df)
+
+    if permute_include:
+        all_frs = all_frs[concat_df['permute_include'] == 1, :]
+        concat_df = concat_df[concat_df['permute_include'] == 1].reset_index()
+
+    if rm_unre:
+        # restrict to responsive units
+        all_frs = all_frs[concat_df['responsive']]
+        concat_df = concat_df[concat_df["responsive"]].reset_index()
+
+    # all having same length of #cells
+    y = all_frs
+    regs = concat_df['region'].values
+    labs = concat_df['lab'].values
+    xyz = np.array([concat_df[g].values for g in ['x', 'y', 'z']]).T
+
+    # merge hofer and mirsicflogel labs
+    labs[labs == 'mrsicflogellab'] = 'hoferlab'
+
+
+    # PCA embedding
+    pca = PCA(n_components=2)
+    pca.fit(y)
+    emb = pca.transform(y)    
+    
+    emb_u = umap.UMAP(n_components=2).fit_transform(y)
+    emb_t = TSNE(n_components=2).fit_transform(y)
+
+    # lab colors
+    labs_ = Counter(labs)
+    cols_lab = [lab_cols[b[x]] for x in labs]
+    le_labs = [Patch(facecolor=lab_cols[b[lab]],
+               edgecolor=lab_cols[b[lab]], label=b[lab]) for lab in labs_]
+    
+    # region colors
+    regs_ = Counter(regs)
+    Dc = figure_style(return_colors=True)
+    cols_reg = [Dc[x] for x in regs]
+    le = [Patch(facecolor=Dc[reg], edgecolor=Dc[reg], 
+                label=reg) for reg in regs_]
+    
+    
+    fig, axs = plt.subplots(nrows=2,ncols=3, figsize=(15,10))
+    dr = {'tSNE': emb_t, 'umap': emb_u, 'PCA': emb}
+    
+    c = 0
+    for m in dr:
+        axs[0,c].scatter(dr[m][:, 0], dr[m][:, 1], marker='o', c=cols_reg, s=2)
+        axs[1,c].scatter(dr[m][:, 0], dr[m][:, 1], marker='o', c=cols_lab, s=2)
+        axs[1,c].sharex(axs[0,c])
+        axs[1,c].sharey(axs[0,c])
+        if c == 0:
+            axs[0,c].legend(handles=le, loc='lower left',
+                          bbox_to_anchor=(0.1, 1), ncol=3, frameon=False,
+                          prop={'size': 8}).set_draggable(True)
+            axs[1,c].legend(handles=le_labs, loc='lower left',
+                          bbox_to_anchor=(0.1, 1), ncol=3, frameon=False,
+                          prop={'size': 8}).set_draggable(True)
+        
+        
+        axs[0,c].set_title(m)
+        c+=1
+    
+    fig.tight_layout()
+    fig_path = save_figure_path(figure='fig_PCA_supp')
+    fig.savefig(fig_path.joinpath(f'all_regs_labs.png'))
+    plt.close()    
+      
+    
+    if single:
+        plt.ioff()
+        for lab in labs_:
+            fig, axs = plt.subplots(nrows=1,ncols=3, num=lab, figsize=(15,10))
+            
+            dr = {'tSNE': emb_t, 'umap': emb_u, 'PCA': emb}
+            
+            c = 0
+            for m in dr:
+                axs[c].scatter(dr[m][:, 0], dr[m][:, 1], marker='o', 
+                                 color='gray', s=4)
+                axs[c].scatter(dr[m][labs==lab, 0], dr[m][labs==lab, 1], marker='o', 
+                                 color='r', s=4)
+
+                axs[c].set_title(m)
+                c+=1
+                
+            fig.suptitle(lab)
+            fig.tight_layout()    
+            fig_path = save_figure_path(figure='fig_PCA_supp')
+            fig.savefig(fig_path.joinpath(f'lab_{lab}.png'))
+            plt.close()
+            
+            
+        for reg in regs_:
+            fig, axs = plt.subplots(nrows=1,ncols=3, num=reg, figsize=(15,10))
+            
+            dr = {'tSNE': emb_t, 'umap': emb_u, 'PCA': emb}
+            
+            c = 0
+            for m in dr:
+                axs[c].scatter(dr[m][:, 0], dr[m][:, 1], marker='o', 
+                                 color='gray', s=4)
+                axs[c].scatter(dr[m][regs==reg, 0], dr[m][regs==reg, 1], 
+                               marker='o', color='r', s=4)
+
+                axs[c].set_title(m)
+                c+=1
+            
+            fig.suptitle(reg)
+            fig.tight_layout()    
+            fig_path = save_figure_path(figure='fig_PCA_supp')
+            fig.savefig(fig_path.joinpath(f'reg_{reg}.png'))    
+            plt.close()
+
+
+def get_data(dim_red=False, rm_unre=True, align='move', split='rt', 
+             re_rank=2, permute_include=True):
+
+    # load metainfo df, row per cell
+    concat_df = load_dataframe()
+    # load PSTHs, one per cell
+    data = load_data(event=align, split=split, smoothing='none')
+    all_frs = data['all_frs']
+
+    ts = 'fast|slow RT PETH'
+
+    # include has minimum number of clusters as being 3
+    concat_df = filter_recordings(concat_df)
+
+    if permute_include:
+        all_frs = all_frs[concat_df['permute_include'] == 1, :]
+        concat_df = concat_df[concat_df['permute_include'] == 1].reset_index()
+
+    if rm_unre:
+        # restrict to responsive units
+        all_frs = all_frs[concat_df['responsive']]
+        concat_df = concat_df[concat_df["responsive"]].reset_index()
+
+    # all having same length of #cells
+    y = all_frs
+    regs = concat_df['region'].values
+    labs = concat_df['lab'].values
+    xyz = np.array([concat_df[g].values for g in ['x', 'y', 'z']]).T
+
+    # merge hofer and mirsicflogel labs
+    labs[labs == 'mrsicflogellab'] = 'hoferlab'
+
+
+    # PCA embedding
+    pca = PCA(n_components=2)
+    pca.fit(y)
+    emb = pca.transform(y)    
+
+    return y, regs, labs, emb
+
+
+def decode(x,y,decoder='LDA', CC = 1.0, shuf = False):
+       
+    #x,y = 
+    
+
+    print('input dimension:', np.shape(x)) 
+    print('chance at ', 1/len(Counter(y)))
+
+    startTime = datetime.now()
+
+     
+    if shuf:
+        print('labels are SHUFFLED')
+        np.random.shuffle(y)
+        
+    if len(x.shape) == 1:
+        x = x.reshape(-1, 1)
+
+    train_r2 = []
+    test_r2 = []
+    acs = [] 
+    
+    y_p = []
+    y_t = []    
+    ws = []
+    
+    # cross validation    
+
+    folds = 5
+    kf = KFold(n_splits=folds, shuffle=True)
+                                       
+    k=1        
+    for train_index, test_index in kf.split(x):
+ 
+        sc = StandardScaler()
+        train_X = sc.fit_transform(x[train_index])
+        test_X = sc.fit_transform(x[test_index])
+
+        train_y = y[train_index]
+        test_y = y[test_index]    
+
+
+        if k==1: 
+
+            print('train/test samples:', len(train_y), len(test_y))
+            print('')   
+
+        if decoder == 'LR':
+            clf = LogisticRegression(random_state=0,
+                                     max_iter=200, n_jobs = -1)
+            clf.fit(train_X, train_y)
+            
+            y_pred_test = clf.predict(test_X) 
+            y_pred_train = clf.predict(train_X)  
+   
+        elif decoder == 'LDA':    
+        
+            clf = LinearDiscriminantAnalysis()
+            clf.fit(train_X, train_y)
+            
+            y_pred_test = clf.predict(test_X) 
+            y_pred_train = clf.predict(train_X)  
+            
+
+        else:
+            return 'what model??'    
+
+
+        res_test = np.mean(test_y == y_pred_test) 
+        res_train = np.mean(train_y == y_pred_train)    
+
+        ac_test = round(np.mean(res_test),4)
+        ac_train = round(np.mean(res_train),4)             
+        acs.append([ac_train,ac_test])     
+               
+        k+=1
+      
+    r_train = round(np.mean(np.array(acs)[:,0]),3)
+    r_test = round(np.mean(np.array(acs)[:,1]),3)
+       
+    print('Mean train accuracy:', r_train)
+    #print(np.array(acs)[:,0])
+    print('Mean test accuracy:', r_test)
+    #print(np.array(acs)[:,1])
+    print(f'time to compute:', datetime.now() - startTime) 
+    
+    #return np.array(acs)
+    return np.mean(np.array(acs)[:,1])
+
+
+def run_batch():
+
+    res = {}
+    for decoder in ['LR','LDA']:
+        y, regs, labs_, emb = get_data()
+        lbs = {'labs': labs_, 'regs': regs}    
+
+        # decode regs, leba using all cells    
+        r = {}
+        for lb in lbs:               
+            ac = decode(y,lbs[lb],decoder=decoder)
+            r[f'{lb}_all_n'] = ac
+            r[f'{lb}_all_shuf'] = []
+            for i in range(150):
+                r[f'{lb}_all_shuf'].append(decode(y,lbs[lb],
+                                           decoder=decoder,
+                                           shuf=True))
+                print(decoder, 'all', i, 'of', 150)
+                                          
+        res[f'all_{decoder}'] = r 
+                               
+        r = {}                                   
+        # decode labs per region
+        regs_ = list(Counter(regs))
+        
+        for reg in regs_:
+
+            ac = decode(y[regs == reg],labs_[regs == reg],decoder=decoder)
+            r[f'labs_{reg}_n'] = ac
+            r[f'labs_{reg}_shuf'] = []
+            d = deepcopy(labs_[regs == reg])
+            for i in range(150):
+                r[f'labs_{reg}_shuf'].append(decode(y[regs == reg],
+                                           d, decoder=decoder,
+                                           shuf=True))
+                print(decoder, reg, i, 'of', 150)
+                                       
+        res[f'per_reg_{decoder}'] = r
+                                  
+                                     
+    np.save(f'/home/mic/repro_decode.npy',res, allow_pickle=True)            
+        
+
+def plot_violin(metric = 'm'):
+    
+    '''
+    plotting results from batch_job() as violins
+    
+    variable  # domain or vintage
+    train  # display training accuracy
+    '''
+    
+    R = np.load('/home/mic/repro_decode.npy', 
+                allow_pickle=True).flat[0]
+    
+    fig = plt.figure(figsize=(6,3))
+    ax = plt.subplot(1,2,2)  
+
+    columns=['shuf', 'range', 'decoder', 'target', 'acc']        
+    
+    r = []
+    for shuf in ['shuf','n']:
+        for decoder in ['LDA', 'LR']:
+            for target in ['labs', 'regs']:
+                for ra in ['all', 'per_reg']:
+
+                    if ra == 'all':
+                        ac = R[f'{ra}_{decoder}'][f'{target}_all_{shuf}']
+                        
+                        r.append([shuf, ra, 
+                                 decoder, target, ac])
+                    if ra == 'per_reg':
+                        if target == 'regs':
+                            continue
+                        regs = np.unique([x.split('_')[1] 
+                            for x in R[f'per_reg_{decoder}'].keys()]) 
+                    
+                        for reg in regs:
+                            ac = R[f'{ra}_{decoder}'][f'labs_{reg}_{shuf}']
+                            
+                            r.append([shuf, reg, 
+                                     decoder, target, ac])                        
+
+    df  = pd.DataFrame(data=r,columns=columns) 
+    
+    P = {}
+    for decoder in ['LDA', 'LR']:
+        for target in ['labs', 'regs']:
+            ras = np.unique(df[np.bitwise_and(df['target'] == target,
+                              df['decoder'] == decoder)]['range'].values)
+            for ra in ras:
+                null_d = df[np.bitwise_and.reduce([df['target'] == target,
+                                       df['decoder'] == decoder,
+                                       df['range'] == ra,
+                                       df['shuf'] == 'shuf'])]['acc'].values[0]
+                score =  df[np.bitwise_and.reduce([df['target'] == target,
+                                       df['decoder'] == decoder,
+                                       df['range'] == ra,
+                                       df['shuf'] == 'n'])]['acc'].values[0]    
+                                                         
+                p =  np.mean(np.array(list(null_d) + 
+                                      [score]) 
+                                      >= score)
+
+                P[f'{decoder}_{target}_{ra}'] = p
+                                  
+    return P
+        
