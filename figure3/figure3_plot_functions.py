@@ -142,14 +142,14 @@ def panel_probe_lfp(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-200
 
     # Add lab names
     plt.figtext(0.245, 0.715, 'Berkeley', va="center", ha="center", size=7, color=lab_colors['Berkeley'])
-    plt.figtext(0.345, 0.715, 'Champalimaud', va="center", ha="center", size=7, color=lab_colors['CCU'])
+    plt.figtext(0.35, 0.715, 'Champalimaud', va="center", ha="center", size=7, color=lab_colors['CCU'])
     plt.figtext(0.455, 0.715, 'CSHL (C)', va="center", ha="center", size=7, color=lab_colors['CSHL (C)'])
-    plt.figtext(0.505, 0.715, '(Z)', va="center", ha="center", size=7, color=lab_colors['CSHL (Z)'])
-    plt.figtext(0.57, 0.715, 'NYU', va="center", ha="center", size=7, color=lab_colors['NYU'])
-    plt.figtext(0.65, 0.715, 'Princeton', va="center", ha="center", size=7, color=lab_colors['Princeton'])
-    plt.figtext(0.725, 0.715, 'SWC', va="center", ha="center", size=7, color=lab_colors['SWC'])
-    plt.figtext(0.805, 0.715, 'UCL', va="center", ha="center", size=7, color=lab_colors['UCL'])
-    plt.figtext(0.86, 0.715, 'UCLA', va="center", ha="center", size=7, color=lab_colors['UCLA'])
+    #plt.figtext(0.505, 0.715, '(Z)', va="center", ha="center", size=7, color=lab_colors['CSHL (Z)'])
+    plt.figtext(0.54, 0.715, 'NYU', va="center", ha="center", size=7, color=lab_colors['NYU'])
+    #plt.figtext(0.65, 0.715, 'Princeton', va="center", ha="center", size=7, color=lab_colors['Princeton'])
+    plt.figtext(0.65, 0.715, 'SWC', va="center", ha="center", size=7, color=lab_colors['SWC'])
+    plt.figtext(0.75, 0.715, 'UCL', va="center", ha="center", size=7, color=lab_colors['UCL'])
+    plt.figtext(0.85, 0.715, 'UCLA', va="center", ha="center", size=7, color=lab_colors['UCLA'])
 
     # Add colorbar
     axin = inset_axes(ax[-1], width="50%", height="90%", loc='lower right', borderpad=0,
@@ -400,7 +400,7 @@ def panel_permutation(ax, metrics, regions, labels, n_permut=10000, n_rec_per_la
     return results
 
 
-def panel_decoding(ax, qc='pass'):
+def panel_decoding(ax, qc='pass', region_decoding=True):
 
     # Load in data
     decode_df = load_dataframe(df_name=f'decode_{qc}')
@@ -411,6 +411,8 @@ def panel_decoding(ax, qc='pass'):
     shuffle_regions_df = shuffle_df[shuffle_df['region'] == 'all']
     decode_df = decode_df[decode_df['region'] != 'all']
     shuffle_df = shuffle_df[shuffle_df['region'] != 'all']
+    decode_df.loc[decode_df['region'] == 'PPC', 'region'] = 'VIS'
+    shuffle_df.loc[shuffle_df['region'] == 'PPC', 'region'] = 'VIS'
 
     # Get p-values
     p_values = dict()
@@ -424,31 +426,34 @@ def panel_decoding(ax, qc='pass'):
     for i, region in enumerate(list(p_values.keys())):
         p_values[region] = p_values_corr[i]
 
-    # Plot
-    divider = make_axes_locatable(ax)
-    ax_left = divider.append_axes("left", size='25%', pad='60%', sharey=ax)
-
-    # Plot region decoding
-    sns.violinplot(x='region', y='accuracy_shuffle', data=shuffle_regions_df, ax=ax_left, color=[.7, .7, .7])
-    sns.swarmplot(x='region', y='accuracy', data=decode_regions_df, ax=ax_left, color='red', size=4)
-    ax_left.set(xlabel='', ylabel='Region decoding perf. (%)', xticks=[])
-    ax_left.text(0, 75, '***', size=10, color='k', ha='center')
+    if region_decoding:
+        # Plot region decoding
+        divider = make_axes_locatable(ax)
+        ax_left = divider.append_axes("left", size='25%', pad='60%', sharey=ax)
+        sns.violinplot(x='region', y='accuracy_shuffle', data=shuffle_regions_df, ax=ax_left,
+                       color=[.7, .7, .7], linewidth=0, width=0.075)
+        sns.scatterplot(x='region', y='accuracy', data=decode_regions_df, ax=ax_left, color='red', 
+                        marker='_', linewidth=1)
+        ax_left.set(xlabel='', ylabel='Region decoding perf. (%)', xticks=[])
+        ax_left.text(0, 75, '***', size=7, color='k', ha='center')
 
     # Plot decoding of lab per region
-    sns.violinplot(x='region', y='accuracy_shuffle', data=shuffle_df, ax=ax, color=[.7, .7, .7])
-    sns.swarmplot(x='region', y='accuracy', data=decode_df, ax=ax, color='red', size=4)
+    sns.violinplot(x='region', y='accuracy_shuffle', data=shuffle_df, ax=ax, color=[.7, .7, .7],
+                   linewidth=0)
+    sns.scatterplot(x='region', y='accuracy', data=decode_df, ax=ax, color='red',
+                    marker='_', legend=None, linewidth=1)
 
     # Plot significance star
     for i, region in enumerate(list(p_values.keys())):
         if p_values[region] < 0.001:
-            ax.text(i, 50, '***', color='k', size=10, ha='center')
+            ax.text(i, 50, '***', color='k', size=7, ha='center')
         elif p_values[region] < 0.01:
-            ax.text(i, 50, '**', color='k', size=10, ha='center')
+            ax.text(i, 50, '**', color='k', size=7, ha='center')
         elif p_values[region] < 0.05:
-            ax.text(i, 50, '*', color='k', size=10, ha='center')
+            ax.text(i, 50, '*', color='k', size=7, ha='center')
 
     # Settings
-    ax.set(ylim=[0, 80], xlabel='', ylabel='Lab decoding perf. (%)', yticks=[0, 75])
+    ax.set(ylim=[0, 80], xlabel='', ylabel='Lab decoding perf. (%)', yticks=[0, 75], xlim=[-0.5, 4.5])
     sns.despine(trim=True)
     ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
     ax_left.spines['bottom'].set_visible(False)
