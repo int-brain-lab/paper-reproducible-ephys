@@ -40,32 +40,33 @@ for i in range(len(traj)):
     print('Processing repeated site recording %d of %d' % (i+1, len(traj)))
 
     # Get subject data
-    pid = traj[i]['id']
+    pid = traj[i]['probe_insertion']
     eid = traj[i]['session']['id']
     probe = traj[i]['probe_name']
     lab = traj[i]['session']['lab']
     nickname = traj[i]['session']['subject']
 
-    try:
-        # Load in LFP
-        lf_paths = one.load_datasets(eid, datasets=['_spikeglx_ephysData_g*_t0.imec*.lf.cbin',
-                                                    '_spikeglx_ephysData_g*_t0.imec*.lf.meta',
-                                                    '_spikeglx_ephysData_g*_t0.imec*.lf.ch'],
-                                     collections=[f'raw_ephys_data/{probe}']*3, download_only=True)
-        raw = spikeglx.Reader(lf_paths[int(probe[-1])])
-        signal = raw.read(nsel=slice(10000, 10000 + 2500 * PLOT_SEC, None),
-                          csel=slice(None, None, None))[0]
-        signal = signal.T
+    # Load in LFP
+    lf_paths = one.load_datasets(eid, datasets=['_spikeglx_ephysData_g*_t0.imec*.lf.cbin',
+                                                '_spikeglx_ephysData_g*_t0.imec*.lf.meta',
+                                                '_spikeglx_ephysData_g*_t0.imec*.lf.ch'],
+                                 collections=[f'raw_ephys_data/{probe}']*3, download_only=True)
+    raw = spikeglx.Reader(lf_paths[0][0])
+    signal = raw.read(nsel=slice(10000, 10000 + 2500 * PLOT_SEC, None),
+                      csel=slice(None, None, None))[0]
+    signal = signal.T
 
-        # Load in channel data
-        sl = SpikeSortingLoader(pid=pid, one=one, atlas=ba)
-        _, _, channels = sl.load_spike_sorting()
-        alf_path = one.path_from_eid(eid).joinpath('alf', probe)
-        chn_inds = np.load(Path(join(alf_path, 'channels.rawInd.npy')))
+    # Load in channel data
+    sl = SpikeSortingLoader(pid=pid, one=one, atlas=ba)
+    _, _, channels = sl.load_spike_sorting()
 
-    except Exception as error_message:
-        print(error_message)
-        continue
+    # Load in channels
+    collections = one.list_collections(eid)
+    if f'alf/{probe}/pykilosort' in collections:
+        collection = f'alf/{probe}/pykilosort'
+    else:
+        collection = f'alf/{probe}'
+    chn_inds = one.load_dataset(eid, dataset='channels.rawInd.npy', collection=collection)
 
     # Plot a trace per region
     f, ax1 = plt.subplots(1, 1, figsize=(20, 10), dpi=150)
@@ -73,7 +74,7 @@ for i in range(len(traj)):
 
         # Plot a random channel from each region
         region_chan = chn_inds[[x for x, y
-                                in enumerate(combine_regions(channels[probe]['acronym']))
+                                in enumerate(combine_regions(channels['acronym']))
                                 if y == region]]
         if len(region_chan) > 0:
             ax1.plot(np.linspace(0, PLOT_SEC, signal.shape[1]),

@@ -24,14 +24,14 @@ data_path = save_data_path(figure='figure9_10')
 rng = np.random.default_rng(seed=10234567)
 alphas = (0.1, 0.5, 1.0, 3.0, 5.0, 7.0, 10.0)
 
-def prepare_data(one, new_metrics=True):
+def prepare_data(one):
     brain_atlas = AllenAtlas()
     eids = get_mtnn_eids()
     insertions = get_traj(eids)
-    prepare_mtnn_data(eids, insertions, one, new_metrics=new_metrics, brain_atlas=brain_atlas)
+    prepare_mtnn_data(eids, insertions, one, brain_atlas=brain_atlas)
     prepare_glm_and_simulated_data(insertions, one, brain_atlas=brain_atlas)
 
-def prepare_mtnn_data(eids, insertions, one, new_metrics=True, brain_atlas=None):
+def prepare_mtnn_data(eids, insertions, one, brain_atlas=None):
 
     download_priors()
     download_glm_hmm()
@@ -46,8 +46,7 @@ def prepare_mtnn_data(eids, insertions, one, new_metrics=True, brain_atlas=None)
                      'danlab': 0, 'angelakilab': 0}
 
     for i, ins in enumerate(insertions):
-        feature, output, cluster_numbers, trial_numbers = featurize(i, ins, one, session_count, brain_atlas=brain_atlas,
-                                                                    new_metrics=new_metrics)
+        feature, output, cluster_numbers, trial_numbers = featurize(i, ins, one, session_count, brain_atlas=brain_atlas)
         feature_list.append(feature)
         output_list.append(output)
         cluster_number_list.append(cluster_numbers)

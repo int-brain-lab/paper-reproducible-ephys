@@ -23,10 +23,11 @@ from figure3.figure3_load_data import load_dataframe
 
 ba = AllenAtlas()
 
-LFP_BAND = [20, 80]
+LFP_BAND = [49, 61]
+THETA_BAND = [6, 12]
 
 
-def prepare_data(insertions, one, recompute=False, new_metrics=False):
+def prepare_data(insertions, one, recompute=False):
 
     if not recompute:
         data_clust = load_dataframe(df_name='clust', exists_only=True)
@@ -57,17 +58,14 @@ def prepare_data(insertions, one, recompute=False, new_metrics=False):
         probe = ins['probe_name']
 
         sl = SpikeSortingLoader(eid=eid, pname=probe, one=one, atlas=ba)
-        spikes, clusters, channels = sl.load_spike_sorting(dataset_types=['clusters.amps', 'clusters.peakToTrough'])
+        try:
+            spikes, clusters, channels = sl.load_spike_sorting(dataset_types=['clusters.amps', 'clusters.peakToTrough'])
+        except Exception as err:
+            print(err)
+            continue
 
         channels['rawInd'] = one.load_dataset(eid, dataset='channels.rawInd.npy', collection=sl.collection)
         clusters = sl.merge_clusters(spikes, clusters, channels)
-
-        if new_metrics:
-            try:
-                clusters['label'] = np.load(sl.files['clusters'][0].parent.joinpath('clusters.new_labels.npy'))
-            except FileNotFoundError:
-                new_labels = compute_new_label(spikes, clusters, save_path=sl.files['spikes'][0].parent)
-                clusters['label'] = new_labels
 
         channels['rep_site_acronym'] = combine_regions(channels['acronym'])
         channels['rep_site_acronym_alt'] = np.copy(channels['rep_site_acronym'])
@@ -111,10 +109,16 @@ def prepare_data(insertions, one, recompute=False, new_metrics=False):
             print(err)
             print(f'eid: {eid}\n')
             continue
-        freqs = ((lfp['freqs'] > LFP_BAND[0])
-                 & (lfp['freqs'] < LFP_BAND[1]))
+
+        # Get broadband lfp power
+        freqs = (lfp['freqs'] >= LFP_BAND[0]) & (lfp['freqs'] <= LFP_BAND[1])
         power = lfp['power'][:, channels['rawInd']]
         lfp_power = np.nanmean(10 * np.log(power[freqs]), axis=0)
+
+        # Get theta band lfp power
+        freqs = (lfp['freqs'] >= THETA_BAND[0]) & (lfp['freqs'] <= THETA_BAND[1])
+        power = lfp['power'][:, channels['rawInd']]
+        theta_power = np.nanmean(10 * np.log(power[freqs]), axis=0)
 
         data_chns['x'] = channels['x']
         data_chns['y'] = channels['y']
@@ -122,6 +126,7 @@ def prepare_data(insertions, one, recompute=False, new_metrics=False):
         data_chns['axial_um'] = channels['axial_um']
         data_chns['lateral_um'] = channels['lateral_um']
         data_chns['lfp'] = lfp_power
+        data_chns['lfp_theta'] = theta_power
         data_chns['region_id'] = channels['atlas_id']
         data_chns['region_id_rep'] = channels['rep_site_id']
         data_chns['region'] = channels['rep_site_acronym']
@@ -200,12 +205,19 @@ def prepare_data(insertions, one, recompute=False, new_metrics=False):
 
 
 def run_decoding(metrics=['yield_per_channel', 'median_firing_rate', 'lfp_power', 'rms_ap', 'spike_amp_mean'],
-                 pass_qc=True, n_shuffle=500, min_lab_region=2, recompute=False):
+                 qc='pass', n_shuffle=500, min_lab_region=2, recompute=False):
+    """
+    qc can be "pass" (only include recordings that pass QC)
+    "high_noise": add the recordings with high noise
+    "low_yield": add low yield recordings
+    "missed_target": add recordings that missed the target regions
+    "artifacts": add recordings with artifacts
+    "low_trials": add recordings with < 400 trials
+    "high_lfp": add recordings with high LFP power
+    "all": add all recordings regardless of QC
+    """
     save_path = save_data_path(figure='figure3')
-    if pass_qc:
-        file_name = 'figure3_dataframe_decode.csv'
-    else:
-        file_name = 'figure3_dataframe_decode_no_qc.csv'
+    file_name = f'figure3_dataframe_decode_{qc}.csv'
     if recompute or not isfile(save_path.joinpath(file_name)):
 
         # Initialize
@@ -216,8 +228,11 @@ def run_decoding(metrics=['yield_per_channel', 'median_firing_rate', 'lfp_power'
         df_ins = load_dataframe(df_name='ins')
         data = filter_recordings(df_ins, min_lab_region=min_lab_region, min_rec_lab=0,
                                  min_neuron_region=2)
-        if pass_qc:
+        if qc == 'pass':
             data = data[data['include'] == 1]  # select recordings that pass QC
+        elif qc != 'all':
+            data = data[(data['include'] == 1) | (data[qc] == 1)]
+
         data = data[data['lfp_power'].notna()]  # exclude recordings that miss LFP data
         data['yield_per_channel'] = data['neuron_yield'] / data['n_channels']
 
@@ -300,12 +315,8 @@ def run_decoding(metrics=['yield_per_channel', 'median_firing_rate', 'lfp_power'
 
         # Save results
         decode_df.to_csv(save_path.joinpath(file_name))
-        if pass_qc:
-            shuffle_df.to_csv(save_path.joinpath('figure3_dataframe_decode_shuf.csv'))
-            matrix_df.to_csv(save_path.joinpath('figure3_dataframe_conf_mat.csv'))
-        else:
-            shuffle_df.to_csv(save_path.joinpath('figure3_dataframe_decode_shuf_no_qc.csv'))
-            matrix_df.to_csv(save_path.joinpath('figure3_dataframe_conf_mat_no_qc.csv'))
+        shuffle_df.to_csv(save_path.joinpath(f'figure3_dataframe_decode_shuf_{qc}.csv'))
+        matrix_df.to_csv(save_path.joinpath(f'figure3_dataframe_conf_mat_{qc}.csv'))
 
     else:
         print('Decoding results found, not running again')
@@ -315,7 +326,13 @@ if __name__ == '__main__':
     one = ONE()
     one.record_loaded = True
     insertions = get_insertions(level=0, one=one, freeze=None)
-    all_df_chns, all_df_clust, metrics = prepare_data(insertions, recompute=True, one=one)
+    all_df_chns, all_df_clust, metrics = prepare_data(insertions, recompute=False, one=one)
     save_dataset_info(one, figure='figure3')
-    run_decoding(n_shuffle=500, recompute=False)
-    run_decoding(n_shuffle=500, pass_qc=False, recompute=False)
+    run_decoding(n_shuffle=500, qc='pass', recompute=True)
+    run_decoding(n_shuffle=500, qc='high_noise', recompute=True)
+    run_decoding(n_shuffle=500, qc='low_yield', recompute=True)
+    run_decoding(n_shuffle=500, qc='high_lfp', recompute=True)
+    run_decoding(n_shuffle=500, qc='artifacts', recompute=True)
+    run_decoding(n_shuffle=500, qc='missed_target', recompute=True)
+    run_decoding(n_shuffle=500, qc='low_trials', recompute=True)
+    run_decoding(n_shuffle=500, qc='all', recompute=True)
