@@ -4,6 +4,7 @@ from reproducible_ephys_functions import save_data_path
 
 
 def load_dataframeFig5(exists_only=False):
+    print("WARNING: Removed quality restrictions, need to be checked in figure")
     df_path = save_data_path(figure='figure5').joinpath('figure5_dataframe.csv')
     if exists_only:
         return df_path.exists()
@@ -12,4 +13,3 @@ def load_dataframeFig5(exists_only=False):
             return pd.read_csv(df_path)
         else:
             return None
-
