@@ -211,7 +211,7 @@ def all_panels(rm_unre=True, align='move', split='rt',
     mosaic = [[inner, 'F'],
               ['B', 'D'],
               ['G', 'Ga'],
-              ['c_reg', 'c_ca1']]
+              ['c_reg', 'Gb']]
 
     mosaic_supp = [['Ha', 'Hb', 'H'],
                    ['Ia', 'Ib', 'I'],
@@ -377,7 +377,7 @@ def all_panels(rm_unre=True, align='move', split='rt',
                    label=f'all cells', lw=2,
                    color = 'k', drawstyle='steps-post')
                    
-    print(f'KS results per region across labs')               
+           
     ksr = {}                          
     for reg in regs_:
         x0, x1 = ecdf(g_regs[reg])
@@ -385,7 +385,7 @@ def all_panels(rm_unre=True, align='move', split='rt',
         ksr[reg] = [ks,p]
         axs['c_reg'].plot(x0, x1, color=Dc[reg], 
                    drawstyle='steps-post', lw=1)
-        print(reg, ks, p)          
+        #print(reg, ks, p)          
                    
     
     # per reg multiple comparison corr                
@@ -396,7 +396,8 @@ def all_panels(rm_unre=True, align='move', split='rt',
         pvals_c_ = pvals_
     
     
-    
+    print(f'KS results: is region different from all cells? \n'
+          '[reg, k-statistic, p-value]')        
     kk = 0
     if fdr:
         print('corrected')
@@ -410,7 +411,7 @@ def all_panels(rm_unre=True, align='move', split='rt',
   
         print(reg, ksr[reg][0], ksr[reg][1])
                    
-    axs['c_reg'].set_title(reg, loc='left')
+    axs['c_reg'].set_title('all cells', loc='left')
     axs['c_reg'].set_xlabel('PC1')
     axs['c_reg'].set_ylabel('P(PC1 < x)')
     axs['c_reg'].text(-0.1, 1.30, panel_n['c_reg'],
@@ -508,6 +509,9 @@ def all_panels(rm_unre=True, align='move', split='rt',
     ms = ['Ea', 'Eb']
 
     for k in range(len(idxs)):
+        '''
+        example cells PETH and 2-PC fit
+        '''
 
         axs[ms[k]].plot(xs - 0.5, y[idxs[k]][:len(xs)] / T_BIN,
                         c='k', label='PETH')
@@ -531,9 +535,6 @@ def all_panels(rm_unre=True, align='move', split='rt',
                             transform=axs[ms[k]].transAxes,
                             fontsize=16, va='top',
                             ha='right', weight='bold')
-#            axs[ms[k]].legend(loc='lower left', frameon=False,
-#                              bbox_to_anchor=(0, 0.9), 
-#                              ncol=3, prop={'size': 7}).set_draggable(True)
                               
         k += 1
 
@@ -648,103 +649,103 @@ def all_panels(rm_unre=True, align='move', split='rt',
 
         
         # plot CDFs of first PCs distributions and KS metrics
-        if k != 0:
-            x0, x1 = ecdf(g_all)
-            axs3[ms3[k]].plot(x0, x1,
-                           label=f'all cells', lw=2,
-                           color = 'k', drawstyle='steps-post')
-            ksr = {}                          
+        #if k != 0:
+        x0, x1 = ecdf(g_all)
+        axs3[ms3[k]].plot(x0, x1,
+                       label=f'all cells', lw=2,
+                       color = 'k', drawstyle='steps-post')
+        ksr = {}                          
+        for lab in labs_:
+            x0, x1 = ecdf(g_labs[lab])
+            ks,p = ks_2samp(g_all, g_labs[lab])
+            ksr[lab] = [ks,p]
+
+                 
+            axs3[ms3[k]].plot(x0, x1, color=lab_cols[b[lab]], 
+                       drawstyle='steps-post', lw=1)
+        
+        # per reg multiple comparison corr                
+        pvals_ = [ksr[lab][1] for lab in ksr]
+        if fdr:
+            _, pvals_c_, _, _ = multipletests(pvals_, sig_lev, method='fdr_bh')
+        else:
+            pvals_c_ = pvals_
+        
+        kk = 0
+        if k == 1: print(f'KS results if p < {sig_lev}:')
+        
+        for lab in ksr:
+            ksr[lab][1] = pvals_c_[kk]
+            kk += 1
+            
+            if ksr[lab][1] < sig_lev:
+                if fdr:
+                    print('corrected')
+                else:
+                    print('uncorrected')    
+                print(reg, lab, ksr[lab][0], ksr[lab][1])
+        
+        
+        
+        # extra KS test, custum p value:
+        dist = sum([ks_2samp(g_all, g_labs[lab])[0] for lab in g_labs]) 
+  
+
+        # get null_d by shuffling lab labels
+        null_d = []
+        for shuf in range(nrand):
+            labsr = labs2.copy()
+            random.shuffle(labsr)
+            g_labsr = {}
             for lab in labs_:
-                x0, x1 = ecdf(g_labs[lab])
-                ks,p = ks_2samp(g_all, g_labs[lab])
-                ksr[lab] = [ks,p]
+                g_labsr[lab] = emb2[labsr == lab][:,0]    
+            null_d.append(sum([ks_2samp(g_all, g_labsr[lab])[0] 
+                               for lab in g_labsr]))    
+        
+        p = np.mean(np.array(null_d + [dist]) >= dist) 
+        print(f'reg {reg}, lab sum permutation test (KS using 1st PC):', p) 
 
-                     
-                axs3[ms3[k]].plot(x0, x1, color=lab_cols[b[lab]], 
-                           drawstyle='steps-post', lw=1)
-            
-            # per reg multiple comparison corr                
-            pvals_ = [ksr[lab][1] for lab in ksr]
-            if fdr:
-                _, pvals_c_, _, _ = multipletests(pvals_, sig_lev, method='fdr_bh')
-            else:
-                pvals_c_ = pvals_
-            
-            kk = 0
-            if k == 1: print(f'KS results if p < {sig_lev}:')
-            
-            for lab in ksr:
-                ksr[lab][1] = pvals_c_[kk]
-                kk += 1
-                
-                if ksr[lab][1] < sig_lev:
-                    if fdr:
-                        print('corrected')
-                    else:
-                        print('uncorrected')    
-                    print(reg, lab, ksr[lab][0], ksr[lab][1])
-            
-            
-            
-            # extra KS test, custum p value:
-            dist = sum([ks_2samp(g_all, g_labs[lab])[0] for lab in g_labs]) 
-      
-    
-            # get null_d by shuffling lab labels
-            null_d = []
-            for shuf in range(nrand):
-                labsr = labs2.copy()
-                random.shuffle(labsr)
-                g_labsr = {}
-                for lab in labs_:
-                    g_labsr[lab] = emb2[labsr == lab][:,0]    
-                null_d.append(sum([ks_2samp(g_all, g_labsr[lab])[0] 
-                                   for lab in g_labsr]))    
-            
-            p = np.mean(np.array(null_d + [dist]) >= dist) 
-            print(f'reg {reg}, lab sum permutation test (KS using 1st PC):', p) 
-
-                           
-            axs3[ms3[k]].set_title(reg, loc='left')
-            axs3[ms3[k]].set_xlabel('PC1')
-            axs3[ms3[k]].set_ylabel('P(PC1 < x)')
-            axs3[ms3[k]].text(-0.1, 1.30, panel_n3[ms3[k]],
-                             transform=axs3[ms3[k]].transAxes,
-                             fontsize=16, va='top',
-                             ha='right', weight='bold')            
-            
-            if k == 1:
-                axs3[ms3[k]].legend(frameon=False, 
-                                    loc='upper left').set_draggable(True)
-
-            # plot ks scores as bar plot inset with asterics for small p 
-            axsi.append(inset_axes(axs3[ms3[k]], width="30%", height="35%", 
-                                   loc=4, borderpad=1,
-                                   bbox_to_anchor=(-0.02,0.1,1,1), 
-                                   bbox_transform=axs3[ms3[k]].transAxes))
                        
-            bars = axsi[k-1].bar(range(len(ksr)), [ksr[lab][0] for lab in ksr], 
-                          color = [lab_cols[b[lab]] for lab in ksr])
-                          
-            axsi[k-1].set_xlabel('labs')
-            axsi[k-1].set_xticks([])
-            axsi[k-1].set_xticklabels([])
-            axsi[k-1].set_ylabel('KS')
-            axsi[k-1].spines['top'].set_visible(False)
-            axsi[k-1].spines['right'].set_visible(False)
-                         
-            # put * on bars that are significant
-            ii = 0
-            for lab in ksr:
-                ba = bars.patches[ii]
-                if ksr[lab][1] < sig_lev:             
-                    axsi[k-1].annotate('*',
-                                       (ba.get_x() + ba.get_width() / 2,
-                                        ba.get_height()), ha='center', 
-                                        va='center', size=16, 
-                                        xytext=(0, 1),
-                                        textcoords='offset points')
-                ii += 1
+        axs3[ms3[k]].set_title(reg, loc='left')
+        axs3[ms3[k]].set_xlabel('PC1')
+        axs3[ms3[k]].set_ylabel('P(PC1 < x)')
+        axs3[ms3[k]].text(-0.1, 1.30, panel_n3[ms3[k]],
+                         transform=axs3[ms3[k]].transAxes,
+                         fontsize=16, va='top',
+                         ha='right', weight='bold')            
+        
+        if k == 1:
+            axs3[ms3[k]].legend(frameon=False, 
+                                loc='upper left').set_draggable(True)
+
+        # plot ks scores as bar plot inset with asterics for small p 
+        axsi.append(inset_axes(axs3[ms3[k]], width="30%", height="35%", 
+                               loc=4, borderpad=1,
+                               bbox_to_anchor=(-0.02,0.1,1,1), 
+                               bbox_transform=axs3[ms3[k]].transAxes))
+                   
+        bars = axsi[k].bar(range(len(ksr)), [ksr[lab][0] for lab in ksr], 
+                      color = [lab_cols[b[lab]] for lab in ksr])
+                      
+        axsi[k].set_xlabel('labs')
+        axsi[k].set_xticks([])
+        axsi[k].set_xticklabels([])
+        axsi[k].set_ylabel('KS')
+        axsi[k].spines['top'].set_visible(False)
+        axsi[k].spines['right'].set_visible(False)
+                     
+        # put * on bars that are significant
+        ii = 0
+        for lab in ksr:
+            ba = bars.patches[ii]
+            if ksr[lab][1] < sig_lev:             
+                axsi[k-1].annotate('*',
+                                   (ba.get_x() + ba.get_width() / 2,
+                                    ba.get_height()), ha='center', 
+                                    va='center', size=16, 
+                                    xytext=(0, 1),
+                                    textcoords='offset points')
+            ii += 1
                 
         axs3[ms[k]].set_title(reg, loc='left')
         axs3[ms[k]].set_xlabel('embedding dim 1 (PC1)' if k > 0 else

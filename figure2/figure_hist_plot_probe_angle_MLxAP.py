@@ -21,7 +21,7 @@ from iblutil.numerical import ismember
 
 from reproducible_ephys_functions import figure_style, save_figure_path, labs, filter_recordings
 from figure2.figure2_load_data import load_dataframe
-from permutation_test import permut_test, distribution_dist_approx
+from permutation_test import permut_test, distribution_dist_approx_max
 
 lab_number_map, institution_map, institution_colors = labs()
 
@@ -221,16 +221,22 @@ def plot_probe_angle_histology_all_lab(min_rec_per_lab=4):
     remove_inst = ~probe_data['institute'].isin(remove_inst).values
 
     probe_data_permute = probe_data[remove_inst]
-    p_m = permut_test(probe_data_permute['angle'].values, metric=distribution_dist_approx,
-                       labels1=probe_data_permute['lab'].values, labels2=probe_data_permute['subject'].values)
+    p_m = permut_test(probe_data_permute['angle'].values, 
+                      metric=distribution_dist_approx_max,
+                      labels1=probe_data_permute['lab'].values,
+                      labels2=probe_data_permute['subject'].values,
+                      n_cores=8, n_permut=500000)
 
     print('\nHistology probe angle')
     print("PERMUTATION TEST ALL : ", p_m)
 
     # permutation testing - PASS DATA ONLY
     probe_data_permute = probe_data[probe_data['permute_include'] == 1]
-    pp_m = permut_test(probe_data_permute['angle'].values, metric=distribution_dist_approx,
-                        labels1=probe_data_permute['lab'].values, labels2=probe_data_permute['subject'].values)
+    pp_m = permut_test(probe_data_permute['angle'].values, 
+                       metric=distribution_dist_approx_max,
+                       labels1=probe_data_permute['lab'].values,
+                       labels2=probe_data_permute['subject'].values,
+                       n_cores=8, n_permut=500000)
 
     print("PERMUTATION TEST PASS : ", pp_m)
 

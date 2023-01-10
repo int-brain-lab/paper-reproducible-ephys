@@ -130,7 +130,8 @@ def shuffle_labels(labels1, labels2, n_permut, shuffling, n_cores=1):
                 permuted_labels1[i] = lab_mapping(labels2)
         else:
             size = n_permut // n_cores
-            arg_list = [(size, label1_values, label2_values, labels1, labels2) for i in range(n_cores)]
+            start_seed = np.random.randint(100000)
+            arg_list = [(size, label1_values, label2_values, labels1, labels2, start_seed + i) for i in range(n_cores)]
             pool = mp.Pool(n_cores)
             part_permuted_labels1 = pool.starmap(shuffle_helper, arg_list)
             pool.close()
@@ -139,8 +140,9 @@ def shuffle_labels(labels1, labels2, n_permut, shuffling, n_cores=1):
         return permuted_labels1, np.tile(labels2, (n_permut, 1))
 
 
-def shuffle_helper(size, label1_values, label2_values, labels1, labels2):
+def shuffle_helper(size, label1_values, label2_values, labels1, labels2, seed):
     # shuffle associations between mice and labs
+    np.random.seed(seed)
     part_permuted_labels1 = np.zeros((size, len(labels1)))
     for i in range(size):
         np.random.shuffle(label2_values)
