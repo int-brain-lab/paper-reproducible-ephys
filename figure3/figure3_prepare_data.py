@@ -105,20 +105,22 @@ def prepare_data(insertions, one, recompute=False):
         # Data for channel dataframe
         try:
             lfp = one.load_object(eid, 'ephysSpectralDensityLF', collection=f'raw_ephys_data/{probe}')
+
+            # Get broadband lfp power
+            freqs = (lfp['freqs'] >= LFP_BAND[0]) & (lfp['freqs'] <= LFP_BAND[1])
+            power = lfp['power'][:, channels['rawInd']]
+            lfp_power = np.nanmean(10 * np.log(power[freqs]), axis=0)
+
+            # Get theta band lfp power
+            freqs = (lfp['freqs'] >= THETA_BAND[0]) & (lfp['freqs'] <= THETA_BAND[1])
+            power = lfp['power'][:, channels['rawInd']]
+            theta_power = np.nanmean(10 * np.log(power[freqs]), axis=0)
+
         except Exception as err:
             print(err)
-            print(f'eid: {eid}\n')
-            continue
-
-        # Get broadband lfp power
-        freqs = (lfp['freqs'] >= LFP_BAND[0]) & (lfp['freqs'] <= LFP_BAND[1])
-        power = lfp['power'][:, channels['rawInd']]
-        lfp_power = np.nanmean(10 * np.log(power[freqs]), axis=0)
-
-        # Get theta band lfp power
-        freqs = (lfp['freqs'] >= THETA_BAND[0]) & (lfp['freqs'] <= THETA_BAND[1])
-        power = lfp['power'][:, channels['rawInd']]
-        theta_power = np.nanmean(10 * np.log(power[freqs]), axis=0)
+            print(f'pid: {pid}\n')
+            lfp_power = np.nan
+            theta_power = np.nan
 
         data_chns['x'] = channels['x']
         data_chns['y'] = channels['y']
@@ -146,13 +148,15 @@ def prepare_data(insertions, one, recompute=False):
             # Data for insertion dataframe
             rms_ap = one.load_object(eid, 'ephysTimeRmsAP', collection=f'raw_ephys_data/{probe}',
                                      attribute=['rms'])
+            if np.mean(rms_ap['rms']) < 0.1:
+                rms_ap_data = rms_ap['rms'] * 1e6  # convert to uV
+            median = np.mean(np.apply_along_axis(lambda x: np.median(x), 1, rms_ap_data))
+            rms_ap_data_median = (np.apply_along_axis(lambda x: x - np.median(x), 1, rms_ap_data)
+                                      + median)
         except Exception as err:
             print(err)
-            print(f'eid: {eid}\n')
-        rms_ap_data = rms_ap['rms'] * 1e6  # convert to uV
-        median = np.mean(np.apply_along_axis(lambda x: np.median(x), 1, rms_ap_data))
-        rms_ap_data_median = (np.apply_along_axis(lambda x: x - np.median(x), 1, rms_ap_data)
-                                  + median)
+            print(f'pid: {pid}\n')
+            rms_ap_data_median = np.nan
 
         for region in BRAIN_REGIONS:
             region_clusters = np.where(np.bitwise_and(clusters['rep_site_acronym'] == region,
@@ -160,7 +164,10 @@ def prepare_data(insertions, one, recompute=False):
             region_chan = channels['rawInd'][np.where(channels['rep_site_acronym'] == region)[0]]
 
             # Get AP band rms
-            rms_ap_region = np.median(rms_ap_data_median[:, region_chan])
+            if np.isnan(rms_ap_data_median).any():
+                rms_ap_region = np.nan
+            else:
+                rms_ap_region = np.median(rms_ap_data_median[:, region_chan])
 
             if region_clusters.size == 0:
                 metrics = pd.concat((metrics, pd.DataFrame(
@@ -325,14 +332,15 @@ def run_decoding(metrics=['yield_per_channel', 'median_firing_rate', 'lfp_power'
 if __name__ == '__main__':
     one = ONE()
     one.record_loaded = True
-    insertions = get_insertions(level=0, one=one, freeze=None)
-    all_df_chns, all_df_clust, metrics = prepare_data(insertions, recompute=False, one=one)
+    insertions = get_insertions(level=0, one=one, freeze='release_2022_11')
+    all_df_chns, all_df_clust, metrics = prepare_data(insertions, recompute=True, one=one)
     save_dataset_info(one, figure='figure3')
-    run_decoding(n_shuffle=500, qc='pass', recompute=True)
-    run_decoding(n_shuffle=500, qc='high_noise', recompute=True)
-    run_decoding(n_shuffle=500, qc='low_yield', recompute=True)
-    run_decoding(n_shuffle=500, qc='high_lfp', recompute=True)
-    run_decoding(n_shuffle=500, qc='artifacts', recompute=True)
-    run_decoding(n_shuffle=500, qc='missed_target', recompute=True)
-    run_decoding(n_shuffle=500, qc='low_trials', recompute=True)
-    run_decoding(n_shuffle=500, qc='all', recompute=True)
+    rerun_decoding = False
+    run_decoding(n_shuffle=500, qc='pass', recompute=rerun_decoding)
+    run_decoding(n_shuffle=500, qc='high_noise', recompute=rerun_decoding)
+    run_decoding(n_shuffle=500, qc='low_yield', recompute=rerun_decoding)
+    run_decoding(n_shuffle=500, qc='high_lfp', recompute=rerun_decoding)
+    run_decoding(n_shuffle=500, qc='artifacts', recompute=rerun_decoding)
+    run_decoding(n_shuffle=500, qc='missed_target', recompute=rerun_decoding)
+    run_decoding(n_shuffle=500, qc='low_trials', recompute=rerun_decoding)
+    run_decoding(n_shuffle=500, qc='all', recompute=rerun_decoding)

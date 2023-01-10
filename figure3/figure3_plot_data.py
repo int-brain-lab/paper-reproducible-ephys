@@ -14,7 +14,7 @@ from one.api import ONE
 import numpy as np
 
 
-def plot_main_figure(one=None):
+def plot_main_figure(freeze=None, one=None):
 
     one = one or ONE()
 
@@ -33,7 +33,7 @@ def plot_main_figure(one=None):
     np.random.seed(42)  # fix the random seed for reproducible permutatation results
 
     # Get amount of probe plots
-    data = filter_recordings(min_rec_lab=MIN_REC_PER_LAB)
+    data = filter_recordings(min_rec_lab=MIN_REC_PER_LAB, freeze=freeze)
     data = data[data['lab_include'] == 1]
     n_columns = len(data['subject'].unique())
 
@@ -65,9 +65,14 @@ def plot_main_figure(one=None):
     fg.add_labels(fig, labels)
 
     # Call functions to plot panels
-    panel_sankey(fig, ax['panel_A'], one)
-    panel_probe_lfp(fig, ax['panel_B'], n_rec_per_lab=MIN_REC_PER_LAB, boundary_align=BOUNDARY)
-    panel_probe_neurons(fig, ax['panel_C'], n_rec_per_lab=MIN_REC_PER_LAB, boundary_align=BOUNDARY)
+    panel_sankey(fig, ax['panel_A'], one, freeze=freeze)
+
+    panel_probe_lfp(fig, ax['panel_B'], n_rec_per_lab=MIN_REC_PER_LAB, boundary_align=BOUNDARY,
+                    freeze=freeze)
+    panel_probe_neurons(fig, ax['panel_C'], n_rec_per_lab=MIN_REC_PER_LAB, boundary_align=BOUNDARY,
+                        freeze=freeze)
+
+
     """
     panel_example(ax['panel_D'], n_rec_per_lab=MIN_REC_PER_LAB, example_region='DG',
                   example_metric='lfp_power', ylim=[-170, -140], ylabel='LFP power in DG (db)',
@@ -82,14 +87,18 @@ def plot_main_figure(one=None):
                   example_metric='lfp_theta_power', ylim=[-160, -100], ylabel='LFP power in CA1 (db)',
                   despine=True, yticks=[-160, -100])
     """
-    
+
+
     p_permut = panel_permutation(ax['panel_D'], METRICS, REGIONS, LABELS, n_permut=N_PERMUT,
-                                 n_rec_per_lab=MIN_REC_PER_LAB, n_rec_per_region=MIN_REC_PER_REGION)
+                                 n_rec_per_lab=MIN_REC_PER_LAB, n_rec_per_region=MIN_REC_PER_REGION,
+                                 freeze=freeze)
     p_decoding = panel_decoding(ax['panel_E'], qc='pass')
+
     ax['panel_E'].set(title='QC pass')
     _ = panel_decoding(ax['panel_F'], qc='all')
     ax['panel_F'].set(title='All recordings')
-    
+
+
     # Save figure
     save_path = save_figure_path(figure='figure3')
     print(f'Saving figures to {save_path}')
@@ -101,4 +110,4 @@ def plot_main_figure(one=None):
 
 if __name__ == '__main__':
     one = ONE()
-    p_decoding, p_permut = plot_main_figure(one=one)
+    p_decoding, p_permut = plot_main_figure(freeze='release_2022_11', one=one)
