@@ -18,30 +18,29 @@ br = BrainRegions()
 
 lab_number_map, institution_map, lab_colors = labs()
 
-def panel_sankey(fig, ax, one):
+def panel_sankey(fig, ax, one, freeze='release_2022_11'):
 
-    # Get number of recordings after freeze cutoff date
-    after_freeze = len(get_insertions(one=one)) - len(get_insertions(one=one, freeze=None))
 
-    # Get number of failed recordings (CRITICAL)
-    crit = (len(query(behavior=False, n_trials=0, resolved=False, min_regions=0, exclude_critical=False, one=one))
-            - len(query(behavior=False, n_trials=0, resolved=False, min_regions=0, exclude_critical=True, one=one))
-            - after_freeze)
+    insertions = query(min_regions=0, n_trials=0, behavior=False, exclude_critical=False, one=one,
+                   as_dataframe=True)
 
-    # Get total number of insertions
-    all_ins = (len(query(behavior=False, n_trials=0, resolved=True, min_regions=0, exclude_critical=True, one=one))
-               + crit - after_freeze)
+    # Get total number of recordings (excluding critical recordings)
+    all_ins = get_insertions(level=0, freeze=freeze, as_dataframe=True)
 
     # Dropout due to targeting
-    target = all_ins - crit - len(query(behavior=False, n_trials=0, resolved=True,
-                                        min_regions=2, exclude_critical=True, one=one))
+    target = query(min_regions=2, n_trials=0, behavior=False, exclude_critical=True, one=one,
+                   as_dataframe=True)
+    target = target[target['eid'].isin(all_ins['eid'])]
+    target_drop = len(all_ins) - len(target)
 
     # Dropout due to behavior
-    behav = all_ins - crit - target - len(query(behavior=False, n_trials=400, resolved=True,
-                                                min_regions=2, exclude_critical=True, one=one))
+    behavior = query(min_regions=2, n_trials=400, behavior=False, exclude_critical=True, one=one,
+                     as_dataframe=True)
+    behavior = behavior[behavior['eid'].isin(all_ins['eid'])]
+    behav_drop = len(all_ins) - len(behavior)
 
     # Get secondary QC
-    df_filt = filter_recordings(min_rec_lab=0, min_neuron_region=0)
+    df_filt = filter_recordings(min_rec_lab=0, min_neuron_region=0, freeze=freeze)
     df_filt = df_filt.drop_duplicates(subset='subject').reset_index()
     low_yield = df_filt['low_yield'].sum()
     noise = (df_filt[df_filt['high_lfp'] & ~df_filt['low_yield']].shape[0]
@@ -50,28 +49,27 @@ def panel_sankey(fig, ax, one):
                         & ~df_filt['high_lfp'])].shape[0]
 
     # Recordigns left
-    rec_left = all_ins - crit - target - behav - low_yield - noise - artifacts
+    rec_left = len(all_ins) - target_drop - behav_drop - low_yield - noise - artifacts
 
     #fig, ax = plt.subplots(1, 1, figsize=(6, 3), dpi=400)
     ax.axis('off')
 
     #currently hardcoded to match Steven & Guido analyses;
     #todo: finalize numbers and match with above code
-    num_trajectories = [all_ins, -crit, -target, -behav, -low_yield, -(noise+artifacts), -rec_left]
+    num_trajectories = [len(all_ins), -target_drop, -behav_drop, -low_yield, -(noise+artifacts), -rec_left]
 
     # Sankey plot
     sankey = Sankey(ax=ax, scale=0.005, offset=0.1, head_angle=90, shoulder=0.025, gap=0.5, radius=0.05)
     sankey.add(flows=num_trajectories,
                labels=['All insertions',
-                       'Recording failure',
                        'Off target',
                        'Too few trials',
                        'Low yield',
                        'Noise/artifacts',
                        'Data analysis'],
                trunklength=0.8,
-               orientations=[0, 1, 1, 1, 1, 1, 0],
-               pathlengths=[0.08, 0.3, 0.15, 0.15, 0.1, 0.08, 0.4],
+               orientations=[0, 1, 1, 1, 1, 0],
+               pathlengths=[0.08, 0.3, 0.15, 0.1, 0.08, 0.4],
                facecolor = sns.color_palette('Pastel1')[1])
     diagrams = sankey.finish()
 
@@ -92,19 +90,21 @@ def panel_sankey(fig, ax, one):
 
 
 def panel_probe_lfp(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-2000, 2000],
-                    normalize=False, clim=[-190, -150]):
+                    normalize=False, clim=[-190, -150], freeze=None):
 
     df_chns = load_dataframe(df_name='chns')
-    df_filt = filter_recordings(min_rec_lab=n_rec_per_lab, min_neuron_region=0)
+    df_filt = filter_recordings(min_rec_lab=n_rec_per_lab, min_neuron_region=0, freeze=freeze)
     df_filt = df_filt[df_filt['lab_include'] == 1]
     df_filt['lab_number'] = df_filt['lab'].map(lab_number_map)
     df_filt = df_filt.sort_values(by=['institute', 'subject']).reset_index(drop=True)
     df_filt = df_filt.drop_duplicates(subset='subject').reset_index()
-    rec_per_lab = df_filt.groupby('institute').size()
+    rec_per_lab = df_filt.groupby('institute', group_keys=False).size()
     df_filt['recording'] = np.concatenate([np.arange(i) for i in rec_per_lab.values])
 
     for iR, data in df_filt.iterrows():
         df = df_chns[df_chns['pid'] == data['pid']]
+        if len(df) == 0:
+            continue
 
         la = {}
         la['id'] = df['region_id'].values
@@ -162,12 +162,13 @@ def panel_probe_lfp(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-200
     cbar.set_label('Power spectral density (dB)', rotation=270, labelpad=-5)
 
 
-def panel_probe_neurons(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-2000, 2000]):
+def panel_probe_neurons(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-2000, 2000],
+                        freeze=None):
 
     df_chns = load_dataframe(df_name='chns')
     df_clust = load_dataframe(df_name='clust')
 
-    df_filt = filter_recordings(min_rec_lab=n_rec_per_lab, min_neuron_region=0)
+    df_filt = filter_recordings(min_rec_lab=n_rec_per_lab, min_neuron_region=0, freeze=freeze)
     df_filt = df_filt[df_filt['lab_include'] == 1]
     df_filt['lab_number'] = df_filt['lab'].map(lab_number_map)
     df_filt = df_filt.sort_values(by=['institute', 'subject']).reset_index(drop=True)
@@ -176,8 +177,12 @@ def panel_probe_neurons(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[
     df_filt['recording'] = np.concatenate([np.arange(i) for i in rec_per_lab.values])
 
     for iR, data in df_filt.iterrows():
+
         df_ch = df_chns[df_chns['pid'] == data['pid']]
         df_clu = df_clust[df_clust['pid'] == data['pid']]
+
+        if len(df_ch) == 0:
+            continue
 
         la = {}
         la['id'] = df_ch['region_id'].values
@@ -281,11 +286,11 @@ def panel_probe_neurons(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[
 
 def panel_example(ax, n_rec_per_lab=0, n_rec_per_region=3,
                   example_region='CA1', example_metric='lfp_power', ylabel='LFP power in CA1 (db)',
-                  ylim=None, yticks=None, despine=True):
+                  ylim=None, yticks=None, despine=True, freeze=None):
 
     df_ins = load_dataframe(df_name='ins')
     df_filt = filter_recordings(df_ins, min_rec_lab=n_rec_per_lab, min_lab_region=n_rec_per_region,
-                                min_neuron_region=2, recompute=False)
+                                min_neuron_region=2, recompute=False, freeze=freeze)
     df_filt['lab_number'] = df_filt['lab'].map(lab_number_map)
     df_filt['yield_per_channel'] = df_filt['neuron_yield'] / df_filt['n_channels']
     df_filt.loc[df_filt['lfp_power'] < -100000, 'lfp_power'] = np.nan
@@ -330,11 +335,11 @@ def panel_example(ax, n_rec_per_lab=0, n_rec_per_region=3,
 
 
 def panel_permutation(ax, metrics, regions, labels, n_permut=10000, n_rec_per_lab=0,
-                      n_rec_per_region=3, bh_correction=False):
+                      n_rec_per_region=3, bh_correction=False, freeze=None):
 
     df_ins = load_dataframe(df_name='ins')
     df_filt = filter_recordings(df_ins, min_lab_region=n_rec_per_region, min_rec_lab=n_rec_per_lab,
-                                min_neuron_region=2, recompute=True)
+                                min_neuron_region=2, recompute=True, freeze=freeze)
     data = df_filt[df_filt['permute_include'] == 1]
     data['yield_per_channel'] = data['neuron_yield'] / data['n_channels']
     data.loc[data['lfp_power'] < -100000, 'lfp_power'] = np.nan
@@ -432,7 +437,7 @@ def panel_decoding(ax, qc='pass', region_decoding=True):
         ax_left = divider.append_axes("left", size='25%', pad='60%', sharey=ax)
         sns.violinplot(x='region', y='accuracy_shuffle', data=shuffle_regions_df, ax=ax_left,
                        color=[.7, .7, .7], linewidth=0, width=0.075)
-        sns.scatterplot(x='region', y='accuracy', data=decode_regions_df, ax=ax_left, color='red', 
+        sns.scatterplot(x='region', y='accuracy', data=decode_regions_df, ax=ax_left, color='red',
                         marker='_', linewidth=1)
         ax_left.set(xlabel='', ylabel='Region decoding perf. (%)', xticks=[])
         ax_left.text(0, 75, '***', size=7, color='k', ha='center')
