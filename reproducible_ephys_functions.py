@@ -506,7 +506,7 @@ def filter_recordings(df=None, one=None, max_ap_rms=40, max_lfp_power=-150, min_
         if metrics is None:
             one = ONE()
             ins = get_insertions(level=0, one=one, recompute=False, freeze=freeze)
-            metrics = compute_metrics(ins, one=ONE(), save=True)
+            metrics = compute_metrics(ins, one=one, save=True)
 
         isin, _ = ismember(df['pid'].unique(), metrics['pid'].unique())
         if ~np.all(isin):
@@ -514,7 +514,7 @@ def filter_recordings(df=None, one=None, max_ap_rms=40, max_lfp_power=-150, min_
             if recompute:
                 one = ONE()
                 ins = get_insertions(level=0, one=one, recompute=False, freeze=freeze)
-                metrics = compute_metrics(ins, one=ONE(), save=True)
+                metrics = compute_metrics(ins, one=one, save=True)
 
         # merge the two dataframes
         df['original_index'] = df.index
