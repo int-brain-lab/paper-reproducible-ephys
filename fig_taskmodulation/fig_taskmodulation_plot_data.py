@@ -2,9 +2,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import figrid as fg
 from reproducible_ephys_functions import filter_recordings, BRAIN_REGIONS, labs, save_figure_path, figure_style
-from figure4_5.figure5_temp_load_data import load_dataframeFig5
-from figure4_5.figure4_5_load_data import load_data, load_dataframe
-from figure4_5.figure4_plot_functions import plot_raster_and_psth, plot_raster_and_psth_LvsR
+from fig_taskmodulation.fig_taskmodulation_load_data import load_data, load_dataframe
+from fig_taskmodulation.fig_taskmodulation_plot_functions import plot_raster_and_psth # plot_raster_and_psth_LvsR (doesn't exist?)
 import seaborn as sns
 import pandas as pd
 from statsmodels.stats.multitest import multipletests
@@ -13,7 +12,7 @@ from permutation_test import permut_test, distribution_dist_approx, shuffle_labe
 
 
 lab_number_map, institution_map, lab_colors = labs()
-fig_path = save_figure_path(figure='figure4_5')
+fig_path = save_figure_path(figure='fig_taskmodulation')
 
 # tests = {'trial': 'Trial',
 #          'start_to_move': 'Pre move (TW)',
@@ -126,8 +125,8 @@ def plot_main_figure():
 
     fg.add_labels(fig, labels)
     print(f'Saving figures to {fig_path}')
-    plt.savefig(fig_path.joinpath('figure4_5_combined.png'), bbox_inches='tight', pad_inches=0)
-    plt.savefig(fig_path.joinpath('figure4_5_combined.pdf'), bbox_inches='tight', pad_inches=0)
+    plt.savefig(fig_path.joinpath('fig_taskmodulation_combined.png'), bbox_inches='tight', pad_inches=0)
+    plt.savefig(fig_path.joinpath('fig_taskmodulation_combined.pdf'), bbox_inches='tight', pad_inches=0)
     plt.close()
 
 
@@ -151,7 +150,7 @@ def plot_panel_single_neuron_LvsR(ax=None, save=True):
     ax[0].set_title('Example LP neuron', loc='left')
 
     if save:
-        plt.savefig(fig_path.joinpath(f'figure4_5_{pid}_neuron{neuron}_align_{align_event}.png'))
+        plt.savefig(fig_path.joinpath(f'fig_taskmodulation_{pid}_neuron{neuron}_align_{align_event}.png'))
 
     # Need to put legend for colorbar/side
 
@@ -180,7 +179,7 @@ def plot_panel_single_neuron(ax=None, save=True):
     #                           zero_line_c='g', labelsize=16, ax=ax)
 
     if save:
-        plt.savefig(fig_path.joinpath(f'figure4_5_{pid}_neuron{neuron}_align_{align_event}.png'))
+        plt.savefig(fig_path.joinpath(f'fig_taskmodulation_{pid}_neuron{neuron}_align_{align_event}.png'))
 
     #ax[0].set_title(f'Contrast: {side}, {feedback} choices', loc='left')
     #ax[0].set_title(f'{side} stim., {feedback} choices', loc='left')
@@ -246,7 +245,7 @@ def plot_panel_single_subject(event='move', norm='subtract', smoothing='sliding'
     # sns.despine(trim=True, ax=ax)
 
     if save:
-        plt.savefig(fig_path.joinpath('figure4_5_example_subject.png'))
+        plt.savefig(fig_path.joinpath('fig_taskmodulation_example_subject.png'))
 
     ax.set_title('Example recording in LP', loc='left')
 
@@ -326,13 +325,13 @@ def plot_panel_all_subjects(max_neurons, min_neurons, ax=None, save=True, plotte
                 item.set_visible(False)
 
     if save:
-        plt.savefig(fig_path.joinpath('figure4_5_all_subjects.png'))
+        plt.savefig(fig_path.joinpath('fig_taskmodulation_all_subjects.png'))
 
 
 def plot_panel_task_modulated_neurons(specific_tests=None, ax=None, save=True):
 
     # load dataframe from prev fig. 5 (To be combined with new Fig 4)
-    df = load_dataframeFig5()
+    df = load_dataframe()
     df_filt = filter_recordings(df)
     df_filt = df_filt[df_filt['include'] == 1]
 
@@ -390,7 +389,7 @@ def plot_panel_permutation(ax=None, recompute=True, n_permut=10000, qc='pass', n
     """
     # load dataframe from prev fig. 5 (To be combined with new Fig 4)
     # Prev Figure 5d permutation tests
-    df = load_dataframeFig5()
+    df = load_dataframe()
     df_filt = filter_recordings(df, recompute=True, min_lab_region=2, min_rec_lab=0, min_neuron_region=2)
     if qc == 'pass':
         df_filt = df_filt[df_filt['permute_include'] == 1]
@@ -657,7 +656,7 @@ _, corrected_p_vals, _, _ = multipletests(p_values, 0.05, method='fdr_bh')
 print(corrected_p_vals)
 print(np.sum(corrected_p_vals < 0.05))
 
-df = load_dataframeFig5()
+df = load_dataframe()
 df_filt = filter_recordings(df, recompute=False)
 df_filt = df_filt[df_filt['permute_include'] == 1]
 

@@ -10,8 +10,9 @@ from brainbox.io.one import SpikeSortingLoader
 from iblutil.numerical import ismember
 
 from reproducible_ephys_functions import combine_regions, get_insertions, BRAIN_REGIONS, save_data_path, save_dataset_info
-from reproducible_ephys_processing import compute_psth, compute_new_label
-from figure5.figure5_load_data import load_dataframe
+from reproducible_ephys_processing import compute_psth
+from fig_taskmodulation.fig_taskmodulation_load_data import load_dataframe
+
 
 ba = AllenAtlas()
 
@@ -27,7 +28,7 @@ default_params = {'fr_bin_size': 0.04,
                   'slide_kwargs_fr': {'n_win': 2, 'causal': 1}}
 
 
-def prepare_data(insertions, one, figure='figure5', recompute=False, **kwargs):
+def prepare_data(insertions, one, figure='fig_taskmodulation', recompute=False, **kwargs):
 
     fr_bin_size = kwargs.get('fr_bin_size', default_params['fr_bin_size'])
     ff_bin_size = kwargs.get('ff_bin_size', default_params['ff_bin_size'])
@@ -63,7 +64,6 @@ def prepare_data(insertions, one, figure='figure5', recompute=False, **kwargs):
 
     all_df = []
     for iIns, ins in enumerate(insertions):
-        start = time.time()
         try:
             print(f'processing {iIns + 1}/{len(insertions)}')
 
@@ -184,7 +184,7 @@ def prepare_data(insertions, one, figure='figure5', recompute=False, **kwargs):
                 clu_idx = np.where(cluster_ids == neuron_id)[0]
                 fr_example = np.c_[fr_base_example[clu_idx, :][0], fr_pre_move_tw[clu_idx, :][0]]
                 np.save(save_data_path(figure=figure).joinpath(f'figure5_example_neuron{neuron_id}_{pid}.npy'), fr_example)
-                
+
 
             # Post-move firing rate
             intervals = np.c_[eventMove - 0.05, eventMove + 0.2]
@@ -200,33 +200,39 @@ def prepare_data(insertions, one, figure='figure5', recompute=False, **kwargs):
             fr_post_reward = counts / (intervals[:, 1] - intervals[:, 0])
             data['avg_fr_post_reward'] = np.nanmean(fr_post_reward, axis=1)
 
-
             # COMPARE FIRING RATES TO FIND RESPONSIVE UNITS
             # Trial vs Baseline
+            data['mean_fr_diff_trial'] = np.mean(fr_trial - fr_base, axis=1)
             data['trial'], _, data['p_trial'] = \
                 compute_comparison_statistics(fr_base, fr_trial, test='signrank')
 
             # Post-stimulus vs Baseline
+            data['mean_fr_diff_post_stim'] = np.mean(fr_post_stim - fr_base, axis=1)
             data['post_stim'], _, data['p_post_stim'] = \
                 compute_comparison_statistics(fr_base, fr_post_stim, test='signrank')
 
             # Pre-movement vs Baseline
+            data['mean_fr_diff_pre_move'] = np.mean(fr_pre_move - fr_base, axis=1)
             data['pre_move'], _, data['p_pre_move'] = \
                 compute_comparison_statistics(fr_base, fr_pre_move, test='signrank')
 
             # Pre-movement left versus right
+            data['mean_fr_diff_pre_move_lr'] = np.mean(fr_pre_moveL, axis=1) - np.mean(fr_pre_moveR, axis=1)
             data['pre_move_lr'], _, data['p_pre_move_lr'] = \
                 compute_comparison_statistics(fr_pre_moveL, fr_pre_moveR, test='ranksums')
 
             # Time warped start-to-move vs Baseline
+            data['mean_fr_diff_start_to_move'] = np.mean(fr_pre_move_tw - fr_base[:, rxn_idx], axis=1)
             data['start_to_move'], _, data['p_start_to_move'] = \
                 compute_comparison_statistics(fr_base[:, rxn_idx], fr_pre_move_tw, test='signrank')
 
             # Post-movement vs Baseline
+            data['mean_fr_diff_post_move'] = np.mean(fr_post_move - fr_base, axis=1)
             data['post_move'], _, data['p_post_move'] = \
                 compute_comparison_statistics(fr_base, fr_post_move, test='signrank')
 
             # Post-reward vs Baseline
+            data['mean_fr_diff_post_reward'] = np.mean(fr_post_reward - fr_base, axis=1)
             data['post_reward'], _, data['p_post_reward'] = \
                 compute_comparison_statistics(fr_base, fr_post_reward, test='signrank')
 
@@ -253,8 +259,8 @@ def prepare_data(insertions, one, figure='figure5', recompute=False, **kwargs):
 
             data['avg_ff_post_move'] = np.nanmean(ff_r[:, np.bitwise_and(time_ff >= 0.04, time_ff <= 0.2)], axis=1)
 
-            # COMPUTE FANOFACTOR AND FIRING RATE WAVEFORMS (for figure 7 supplement)
-            if figure == 'figure7':
+            # Extra computations for figure 7 (now figure 6)
+            if figure == 'figure6':
                 # Compute firing rate waveforms for right 100% contrast
                 fr_r, _, time_fr = compute_psth(spikes['times'][spike_idx], spikes['clusters'][spike_idx], data['cluster_ids'],
                                                 eventTimes, align_epoch=event_epoch, bin_size=fr_bin_size,
@@ -299,6 +305,69 @@ def prepare_data(insertions, one, figure='figure5', recompute=False, **kwargs):
                     all_ffs_l = np.r_[all_ffs_l, ff_l]
                     all_ffs_r = np.r_[all_ffs_r, ff_r]
 
+            # Computations for figure 4
+            else:
+                # update some parameters for these computations
+                fr_bin_size = 0.06
+                params['fr_bin_size'] = fr_bin_size
+                norm = 'subtract'
+                params['norm'] = norm
+                slide_kwargs_fr = {'n_win': 3, 'causal': 1}
+                params['slide_kwargs_fr'] = slide_kwargs_fr
+                event_epoch = [-0.2, 0.2]
+                params['event_epoch'] = event_epoch
+                base_epoch = [-0.2, 0.0]
+                params['base_epoch'] = base_epoch
+
+                # COMPUTE AVG ACTIVITY
+                # For this computation we use correct, non zero contrast trials
+                trial_idx = np.bitwise_and(trials['feedbackType'] == 1,
+                                           np.bitwise_or(trials['contrastLeft'] > 0, trials['contrastRight'] > 0))
+
+                eventMove = trials['firstMovement_times'][np.bitwise_and(trial_idx, ~nanStimMove)]
+                eventStim = trials['stimOn_times'][np.bitwise_and(trial_idx, ~nanStimMove)]
+
+                if align_event == 'move':
+                    eventTimes = eventMove
+                    trial_l_idx = np.where(trials['choice'][np.bitwise_and(trial_idx, ~nanStimMove)] == 1)[0]
+                    trial_r_idx = np.where(trials['choice'][np.bitwise_and(trial_idx, ~nanStimMove)] == -1)[0]
+                elif align_event == 'stim':
+                    eventTimes = eventStim
+                    trial_l_idx = np.where(trials['contrastLeft'][np.bitwise_and(trial_idx, ~nanStimMove)] > 0)[0]
+                    trial_r_idx = np.where(trials['contrastRight'][np.bitwise_and(trial_idx, ~nanStimMove)] > 0)[0]
+
+                # Find baseline event times
+                if base_event == 'move':
+                    eventBase = eventMove
+                elif base_event == 'stim':
+                    eventBase = eventStim
+
+                # Compute firing rates for left side events
+                fr_l, fr_l_std, t = compute_psth(spikes['times'][spike_idx], spikes['clusters'][spike_idx], data['cluster_ids'],
+                                                 eventTimes[trial_l_idx], align_epoch=event_epoch, bin_size=fr_bin_size,
+                                                 baseline_events=eventBase[trial_l_idx], base_epoch=base_epoch,
+                                                 smoothing=smoothing, norm=norm)
+                fr_l_std = fr_l_std / np.sqrt(trial_l_idx.size)  # convert to standard error
+
+                # Compute firing rates for right side events
+                fr_r, fr_r_std, t = compute_psth(spikes['times'][spike_idx], spikes['clusters'][spike_idx], data['cluster_ids'],
+                                                 eventTimes[trial_r_idx], align_epoch=event_epoch, bin_size=fr_bin_size,
+                                                 baseline_events=eventBase[trial_r_idx], base_epoch=base_epoch,
+                                                 smoothing=smoothing, norm=norm)
+                fr_r_std = fr_r_std / np.sqrt(trial_r_idx.size)  # convert to standard error
+
+                if iIns == 0:
+                    all_frs_l = fr_l
+                    all_frs_l_std = fr_l_std
+                    all_frs_r = fr_r
+                    all_frs_r_std = fr_r_std
+                else:
+                    all_frs_l = np.r_[all_frs_l, fr_l]
+                    all_frs_l_std = np.r_[all_frs_l_std, fr_l_std]
+                    all_frs_r = np.r_[all_frs_r, fr_r]
+                    all_frs_r_std = np.r_[all_frs_r_std, fr_r_std]
+
+
             # Add some extra cluster data to store
             data['region'] = clusters['rep_site_acronym'][cluster_idx]
             data['x'] = clusters['x'][cluster_idx]
@@ -316,7 +385,6 @@ def prepare_data(insertions, one, figure='figure5', recompute=False, **kwargs):
             df['lab'] = ins['session']['lab']
 
             all_df.append(df)
-            print(time.time() - start)
 
         except Exception as err:
             print(f'{pid} errored: {err}')
@@ -327,7 +395,7 @@ def prepare_data(insertions, one, figure='figure5', recompute=False, **kwargs):
     print(f'Saving data to {save_path}')
     concat_df.to_csv(save_path.joinpath(f'{figure}_dataframe.csv'))
 
-    if figure == 'figure7':
+    if figure == 'figure6':
         data = {'all_frs_l': all_frs_l,
                 'all_ffs_l': all_ffs_l,
                 'all_frs_r': all_frs_r,
@@ -342,12 +410,22 @@ def prepare_data(insertions, one, figure='figure5', recompute=False, **kwargs):
 
         return concat_df, data
     else:
+        data = {'all_frs_l': all_frs_l,
+                'all_frs_l_std': all_frs_l_std,
+                'all_frs_r': all_frs_r,
+                'all_frs_r_std': all_frs_r_std,
+                'time': t,
+                'params': params}
+
+        smoothing = smoothing or 'none'
+        norm = norm or 'none'
+        np.savez(save_path.joinpath(f'{figure}_data_event_{align_event}_smoothing_{smoothing}_norm_{norm}.npz'), **data)
         return concat_df
 
 
 if __name__ == '__main__':
     one = ONE()
     one.record_loaded = True
-    insertions = get_insertions(level=2, one=one, freeze=None, recompute=True)
+    insertions = get_insertions(level=0, one=one, freeze=None, recompute=True)
     prepare_data(insertions, one=one, recompute=True, **default_params)
-    save_dataset_info(one, figure='figure5')
+    save_dataset_info(one, figure='figure4')
