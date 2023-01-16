@@ -100,7 +100,7 @@ def plot_main_figure():
 
     # we have to find out max and min neurons here now, because plots are split
     df = load_dataframe()
-    df_filt = filter_recordings(df)
+    df_filt = filter_recordings(df, freeze='release_2022_11')
     df_filt = df_filt[df_filt['include'] == 1].reset_index()
     df_filt_reg = df_filt.groupby('region')
     max_neurons = 0
@@ -192,7 +192,7 @@ def plot_panel_single_subject(event='move', norm='subtract', smoothing='sliding'
     df = load_dataframe()
     data = load_data(event=event, norm=norm, smoothing=smoothing)
 
-    df_filt = filter_recordings(df)
+    df_filt = filter_recordings(df, freeze='release_2022_11')
     all_frs_l = data['all_frs_l'][df_filt['include'] == 1]
     all_frs_r = data['all_frs_r'][df_filt['include'] == 1]
     all_frs_l_std = data['all_frs_l_std'][df_filt['include'] == 1]
@@ -255,7 +255,7 @@ def plot_panel_all_subjects(max_neurons, min_neurons, ax=None, save=True, plotte
     df = load_dataframe()
     data = load_data(event='move', norm='subtract', smoothing='sliding')
 
-    df_filt = filter_recordings(df)
+    df_filt = filter_recordings(df, freeze='release_2022_11')
     all_frs_l = data['all_frs_l'][df_filt['include'] == 1]
     all_frs_r = data['all_frs_r'][df_filt['include'] == 1]
     all_frs_l_std = data['all_frs_l_std'][df_filt['include'] == 1]
@@ -332,7 +332,7 @@ def plot_panel_task_modulated_neurons(specific_tests=None, ax=None, save=True):
 
     # load dataframe from prev fig. 5 (To be combined with new Fig 4)
     df = load_dataframe()
-    df_filt = filter_recordings(df)
+    df_filt = filter_recordings(df, freeze='release_2022_11')
     df_filt = df_filt[df_filt['include'] == 1]
 
     # Group data frame by region
@@ -390,7 +390,7 @@ def plot_panel_permutation(ax=None, recompute=True, n_permut=10000, qc='pass', n
     # load dataframe from prev fig. 5 (To be combined with new Fig 4)
     # Prev Figure 5d permutation tests
     df = load_dataframe()
-    df_filt = filter_recordings(df, recompute=True, min_lab_region=2, min_rec_lab=0, min_neuron_region=2)
+    df_filt = filter_recordings(df, recompute=True, min_lab_region=2, min_rec_lab=0, min_neuron_region=2, freeze='release_2022_11')
     if qc == 'pass':
         df_filt = df_filt[df_filt['permute_include'] == 1]
     elif qc != 'all':
@@ -657,7 +657,7 @@ print(corrected_p_vals)
 print(np.sum(corrected_p_vals < 0.05))
 
 df = load_dataframe()
-df_filt = filter_recordings(df, recompute=False)
+df_filt = filter_recordings(df, recompute=False, freeze='release_2022_11')
 df_filt = df_filt[df_filt['permute_include'] == 1]
 
 df_filt_reg = df_filt.groupby('region')
