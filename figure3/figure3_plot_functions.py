@@ -18,58 +18,57 @@ br = BrainRegions()
 
 lab_number_map, institution_map, lab_colors = labs()
 
-def panel_sankey(fig, ax, one, freeze='release_2022_11'):
+def panel_sankey(fig, ax, one, freeze=None):
 
+    # Get number of recordings after freeze cutoff date
+    after_freeze = len(get_insertions(one=one)) - len(get_insertions(one=one, freeze=freeze))
 
-    insertions = query(min_regions=0, n_trials=0, behavior=False, exclude_critical=False, one=one,
-                   as_dataframe=True)
+    # Get number of failed recordings (CRITICAL)
+    crit = (len(query(behavior=False, n_trials=0, resolved=False, min_regions=0, exclude_critical=False, one=one))
+            - len(query(behavior=False, n_trials=0, resolved=False, min_regions=0, exclude_critical=True, one=one))
+            - after_freeze)
 
-    # Get total number of recordings (excluding critical recordings)
-    all_ins = get_insertions(level=0, freeze=freeze, as_dataframe=True)
+    # Get total number of insertions
+    all_ins = (len(query(behavior=False, n_trials=0, resolved=True, min_regions=0, exclude_critical=True, one=one))
+               + crit - after_freeze)
 
-    # Dropout due to targeting
-    target = query(min_regions=2, n_trials=0, behavior=False, exclude_critical=True, one=one,
-                   as_dataframe=True)
-    target = target[target['eid'].isin(all_ins['eid'])]
-    target_drop = len(all_ins) - len(target)
-
-    # Dropout due to behavior
-    behavior = query(min_regions=2, n_trials=400, behavior=False, exclude_critical=True, one=one,
-                     as_dataframe=True)
-    behavior = behavior[behavior['eid'].isin(all_ins['eid'])]
-    behav_drop = len(all_ins) - len(behavior)
-
-    # Get secondary QC
-    df_filt = filter_recordings(min_rec_lab=0, min_neuron_region=0, freeze=freeze)
+    # Get drop out due to QC
+    df_filt = filter_recordings(min_rec_lab=0, min_neuron_region=0)
     df_filt = df_filt.drop_duplicates(subset='subject').reset_index()
-    low_yield = df_filt['low_yield'].sum()
-    noise = (df_filt[df_filt['high_lfp'] & ~df_filt['low_yield']].shape[0]
-             + df_filt[df_filt['high_noise'] & ~df_filt['low_yield']].shape[0])
-    artifacts = df_filt[(df_filt['artifacts'] & ~df_filt['low_yield'] & ~df_filt['high_noise']
-                        & ~df_filt['high_lfp'])].shape[0]
+    target = df_filt['missed_target'].sum()
+    df_filt = df_filt[~df_filt['missed_target']]
+    behav = df_filt['low_trials'].sum()
+    df_filt = df_filt[~df_filt['low_trials']]
+    low_yield = np.sum(df_filt['low_yield'])
+    df_filt = df_filt[~df_filt['low_yield']]
+    noise = np.sum(df_filt['high_lfp'] | df_filt['high_noise'])
+    df_filt = df_filt[~df_filt['high_lfp'] & ~df_filt['high_noise']]
+    artifacts = np.sum(df_filt['artifacts'])
+    df_filt = df_filt[~df_filt['artifacts']]
 
     # Recordigns left
-    rec_left = len(all_ins) - target_drop - behav_drop - low_yield - noise - artifacts
+    rec_left = df_filt.shape[0]
 
     #fig, ax = plt.subplots(1, 1, figsize=(6, 3), dpi=400)
     ax.axis('off')
 
     #currently hardcoded to match Steven & Guido analyses;
     #todo: finalize numbers and match with above code
-    num_trajectories = [len(all_ins), -target_drop, -behav_drop, -low_yield, -(noise+artifacts), -rec_left]
+    num_trajectories = [all_ins, -crit, -target, -behav, -low_yield, -(noise+artifacts), -rec_left]
 
     # Sankey plot
     sankey = Sankey(ax=ax, scale=0.005, offset=0.1, head_angle=90, shoulder=0.025, gap=0.5, radius=0.05)
     sankey.add(flows=num_trajectories,
                labels=['All insertions',
+                       'Recording failure',
                        'Off target',
                        'Too few trials',
                        'Low yield',
                        'Noise/artifacts',
                        'Data analysis'],
                trunklength=0.8,
-               orientations=[0, 1, 1, 1, 1, 0],
-               pathlengths=[0.08, 0.3, 0.15, 0.1, 0.08, 0.4],
+               orientations=[0, 1, 1, 1, 1, 1, 0],
+               pathlengths=[0.08, 0.3, 0.15, 0.15, 0.1, 0.08, 0.4],
                facecolor = sns.color_palette('Pastel1')[1])
     diagrams = sankey.finish()
 
@@ -143,12 +142,13 @@ def panel_probe_lfp(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-200
     # Add lab names
     plt.figtext(0.245, 0.715, 'Berkeley', va="center", ha="center", size=7, color=lab_colors['Berkeley'])
     plt.figtext(0.35, 0.715, 'Champalimaud', va="center", ha="center", size=7, color=lab_colors['CCU'])
-    plt.figtext(0.455, 0.715, 'CSHL (C)', va="center", ha="center", size=7, color=lab_colors['CSHL (C)'])
+    plt.figtext(0.45, 0.715, 'CSHL', va="center", ha="center", size=7, color=lab_colors['CSHL (C)'])
     #plt.figtext(0.505, 0.715, '(Z)', va="center", ha="center", size=7, color=lab_colors['CSHL (Z)'])
     plt.figtext(0.54, 0.715, 'NYU', va="center", ha="center", size=7, color=lab_colors['NYU'])
-    #plt.figtext(0.65, 0.715, 'Princeton', va="center", ha="center", size=7, color=lab_colors['Princeton'])
+    plt.figtext(0.6, 0.715, 'Princeton', va="center", ha="center", size=7, color=lab_colors['Princeton'])
     plt.figtext(0.65, 0.715, 'SWC', va="center", ha="center", size=7, color=lab_colors['SWC'])
-    plt.figtext(0.75, 0.715, 'UCL', va="center", ha="center", size=7, color=lab_colors['UCL'])
+    plt.figtext(0.75, 0.715, 'UCL (C)', va="center", ha="center", size=7, color=lab_colors['UCL'])
+    plt.figtext(0.805, 0.715, '(H)', va="center", ha="center", size=7, color=lab_colors['UCL (H)'])
     plt.figtext(0.85, 0.715, 'UCLA', va="center", ha="center", size=7, color=lab_colors['UCLA'])
 
     # Add colorbar
