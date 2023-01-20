@@ -64,6 +64,8 @@ def query(behavior=False, n_trials=400, resolved=True, min_regions=2, exclude_cr
     else:
         django_queries = []
 
+    django_queries.append('probe_insertion__session__project__name,ibl_neuropixel_brainwide_01')
+
     if exclude_critical:
         django_queries.append('probe_insertion__session__qc__lt,50,~probe_insertion__json__qc,CRITICAL')
     if resolved:
@@ -78,12 +80,12 @@ def query(behavior=False, n_trials=400, resolved=True, min_regions=2, exclude_cr
     if bilateral:
         # Query bilateral insertions
         right_ins = one.alyx.rest('trajectories', 'list', provenance='Planned',
-                                  x=2243, y=-2000, theta=15, project='ibl_neuropixel_brainwide_01',
+                                  x=2243, y=-2000, theta=15,
                                   django=django_query)
         trajectories = []
         for i, eid in enumerate([j['session']['id'] for j in right_ins]):
             left_ins = one.alyx.rest('trajectories', 'list', provenance='Planned',
-                                     x=-2243, y=-2000, theta=15, project='ibl_neuropixel_brainwide_01',
+                                     x=-2243, y=-2000, theta=15,
                                      django=django_query, session=eid)
             if len(left_ins) == 1:
                 trajectories.append(left_ins[0])
@@ -91,7 +93,7 @@ def query(behavior=False, n_trials=400, resolved=True, min_regions=2, exclude_cr
 
     else:
         trajectories = one.alyx.rest('trajectories', 'list', provenance='Planned',
-                                     x=-2243, y=-2000, theta=15, project='ibl_neuropixel_brainwide_01',
+                                     x=-2243, y=-2000, theta=15,
                                      django=django_query)
     pids = [traj['probe_insertion'] for traj in trajectories]
 
@@ -201,7 +203,7 @@ def get_histology_insertions(one=None, freeze=None):
         insertions = one.alyx.rest('trajectories', 'list', provenance='Planned', django=f'probe_insertion__in,{list(pids)}')
     else:
         insertions = one.alyx.rest('trajectories', 'list', provenance='Planned', x=-2243, y=-2000, theta=15,
-                                   project='ibl_neuropixel_brainwide_01')
+                                   django='probe_insertion__session__project__name,ibl_neuropixel_brainwide_01')
     return insertions
 
 
