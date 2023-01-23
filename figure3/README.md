@@ -10,7 +10,7 @@ or by using the following code snippet in an ipython terminal
 
 from one.api import ONE
 from figure3.figure3_run import run_figure3
-one = ONE()
+one = ONE(base_url='https://openalyx.internationalbrainlab.org')
 run_figure3(one)
 
 ```
