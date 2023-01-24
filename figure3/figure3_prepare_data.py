@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from os.path import isfile
+import traceback
 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import KFold
@@ -15,9 +16,10 @@ from iblutil.numerical import ismember
 from brainbox.processing import compute_cluster_average
 from brainbox.io.one import SpikeSortingLoader
 
+import ephys_atlas.rawephys
+
 from reproducible_ephys_functions import (get_insertions, combine_regions, BRAIN_REGIONS, save_data_path,
                                           save_dataset_info, filter_recordings)
-from reproducible_ephys_processing import compute_new_label
 from figure3.figure3_load_data import load_dataframe
 
 
@@ -60,8 +62,8 @@ def prepare_data(insertions, one, recompute=False):
         sl = SpikeSortingLoader(eid=eid, pname=probe, one=one, atlas=ba)
         try:
             spikes, clusters, channels = sl.load_spike_sorting(dataset_types=['clusters.amps', 'clusters.peakToTrough'])
-        except Exception as err:
-            print(err)
+        except Exception:
+            print(traceback.format_exc())
             continue
 
         channels['rawInd'] = one.load_dataset(eid, dataset='channels.rawInd.npy', collection=sl.collection)
@@ -104,23 +106,33 @@ def prepare_data(insertions, one, recompute=False):
 
         # Data for channel dataframe
         try:
-            lfp = one.load_object(eid, 'ephysSpectralDensityLF', collection=f'raw_ephys_data/{probe}')
+            pid_directory = save_data_path().joinpath('lfp_destripe_snippets').joinpath(ins['id'])
+            # this function will download a set of 30 seconds examples and destripe them
+            ephys_atlas.rawephys.destripe(pid, one=one, typ='lf', prefix="", destination=pid_directory, remove_cached=True, clobber=False)
+            # then we loop over the snippets and compute the RMS of each
+            lfp_files = list(pid_directory.rglob('lf.npy'))
+            for j, lfp_file in enumerate(lfp_files):
+                lfp = np.load(lfp_file).astype(np.float32)
+                if j == 0:
+                    rms_lf = np.zeros((lfp.shape[0], len(lfp_files)))
+                rms_lf[:, j] = np.sqrt(np.mean(lfp ** 2, axis=-1))
+            lfp_power = 20 * np.log10(np.median(rms_lf, axis=-1)) * 2
 
+            lfp = one.load_object(eid, 'ephysSpectralDensityLF', collection=f'raw_ephys_data/{probe}')
             # Get broadband lfp power
             freqs = (lfp['freqs'] >= LFP_BAND[0]) & (lfp['freqs'] <= LFP_BAND[1])
             power = lfp['power'][:, channels['rawInd']]
-            lfp_power = np.nanmean(10 * np.log(power[freqs]), axis=0)
+            lfp_power_raw = np.nanmean(10 * np.log(power[freqs]), axis=0)
 
-            # Get theta band lfp power
-            freqs = (lfp['freqs'] >= THETA_BAND[0]) & (lfp['freqs'] <= THETA_BAND[1])
-            power = lfp['power'][:, channels['rawInd']]
-            theta_power = np.nanmean(10 * np.log(power[freqs]), axis=0)
+            # # Get theta band lfp power
+            # freqs = (lfp['freqs'] >= THETA_BAND[0]) & (lfp['freqs'] <= THETA_BAND[1])
+            # power = lfp['power'][:, channels['rawInd']]
+            # theta_power = np.nanmean(10 * np.log(power[freqs]), axis=0)
 
-        except Exception as err:
-            print(err)
-            print(f'pid: {pid}\n')
+        except Exception:
+            print(f'pid: {pid} LFP ERROR \n', traceback.format_exc())
             lfp_power = np.nan
-            theta_power = np.nan
+            lfp_power_raw = np.nan
 
         data_chns['x'] = channels['x']
         data_chns['y'] = channels['y']
@@ -128,7 +140,7 @@ def prepare_data(insertions, one, recompute=False):
         data_chns['axial_um'] = channels['axial_um']
         data_chns['lateral_um'] = channels['lateral_um']
         data_chns['lfp'] = lfp_power
-        data_chns['lfp_theta'] = theta_power
+        data_chns['lfp_raw'] = lfp_power_raw
         data_chns['region_id'] = channels['atlas_id']
         data_chns['region_id_rep'] = channels['rep_site_id']
         data_chns['region'] = channels['rep_site_acronym']
@@ -140,24 +152,18 @@ def prepare_data(insertions, one, recompute=False):
         df_chns['probe'] = ins['probe_name']
         df_chns['date'] = ins['session']['start_time'][:10]
         df_chns['lab'] = ins['session']['lab']
-
         all_df_clust.append(df_clust)
         all_df_chns.append(df_chns)
 
         try:
             # Data for insertion dataframe
-            rms_ap = one.load_object(eid, 'ephysTimeRmsAP', collection=f'raw_ephys_data/{probe}',
-                                     attribute=['rms'])
-            if np.mean(rms_ap['rms']) < 0.1:
-                rms_ap_data = rms_ap['rms'] * 1e6  # convert to uV
+            rms_ap = one.load_object(eid, 'ephysTimeRmsAP', collection=f'raw_ephys_data/{probe}', attribute=['rms'])
+            rms_ap_data = rms_ap['rms'] * 1e6 if  np.mean(rms_ap['rms']) < 0.1 else rms_ap['rms']
             median = np.mean(np.apply_along_axis(lambda x: np.median(x), 1, rms_ap_data))
-            rms_ap_data_median = (np.apply_along_axis(lambda x: x - np.median(x), 1, rms_ap_data)
-                                      + median)
-        except Exception as err:
-            print(err)
-            print(f'pid: {pid}\n')
+            rms_ap_data_median = (np.apply_along_axis(lambda x: x - np.median(x), 1, rms_ap_data) + median)
+        except Exception:
+            print(f'pid: {pid} AP ERROR\n', traceback.format_exc())
             rms_ap_data_median = np.nan
-
         for region in BRAIN_REGIONS:
             region_clusters = np.where(np.bitwise_and(clusters['rep_site_acronym'] == region,
                                                       clusters['label'] == 1))[0]
