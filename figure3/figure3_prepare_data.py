@@ -3,6 +3,7 @@ import pandas as pd
 from os.path import isfile
 import traceback
 
+import scipy.signal
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import KFold
 from sklearn.metrics import accuracy_score
@@ -113,25 +114,30 @@ def prepare_data(insertions, one, recompute=False):
             lfp_files = list(pid_directory.rglob('lf.npy'))
             for j, lfp_file in enumerate(lfp_files):
                 lfp = np.load(lfp_file).astype(np.float32)
+                f, pow = scipy.signal.periodogram(lfp, fs=250, scaling='density')
                 if j == 0:
-                    rms_lf = np.zeros((lfp.shape[0], len(lfp_files)))
-                rms_lf[:, j] = np.sqrt(np.mean(lfp ** 2, axis=-1))
-            lfp_power = 20 * np.log10(np.median(rms_lf, axis=-1)) * 2
+                    rms_lf_band, rms_lf = (np.zeros((lfp.shape[0], len(lfp_files))) for i in range(2))
+                rms_lf_band[:, j] = np.nanmean(10 * np.log10(pow[:, np.logical_and(f >= LFP_BAND[0], f <= LFP_BAND[1])]), axis=-1)
+                rms_lf[:, j] = np.mean(np.sqrt(lfp.astype(np.double) ** 2), axis=-1)
+            lfp_power = np.nanmedian(rms_lf_band - 20 * np.log10(f[1]), axis=-1) * 2
+            lfp_rms = np.median(20 * np.log10(rms_lf), axis=-1) * 2
+        except Exception:
+            print(f'pid: {pid} RAW LFP ERROR \n', traceback.format_exc())
+            lfp_power = np.nan
+            lfp_rms = np.nan
 
+        try:
             lfp = one.load_object(eid, 'ephysSpectralDensityLF', collection=f'raw_ephys_data/{probe}')
             # Get broadband lfp power
             freqs = (lfp['freqs'] >= LFP_BAND[0]) & (lfp['freqs'] <= LFP_BAND[1])
             power = lfp['power'][:, channels['rawInd']]
             lfp_power_raw = np.nanmean(10 * np.log(power[freqs]), axis=0)
-
             # # Get theta band lfp power
             # freqs = (lfp['freqs'] >= THETA_BAND[0]) & (lfp['freqs'] <= THETA_BAND[1])
             # power = lfp['power'][:, channels['rawInd']]
             # theta_power = np.nanmean(10 * np.log(power[freqs]), axis=0)
-
         except Exception:
             print(f'pid: {pid} LFP ERROR \n', traceback.format_exc())
-            lfp_power = np.nan
             lfp_power_raw = np.nan
 
         data_chns['x'] = channels['x']
@@ -140,6 +146,7 @@ def prepare_data(insertions, one, recompute=False):
         data_chns['axial_um'] = channels['axial_um']
         data_chns['lateral_um'] = channels['lateral_um']
         data_chns['lfp'] = lfp_power
+        data_chns['lfp_rms'] = lfp_rms
         data_chns['lfp_raw'] = lfp_power_raw
         data_chns['region_id'] = channels['atlas_id']
         data_chns['region_id_rep'] = channels['rep_site_id']
@@ -158,12 +165,13 @@ def prepare_data(insertions, one, recompute=False):
         try:
             # Data for insertion dataframe
             rms_ap = one.load_object(eid, 'ephysTimeRmsAP', collection=f'raw_ephys_data/{probe}', attribute=['rms'])
-            rms_ap_data = rms_ap['rms'] * 1e6 if  np.mean(rms_ap['rms']) < 0.1 else rms_ap['rms']
+            rms_ap_data = rms_ap['rms'] * 1e6 if np.mean(rms_ap['rms']) < 0.1 else rms_ap['rms']
             median = np.mean(np.apply_along_axis(lambda x: np.median(x), 1, rms_ap_data))
             rms_ap_data_median = (np.apply_along_axis(lambda x: x - np.median(x), 1, rms_ap_data) + median)
-        except Exception:
+        except BaseException:
             print(f'pid: {pid} AP ERROR\n', traceback.format_exc())
             rms_ap_data_median = np.nan
+
         for region in BRAIN_REGIONS:
             region_clusters = np.where(np.bitwise_and(clusters['rep_site_acronym'] == region,
                                                       clusters['label'] == 1))[0]

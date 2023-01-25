@@ -30,4 +30,4 @@ if __name__ == '__main__':
     one = ONE(base_url='https://openalyx.internationalbrainlab.org')
 
     # Create figure
-    run_figure3(one=one, recompute=False)
+    run_figure3(one=one, recompute=True)
