@@ -9,6 +9,7 @@ import pandas as pd
 from statsmodels.stats.multitest import multipletests
 import pickle
 from permutation_test import permut_test, distribution_dist_approx, shuffle_labels, distribution_dist_approx_max
+from matplotlib.transforms import Bbox
 
 
 lab_number_map, institution_map, lab_colors = labs()
@@ -87,7 +88,9 @@ def plot_main_figure():
                                              wspace=0.3),
           'panel_E_5': fg.place_axes_on_grid(fig, xspan=[0.075, 0.46], yspan=[0.95, 1.],
                                              wspace=0.3),
-          'panel_F_1': fg.place_axes_on_grid(fig, xspan=[0.55, 1.], yspan=[0.69, .8],
+          'panel_F_1': fg.place_axes_on_grid(fig, xspan=[0.55, 0.87], yspan=[0.69, .8],
+                                             wspace=0.3),
+          'panel_F_3': fg.place_axes_on_grid(fig, xspan=[0.89, 1.], yspan=[0.69, .8],
                                              wspace=0.3),
           'panel_F_2': fg.place_axes_on_grid(fig, xspan=[0.55, 1.], yspan=[0.83, 1.],
                                              wspace=0.3)}
@@ -100,7 +103,7 @@ def plot_main_figure():
     plot_panel_task_modulated_neurons(specific_tests=['pre_move'],
                                       ax=[ax['panel_E_1'], ax['panel_E_2'], ax['panel_E_3'], ax['panel_E_4'], ax['panel_E_5']],
                                       save=False)
-    plot_panel_power_analysis(ax=ax['panel_F_1'])
+    plot_panel_power_analysis(ax=ax['panel_F_1'], ax2=ax['panel_F_3'])
     plot_panel_permutation(ax=ax['panel_F_2'])
 
     # we have to find out max and min neurons here now, because plots are split
@@ -437,7 +440,6 @@ def plot_panel_permutation(ax=None, recompute=False, n_permut=20000, qc='pass', 
 
         pickle.dump(results.p_value_permut.values, open("p_values_new_max_metric", 'wb'))
 
-
     shape = (len(tests.keys()), len(BRAIN_REGIONS))
     p_vals = pickle.load(open("p_values_new_max_metric", 'rb'))
     print(p_vals)
@@ -461,8 +463,7 @@ def plot_panel_permutation(ax=None, recompute=False, n_permut=20000, qc='pass', 
     return p_vals
 
 
-def plot_panel_power_analysis(ax):
-    lab_to_num = dict(zip(['Berkeley', 'CCU', 'CSHL (C)', 'CSHL (Z)', 'NYU', 'Princeton', 'SWC', 'UCL', 'UCLA'], list(range(9))))
+def plot_panel_power_analysis(ax, ax2):
 
     significant_disturbances = pickle.load(open("new_max_metric.p", 'rb'))
     # max_y, min_y = 9, -3
@@ -472,13 +473,15 @@ def plot_panel_power_analysis(ax):
     pad = 5 # in points
     i = -1
     perturbation_shift = 0.33
+    dist_between_violins = 0.8
+    lab_to_num = dict(zip(['Berkeley', 'CCU', 'CSHL (C)', 'CSHL (Z)', 'NYU', 'Princeton', 'SWC', 'UCL', 'UCLA'], list(np.arange(9) * dist_between_violins)))
+    visualisation_plot = 'UCL'
 
     p_values = pickle.load(open("p_values_new_max_metric", 'rb'))
     df = load_dataframe()
     df_filt = filter_recordings(df, recompute=True, min_lab_region=2, min_rec_lab=0, min_neuron_region=2, freeze='release_2022_11')
     df_filt = df_filt[df_filt['permute_include'] == 1]
     df_filt_reg = df_filt.groupby('region')
-
 
     for jj, test in enumerate(tests.keys()):
         if test != 'post_stim':
@@ -507,16 +510,97 @@ def plot_panel_power_analysis(ax):
             for j, lab in enumerate(np.unique(labs)):
                 if np.sum(labs == lab) == 0:
                     continue
+                if lab == 'UW':
+                    continue
+
                 lab_mean = data[labs == lab].mean()
                 ax.plot([lab_to_num[lab] - 0.3, lab_to_num[lab] + 0.3], [lab_mean, lab_mean], color=lab_colors[lab])
 
-                parts = ax.violinplot(data[labs == lab], positions=[lab_to_num[lab]])  # , showmeans=True)
-                print("{}, {}, {}".format(lab, lab_to_num[lab], np.min(data[labs == lab])))
+                parts = ax.violinplot(data[labs == lab], positions=[lab_to_num[lab]], showextrema=False)
                 parts['bodies'][0].set_facecolor(lab_colors[lab])
                 parts['bodies'][0].set_edgecolor(lab_colors[lab])
-                parts['cbars'].set_linewidth(0)
-                parts['cmins'].set_color(lab_colors[lab])
-                parts['cmaxes'].set_color(lab_colors[lab])
+
+                if lab == visualisation_plot:
+                    parts = ax2.violinplot(data[labs == lab] + 1, positions=[0], showmeans=False, showextrema=False)
+                    parts['bodies'][0].set_zorder(-1)
+                    parts['bodies'][0].set_facecolor('white')
+                    parts['bodies'][0].set_edgecolor('grey')
+                    parts['bodies'][0].set_linestyles('--')
+                    parts = ax2.violinplot(data[labs == lab] - 1, positions=[0], showmeans=False, showextrema=False)
+                    parts['bodies'][0].set_zorder(-1)
+                    parts['bodies'][0].set_facecolor('white')
+                    parts['bodies'][0].set_edgecolor('grey')
+                    parts['bodies'][0].set_linestyles('--')
+                    parts = ax2.violinplot(data[labs == lab] + 2, positions=[0], showmeans=False, showextrema=False)
+                    parts['bodies'][0].set_zorder(-1)
+                    parts['bodies'][0].set_facecolor('white')
+                    parts['bodies'][0].set_edgecolor('red')
+                    parts['bodies'][0].set_linestyles('--')
+                    parts = ax2.violinplot(data[labs == lab] - 2, positions=[0], showmeans=False, showextrema=False)
+                    parts['bodies'][0].set_zorder(-1)
+                    parts['bodies'][0].set_facecolor('white')
+                    parts['bodies'][0].set_edgecolor('red')
+                    parts['bodies'][0].set_linestyles('--')
+
+                    parts = ax2.violinplot(data[labs == lab] + 1, positions=[dist_between_violins], showmeans=False, showextrema=False)
+                    parts['bodies'][0].set_zorder(-1)
+                    parts['bodies'][0].set_facecolor('white')
+                    parts['bodies'][0].set_edgecolor('grey')
+                    parts['bodies'][0].set_linestyles('--')
+                    parts = ax2.violinplot(data[labs == lab] - 1, positions=[dist_between_violins], showmeans=False, showextrema=False)
+                    parts['bodies'][0].set_zorder(-1)
+                    parts['bodies'][0].set_facecolor('white')
+                    parts['bodies'][0].set_edgecolor('grey')
+                    parts['bodies'][0].set_linestyles('--')
+                    parts = ax2.violinplot(data[labs == lab] + 2, positions=[dist_between_violins], showmeans=False, showextrema=False)
+                    parts['bodies'][0].set_zorder(-1)
+                    parts['bodies'][0].set_facecolor('white')
+                    parts['bodies'][0].set_edgecolor('grey')
+                    parts['bodies'][0].set_linestyles('--')
+                    parts = ax2.violinplot(data[labs == lab] - 2, positions=[dist_between_violins], showmeans=False, showextrema=False)
+                    parts['bodies'][0].set_zorder(-1)
+                    parts['bodies'][0].set_facecolor('white')
+                    parts['bodies'][0].set_edgecolor('grey')
+                    parts['bodies'][0].set_linestyles('--')
+                    parts = ax2.violinplot(data[labs == lab] + 3, positions=[dist_between_violins], showmeans=False, showextrema=False)
+                    parts['bodies'][0].set_zorder(-1)
+                    parts['bodies'][0].set_facecolor('white')
+                    parts['bodies'][0].set_edgecolor('grey')
+                    parts['bodies'][0].set_linestyles('--')
+                    parts = ax2.violinplot(data[labs == lab] - 3, positions=[dist_between_violins], showmeans=False, showextrema=False)
+                    parts['bodies'][0].set_zorder(-1)
+                    parts['bodies'][0].set_facecolor('white')
+                    parts['bodies'][0].set_edgecolor('grey')
+                    parts['bodies'][0].set_linestyles('--')
+                    parts = ax2.violinplot(data[labs == lab] + 4, positions=[dist_between_violins], showmeans=False, showextrema=False)
+                    parts['bodies'][0].set_zorder(-1)
+                    parts['bodies'][0].set_facecolor('white')
+                    parts['bodies'][0].set_edgecolor('red')
+                    parts['bodies'][0].set_linestyles('--')
+                    parts = ax2.violinplot(data[labs == lab] - 4, positions=[dist_between_violins], showmeans=False, showextrema=False)
+                    parts['bodies'][0].set_zorder(-1)
+                    parts['bodies'][0].set_facecolor('white')
+                    parts['bodies'][0].set_edgecolor('red')
+                    parts['bodies'][0].set_linestyles('--')
+
+                    parts = ax2.violinplot(data[labs == lab], positions=[0], showextrema=False)
+                    parts['bodies'][0].set_facecolor('grey')
+                    parts['bodies'][0].set_edgecolor('grey')
+                    parts = ax2.violinplot(data[labs == lab], positions=[0], showextrema=False)
+                    ax2.plot([0 - 0.3, 0 + 0.3], [np.mean(data[labs == lab]), np.mean(data[labs == lab])], color='grey', zorder=4)
+                    parts['bodies'][0].set_zorder(0)
+                    parts['bodies'][0].set_facecolor('white')
+                    parts['bodies'][0].set_edgecolor('white')
+                    parts['bodies'][0].set_alpha(1)
+                    parts = ax2.violinplot(data[labs == lab], positions=[dist_between_violins], showextrema=False)
+                    ax2.plot([dist_between_violins - 0.3, dist_between_violins + 0.3], [np.mean(data[labs == lab]), np.mean(data[labs == lab])], color='grey', zorder=4)
+                    parts['bodies'][0].set_facecolor('grey')
+                    parts['bodies'][0].set_edgecolor('grey')
+                    parts = ax2.violinplot(data[labs == lab], positions=[dist_between_violins], showextrema=False)
+                    parts['bodies'][0].set_zorder(0)
+                    parts['bodies'][0].set_facecolor('white')
+                    parts['bodies'][0].set_edgecolor('white')
+                    parts['bodies'][0].set_alpha(1)
                 # parts['cmeans'].set_color('k') # this can be used to check whether the means align -> whether the datasets are assigned correctly
 
                 val = significant_disturbances[i, j, 0]
@@ -525,6 +609,10 @@ def plot_panel_power_analysis(ax):
                     val = max_y - lab_mean
                     print(ii + jj * 8 + 1)
                 ax.plot([lab_to_num[lab] + perturbation_shift, lab_to_num[lab] + perturbation_shift], [lab_mean, lab_mean + val], color=temp_color)
+                if lab == visualisation_plot:
+                    ax2.plot([0 + perturbation_shift, 0 + perturbation_shift], [lab_mean, lab_mean + 1], color='grey')
+                    ax2.plot([dist_between_violins + perturbation_shift, dist_between_violins + perturbation_shift], [lab_mean, lab_mean + 3], color='grey')
+
                 obs_max = max(obs_max, lab_mean + val)
                 val = significant_disturbances[i, j, 1]
                 temp_color = lab_colors[lab] if val > -1000 else 'red'
@@ -532,17 +620,23 @@ def plot_panel_power_analysis(ax):
                     val = min_y - lab_mean
                     print(ii + jj * 8 + 1)
                 ax.plot([lab_to_num[lab] + perturbation_shift, lab_to_num[lab] + perturbation_shift], [lab_mean, lab_mean + val], color=temp_color)
+                if lab == visualisation_plot:
+                    ax2.plot([0 + perturbation_shift, 0 + perturbation_shift], [lab_mean, lab_mean - 1], color='grey')
+                    ax2.plot([dist_between_violins + perturbation_shift, dist_between_violins + perturbation_shift], [lab_mean, lab_mean - 3], color='grey')
+
                 obs_min = min(obs_min, lab_mean + val)
-            ax.set_xlim(-0.3, 8.36)
-            ax.axhline(0, color='grey', zorder=0)
+            ax.set_xlim(-0.3, 8 * dist_between_violins + .36)
+            ax2.set_xlim(-0.3, dist_between_violins + .36)
             sns.despine()
 
             ax.set_ylim(min_y, max_y)
+            ax2.set_ylim(min_y, max_y)
 
             ax.set_ylabel('FR modulation (sp/s)')
             ax.annotate("{}, {}, p={:.3f}".format(shortened_tests[test], reg, p_values[i]), xy=(0.5, 1), xytext=(0, pad), xycoords='axes fraction', textcoords='offset points', size='large', ha='center', va='baseline')
             ax.set_xticks([])
-            ax.set_xlabel('Labs')
+            ax2.set_xticks([])
+            ax2.set_yticks([])
 
 
 
