@@ -20,14 +20,11 @@ from brainbox.io.one import SpikeSortingLoader
 import ephys_atlas.rawephys
 
 from reproducible_ephys_functions import (get_insertions, combine_regions, BRAIN_REGIONS, save_data_path,
-                                          save_dataset_info, filter_recordings)
+                                          save_dataset_info, filter_recordings, LFP_BAND, THETA_BAND)
 from figure3.figure3_load_data import load_dataframe
 
 
 ba = AllenAtlas()
-
-LFP_BAND = [49, 61]
-THETA_BAND = [6, 12]
 
 
 def prepare_data(insertions, one, recompute=False):
@@ -116,15 +113,18 @@ def prepare_data(insertions, one, recompute=False):
                 lfp = np.load(lfp_file).astype(np.float32)
                 f, pow = scipy.signal.periodogram(lfp, fs=250, scaling='density')
                 if j == 0:
-                    rms_lf_band, rms_lf = (np.zeros((lfp.shape[0], len(lfp_files))) for i in range(2))
+                    rms_lf_band, rms_lf, rms_theta_band = (np.zeros((lfp.shape[0], len(lfp_files))) for i in range(3))
                 rms_lf_band[:, j] = np.nanmean(10 * np.log10(pow[:, np.logical_and(f >= LFP_BAND[0], f <= LFP_BAND[1])]), axis=-1)
+                rms_theta_band[:, j] = np.nanmean(10 * np.log10(pow[:, np.logical_and(f >= THETA_BAND[0], f <= THETA_BAND[1])]), axis=-1)
                 rms_lf[:, j] = np.mean(np.sqrt(lfp.astype(np.double) ** 2), axis=-1)
             lfp_power = np.nanmedian(rms_lf_band - 20 * np.log10(f[1]), axis=-1) * 2
             lfp_rms = np.median(20 * np.log10(rms_lf), axis=-1) * 2
+            lfp_theta = np.nanmedian(rms_theta_band - 20 * np.log10(f[1]), axis=-1) * 2
         except Exception:
             print(f'pid: {pid} RAW LFP ERROR \n', traceback.format_exc())
             lfp_power = np.nan
             lfp_rms = np.nan
+            lfp_theta = np.nan
 
         try:
             lfp = one.load_object(eid, 'ephysSpectralDensityLF', collection=f'raw_ephys_data/{probe}')
@@ -146,6 +146,7 @@ def prepare_data(insertions, one, recompute=False):
         data_chns['axial_um'] = channels['axial_um']
         data_chns['lateral_um'] = channels['lateral_um']
         data_chns['lfp'] = lfp_power
+        data_chns['lfp_theta'] = lfp_theta
         data_chns['lfp_rms'] = lfp_rms
         data_chns['lfp_raw'] = lfp_power_raw
         data_chns['region_id'] = channels['atlas_id']

@@ -21,6 +21,10 @@ from reproducible_ephys_processing import compute_new_label
 
 from one.params import get_cache_dir
 
+LFP_BAND = [49, 61]
+THETA_BAND = [6, 12]
+
+
 logger = logging.getLogger('paper_reproducible_ephys')
 
 
@@ -357,8 +361,6 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
     ba = ba or AllenAtlas()
     lab_number_map, institution_map, _ = labs()
     metrics = pd.DataFrame()
-    LFP_BAND = [49, 61]
-    THETA_BAND = [6, 12]
 
     for i, ins in enumerate(insertions):
         eid = ins['session']['id']

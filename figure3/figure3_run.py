@@ -5,7 +5,7 @@ import logging
 
 from figure3.figure3_prepare_data import prepare_data
 from figure3.figure3_plot_data import plot_main_figure
-from reproducible_ephys_functions import get_insertions
+from reproducible_ephys_functions import get_insertions, compute_metrics
 from one.api import ONE
 
 logger = logging.getLogger('paper_reproducible_ephys')
@@ -13,6 +13,8 @@ logger = logging.getLogger('paper_reproducible_ephys')
 
 def run_figure3(one, recompute=False, supplementary=False):
     insertions = get_insertions(level=0, one=one, freeze=None)
+    if recompute:
+        compute_metrics(insertions, one=one)
     prepare_data(insertions, one=one, recompute=recompute)
     plot_main_figure(one=one)
     if supplementary:
@@ -27,7 +29,8 @@ if __name__ == '__main__':
     #one = ONE(base_url='https://openalyx.internationalbrainlab.org', password='international', silent=True)
 
     # Use this for the latest data
-    one = ONE(base_url='https://openalyx.internationalbrainlab.org')
+    # one = ONE(base_url='https://openalyx.internationalbrainlab.org')
+    one = ONE(base_url='https://alyx.internationalbrainlab.org')
 
     # Create figure
     run_figure3(one=one, recompute=True)
