@@ -6,19 +6,19 @@ from numpy.random import normal
 from sklearn.linear_model import RidgeCV
 
 from ibllib.atlas import AllenAtlas
-import brainbox.modeling.linear as lm
-import brainbox.modeling.utils as mut
+import modeling.linear as lm
+import modeling.utils as mut
 import brainbox.io.one as bbone
 
 from reproducible_ephys_functions import save_data_path, save_dataset_info, repo_path
-from figure9_10.utils import get_mtnn_eids, get_traj, featurize, select_high_fr_neurons, preprocess_feature, load_original
-from figure9_10.glm import generate_design, bases, binwidth, t_before, t_after, GLMPredictor
+from figure9_10.utils import get_mtnn_eids, get_traj, featurize, select_high_fr_neurons, preprocess_feature, load_original, load_trials_df
+from figure9_10.glm import generate_design, generate_design_full_mtnn_cov, bases, bases_full_mtnn_cov, binwidth, t_before, t_after, GLMPredictor
 from figure9_10.simulate import simulate_cell, concat_simcell_data, to_mtnn_form
 from figure9_10.figure9_10_load_data import download_priors, download_glm_hmm
 
 import matplotlib.pyplot as plt
 
-data_path = save_data_path(figure='figure9_10')
+data_path = save_data_path(figure='figure9_10_resubmit')
 
 # rng = np.random.default_rng(seed=0b01101001 + 0b01100010 + 0b01101100)
 rng = np.random.default_rng(seed=10234567)
@@ -30,6 +30,7 @@ def prepare_data(one):
     insertions = get_traj(eids)
     prepare_mtnn_data(eids, insertions, one, brain_atlas=brain_atlas)
     prepare_glm_and_simulated_data(insertions, one, brain_atlas=brain_atlas)
+    prepare_glm_data_full_mtnn_cov(insertions, one, brain_atlas=brain_atlas)
 
 def prepare_mtnn_data(eids, insertions, one, brain_atlas=None):
 
@@ -43,7 +44,7 @@ def prepare_mtnn_data(eids, insertions, one, brain_atlas=None):
     session_list = []
     session_count = {'mainenlab': 0, 'churchlandlab': 0,
                      ('hoferlab', 'mrsicflogellab'): 0,
-                     'danlab': 0, 'angelakilab': 0}
+                     'danlab': 0}
 
     for i, ins in enumerate(insertions):
         feature, output, cluster_numbers, trial_numbers = featurize(i, ins, one, session_count, brain_atlas=brain_atlas)
@@ -243,17 +244,17 @@ def prepare_glm_and_simulated_data(insertions, one, brain_atlas=None):
         t_select2 = np.logical_and(diff2 > 0.0, diff2 < t_after - 0.1)
         keeptrials = np.logical_and(t_select1, t_select2)
 
-        trialsdf = bbone.load_trials_df(eid, maxlen=1.5, t_before=0.5, t_after=1.0,
-                                        wheel_binsize=binwidth, ret_abswheel=False,
-                                        ret_wheel=True, addtl_types=['firstMovement_times'],
-                                        one=one, align_event='firstMovement_times', keeptrials=keeptrials)
+        trialsdf = load_trials_df(eid, maxlen=1.5, t_before=0.5, t_after=1.0,
+                                wheel_binsize=binwidth, ret_abswheel=False,
+                                ret_wheel=True, addtl_types=['firstMovement_times'],
+                                one=one, align_event='firstMovement_times', keeptrials=keeptrials)
 
         trial_idx = np.concatenate([train_trial_ids[i], val_trial_ids[i], test_trial_ids[i]])
         trial_idx = np.sort(trial_idx)
         trialsdf = trialsdf.loc[trial_idx]
         trialsdf_list.append(trialsdf)
 
-        pLeft = np.load(save_data_path(figure='figure9_10').joinpath('priors', f'prior_{eid}.npy'))
+        pLeft = np.load(save_data_path(figure='figure9_10_resubmit').joinpath('priors', f'prior_{eid}.npy'))
         prior_list.append(pLeft[trial_idx])
 
         cluster_list.append(clusters[i])
@@ -325,7 +326,7 @@ def prepare_glm_and_simulated_data(insertions, one, brain_atlas=None):
     np.save(glm_score_save_path.joinpath('glm_scores.npy'), scores)
 
     # Now prepare simulated data
-    num_trials = 350
+    num_trials = 330
     n_test = int(num_trials*0.2)
     n_train = int((num_trials-n_test)*0.8)
     n_val = num_trials - n_train - n_test
@@ -569,6 +570,131 @@ def prepare_glm_and_simulated_data(insertions, one, brain_atlas=None):
     np.save(save_path.joinpath('glm_scores.npy'), simulated_glm_scores)
     np.save(save_path.joinpath('glm_leave_one_out.npy'), simulated_glm_leave_one_out)
 
+    
+def prepare_glm_data_full_mtnn_cov(insertions, one, brain_atlas=None):
+    
+    download_priors()
+    data_load_path = data_path.joinpath('mtnn_data')
+    train_trial_ids = np.load(data_load_path.joinpath('train/trials.npy'), allow_pickle=True)
+    val_trial_ids = np.load(data_load_path.joinpath('validation/trials.npy'), allow_pickle=True)
+    test_trial_ids = np.load(data_load_path.joinpath('test/trials.npy'), allow_pickle=True)
+    clusters = np.load(data_load_path.joinpath('clusters.npy'), allow_pickle=True)
+
+    trialsdf_list = []
+    prior_list = []
+    cluster_list = []
+    spk_times_list = []
+    clus_list = []
+    for i, ins in tqdm(enumerate(insertions)):
+
+        eid = ins['session']['id']
+        probe = ins['probe_name']
+
+        trials = one.load_object(eid, 'trials', collection='alf')
+
+        diff1 = trials.firstMovement_times - trials.stimOn_times
+        diff2 = trials.feedback_times - trials.firstMovement_times
+        t_select1 = np.logical_and(diff1 > 0.0, diff1 < t_before - 0.1)
+        t_select2 = np.logical_and(diff2 > 0.0, diff2 < t_after - 0.1)
+        keeptrials = np.logical_and(t_select1, t_select2)
+
+        trialsdf = load_trials_df(eid, maxlen=1.5, t_before=0.5, t_after=1.0,
+                                wheel_binsize=binwidth, ret_abswheel=False,
+                                ret_wheel=False, addtl_types=['response_times', 'firstMovement_times'],
+                                one=one, align_event='firstMovement_times', keeptrials=keeptrials)
+
+        trial_idx = np.concatenate([train_trial_ids[i], val_trial_ids[i], test_trial_ids[i]])
+        trial_idx = np.sort(trial_idx)
+        trialsdf = trialsdf.loc[trial_idx]
+
+        # load feature
+        feature = np.load(data_path.joinpath('original_data').joinpath(f'{eid}_feature.npy'), allow_pickle=True)
+
+        # add wheel
+        x = feature[0,:,:,wheel_offset]
+        x = 2 * (x - x.min()) / (x.max() - x.min()) - 1
+        wheel_velocity_pd = pd.Series(list(x), index = trialsdf.index)
+        trialsdf['wheel_velocity'] = wheel_velocity_pd.values
+
+        # add paw
+        x = feature[0,:,:,paw_offset]
+        x = (x - x.min()) / (x.max() - x.min())
+        paw_speed_pd = pd.Series(list(x), index = trialsdf.index)
+        trialsdf['paw_speed'] = paw_speed_pd.values
+
+        # add nose
+        x = feature[0,:,:,nose_offset]
+        x = (x - x.min()) / (x.max() - x.min())
+        nose_speed_pd = pd.Series(list(x), index = trialsdf.index)
+        trialsdf['nose_speed'] = nose_speed_pd.values
+
+        # add pupil
+        x = feature[0,:,:,pupil_offset]
+        x = (x - x.min()) / (x.max() - x.min())
+        pupil_dia_pd = pd.Series(list(x), index = trialsdf.index)
+        trialsdf['pupil_diameter'] = pupil_dia_pd.values
+
+        # add me
+        x = feature[0,:,:,left_me_offset]
+        x = (x - x.min()) / (x.max() - x.min())
+        left_me_pd = pd.Series(list(x), index = trialsdf.index)
+        trialsdf['left_me'] = left_me_pd.values
+
+        # add lick
+        x = feature[0,:,:,lick_offset]
+        x = (x - x.min()) / (x.max() - x.min())
+        lick_pd = pd.Series(list(x), index = trialsdf.index)
+        trialsdf['lick'] = lick_pd.values
+
+        trialsdf_list.append(trialsdf)
+
+        pLeft = np.load(save_data_path(figure='figure9_10_resubmit').joinpath('priors', f'prior_{eid}.npy'))
+        prior_list.append(pLeft[trial_idx])
+
+        cluster_list.append(clusters[i])
+
+        ba = brain_atlas or AllenAtlas()
+        sl = bbone.SpikeSortingLoader(eid=eid, pname=probe, one=one, atlas=ba)
+        spikes, _, _ = sl.load_spike_sorting()
+
+        clu_idx = np.isin(spikes.clusters, clusters[i])
+        spk_times = spikes.times[clu_idx]
+        selected_clus = spikes.clusters[clu_idx]
+
+        spk_times_list.append(spk_times)
+        clus_list.append(selected_clus)
+
+    design_list = []
+    for i, trialsdf in enumerate(trialsdf_list):
+        design = generate_design_full_mtnn_cov(trialsdf.copy(), prior_list[i], 0.4, 
+                                               bases_full_mtnn_cov, duration=1.5,
+                                               binwidth=binwidth)
+        design_list.append(design)
+
+    fit_glm_lists = []
+    for i, design in enumerate(design_list):
+        nglm = lm.LinearGLM(design, spk_times_list[i], clus_list[i],
+                            estimator=RidgeCV(cv=3), binwidth=binwidth)
+        nglm.fit(train_idx=np.concatenate([train_trial_ids[i], val_trial_ids[i]]))
+
+        fit_glm_lists.append(nglm)
+
+    test_score_list = []
+    glm_covs = fit_glm_lists[0].design.covar
+    for i, nglm in enumerate(fit_glm_lists):
+        score = nglm.score(testinds=test_trial_ids[i])
+        test_score_list.append(score)
+
+    scores = []
+    for i in range(len(test_score_list)):
+        scores.append(test_score_list[i].loc[cluster_list[i]].to_numpy())
+    scores = np.concatenate(scores)
+
+    glm_score_save_path = data_path.joinpath('glm_data')
+    glm_score_save_path.mkdir(exist_ok=True, parents=True)
+    np.save(glm_score_save_path.joinpath('glm_scores_full_mtnn_cov.npy'), scores)
+    
+    
 
 if __name__ == '__main__':
     one = ONE()

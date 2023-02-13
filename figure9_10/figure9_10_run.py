@@ -1,7 +1,8 @@
 """
 Script to prepare data for figures 9 and 10 and generate plots in the style that are shown in paper
 """
-
+import sys 
+sys.path.append('..')
 from figure9_10.figure9_10_prepare_data import prepare_data
 from figure9_10.figure9_10_load_data import download_data
 from figure9_10.figure9_train import train as train_fig9

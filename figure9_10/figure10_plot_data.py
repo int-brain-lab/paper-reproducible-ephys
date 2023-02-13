@@ -4,7 +4,7 @@ from reproducible_ephys_functions import save_data_path
 from figure9_10.utils import static_idx, grouped_cov_idx_dict
 from figure9_10.figure10_plot_functions import generate_figure_10, generate_figure_10_supplement1, generate_figure_10_supplement2
 
-data_path = save_data_path(figure='figure9_10')
+data_path = save_data_path(figure='figure9_10_resubmit')
 
 def plot_figures():
     data_load_path = data_path.joinpath('mtnn_data')

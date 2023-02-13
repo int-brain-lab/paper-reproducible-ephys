@@ -6,7 +6,7 @@ from reproducible_ephys_functions import save_data_path
 
 def train(do_train=True, do_train_on_glm_covariates=True):
 
-    data_load_path = save_data_path(figure='figure9_10').joinpath('mtnn_data')
+    data_load_path = save_data_path(figure='figure9_10_resubmit').joinpath('mtnn_data')
     feature = np.load(data_load_path.joinpath('train/feature.npy'))
 
     neuron_order = feature[:, 0, 0]
@@ -25,6 +25,7 @@ def train(do_train=True, do_train_on_glm_covariates=True):
     n_layers = 3
     
     weight_decay = 1e-15
+    dropout = 0.15
 
     n_epochs = 100
     remove_cov = None
@@ -36,7 +37,7 @@ def train(do_train=True, do_train_on_glm_covariates=True):
                             static_bias=True, dynamic_bias=True,
                             hidden_dim_static=HIDDEN_SIZE_STATIC,
                             hidden_dim_dynamic=HIDDEN_SIZE_DYNAMIC, n_layers=n_layers,
-                            dropout=0.2)
+                            dropout=dropout)
 
     if do_train:
         best_epoch, loss_list, val_loss_list = run_train(model,
@@ -56,7 +57,7 @@ def train(do_train=True, do_train_on_glm_covariates=True):
                                 static_bias=True, dynamic_bias=True,
                                 hidden_dim_static=HIDDEN_SIZE_STATIC,
                                 hidden_dim_dynamic=HIDDEN_SIZE_DYNAMIC, n_layers=n_layers,
-                                dropout=0.2)
+                                dropout=dropout)
 
         best_epoch, loss_list, val_loss_list = run_train(model,
                                                          data_load_path.joinpath('train/feature.npy'),

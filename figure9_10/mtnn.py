@@ -13,9 +13,9 @@ from reproducible_ephys_functions import save_data_path
 
 import random
 
-torch.manual_seed(0)
-np.random.seed(0)
-random.seed(0)
+torch.manual_seed(7)
+np.random.seed(9)
+random.seed(912)
 
 def seed_worker(worker_id):
     worker_seed = torch.initial_seed() % 2**32
@@ -23,7 +23,7 @@ def seed_worker(worker_id):
     random.seed(worker_seed)
 
 g = torch.Generator()
-g.manual_seed(0)
+g.manual_seed(557)
 
 class MTNN(nn.Module):
     def __init__(self, n_neurons, 
@@ -274,7 +274,7 @@ def run_train(model, train_feature_path, train_output_path,
     else:
         model_name = f'state_dict_rem={save_remove_cov}_keep={only_keep_cov}_{model_name_suffix}'
     model_name = model_name + '_simulated.pt' if simulated else model_name + '.pt'
-    save_path = save_data_path(figure='figure9_10').joinpath('trained_models')
+    save_path = save_data_path(figure='figure9_10_resubmit').joinpath('trained_models')
     save_path.mkdir(exist_ok=True, parents=True)
 
     static = static_bool if not simulated else sim_static_bool
@@ -486,9 +486,9 @@ def load_test_model(model_config, remove_cov, only_keep_cov,
                             hidden_dim_dynamic=model_config['hidden_size_dynamic'], 
                             n_layers=model_config['n_layers'])
     
-    data_load_path = save_data_path(figure='figure9_10')
-    sim_data_load_path = save_data_path(figure='figure9_10')
-    model_load_path = save_data_path(figure='figure9_10')
+    data_load_path = save_data_path(figure='figure9_10_resubmit')
+    sim_data_load_path = save_data_path(figure='figure9_10_resubmit')
+    model_load_path = save_data_path(figure='figure9_10_resubmit')
     
     if not simulated:
         feature_fname = data_load_path.joinpath(f'mtnn_data/{data_dir}/feature.npy')

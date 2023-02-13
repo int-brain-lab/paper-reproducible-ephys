@@ -11,8 +11,8 @@ from figure9_10.utils import (reshape_flattened, get_acronym_dict, get_acronym_d
 from figure9_10.mtnn import load_test_model
 from reproducible_ephys_functions import save_data_path, figure_style, save_figure_path
 
-data_load_path = save_data_path(figure='figure9_10').joinpath('mtnn_data')
-save_path = save_figure_path(figure='figure9_10')
+data_load_path = save_data_path(figure='figure9_10_resubmit').joinpath('mtnn_data')
+save_path = save_figure_path(figure='figure9_10_resubmit')
 
 
 regions = list(get_acronym_dict().keys())
@@ -82,7 +82,7 @@ def compute_scores_for_figure_10(model_config,
                                  leave_group_out,
                                  use_psth=False):
     
-    load_path = save_data_path(figure='figure9_10').joinpath('mtnn_data')
+    load_path = save_data_path(figure='figure9_10_resubmit').joinpath('mtnn_data')
     
     preds_shape = np.load(load_path.joinpath('test/shape.npy'))
     obs = np.load(load_path.joinpath('test/output.npy'))
@@ -99,7 +99,10 @@ def compute_scores_for_figure_10(model_config,
         idx += n
         
     region_inds = get_region_inds(feature_list)   
-    baseline_score = load_test_model(model_config, None, None, obs_list, preds_shape, use_psth=use_psth)
+    baseline_score = load_test_model(model_config, None, 
+                                     None, obs_list, preds_shape, use_psth=use_psth)
+    baseline_score2 = load_test_model(model_config, ['session'], 
+                                      None, obs_list, preds_shape, use_psth=use_psth)
 
     frs = {}
     scores = {}
@@ -110,10 +113,17 @@ def compute_scores_for_figure_10(model_config,
         cov = [cov]
         scores['leave_one_out'][tuple(cov)]={}
         score = load_test_model(model_config, cov, None, obs_list, preds_shape, use_psth=use_psth)
-        scores['leave_one_out'][tuple(cov)]['all'] = baseline_score-score
+        if cov[0] == 'lab':
+            scores['leave_one_out'][tuple(cov)]['all'] = baseline_score2-score
+        else:
+            scores['leave_one_out'][tuple(cov)]['all'] = baseline_score-score
         for region in regions:
             region_score = np.where(region_inds==region)
-            score_diff = baseline_score[region_score]-score[region_score]
+            
+            if cov[0] == 'lab':
+                score_diff = baseline_score2[region_score]-score[region_score]
+            else:
+                score_diff = baseline_score[region_score]-score[region_score]
             scores['leave_one_out'][tuple(cov)][region] = score_diff
             
     for i, cov in enumerate(leave_group_out):
@@ -338,7 +348,7 @@ def generate_figure_10_supplement1(model_config,
                                    down_lim=-0.05,
                                    up_lim=0.75):
     
-    load_path = save_data_path(figure='figure9_10').joinpath('simulated_data')
+    load_path = save_data_path(figure='figure9_10_resubmit').joinpath('simulated_data')
     
     data_dir = 'test'
     preds_shape = np.load(load_path.joinpath(f'{data_dir}/shape.npy'))
@@ -548,7 +558,7 @@ def generate_figure_10_supplement2(model_config,
                 axs[i,j].xaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
             
             if i==0 and j==0:
-                for n in range(5):
+                for n in range(4):
                     for m in range(4):
                         subject = sess_list[4*n+m]['session']['subject']#.tolist()['session']['subject']
                         axs[i,j].scatter(-2, -2, color=colors[n], marker=shapes[m], 
@@ -561,7 +571,7 @@ def generate_figure_10_supplement2(model_config,
             scorei_list = reshape_flattened(scores['single_covariate'][covi]['all'], preds_shape, trim=3)
             scorej_list = reshape_flattened(scores['single_covariate'][covj]['all'], preds_shape, trim=3)
             
-            for n in range(5):
+            for n in range(4):
                 for m in range(4):
                     axs[i,j].scatter(scorej_list[4*n+m],
                                      scorei_list[4*n+m], color=colors[n], marker=shapes[m], s=30, alpha=0.7)

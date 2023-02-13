@@ -5,9 +5,9 @@ from reproducible_ephys_functions import save_data_path
 from figure9_10.utils import static_idx
 from figure9_10.mtnn import run_eval, initialize_mtnn, get_device
 from figure9_10.figure9_plot_functions import (generate_figure_9, generate_figure9_supplement1, generate_figure9_supplement2,
-                                               generate_figure9_supplement3)
+                                               generate_figure9_supplement2_v2, generate_figure9_supplement3)
 
-data_path = save_data_path(figure='figure9_10')
+data_path = save_data_path(figure='figure9_10_resubmit')
 
 
 def plot_figures():
@@ -89,12 +89,22 @@ def plot_figures():
 
     glm_score_path = data_path.joinpath('glm_data')
     glm_score = np.load(glm_score_path.joinpath('glm_scores.npy'), allow_pickle=True)
+    glm_score_full_mtnn_cov = np.load(glm_score_path.joinpath('glm_scores_full_mtnn_cov.npy'), allow_pickle=True)
     generate_figure9_supplement2(model_config,
                                  glm_score,
+                                 glm_score_full_mtnn_cov,
                                  preds_shape,
                                  obs,
                                  test_feature,
                                  savefig=True)
+    
+    #generate_figure9_supplement2_v2(model_config,
+    #                             glm_score,
+    #                             glm_score_full_mtnn_cov,
+    #                             preds_shape,
+    #                             obs,
+    #                             test_feature,
+    #                             savefig=True)
 
     generate_figure9_supplement3(model_config,
                                  preds_shape,

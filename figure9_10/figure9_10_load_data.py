@@ -4,7 +4,7 @@ from reproducible_ephys_functions import save_data_path
 from one.api import ONE
 
 one = ONE(base_url='https://openalyx.internationalbrainlab.org/')
-data_path = save_data_path(figure='figure9_10')
+data_path = save_data_path(figure='figure9_10_resubmit')
 S3_DATA_PATH = 'paper_reproducible_ephys/mtnn'
 
 
