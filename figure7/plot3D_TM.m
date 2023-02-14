@@ -122,7 +122,7 @@ axis tight
 
 xlabel('\DeltaX (\mum)'); ylabel('\DeltaY (\mum)'); zlabel('\DeltaZ (\mum)')
 %title(BrainRegion)
-hLegend = legend('Not Modulated', 'Task-Modulated', 'fontsize', 12);
+hLegend = legend('Task-Modulated', 'Not Modulated', 'fontsize', 12);
 %set(hLegend, 'Position', [0.5732    0.2262    0.2830    0.1012], 'Units', 'points')
 
 % xlim([X_lim(1), X_lim(2)])

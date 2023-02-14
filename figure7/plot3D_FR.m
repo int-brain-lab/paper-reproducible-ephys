@@ -75,7 +75,7 @@ end
 
 %--------To examine FR histogram and thresholds for outliers-------------
 % figure
-% hFR = histogram(AvgFR, 'binwidth', 0.12, 'normalization', 'probability');
+% hFR = histogram(AvgFR, 'binwidth', 0.12)%, 'normalization', 'probability');
 % m1=mean(AvgFR); m2=median(AvgFR);
 % p90=prctile(AvgFR, 90); p85=prctile(AvgFR, 85);
 % p10=prctile(AvgFR, 10); p15=prctile(AvgFR, 15);
@@ -89,18 +89,19 @@ end
 % text(p90, 1.1*max(hFR.Values), '90th perc', 'color', 'b')
 % line([p10 p10], [min(hFR.Values), 1.1*max(hFR.Values)], 'color', 'b')
 % text(p10, 1.1*max(hFR.Values), '10th perc', 'color', 'b')
-% line([p85 p85], [min(hFR.Values), max(hFR.Values)], 'color', [0.5 0.5 0.5])
-% text(p85, max(hFR.Values), '85th perc', 'color', [0.5 0.5 0.5])
-% line([p15 p15], [min(hFR.Values), max(hFR.Values)], 'color', [0.5 0.5 0.5])
-% text(p15, max(hFR.Values), '15th perc', 'color', [0.5 0.5 0.5])
+% %line([p85 p85], [min(hFR.Values), max(hFR.Values)], 'color', [0.5 0.5 0.5])
+% %text(p85, max(hFR.Values), '85th perc', 'color', [0.5 0.5 0.5])
+% %line([p15 p15], [min(hFR.Values), max(hFR.Values)], 'color', [0.5 0.5 0.5])
+% %text(p15, max(hFR.Values), '15th perc', 'color', [0.5 0.5 0.5])
 % line([FRthresh FRthresh], [min(hFR.Values), max(hFR.Values)], 'color', [0.6 0 0.6],...
 %     'linewidth', 2)
 % text(FRthresh, 0.8*max(hFR.Values), 'FR Cut-off', 'color', [0.6 0 0.6])
 % line([FRthreshLow FRthreshLow], [min(hFR.Values), max(hFR.Values)], 'color', [0.6 0 0.6],...
 %     'linewidth', 2)
 % %text(manualCutOff2, 0.8*max(hFR.Values), 'Manual Cut-off', 'color', [0.6 0 0.6])
-% ylabel('count'); xlabel('FR Deviation (normalized to -1 to 1)')
+% ylabel('count'); xlabel('FR (sp/sec)')% Deviation (normalized to -1 to 1)')
 % set(gca,'fontsize', 14)
+% title(BrainRegion)
 %---------------------------------------------------------------------
 
 AvgFR_regular = log10(AvgFR(UnitsRegular)');
@@ -210,7 +211,7 @@ for spHist=1:3
         xlabel('\DeltaY (P-A)')
     elseif spHist==3
         xlabel('\DeltaZ (V-D)')
-        legend('Regular Units', 'Outlier Units');
+        legend('General', 'Outlier Units');
     end
     
     set(gca, 'fontsize', 12, 'box', 'off')
@@ -235,6 +236,7 @@ saveas(fig, append(save_path, 'FR_', BrainRegion, '_xyz_hist.png'));
 % Spike amp and duration histograms:
 region_amps = T.amp(Neur_idx);
 region_p2t = T.p2t(Neur_idx);
+%region_p2t(region_p2t<0)=nan; %can use this if we want to compare only + spike widths
 SpikeWF = [region_amps, region_p2t];
 
 fig = figure;%(3)
@@ -264,7 +266,7 @@ for spHist=4:5
             num2str(size(dXYZ,1)), ' Total'], 'Interpreter', 'None');
     elseif spHist==5
         xlabel('WF duration')
-        legend('Regular Units', 'Outlier Units');
+        legend('General', 'Outlier Units');
     end
     
     set(gca, 'fontsize', 12, 'box', 'off')
@@ -312,4 +314,45 @@ mdl = fitlm(Covariates, Output);
 %figure; plot(mdl)
 %figure;plot(mdl.Residuals.Raw, 'ok')
 %figure;plot(Covariates(:,1), mdl.Residuals.Raw, 'ok')
+
+%% Laminar analysis: plotting AvgFR or FF along depth (z axis) only
+% % AvgFR
+% figure
+% swarmchart(ones(size(dXYZ,1), 1), dXYZ(:,3), 12, log10(AvgFR), 'filled')
+% colormap parula
+% caxis manual
+% hCB=colorbar;
+% hCB.Title.String = {'      Avg FR'; '      (spikes/sec)'};
+% hCB.Title.FontSize = 12; %16;
+% FRticks = [0.0003, 0.001, 0.003, 0.01, 0.03, 0.1, 0.3, 1, 3, 10, 30, 100]; %to log10
+% caxis([-0.9, 1.8]) %([log10(min(AvgFR)), 1.8])%log10(max(AvgFR))])
+% % To include tick for threshold, but no label:
+% hCB.Ticks = log10(sort([FRticks, FRthresh]));
+% % To exclude the label for the threshold value: 
+% TickLabelsTemp = 10.^(hCB.Ticks);
+% TickLabelsCell = num2cell(TickLabelsTemp);
+% FRthresh_idx = find(abs(10.^(hCB.Ticks) - FRthresh) == min(abs(10.^(hCB.Ticks) - FRthresh)));
+% TickLabelsCell{FRthresh_idx} = [];
+% set(hCB,'TickLabels', TickLabelsCell)
+% ylabel('\DeltaZ (\mum)')
+% xlim([-0.5, 2.5])
+% set(gca, 'fontsize', 14, 'xtick', 1, 'xticklabel', [])% 'FR (sp/sec)')
+% title(BrainRegion)
+% 
+% 
+% %For FF:
+% FFvals = T.avg_ff_post_move(Neur_idx);
+% figure
+% swarmchart(ones(size(dXYZ,1), 1), dXYZ(:,3), 12, FFvals, 'filled')
+% colormap parula
+% caxis manual
+% caxis([0 3])
+% hCB=colorbar;
+% hCB.Title.String = {'FF post movement'};
+% hCB.Title.FontSize = 12; %16;
+% xlim([-0.5, 2.5])
+% set(gca, 'fontsize', 14, 'xtick', 1, 'xticklabel', [])% 'FF')
+% ylabel('\DeltaZ (\mum)')
+% title(BrainRegion)
+% stop=1;
 
