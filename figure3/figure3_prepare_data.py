@@ -17,10 +17,8 @@ from iblutil.numerical import ismember
 from brainbox.processing import compute_cluster_average
 from brainbox.io.one import SpikeSortingLoader
 
-import ephys_atlas.rawephys
-
 from reproducible_ephys_functions import (get_insertions, combine_regions, BRAIN_REGIONS, save_data_path,
-                                          save_dataset_info, filter_recordings, LFP_BAND, THETA_BAND)
+                                          save_dataset_info, filter_recordings, compute_lfp_insertion, LFP_BAND, THETA_BAND)
 from figure3.figure3_load_data import load_dataframe
 
 
@@ -102,30 +100,7 @@ def prepare_data(insertions, one, recompute=False):
         df_clust['date'] = ins['session']['start_time'][:10]
         df_clust['lab'] = ins['session']['lab']
 
-        # Data for channel dataframe
-        try:
-            pid_directory = save_data_path().joinpath('lfp_destripe_snippets').joinpath(ins['id'])
-            # this function will download a set of 30 seconds examples and destripe them
-            ephys_atlas.rawephys.destripe(pid, one=one, typ='lf', prefix="", destination=pid_directory, remove_cached=True, clobber=False)
-            # then we loop over the snippets and compute the RMS of each
-            lfp_files = list(pid_directory.rglob('lf.npy'))
-            for j, lfp_file in enumerate(lfp_files):
-                lfp = np.load(lfp_file).astype(np.float32)
-                f, pow = scipy.signal.periodogram(lfp, fs=250, scaling='density')
-                if j == 0:
-                    rms_lf_band, rms_lf, rms_theta_band = (np.zeros((lfp.shape[0], len(lfp_files))) for i in range(3))
-                rms_lf_band[:, j] = np.nanmean(10 * np.log10(pow[:, np.logical_and(f >= LFP_BAND[0], f <= LFP_BAND[1])]), axis=-1)
-                rms_theta_band[:, j] = np.nanmean(10 * np.log10(pow[:, np.logical_and(f >= THETA_BAND[0], f <= THETA_BAND[1])]), axis=-1)
-                rms_lf[:, j] = np.mean(np.sqrt(lfp.astype(np.double) ** 2), axis=-1)
-            lfp_power = np.nanmedian(rms_lf_band - 20 * np.log10(f[1]), axis=-1) * 2
-            lfp_rms = np.median(20 * np.log10(rms_lf), axis=-1) * 2
-            lfp_theta = np.nanmedian(rms_theta_band - 20 * np.log10(f[1]), axis=-1) * 2
-        except Exception:
-            print(f'pid: {pid} RAW LFP ERROR \n', traceback.format_exc())
-            lfp_power = np.nan
-            lfp_rms = np.nan
-            lfp_theta = np.nan
-
+        lfp_psd = compute_lfp_insertion(one=one, pid=pid)
         try:
             lfp = one.load_object(eid, 'ephysSpectralDensityLF', collection=f'raw_ephys_data/{probe}')
             # Get broadband lfp power
@@ -133,9 +108,9 @@ def prepare_data(insertions, one, recompute=False):
             power = lfp['power'][:, channels['rawInd']]
             lfp_power_raw = np.nanmean(10 * np.log(power[freqs]), axis=0)
             # # Get theta band lfp power
-            # freqs = (lfp['freqs'] >= THETA_BAND[0]) & (lfp['freqs'] <= THETA_BAND[1])
-            # power = lfp['power'][:, channels['rawInd']]
-            # theta_power = np.nanmean(10 * np.log(power[freqs]), axis=0)
+            freqs = (lfp['freqs'] >= THETA_BAND[0]) & (lfp['freqs'] <= THETA_BAND[1])
+            power = lfp['power'][:, channels['rawInd']]
+            lfp_theta_raw = np.nanmean(10 * np.log(power[freqs]), axis=0)
         except Exception:
             print(f'pid: {pid} LFP ERROR \n', traceback.format_exc())
             lfp_power_raw = np.nan
@@ -145,10 +120,10 @@ def prepare_data(insertions, one, recompute=False):
         data_chns['z'] = channels['z']
         data_chns['axial_um'] = channels['axial_um']
         data_chns['lateral_um'] = channels['lateral_um']
-        data_chns['lfp'] = lfp_power
-        data_chns['lfp_theta'] = lfp_theta
-        data_chns['lfp_rms'] = lfp_rms
+        data_chns['lfp'] = lfp_psd['lfp_power'].values
+        data_chns['lfp_theta'] = lfp_psd['lfp_theta'].values
         data_chns['lfp_raw'] = lfp_power_raw
+        data_chns['lfp_theta_raw'] = lfp_theta_raw
         data_chns['region_id'] = channels['atlas_id']
         data_chns['region_id_rep'] = channels['rep_site_id']
         data_chns['region'] = channels['rep_site_acronym']

@@ -10,6 +10,8 @@ import logging
 from pathlib import Path
 import shutil
 from datetime import datetime
+import scipy
+import traceback
 
 from one.api import ONE
 from one.alf.exceptions import ALFObjectNotFound
@@ -17,11 +19,11 @@ from iblutil.numerical import ismember
 from ibllib.atlas import AllenAtlas
 import brainbox.io.one as bbone
 from brainbox.behavior import training
-from reproducible_ephys_processing import compute_new_label
 
 from one.params import get_cache_dir
 
-LFP_BAND = [49, 61]
+
+LFP_BAND = [20, 80]  # previously [49, 61]
 THETA_BAND = [6, 12]
 
 
@@ -432,18 +434,27 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
                                                           clusters['label'] == 1))[0]
                 region_chan = channels['rawInd'][np.where(channels['rep_site_acronym'] == region)[0]]
 
+                try:
+                    df_lfp = compute_lfp_insertion(one=one, pid=ins['probe_insertion'])
+                    lfp_theta_region = df_lfp['lfp_theta'][region_chan].mean()
+                    lfp_region = df_lfp['lfp_power'][region_chan].mean()
+                except:
+                    traceback.print_exception()
+                    lfp_theta_region = np.NaN
+                    lfp_region = np.NaN
+
                 if 'power' in lfp.keys() and region_chan.shape[0] > 0:
                     freqs = (lfp['freqs'] > LFP_BAND[0]) & (lfp['freqs'] < LFP_BAND[1])
                     chan_power = lfp['power'][:, region_chan]
-                    lfp_region = np.mean(10 * np.log(chan_power[freqs]))  # convert to dB
+                    lfp_region_raw = np.mean(10 * np.log(chan_power[freqs]))  # convert to dB
 
                     freqs = (lfp['freqs'] > THETA_BAND[0]) & (lfp['freqs'] < THETA_BAND[1])
                     chan_power = lfp['power'][:, region_chan]
-                    lfp_theta_region = np.mean(10 * np.log(chan_power[freqs]))  # convert to dB
+                    lfp_theta_region_raw = np.mean(10 * np.log(chan_power[freqs]))  # convert to dB
                 else:
                     # TO DO SEE IF THIS IS LEGIT
                     lfp_region = np.nan
-
+                    lfp_theta_region = np.nan
                 if 'apRMS' in ap.keys() and region_chan.shape[0] > 0:
                     ap_rms = np.percentile(ap['apRMS'][1, region_chan], 90) * 1e6
                 elif region_chan.shape[0] > 0:
@@ -460,6 +471,8 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
                                                         'neuron_yield': region_clusters.shape[0],
                                                         'lfp_power': lfp_region,
                                                         'lfp_theta_power': lfp_theta_region,
+                                                        'lfp_power_raw': lfp_region_raw,
+                                                        'lfp_theta_power_raw': lfp_theta_region_raw,
                                                         'rms_ap_p90': ap_rms,
                                                         'n_trials': n_trials,
                                                         'behavior': behav,
@@ -530,7 +543,7 @@ def filter_recordings(df=None, one=None, max_ap_rms=40, max_lfp_power=-150, min_
 
     # PID level
     df = df.groupby('pid').apply(lambda m: m.assign(high_noise=lambda m: m['rms_ap_p90'].median() > max_ap_rms))
-    df = df.groupby('pid').apply(lambda m: m.assign(high_lfp=lambda m: m['lfp_power'].median() > max_lfp_power))
+    df = df.groupby('pid').apply(lambda m: m.assign(high_lfp=lambda m: m['lfp_power_raw'].median() > max_lfp_power))
     df = df.groupby('pid').apply(lambda m: m.assign(low_yield=lambda m: (m['neuron_yield'].sum() / m['n_channels'].sum())
                                                     < min_neurons_per_channel))
     df = df.groupby('pid').apply(lambda m: m.assign(missed_target=lambda m: m['region_hit'].sum() < min_regions))
@@ -608,3 +621,57 @@ def save_dataset_info(one, figure):
     _, filename = one.save_loaded_ids(sessions_only=True)
     if filename:
         shutil.move(filename, uuid_path.joinpath(f'{figure}_session_uuids.csv'))
+
+
+def compute_lfp_metrics_dataframe(one, insertions=None, recompute=False):
+    """
+    Download chunks of dta
+    :param pid:
+    :param one:
+    :return:
+    """
+    insertions = insertions or get_insertions(level=0, one=one, freeze=None)
+    for i, ins in enumerate(insertions):
+        psd = compute_lfp_insertion(one=one, pid=ins['probe_insertion'], recompute=recompute)
+        if i == 0:
+            psd
+        a = 1
+
+
+def compute_lfp_insertion(one, pid, recompute=False):
+    """
+    From a PID, downloads several snippets of raw data, apply destriping, and output the PSD per channel
+    in the theta and LFP bands in a dataframe
+    :param one:
+    :param pid:
+    :param recompute:
+    :return:
+    """
+    pid_directory = save_data_path().joinpath('lfp_destripe_snippets').joinpath(pid)
+    saved_file = save_data_path().joinpath('lfp_destripe_snippets').joinpath(f"lfp_{pid}.pqt")
+    if recompute is False and saved_file.exists():
+        return pd.read_parquet(saved_file)
+    import ephys_atlas.rawephys
+    try:
+        ephys_atlas.rawephys.destripe(pid, one=one, typ='lf', prefix="", destination=pid_directory, remove_cached=True, clobber=False)
+        # then we loop over the snippets and compute the RMS of each
+        lfp_files = list(pid_directory.rglob('lf.npy'))
+        for j, lfp_file in enumerate(lfp_files):
+            lfp = np.load(lfp_file).astype(np.float32)
+            f, pow = scipy.signal.periodogram(lfp, fs=250, scaling='density')
+            if j == 0:
+                rms_lf_band, rms_lf, rms_theta_band = (np.zeros((lfp.shape[0], len(lfp_files))) for i in range(3))
+            rms_lf_band[:, j] = np.nanmean(
+                10 * np.log10(pow[:, np.logical_and(f >= LFP_BAND[0], f <= LFP_BAND[1])]), axis=-1)
+            rms_theta_band[:, j] = np.nanmean(
+                10 * np.log10(pow[:, np.logical_and(f >= THETA_BAND[0], f <= THETA_BAND[1])]), axis=-1)
+            rms_lf[:, j] = np.mean(np.sqrt(lfp.astype(np.double) ** 2), axis=-1)
+        lfp_power = np.nanmedian(rms_lf_band - 20 * np.log10(f[1]), axis=-1) * 2
+        lfp_theta = np.nanmedian(rms_theta_band - 20 * np.log10(f[1]), axis=-1) * 2
+        df_lfp = pd.DataFrame.from_dict({'lfp_power': lfp_power, 'lfp_theta': lfp_theta})
+        df_lfp.to_parquet(saved_file)
+    except Exception:
+        print(f'pid: {pid} RAW LFP ERROR \n', traceback.format_exc())
+        lfp_power = np.nan
+        lfp_theta = np.nan
+    return df_lfp
