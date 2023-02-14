@@ -37,7 +37,7 @@ def bin_spikes2D(spike_times, spike_clusters, cluster_ids, align_times, pre_time
     for i, (ep, t) in enumerate(zip(epoch_idxs, ts)):
         xind = (np.floor((spike_times[ep[0]:ep[1]] - t[0]) / bin_size)).astype(np.int64)
         w = weights[ep[0]:ep[1]] if weights is not None else None
-        yscale, yind = np.unique(spike_clusters.iloc[ep[0]:ep[1]], return_inverse=True)
+        yscale, yind = np.unique(spike_clusters[ep[0]:ep[1]], return_inverse=True)
         nx, ny = [tscale.size, yscale.size]
         ind2d = np.ravel_multi_index(np.c_[yind, xind].transpose(), dims=(ny, nx))
         r = np.bincount(ind2d, minlength=nx * ny, weights=w).reshape(ny, nx)
