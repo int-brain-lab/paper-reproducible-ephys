@@ -13,16 +13,21 @@ from datetime import datetime
 import scipy
 import traceback
 
+from neurodsp import voltage
 from one.api import ONE
 from one.alf.exceptions import ALFObjectNotFound
 from iblutil.numerical import ismember
 from ibllib.atlas import AllenAtlas
 import brainbox.io.one as bbone
 from brainbox.behavior import training
+import yaml
+from brainbox.io.spikeglx import Streamer
 
 from one.params import get_cache_dir
 
 
+
+LFP_RESAMPLE_FACTOR = 10
 LFP_BAND = [20, 80]  # previously [49, 61]
 THETA_BAND = [6, 12]
 
@@ -651,9 +656,8 @@ def compute_lfp_insertion(one, pid, recompute=False):
     saved_file = save_data_path().joinpath('lfp_destripe_snippets').joinpath(f"lfp_{pid}.pqt")
     if recompute is False and saved_file.exists():
         return pd.read_parquet(saved_file)
-    import ephys_atlas.rawephys
     try:
-        ephys_atlas.rawephys.destripe(pid, one=one, typ='lf', prefix="", destination=pid_directory, remove_cached=True, clobber=False)
+        lfp_destripe(pid, one=one, typ='lf', prefix="", destination=pid_directory, remove_cached=True, clobber=False)
         # then we loop over the snippets and compute the RMS of each
         lfp_files = list(pid_directory.rglob('lf.npy'))
         for j, lfp_file in enumerate(lfp_files):
@@ -675,3 +679,65 @@ def compute_lfp_insertion(one, pid, recompute=False):
         lfp_power = np.nan
         lfp_theta = np.nan
     return df_lfp
+
+
+def lfp_destripe(pid, one=None, typ='ap', prefix="", destination=None, remove_cached=True, clobber=False):
+    """
+    Stream chunks of data from a given probe insertion
+
+    Output folder architecture (the UUID is the probe insertion UUID):
+        f4bd76a6-66c9-41f3-9311-6962315f8fc8
+        ├── T00500
+        │   ├── ap.npy
+        │   ├── ap.yml
+        │   ├── lf.npy
+        │   ├── lf.yml
+        │   ├── spikes.pqt
+        │   └── waveforms.npy
+
+    :param pid:
+    :param one:
+    :param typ:
+    :param prefix:
+    :param destination:
+    :return:
+    """
+    assert one
+    assert destination
+    eid, pname = one.pid2eid(pid)
+
+    butter_kwargs = {'N': 3, 'Wn': 300 / 30000 * 2, 'btype': 'highpass'}
+    sos = scipy.signal.butter(**butter_kwargs, output='sos')
+
+    if typ == 'ap':
+        sample_duration, sample_spacings, skip_start_end = (10 * 30_000, 1_000 * 30_000, 500 * 30_000)
+    elif typ == 'lf':
+        sample_duration, sample_spacings, skip_start_end = (20 * 2_500, 1_000 * 2_500, 500 * 2_500)
+    sr = Streamer(pid=pid, one=one, remove_cached=remove_cached, typ=typ)
+    chunk_size = sr.chunks['chunk_bounds'][1]
+    nsamples = np.ceil((sr.shape[0] - sample_duration - skip_start_end * 2) / sample_spacings)
+    t0_samples = np.round((np.arange(nsamples) * sample_spacings + skip_start_end) / chunk_size) * chunk_size
+
+    for s0 in t0_samples:
+        t0 = int(s0 / chunk_size)
+        file_destripe = destination.joinpath(f"T{t0:05d}", f"{typ}.npy")
+        file_yaml = file_destripe.with_suffix('.yml')
+        if file_destripe.exists() and clobber is False:
+            continue
+        tsel = slice(int(s0), int(s0) + int(sample_duration))
+        raw = sr[tsel, :-sr.nsync].T
+        if typ == 'ap':
+            destripe = voltage.destripe(raw, fs=sr.fs, neuropixel_version=1, channel_labels=True)
+            # saves a 0.05 secs snippet of the butterworth filtered data at 0.5sec offset for QC purposes
+            butt = scipy.signal.sosfiltfilt(sos, raw)[:, int(sr.fs * 0.5):int(sr.fs * 0.55)]
+            fs_out = sr.fs
+        elif typ == 'lf':
+            destripe = voltage.destripe_lfp(raw, fs=sr.fs, neuropixel_version=1, channel_labels=True)
+            destripe = scipy.signal.decimate(destripe, LFP_RESAMPLE_FACTOR, axis=1, ftype='fir')
+            fs_out = sr.fs / LFP_RESAMPLE_FACTOR
+        file_destripe.parent.mkdir(exist_ok=True, parents=True)
+        np.save(file_destripe, destripe.astype(np.float16))
+        with open(file_yaml, 'w+') as fp:
+            yaml.dump(dict(fs=fs_out, eid=eid, pid=pid, pname=pname, nc=raw.shape[0], dtype="float16"), fp)
+        if typ == 'ap':
+            np.save(file_destripe.parent.joinpath('raw.npy'), butt.astype(np.float16))
