@@ -7,7 +7,7 @@ from reproducible_ephys_functions import labs, figure_style, filter_recordings, 
 from figure3.figure3_load_data import load_dataframe
 
 
-def plot_figure_supp2():
+def plot_figure_supp1(freeze=None):
 
     ba = AllenAtlas()
 
@@ -16,7 +16,7 @@ def plot_figure_supp2():
     n_rec_per_lab = 0
     df_chns = load_dataframe(df_name='chns')
 
-    df_filt = filter_recordings(min_rec_lab=n_rec_per_lab, min_neuron_region=0)
+    df_filt = filter_recordings(min_rec_lab=n_rec_per_lab, min_neuron_region=0, freeze=freeze)
     df_filt = df_filt[df_filt['lab_include'] == 1]
     df_filt['lab_number'] = df_filt['lab'].map(lab_number_map)
     df_filt = df_filt.sort_values(by=['institute', 'subject']).reset_index(drop=True)
@@ -100,4 +100,4 @@ def plot_figure_supp2():
 
 
 if __name__ == '__main__':
-    plot_figure_supp2()
+    plot_figure_supp1()

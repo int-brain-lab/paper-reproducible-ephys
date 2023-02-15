@@ -196,7 +196,7 @@ def get_insertions(level=2, recompute=False, as_dataframe=False, one=None, freez
         pids = np.array([ins['probe_insertion'] for ins in insertions])
         if recompute:
             _ = recompute_metrics(insertions, one)
-        ins = filter_recordings(min_neuron_region=0, one=one)
+        ins = filter_recordings(min_neuron_region=0, one=one, freeze=freeze)
         ins = ins[ins['include']]
 
         if not as_dataframe:
@@ -302,12 +302,15 @@ def combine_regions(regions):
     return regions
 
 
-def load_metrics(bilateral=False):
-    fname = 'insertion_metrics_bilateral.csv' if bilateral else 'insertion_metrics.csv'
-    if save_data_path().joinpath(fname).exists():
-        metrics = pd.read_csv(save_data_path().joinpath(fname))
+def load_metrics(bilateral=False, freeze=None):
+    if freeze is not None:
+        metrics = pd.read_csv(data_release_path().joinpath(f'metrics_{freeze}.csv'))
     else:
-        metrics = None
+        fname = 'insertion_metrics_bilateral.csv' if bilateral else 'insertion_metrics.csv'
+        if save_data_path().joinpath(fname).exists():
+            metrics = pd.read_csv(save_data_path().joinpath(fname))
+        else:
+            metrics = None
     return metrics
 
 
@@ -416,6 +419,10 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
             logger.warning(f'ephysSpectralDensityLF object not found for pid: {pid}')
             lfp = {}
 
+
+        df_lfp = compute_lfp_insertion(one=one, pid=ins['probe_insertion'])
+
+
         try:
             clusters = one.load_object(eid, 'clusters', collection=collection, attribute=['metrics', 'channels'])
             if 'metrics' not in clusters.keys():
@@ -439,14 +446,15 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
                                                           clusters['label'] == 1))[0]
                 region_chan = channels['rawInd'][np.where(channels['rep_site_acronym'] == region)[0]]
 
-                try:
-                    df_lfp = compute_lfp_insertion(one=one, pid=ins['probe_insertion'])
+                if np.all(np.isnan(df_lfp['lfp_theta'])):
+                    lfp_theta_region = np.nan
+                else:
                     lfp_theta_region = df_lfp['lfp_theta'][region_chan].mean()
+
+                if np.all(np.isnan(df_lfp['lfp_power'])):
+                    lfp_region = np.nan
+                else:
                     lfp_region = df_lfp['lfp_power'][region_chan].mean()
-                except:
-                    traceback.print_exception()
-                    lfp_theta_region = np.NaN
-                    lfp_region = np.NaN
 
                 if 'power' in lfp.keys() and region_chan.shape[0] > 0:
                     freqs = (lfp['freqs'] > LFP_BAND[0]) & (lfp['freqs'] < LFP_BAND[1])
@@ -495,8 +503,7 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
 
 def filter_recordings(df=None, one=None, max_ap_rms=40, max_lfp_power=-150, min_neurons_per_channel=0.1, min_channels_region=5,
                       min_regions=3, min_neuron_region=4, min_lab_region=3, min_rec_lab=4, n_trials=400, behavior=False,
-                      exclude_subjects=['DY013', 'ibl_witten_26', 'KS084'], recompute=True, freeze=None,
-                      bilateral=False):
+                      exclude_subjects=['DY013', 'ibl_witten_26', 'KS084'], recompute=True, freeze='release_2022_11'):
     """
     Filter values in dataframe according to different exclusion criteria
     :param df: pandas dataframe
@@ -513,7 +520,7 @@ def filter_recordings(df=None, one=None, max_ap_rms=40, max_lfp_power=-150, min_
     """
 
     # Load in the insertion metrics
-    metrics = load_metrics()
+    metrics = load_metrics(freeze=freeze)
 
     if df is None:
         df = metrics
@@ -548,7 +555,7 @@ def filter_recordings(df=None, one=None, max_ap_rms=40, max_lfp_power=-150, min_
 
     # PID level
     df = df.groupby('pid').apply(lambda m: m.assign(high_noise=lambda m: m['rms_ap_p90'].median() > max_ap_rms))
-    df = df.groupby('pid').apply(lambda m: m.assign(high_lfp=lambda m: m['lfp_power_raw'].median() > max_lfp_power))
+    df = df.groupby('pid').apply(lambda m: m.assign(high_lfp=lambda m: m['lfp_power'].median() > max_lfp_power))
     df = df.groupby('pid').apply(lambda m: m.assign(low_yield=lambda m: (m['neuron_yield'].sum() / m['n_channels'].sum())
                                                     < min_neurons_per_channel))
     df = df.groupby('pid').apply(lambda m: m.assign(missed_target=lambda m: m['region_hit'].sum() < min_regions))
@@ -628,21 +635,6 @@ def save_dataset_info(one, figure):
         shutil.move(filename, uuid_path.joinpath(f'{figure}_session_uuids.csv'))
 
 
-def compute_lfp_metrics_dataframe(one, insertions=None, recompute=False):
-    """
-    Download chunks of dta
-    :param pid:
-    :param one:
-    :return:
-    """
-    insertions = insertions or get_insertions(level=0, one=one, freeze=None)
-    for i, ins in enumerate(insertions):
-        psd = compute_lfp_insertion(one=one, pid=ins['probe_insertion'], recompute=recompute)
-        if i == 0:
-            psd
-        a = 1
-
-
 def compute_lfp_insertion(one, pid, recompute=False):
     """
     From a PID, downloads several snippets of raw data, apply destriping, and output the PSD per channel
@@ -678,6 +670,7 @@ def compute_lfp_insertion(one, pid, recompute=False):
         print(f'pid: {pid} RAW LFP ERROR \n', traceback.format_exc())
         lfp_power = np.nan
         lfp_theta = np.nan
+        df_lfp = pd.DataFrame.from_dict({'lfp_power': lfp_power, 'lfp_theta': lfp_theta})
     return df_lfp
 
 

@@ -33,7 +33,7 @@ def panel_sankey(fig, ax, one, freeze=None):
                + crit - after_freeze)
 
     # Get drop out due to QC
-    df_filt = filter_recordings(min_rec_lab=0, min_neuron_region=0)
+    df_filt = filter_recordings(min_rec_lab=0, min_neuron_region=0, freeze=freeze)
     df_filt = df_filt.drop_duplicates(subset='subject').reset_index()
     target = df_filt['missed_target'].sum()
     df_filt = df_filt[~df_filt['missed_target']]
