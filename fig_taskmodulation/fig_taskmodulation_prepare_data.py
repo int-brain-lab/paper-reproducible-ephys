@@ -427,6 +427,5 @@ if __name__ == '__main__':
     one = ONE()
     one.record_loaded = True
     insertions = get_insertions(level=0, one=one, freeze='release_2022_11', recompute=True)
-    compute_metrics(insertions, one=one)
     prepare_data(insertions, one=one, recompute=True, **default_params)
     save_dataset_info(one, figure='figure4')
