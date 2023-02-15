@@ -361,7 +361,7 @@ def perm_test(emb, regs, labss, inclu=False, print_=False,
 def all_panels(rm_unre=True, align='move', split='rt', 
                xyz_res=False, re_rank=2, fdr=True, permute_include=True,
                nrand = 2000, sig_lev = 0.01, inclu = False, 
-               perm_tests=True, get_dat=False):
+               perm_tests=True, get_dat=False, freeze='release_2022_11'):
                              
     '''
     incl = True --> include lab in pack for tests
@@ -376,7 +376,7 @@ def all_panels(rm_unre=True, align='move', split='rt',
     ts = 'fast|slow RT PETH'
 
     # include has minimum number of clusters as being 3
-    concat_df = filter_recordings(concat_df)
+    concat_df = filter_recordings(concat_df, freeze=freeze)
 
     if permute_include:
         all_frs = all_frs[concat_df['permute_include'] == 1, :]

@@ -8,11 +8,11 @@ from reproducible_ephys_functions import get_insertions
 from one.api import ONE
 
 
-def run_fig_PCA(one, recompute=False):
+def run_fig_PCA(one, recompute=False, freeze='release_2022_11'):
 
-    insertions = get_insertions(level=2, one=one, freeze=None)
+    insertions = get_insertions(level=2, one=one, freeze=freeze)
     prepare_data(insertions, one=one, **default_params, recompute=recompute)
-    all_panels()
+    all_panels(freeze=freeze)
 
 
 if __name__ == '__main__':
