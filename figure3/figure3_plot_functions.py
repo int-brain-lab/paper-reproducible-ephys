@@ -27,10 +27,11 @@ def panel_sankey(fig, ax, one, freeze=None):
     crit = (len(query(behavior=False, n_trials=0, resolved=False, min_regions=0, exclude_critical=False, one=one))
             - len(query(behavior=False, n_trials=0, resolved=False, min_regions=0, exclude_critical=True, one=one))
             - after_freeze)
-
+    print('crit', crit)
     # Get total number of insertions
     all_ins = (len(query(behavior=False, n_trials=0, resolved=True, min_regions=0, exclude_critical=True, one=one))
                + crit - after_freeze)
+    print('all ins: ', all_ins)
 
     # Get drop out due to QC
     df_filt = filter_recordings(min_rec_lab=0, min_neuron_region=0)
