@@ -555,7 +555,7 @@ def filter_recordings(df=None, one=None, max_ap_rms=40, max_lfp_power=-150, min_
 
     # PID level
     df = df.groupby('pid').apply(lambda m: m.assign(high_noise=lambda m: m['rms_ap_p90'].median() > max_ap_rms))
-    df = df.groupby('pid').apply(lambda m: m.assign(high_lfp=lambda m: m['lfp_power'].median() > max_lfp_power))
+    df = df.groupby('pid').apply(lambda m: m.assign(high_lfp=lambda m: m['lfp_power_raw'].median() > max_lfp_power))
     df = df.groupby('pid').apply(lambda m: m.assign(low_yield=lambda m: (m['neuron_yield'].sum() / m['n_channels'].sum())
                                                     < min_neurons_per_channel))
     df = df.groupby('pid').apply(lambda m: m.assign(missed_target=lambda m: m['region_hit'].sum() < min_regions))
