@@ -42,6 +42,7 @@ def fix_hist_step_vertical_line_at_end(ax):
     for poly in axpolygons:
         poly.set_xy(poly.get_xy()[:-1])
 
+
 # Save result
 waveforms_df.to_csv(join(DATA_DIR, 'neuron_type.csv'))
 

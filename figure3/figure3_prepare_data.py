@@ -46,7 +46,6 @@ def prepare_data(insertions, one, recompute=False):
     metrics = pd.DataFrame()
 
     for iIns, ins in enumerate(insertions):
-        print(f'Processing recording {iIns + 1} of {len(insertions)}')
         data_clust, data_chns = {}, {}
         eid = ins['session']['id']
         lab = ins['session']['lab']
@@ -54,6 +53,7 @@ def prepare_data(insertions, one, recompute=False):
         date = ins['session']['start_time'][:10]
         pid = ins['probe_insertion']
         probe = ins['probe_name']
+        print(f'Processing recording {iIns + 1} of {len(insertions)} (pid: {pid})')
 
         sl = SpikeSortingLoader(eid=eid, pname=probe, one=one, atlas=ba)
         try:

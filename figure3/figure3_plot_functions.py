@@ -103,6 +103,7 @@ def panel_probe_lfp(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-200
     for iR, data in df_filt.iterrows():
         df = df_chns[df_chns['pid'] == data['pid']]
         if len(df) == 0:
+            asd
             continue
 
         la = {}
