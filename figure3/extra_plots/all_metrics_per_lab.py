@@ -5,7 +5,9 @@ Created on Wed Jun  8 09:34:00 2022
 By: Guido Meijer
 """
 
+from os.path import join
 import matplotlib.pyplot as plt
+from reproducible_ephys_functions import save_figure_path
 from figure3.figure3_plot_functions import panel_example
 
 REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
@@ -22,3 +24,4 @@ for i, region in enumerate(REGIONS):
                       despine=False, freeze='release_2022_11')
         axs[i, j].set(title=region)
 plt.tight_layout()
+plt.savefig(join(save_figure_path(), 'all_metrics_per_lab.pdf'))
