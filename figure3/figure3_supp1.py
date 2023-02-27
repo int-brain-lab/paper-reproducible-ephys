@@ -75,6 +75,7 @@ def plot_figure_supp1(freeze=None):
         ax.imshow(image, aspect='auto', extent=np.r_[[0, 4000], [0, 3840]], cmap='bone', alpha=1, vmin=cmin, vmax=cmax)
         scat = ax.scatter(df['lateral_um'] + 2000, df['axial_um'], c=df['lfp'], cmap='viridis', s=2, vmin=-190, vmax=-150)
         ax.set_title(data['recording'] + 1, color=lab_colors[data['institute']])
+        ax.plot([200, 200], [100, 1100], color='red', lw=2)
 
         if i == 0:
             ax.tick_params(axis='y')
@@ -100,4 +101,4 @@ def plot_figure_supp1(freeze=None):
 
 
 if __name__ == '__main__':
-    plot_figure_supp1()
+    plot_figure_supp1(freeze='release_2022_11')

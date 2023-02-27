@@ -8,7 +8,7 @@ from ibllib.pipes.ephys_alignment import EphysAlignment
 from iblutil.numerical import ismember
 from brainbox.processing import compute_cluster_average
 from brainbox.io.one import SpikeSortingLoader
-
+import reproducible_ephys_functions
 from reproducible_ephys_functions import (get_insertions, combine_regions, BRAIN_REGIONS, save_data_path,
                                           save_dataset_info, filter_recordings, query)
 from reproducible_ephys_processing import compute_new_label, compute_psth
@@ -127,8 +127,12 @@ def prepare_data(insertions, one, recompute=False):
         all_df_chns.append(df_chns)
 
         # Data for insertion dataframe
-        rms_ap = one.load_object(eid, 'ephysTimeRmsAP', collection=f'raw_ephys_data/{probe}',
-                                 attribute=['rms'])
+        try:
+            rms_ap = one.load_object(eid, 'ephysTimeRmsAP', collection=f'raw_ephys_data/{probe}',
+                                     attribute=['rms'])
+        except Exception as err:
+            print(err)
+            continue
         rms_ap_data = rms_ap['rms'] * 1e6  # convert to uV
         median = np.mean(np.apply_along_axis(lambda x: np.median(x), 1, rms_ap_data))
         rms_ap_data_median = (np.apply_along_axis(lambda x: x - np.median(x), 1, rms_ap_data)
@@ -361,8 +365,7 @@ if __name__ == '__main__':
     # Query bilateral insertions in the right hemisphere
     insertions = query(min_regions=0, n_trials=0, behavior=False, exclude_critical=True, one=one,
                        as_dataframe=False, bilateral=True)
-    # insertions = get_insertions(one=one, bilateral=True, recompute=True) # only need recompute for the first time you run this
-    # _ = recompute_metrics(insertions, one)
+    reproducible_ephys_functions.compute_metrics(insertions, one=one, bilateral=True)
     prepare_neural_data(insertions, recompute=True, one=one)
     all_df_chns, all_df_clust, metrics = prepare_data(insertions, recompute=True, one=one)
     save_dataset_info(one, figure='supp_figure_bilateral')

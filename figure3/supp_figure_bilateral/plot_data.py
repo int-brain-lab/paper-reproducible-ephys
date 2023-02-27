@@ -26,7 +26,7 @@ def plot_main_figure(one=None):
 
     # Get amount of probe plots
     n_columns = len(query(min_regions=0, n_trials=0, behavior=False, exclude_critical=True, one=one,
-                          as_dataframe=False, bilateral=True)) - 6
+                          as_dataframe=False, bilateral=True))
 
     # Set up figure
     figure_style()

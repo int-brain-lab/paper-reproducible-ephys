@@ -64,7 +64,7 @@ def panel_sankey(fig, ax, one, freeze=None):
                        'Off target',
                        'Too few trials',
                        'Low yield',
-                       'Noise/artifacts',
+                       'Artifacts',
                        'Data analysis'],
                trunklength=0.8,
                orientations=[0, 1, 1, 1, 1, 1, 0],
@@ -103,7 +103,7 @@ def panel_probe_lfp(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-200
     for iR, data in df_filt.iterrows():
         df = df_chns[df_chns['pid'] == data['pid']]
         if len(df) == 0:
-            asd
+            print(f'pid {data["pid"]} not found!')
             continue
 
         la = {}
@@ -141,16 +141,17 @@ def panel_probe_lfp(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-200
     ax[-1].set_axis_off()
 
     # Add lab names
-    plt.figtext(0.245, 0.715, 'Berkeley', va="center", ha="center", size=7, color=lab_colors['Berkeley'])
-    plt.figtext(0.35, 0.715, 'Champalimaud', va="center", ha="center", size=7, color=lab_colors['CCU'])
-    plt.figtext(0.45, 0.715, 'CSHL', va="center", ha="center", size=7, color=lab_colors['CSHL (C)'])
+    plt.figtext(0.24, 0.715, 'Berkeley', va="center", ha="center", size=7, color=lab_colors['Berkeley'])
+    plt.figtext(0.34, 0.715, 'Champalimaud', va="center", ha="center", size=7, color=lab_colors['CCU'])
+    plt.figtext(0.435, 0.715, 'CSHL', va="center", ha="center", size=7, color=lab_colors['CSHL (C)'])
     #plt.figtext(0.505, 0.715, '(Z)', va="center", ha="center", size=7, color=lab_colors['CSHL (Z)'])
-    plt.figtext(0.54, 0.715, 'NYU', va="center", ha="center", size=7, color=lab_colors['NYU'])
-    plt.figtext(0.6, 0.715, 'Princeton', va="center", ha="center", size=7, color=lab_colors['Princeton'])
-    plt.figtext(0.65, 0.715, 'SWC', va="center", ha="center", size=7, color=lab_colors['SWC'])
-    plt.figtext(0.75, 0.715, 'UCL (C)', va="center", ha="center", size=7, color=lab_colors['UCL'])
-    plt.figtext(0.805, 0.715, '(H)', va="center", ha="center", size=7, color=lab_colors['UCL (H)'])
-    plt.figtext(0.85, 0.715, 'UCLA', va="center", ha="center", size=7, color=lab_colors['UCLA'])
+    plt.figtext(0.515, 0.715, 'NYU', va="center", ha="center", size=7, color=lab_colors['NYU'])
+    plt.figtext(0.57, 0.715, 'Princeton', va="center", ha="center", size=7, color=lab_colors['Princeton'])
+    plt.figtext(0.63, 0.715, 'SWC', va="center", ha="center", size=7, color=lab_colors['SWC'])
+    plt.figtext(0.735, 0.715, 'UCL', va="center", ha="center", size=7, color=lab_colors['UCL'])
+    #plt.figtext(0.805, 0.715, '(H)', va="center", ha="center", size=7, color=lab_colors['UCL (H)'])
+    plt.figtext(0.83, 0.715, 'UCLA', va="center", ha="center", size=7, color=lab_colors['UCLA'])
+    plt.figtext(0.875, 0.715, 'UW', va="center", ha="center", size=7, color=lab_colors['UW'])
 
     # Add colorbar
     axin = inset_axes(ax[-1], width="50%", height="90%", loc='lower right', borderpad=0,
