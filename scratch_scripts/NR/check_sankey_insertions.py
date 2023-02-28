@@ -28,7 +28,9 @@ from figure3.figure3_plot_functions import (panel_probe_lfp, panel_probe_neurons
                                             panel_permutation, panel_sankey, panel_decoding)
 import matplotlib.pyplot as plt
 fig,ax = plt.subplots(1,1)
+
 panel_sankey(fig, ax, one, freeze='release_2022_11')
+plt.savefig(r'C:\Users\noamroth\int-brain-lab\paper-reproducible-ephys\scratch_scripts\NR\sankey.svg',dpi=500)
 plt.show()
 
 #%%

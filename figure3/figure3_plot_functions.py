@@ -23,14 +23,24 @@ def panel_sankey(fig, ax, one, freeze=None):
     # Get number of recordings after freeze cutoff date
     after_freeze = len(get_insertions(one=one)) - len(get_insertions(one=one, freeze=freeze))
 
+    total_ins = len(query(behavior=False, n_trials=0, resolved=False, min_regions=0, exclude_critical=False, one=one))
+    print('Total insertions', total_ins)
+
     # Get number of failed recordings (CRITICAL)
     crit = (len(query(behavior=False, n_trials=0, resolved=False, min_regions=0, exclude_critical=False, one=one))
             - len(query(behavior=False, n_trials=0, resolved=False, min_regions=0, exclude_critical=True, one=one))
             - after_freeze)
     print('crit', crit)
+
+    #of 24 critical recordings; 9 no longer are considered for analysis (5 histology and 4 HW issue)
+    # 6 also for now not considered for analysis (probe issue)
+    # 1 also for now not considered for analysis (epilepsy)
+    # 1 also for now not considered for analysis (drift)
+    not_included_sankey = 9 + 6 + 1 + 1
+
     # Get total number of insertions
     all_ins = (len(query(behavior=False, n_trials=0, resolved=True, min_regions=0, exclude_critical=True, one=one))
-               + crit - after_freeze)
+               + crit - after_freeze - not_included_sankey)
     print('all ins: ', all_ins)
 
     # Get drop out due to QC
@@ -39,16 +49,23 @@ def panel_sankey(fig, ax, one, freeze=None):
     target = df_filt['missed_target'].sum()
     df_filt = df_filt[~df_filt['missed_target']]
     behav = df_filt['low_trials'].sum()
+    behav_fromCrit = 1
+    behav = behav + behav_fromCrit
     df_filt = df_filt[~df_filt['low_trials']]
     low_yield = np.sum(df_filt['low_yield'])
+    low_yield_fromCrit = 2
+    low_yield = low_yield + low_yield_fromCrit
     df_filt = df_filt[~df_filt['low_yield']]
     noise = np.sum(df_filt['high_lfp'] | df_filt['high_noise'])
     df_filt = df_filt[~df_filt['high_lfp'] & ~df_filt['high_noise']]
     artifacts = np.sum(df_filt['artifacts'])
+    artifacts_fromCrit = 4
+    artifacts = artifacts + artifacts_fromCrit
     df_filt = df_filt[~df_filt['artifacts']]
 
+
     # Recordigns left
-    rec_left = df_filt.shape[0]
+    rec_left = 45#df_filt.shape[0]
 
     #fig, ax = plt.subplots(1, 1, figsize=(6, 3), dpi=400)
     ax.axis('off')
@@ -56,20 +73,19 @@ def panel_sankey(fig, ax, one, freeze=None):
     #currently hardcoded to match Steven & Guido analyses;
     #todo: finalize numbers and match with above code
     num_trajectories = [all_ins, -crit, -target, -behav, -low_yield, -(noise+artifacts), -rec_left]
-
+    num_trajectories = [all_ins, -target, -behav, -low_yield, -(noise+artifacts), -rec_left]
     # Sankey plot
-    sankey = Sankey(ax=ax, scale=0.005, offset=0.1, head_angle=90, shoulder=0.025, gap=0.5, radius=0.05)
+    sankey = Sankey(ax=ax, scale=0.005, offset=0.15, head_angle=90, shoulder=0.025, gap=0.5, radius=0.05)
     sankey.add(flows=num_trajectories,
                labels=['All insertions',
-                       'Recording failure',
                        'Off target',
                        'Too few trials',
                        'Low yield',
                        'Noise/artifacts',
                        'Data analysis'],
-               trunklength=0.8,
-               orientations=[0, 1, 1, 1, 1, 1, 0],
-               pathlengths=[0.08, 0.3, 0.15, 0.15, 0.1, 0.08, 0.4],
+               trunklength=1,
+               orientations=[0, 1, 1, 1, 1, 0],
+               pathlengths=[0.08, 0.15, 0.15, 0.1, 0.08, 0.4],
                facecolor = sns.color_palette('Pastel1')[1])
     diagrams = sankey.finish()
 
