@@ -501,10 +501,10 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
     return metrics
 
 
-def filter_recordings(df=None, one=None, max_ap_rms=40, max_lfp_power=-140, min_neurons_per_channel=0.1, min_channels_region=5,
-                      min_regions=3, min_neuron_region=4, min_lab_region=3, min_rec_lab=4, n_trials=400, behavior=False,
-                      exclude_subjects=['ibl_witten_13', 'ibl_witten_26'], recompute=True, freeze='release_2022_11',
-                      by_anatomy_only=False):
+def filter_recordings(df=None, one=None, by_anatomy_only=False, max_ap_rms=40, max_lfp_power=-150, 
+                      min_neurons_per_channel=0.1, min_channels_region=5, min_regions=3, min_neuron_region=4, 
+                      min_lab_region=3, min_rec_lab=4, n_trials=400, behavior=False, 
+                      exclude_subjects=['DY013', 'ibl_witten_26', 'KS084'], recompute=True, freeze='release_2022_11'):
     """
     Filter values in dataframe according to different exclusion criteria
     :param df: pandas dataframe
@@ -556,9 +556,9 @@ def filter_recordings(df=None, one=None, max_ap_rms=40, max_lfp_power=-140, min_
     df['low_neurons'] = df['neuron_yield'] < min_neuron_region
 
     # PID level
-    df = df.groupby('pid').apply(lambda m: m.assign(high_noise=lambda m: m['rms_ap_p90'].median() > max_ap_rms))
-    df = df.groupby('pid').apply(lambda m: m.assign(high_lfp=lambda m: m['lfp_power_raw'].median() > max_lfp_power))
-    df = df.groupby('pid').apply(lambda m: m.assign(low_yield=lambda m: (m['neuron_yield'].sum() / m['n_channels'].sum())
+    df = df.groupby('pid', group_keys=False).apply(lambda m: m.assign(high_noise=lambda m: m['rms_ap_p90'].median() > max_ap_rms))
+    df = df.groupby('pid', group_keys=False).apply(lambda m: m.assign(high_lfp=lambda m: m['lfp_power_raw'].median() > max_lfp_power))
+    df = df.groupby('pid', group_keys=False).apply(lambda m: m.assign(low_yield=lambda m: (m['neuron_yield'].sum() / m['n_channels'].sum())
                                                     < min_neurons_per_channel))
     df = df.groupby('pid', group_keys=False).apply(lambda m: m.assign(missed_target=lambda m: m['region_hit'].sum() < min_regions))
     df = df.groupby('pid', group_keys=False).apply(lambda m: m.assign(low_trials=lambda m: m['n_trials'] < n_trials))
