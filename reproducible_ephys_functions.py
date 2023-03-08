@@ -196,7 +196,7 @@ def get_insertions(level=2, recompute=False, as_dataframe=False, one=None, freez
         pids = np.array([ins['probe_insertion'] for ins in insertions])
         if recompute:
             _ = recompute_metrics(insertions, one)
-        ins = filter_recordings(min_neuron_region=0, one=one, freeze=freeze)
+        ins = filter_recordings(min_neuron_region=0, one=one, freeze=freeze)  # TODO freeze = None here, remove?
         ins = ins[ins['include']]
 
         if not as_dataframe:
