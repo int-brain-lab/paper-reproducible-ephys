@@ -200,7 +200,7 @@ def panel_probe_neurons(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[
         im = ax[iR].scatter(np.random.uniform(low=0.25, high=0.75, size=df_clu.shape[0]),
                             df_clu['depths_aligned'] - z_subtract, c=df_clu['fr'], s=1,
                             cmap='hot', vmin=levels[0], vmax=levels[1], zorder=2)
-        ax[iR].images.append(im)
+        #ax[iR].add_image(im)
         ax[iR].set_xlim(0, 1)
 
         # First for all regions

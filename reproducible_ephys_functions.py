@@ -419,11 +419,8 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
             logger.warning(f'ephysSpectralDensityLF object not found for pid: {pid}')
             lfp = {}
 
-
-        df_lfp = compute_lfp_insertion(one=one, pid=ins['probe_insertion'])
-
-
         try:
+            df_lfp = compute_lfp_insertion(one=one, pid=ins['probe_insertion'])
             clusters = one.load_object(eid, 'clusters', collection=collection, attribute=['metrics', 'channels'])
             if 'metrics' not in clusters.keys():
                 sl = bbone.SpikeSortingLoader(eid=eid, pname=probe, one=one, atlas=ba)
@@ -504,7 +501,7 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
 def filter_recordings(df=None, one=None, by_anatomy_only=False, max_ap_rms=40, max_lfp_power=-150, 
                       min_neurons_per_channel=0.1, min_channels_region=5, min_regions=3, min_neuron_region=4, 
                       min_lab_region=3, min_rec_lab=4, n_trials=400, behavior=False, 
-                      exclude_subjects=['DY013', 'ibl_witten_26', 'KS084'], recompute=True, freeze='release_2022_11'):
+                      exclude_subjects=[], recompute=True, freeze='release_2022_11'):
     """
     Filter values in dataframe according to different exclusion criteria
     :param df: pandas dataframe

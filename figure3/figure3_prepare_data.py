@@ -100,8 +100,9 @@ def prepare_data(insertions, one, recompute=False):
         df_clust['date'] = ins['session']['start_time'][:10]
         df_clust['lab'] = ins['session']['lab']
 
-        lfp_psd = compute_lfp_insertion(one=one, pid=pid)
+        
         try:
+            lfp_psd = compute_lfp_insertion(one=one, pid=pid)
             lfp = one.load_object(eid, 'ephysSpectralDensityLF', collection=f'raw_ephys_data/{probe}')
             # Get broadband lfp power
             freqs = (lfp['freqs'] >= LFP_BAND[0]) & (lfp['freqs'] <= LFP_BAND[1])
