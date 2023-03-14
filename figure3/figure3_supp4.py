@@ -29,4 +29,4 @@ for i, region in enumerate(REGIONS):
             axs[i, j].set(title=region)
 plt.tight_layout()
 sns.despine()
-plt.savefig(join(save_figure_path(), 'all_metrics_per_lab.pdf'))
+plt.savefig(join(save_figure_path(), 'figure3_supp4_metrics.pdf'))

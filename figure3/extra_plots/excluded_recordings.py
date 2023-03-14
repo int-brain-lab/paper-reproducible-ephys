@@ -6,18 +6,15 @@ By: Guido Meijer
 """
 
 import figrid as fg
-from figure3.figure3_supp1_functions import panel_a, panel_b
+from figure3.figure3_supp_plot_functions import panel_probe_lfp, panel_probe_neurons
 import matplotlib.pyplot as plt
 from reproducible_ephys_functions import figure_style, save_figure_path, filter_recordings
 
 
 def plot_figure_supp1():
     # Settings
-    # INCL_LABS = ['CCU', 'CSHL (C)', 'NYU', 'SWC', 'Berkeley', 'Princeton']
-    # INCL_LABS = ['Princeton']
-    INCL_LABS = None
     BOUNDARY = 'DG-TH'
-    DPI = 300  # if the figure is too big on your screen, lower this number
+    DPI = 100  # if the figure is too big on your screen, lower this number
 
     # Get amount of probe plots
 
@@ -33,8 +30,8 @@ def plot_figure_supp1():
                                            dim=[1, n_columns], wspace=0.3)}
 
     # Call functions to plot panels
-    panel_a(fig, ax['panel_A'], incl_labs=INCL_LABS, boundary_align=BOUNDARY)
-    panel_b(fig, ax['panel_B'], incl_labs=INCL_LABS, boundary_align=BOUNDARY)
+    panel_probe_lfp(fig, ax['panel_A'], boundary_align=BOUNDARY)
+    panel_probe_neurons(fig, ax['panel_B'], boundary_align=BOUNDARY)
 
     # Add subplot labels
     labels = [{'label_text': 'a', 'xpos': 0, 'ypos': 0, 'fontsize': 10, 'weight': 'bold', 'ha': 'right', 'va': 'bottom'},

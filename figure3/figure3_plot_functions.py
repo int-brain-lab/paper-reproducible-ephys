@@ -402,12 +402,13 @@ def panel_permutation(ax, metrics, regions, labels, n_permut=10000, n_rec_per_la
     cbar.set_ticklabels([0.01, 0.1, 1])
     cbar.set_label('p-value (log scale)', rotation=270, labelpad=8)
     ax.set(xlabel='', ylabel='', xticks=np.arange(len(labels)) + 0.5, yticks=np.arange(len(regions)) + 0.5)
+    regions[regions == 'PPC'] = 'VISa/am'
     ax.set_yticklabels(regions, va='center', rotation=0)
     ax.set_xticklabels(labels, rotation=45, ha='right')
     return results
 
 
-def panel_decoding(ax, qc='pass', region_decoding=True):
+def panel_decoding(ax, qc='pass', region_decoding=True, bh_correction=False):
 
     # Load in data
     decode_df = load_dataframe(df_name=f'decode_{qc}')
@@ -428,10 +429,11 @@ def panel_decoding(ax, qc='pass', region_decoding=True):
                                   < shuffle_df.loc[shuffle_df['region'] == region, 'accuracy_shuffle'].values)
                             / shuffle_df.loc[shuffle_df['region'] == region, 'accuracy_shuffle'].shape[0])
 
-    # Correct for multiple comparisons
-    _, p_values_corr, _, _ = multipletests(list(p_values.values()), 0.05, method='fdr_bh')
-    for i, region in enumerate(list(p_values.keys())):
-        p_values[region] = p_values_corr[i]
+    # Perform Benjamin-Hochman correction for multiple testing
+    if bh_correction:
+        _, p_values_corr, _, _ = multipletests(list(p_values.values()), 0.05, method='fdr_bh')
+        for i, region in enumerate(list(p_values.keys())):
+            p_values[region] = p_values_corr[i]
 
     if region_decoding:
         # Plot region decoding
@@ -442,7 +444,7 @@ def panel_decoding(ax, qc='pass', region_decoding=True):
         sns.scatterplot(x='region', y='accuracy', data=decode_regions_df, ax=ax_left, color='red',
                         marker='_', linewidth=1)
         ax_left.set(xlabel='', ylabel='Region decoding perf. (%)', xticks=[])
-        ax_left.text(0, 75, '***', size=7, color='k', ha='center')
+        ax_left.text(0, 80, '***', size=7, color='k', ha='center')
 
     # Plot decoding of lab per region
     sns.violinplot(x='region', y='accuracy_shuffle', data=shuffle_df, ax=ax, color=[.7, .7, .7],
@@ -460,7 +462,7 @@ def panel_decoding(ax, qc='pass', region_decoding=True):
             ax.text(i, 50, '*', color='k', size=7, ha='center')
 
     # Settings
-    ax.set(ylim=[0, 80], xlabel='', ylabel='Lab decoding perf. (%)', yticks=[0, 75], xlim=[-0.5, 4.5])
+    ax.set(ylim=[0, 80], xlabel='', ylabel='Lab decoding perf. (%)', yticks=[0, 80], xlim=[-0.5, 4.5])
     sns.despine(trim=True)
     ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
     ax_left.spines['bottom'].set_visible(False)
