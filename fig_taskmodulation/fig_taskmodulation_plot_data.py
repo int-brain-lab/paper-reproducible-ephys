@@ -42,23 +42,23 @@ fig_path = save_figure_path(figure='fig_taskmodulation')
 #                    'post_reward': 'Post-rew',
 #                    'avg_ff_post_move': 'FF'}
 
-#Renamed:
-tests = {'trial': 'Trial (first 400 ms)',
+#Renamed & remove 'Trial':
+tests = {#'trial': 'Trial (first 400 ms)',
           'start_to_move': 'Late reaction period',
-          'post_stim': 'Post-stimulus',
+          'post_stim': 'Stimulus',
           'pre_move': 'Movement initiation',
           'pre_move_lr': 'L vs. R pre-movement',
           'post_move': 'Movement period (250 ms)',
-          'post_reward': 'Post-reward',
+          'post_reward': 'Reward',
           'avg_ff_post_move': 'Fano Factor'}
 
-shortened_tests = {'trial': 'Trial (first 400 ms)',
+shortened_tests = {#'trial': 'Trial (first 400 ms)',
                    'start_to_move': 'Reaction period',
-                   'post_stim': 'Post-stimulus',
+                   'post_stim': 'Stimulus',
                    'pre_move': 'Move. initiation',
                    'pre_move_lr': 'L vs R move.',
                    'post_move': 'Move. (250 ms)',
-                   'post_reward': 'Post-reward',
+                   'post_reward': 'Reward',
                    'avg_ff_post_move': 'Fano Factor'}    
 
 
