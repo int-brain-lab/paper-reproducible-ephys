@@ -406,7 +406,7 @@ def plot_panel_task_modulated_neurons(specific_tests=None, ax=None, save=True):
             plt.savefig(fig_path.joinpath(test))
 
 
-def plot_panel_permutation(ax=None, recompute=False, n_permut=20, qc='pass', n_cores=8):
+def plot_panel_permutation(ax=None, recompute=False, n_permut=20000, qc='pass', n_cores=8):
     """
     qc can be "pass" (only include recordings that pass QC)
     "high_noise": add the recordings with high noise
@@ -820,7 +820,7 @@ def find_sig_manipulation(data, lab_to_manip, labs, subjects, p_to_reach, direct
     while not found_bound:
         bound += 10 if direction == 'positive' else -10
         p = permut_test(data + (labs == lab_to_manip) * bound, metric=distribution_dist_approx_max, labels1=labs,
-                        labels2=subjects, shuffling='labels1_based_on_2', n_cores=8, n_permut=20)
+                        labels2=subjects, shuffling='labels1_based_on_2', n_cores=8, n_permut=20000)
         if p < p_to_reach:
             found_bound = True
             if direction == 'positive':
@@ -846,7 +846,7 @@ def find_sig_manipulation(data, lab_to_manip, labs, subjects, p_to_reach, direct
 
         test = (lower_bound + higher_bound) / 2
         p = permut_test(data + (labs == lab_to_manip) * test, metric=distribution_dist_approx_max, labels1=labs,
-                        labels2=subjects, shuffling='labels1_based_on_2', n_cores=8, n_permut=20)
+                        labels2=subjects, shuffling='labels1_based_on_2', n_cores=8, n_permut=20000)
         if p < p_to_reach:
             if direction == 'positive':
                 higher_bound = test
