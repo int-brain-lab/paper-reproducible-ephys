@@ -661,12 +661,17 @@ def filter_recordings(df_reg=None, recompute=True, freeze='release_2022_11',
     df_a = df_ins.copy()
     df_a.drop(df_a[~df_a['include']].index, inplace=True)
 
-    # ---- Analysis specific checks ----
-    # 1. Min recording
-    _, institutes, df_a = apply_min_rec(df_a, min_rec_lab)
-    # 2. Permutation test
-    # Join the two tables df_reg and df_a
+    if not by_anatomy_only:
+        # ---- Analysis specific checks ----
+        # 1. Min recording
+        _, institutes, df_a = apply_min_rec(df_a, min_rec_lab)
+        # Remove from df_reg the PIDs that didn't pass analysis crit
+        df_reg.drop(df_reg[~df_reg['pid'].isin(df_a['pid'])].index, inplace=True)
 
+        # 2. Permutation test
+
+
+    '''
     df['permute_include'] = bool(0)
 
     # Now for permutation test
@@ -689,8 +694,9 @@ def filter_recordings(df_reg=None, recompute=True, freeze='release_2022_11',
 
     # Sort the index so it is the same as the orignal frame that was passed in
     df = df.sort_values('original_index').reset_index(drop=True)
+    '''
 
-    return df
+    return df_ins, df_a, df_reg
 
 
 def repo_path():
