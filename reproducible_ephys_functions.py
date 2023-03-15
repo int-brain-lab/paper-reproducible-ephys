@@ -145,7 +145,7 @@ def traj_list_to_dataframe(trajectories):
     return trajectories
 
 
-def get_insertions(level=2, recompute=False, as_dataframe=False, one=None, freeze=None, bilateral=False):
+def get_insertions(level=2, as_dataframe=False, one=None, freeze=None, bilateral=False):
     """
     Find insertions used for analysis based on different exclusion levels
     Level 0: minimum_regions = 0, resolved = True, behavior = False, n_trial >= 0, exclude_critical = True
@@ -163,47 +163,37 @@ def get_insertions(level=2, recompute=False, as_dataframe=False, one=None, freez
 
     if freeze is not None:
         # TODO for next freeze need to think about how to deal with bilateral
-        ins_df = pd.read_csv(data_release_path().joinpath(f'{freeze}.csv'))
-        pids = ins_df[ins_df['level'] >= level].pid.values
-        insertions = one.alyx.rest('trajectories', 'list', provenance='Planned', django=f'probe_insertion__in,{list(pids)}')
-        if recompute:
-            _ = recompute_metrics(insertions, one)
+        if level >= 2:  # Take only those good for analysis
+            _, ins_df, _ = filter_recordings(freeze=freeze)
+        if level < 2:  # Take all frozen pids
+            ins_df, _, _ = filter_recordings(freeze=freeze)
 
-        if as_dataframe:
-            insertions = traj_list_to_dataframe(insertions)
+        pids = ins_df.pid.values
+        trajs = one.alyx.rest('trajectories', 'list', provenance='Planned',
+                              django=f'probe_insertion__in,{list(pids)}')
 
-        return insertions
+    else:
+        if level == 0:
+            trajs = query(min_regions=0, n_trials=0, behavior=False, exclude_critical=True, one=one,
+                          as_dataframe=as_dataframe)
+        if level >= 1:
+            trajs = query(one=one, as_dataframe=as_dataframe)
 
-    if bilateral:
-        insertions = query(min_regions=0, n_trials=0, behavior=False, exclude_critical=True, one=one,
-                           as_dataframe=as_dataframe, bilateral=True)
+            if level >= 2:
+                df_metrics = recompute_metrics(trajs, one)  # Recompute metrics in case level 2 is required
+                _, ins_df, _ = filter_recordings(df_metrics)  # Apply default and return PID used in analysis
+                pids = ins_df.pid.values
+                trajs = one.alyx.rest('trajectories', 'list', provenance='Planned',
+                                      django=f'probe_insertion__in,{list(pids)}')
 
-        return insertions
+    if bilateral:  # TODO for next freeze need to think about how to deal with bilateral
+        trajs = query(min_regions=0, n_trials=0, behavior=False, exclude_critical=True, one=one,
+                      as_dataframe=as_dataframe, bilateral=True)
 
-    if level == 0:
-        insertions = query(min_regions=0, n_trials=0, behavior=False, exclude_critical=True, one=one,
-                           as_dataframe=as_dataframe)
-        return insertions
+    if as_dataframe:
+        trajs = traj_list_to_dataframe(trajs)
 
-    if level == 1:
-        insertions = query(one=one, as_dataframe=as_dataframe)
-        if recompute:
-            _ = recompute_metrics(insertions, one)
-        return insertions
-
-    if level >= 2:
-        insertions = query(one=one, as_dataframe=False)
-        pids = np.array([ins['probe_insertion'] for ins in insertions])
-        if recompute:
-            _ = recompute_metrics(insertions, one)
-        ins = filter_recordings(min_neuron_region=-1, one=one, freeze=freeze)  # TODO freeze = None here, remove?
-        ins = ins[ins['include']]
-
-        if not as_dataframe:
-            isin, _ = ismember(pids, ins['pid'].unique())
-            ins = [insertions[i] for i, val in enumerate(isin) if val]
-
-        return ins
+    return trajs
 
 
 def get_histology_insertions(one=None, freeze=None):
