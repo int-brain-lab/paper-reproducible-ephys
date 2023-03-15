@@ -145,6 +145,24 @@ def traj_list_to_dataframe(trajectories):
     return trajectories
 
 
+def recompute_metrics(trajs, metrics=None, one=None, bilateral=False):
+    """
+    Determine whether metrics need to be recomputed or not for given list of trajs
+    :param insertions: list of insertions
+    :param one: ONE object
+    :return:
+    """
+    one = one or ONE()
+    pids = np.array([ins['probe_insertion'] for ins in trajs])
+    if (metrics is None) or (metrics.shape[0] == 0):
+        metrics = compute_metrics(trajs, one=one, bilateral=bilateral)
+    else:
+        isin, _ = ismember(pids, metrics['pid'].unique())
+        if not np.all(isin):
+            metrics = compute_metrics(trajs, one=one, bilateral=bilateral)
+    return metrics
+
+
 def get_insertions(level=2, as_dataframe=False, one=None, freeze=None, bilateral=False, recompute=False):
     """
     Find insertions used for analysis based on different exclusion levels
@@ -162,11 +180,12 @@ def get_insertions(level=2, as_dataframe=False, one=None, freeze=None, bilateral
     one = one or ONE()
 
     if freeze is not None:
+        metrics = load_metrics(bilateral=bilateral, freeze=freeze)
         # TODO for next freeze need to think about how to deal with bilateral
         if level >= 2:  # Take only those good for analysis
-            _, ins_df, _ = filter_recordings(freeze=freeze)
+            _, ins_df, _ = filter_recordings(metrics)
         if level < 2:  # Take all frozen pids
-            ins_df, _, _ = filter_recordings(freeze=freeze)
+            ins_df, _, _ = filter_recordings(metrics)
 
         pids = ins_df.pid.values
         trajs = one.alyx.rest('trajectories', 'list', provenance='Planned',
@@ -190,8 +209,9 @@ def get_insertions(level=2, as_dataframe=False, one=None, freeze=None, bilateral
         if level >= 2:
             # Need metrics to filter for level 2
             # Load or recompute metrics if it does not exist / does not contain all PIDs
-            df_metrics = recompute_metrics(trajs, one, bilateral=False)
-            _, ins_df, _ = filter_recordings(df_metrics)  # Apply default and return PIDs used in analysis
+            metrics = load_metrics(bilateral=bilateral)
+            metrics = recompute_metrics(trajs, metrics, one, bilateral=bilateral)
+            _, ins_df, _ = filter_recordings(metrics)  # Apply default and return PIDs used in analysis
             pids = ins_df.pid.values
             trajs = one.alyx.rest('trajectories', 'list', provenance='Planned',
                                   django=f'probe_insertion__in,{list(pids)}')
@@ -212,26 +232,6 @@ def get_histology_insertions(one=None, freeze=None):
         insertions = one.alyx.rest('trajectories', 'list', provenance='Planned', x=-2243, y=-2000, theta=15,
                                    django='probe_insertion__session__project__name,ibl_neuropixel_brainwide_01')
     return insertions
-
-
-def recompute_metrics(trajs, one, bilateral=False):
-    """
-    Determine whether metrics need to be recomputed or not for given list of trajs
-    :param insertions: list of insertions
-    :param one: ONE object
-    :return:
-    """
-
-    pids = np.array([ins['probe_insertion'] for ins in trajs])
-    metrics = load_metrics(bilateral=bilateral)
-    if (metrics is None) or (metrics.shape[0] == 0):
-        metrics = compute_metrics(trajs, one=one, bilateral=bilateral)
-    else:
-        isin, _ = ismember(pids, metrics['pid'].unique())
-        if not np.all(isin):
-            metrics = compute_metrics(trajs, one=one, bilateral=bilateral)
-
-    return metrics
 
 
 def data_release_path():
@@ -494,29 +494,31 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
     return metrics
 
 
-def get_metrics(df=None, freeze=None, recompute=True):
-    # Load in the insertion metrics
-    metrics = load_metrics(freeze=freeze)
-
-    if metrics is None:  # Recompute metrics
-        if df is None:  # Get list of trajectories if not given as input
-            df = get_insertions(level=0, recompute=False, as_dataframe=True)
-        df = compute_metrics(df['pid'].values, save=True)
-    else:
-        if df is not None:
-            isin, _ = ismember(df['pid'].unique(), metrics['pid'].unique())
-
-            if ~np.all(isin):
-                if recompute:
-                    one = ONE()
-                    ins = get_insertions(level=0, one=one, recompute=False, freeze=freeze)
-                    metrics = compute_metrics(ins, one=one, save=True)
-                else:
-                    logger.warning(f'Warning: {np.sum(~isin)} recordings are missing metrics')
-
-            # merge the two dataframes
-            df = df.merge(metrics, on=['pid', 'region', 'subject', 'eid', 'probe', 'date', 'lab'])
-    return df
+# def get_metrics(df=None, freeze=None, recompute=True):
+#     # Load in the insertion metrics
+#     metrics = load_metrics(freeze=freeze)
+#
+#     if metrics is None:  # Recompute metrics
+#         if df is None:  # Get list of trajectories if not given as input
+#             df = get_insertions(level=0, recompute=False, as_dataframe=True)
+#         df = compute_metrics(df['pid'].values, save=True)
+#     else:
+#         if df is not None:
+#             isin, _ = ismember(df['pid'].unique(), metrics['pid'].unique())
+#
+#             if ~np.all(isin):
+#                 if recompute:
+#                     one = ONE()
+#                     ins = get_insertions(level=0, one=one, recompute=False, freeze=freeze)
+#                     metrics = compute_metrics(ins, one=one, save=True)
+#                 else:
+#                     logger.warning(f'Warning: {np.sum(~isin)} recordings are missing metrics')
+#
+#             # merge the two dataframes
+#             df = df.merge(metrics, on=['pid', 'region', 'subject', 'eid', 'probe', 'date', 'lab'])
+#         else:
+#             df = metrics
+#     return df
 
 
 def region_check(df, min_channels_region=5, min_neuron_region=4):
@@ -600,7 +602,7 @@ def exclude_particular_pid(df):
     return df
 
 
-def filter_recordings(trajs=None, recompute=True, freeze='release_2022_11',
+def filter_recordings(df_reg,
                       by_anatomy_only=False, behavior=True,
                       min_rec_lab=4, min_lab_region=3):
     """
@@ -614,8 +616,6 @@ def filter_recordings(trajs=None, recompute=True, freeze='release_2022_11',
     :param min_lab_region:
     :return:
     """
-    # Get region-base dataframe with metrics computed
-    df_reg = get_metrics(trajs, freeze, recompute)
     # Add region level check to df
     df_reg = region_check(df_reg)
     # Aggregate per PID
