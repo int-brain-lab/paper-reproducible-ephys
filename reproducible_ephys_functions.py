@@ -196,7 +196,7 @@ def get_insertions(level=2, recompute=False, as_dataframe=False, one=None, freez
         pids = np.array([ins['probe_insertion'] for ins in insertions])
         if recompute:
             _ = recompute_metrics(insertions, one)
-        ins = filter_recordings(min_neuron_region=0, one=one, freeze=freeze)
+        ins = filter_recordings(min_neuron_region=-1, one=one, freeze=freeze)  # TODO freeze = None here, remove?
         ins = ins[ins['include']]
 
         if not as_dataframe:
@@ -419,11 +419,8 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
             logger.warning(f'ephysSpectralDensityLF object not found for pid: {pid}')
             lfp = {}
 
-
-        df_lfp = compute_lfp_insertion(one=one, pid=ins['probe_insertion'])
-
-
         try:
+            df_lfp = compute_lfp_insertion(one=one, pid=ins['probe_insertion'])
             clusters = one.load_object(eid, 'clusters', collection=collection, attribute=['metrics', 'channels'])
             if 'metrics' not in clusters.keys():
                 sl = bbone.SpikeSortingLoader(eid=eid, pname=probe, one=one, atlas=ba)
@@ -504,7 +501,7 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
 def filter_recordings(df=None, one=None, by_anatomy_only=False, max_ap_rms=40, max_lfp_power=-150, 
                       min_neurons_per_channel=0.1, min_channels_region=5, min_regions=3, min_neuron_region=4, 
                       min_lab_region=3, min_rec_lab=4, n_trials=400, behavior=False, 
-                      exclude_subjects=['DY013', 'ibl_witten_26', 'KS084'], recompute=True, freeze='release_2022_11'):
+                      exclude_subjects=['ibl_witten_26'], recompute=True, freeze='release_2022_11'):
     """
     Filter values in dataframe according to different exclusion criteria
     :param df: pandas dataframe
@@ -557,7 +554,7 @@ def filter_recordings(df=None, one=None, by_anatomy_only=False, max_ap_rms=40, m
 
     # PID level
     df = df.groupby('pid', group_keys=False).apply(lambda m: m.assign(high_noise=lambda m: m['rms_ap_p90'].median() > max_ap_rms))
-    df = df.groupby('pid', group_keys=False).apply(lambda m: m.assign(high_lfp=lambda m: m['lfp_power'].median() > max_lfp_power))
+    df = df.groupby('pid', group_keys=False).apply(lambda m: m.assign(high_lfp=lambda m: m['lfp_power_raw'].median() > max_lfp_power))
     df = df.groupby('pid', group_keys=False).apply(lambda m: m.assign(low_yield=lambda m: (m['neuron_yield'].sum() / m['n_channels'].sum())
                                                     < min_neurons_per_channel))
     df = df.groupby('pid', group_keys=False).apply(lambda m: m.assign(missed_target=lambda m: m['region_hit'].sum() < min_regions))

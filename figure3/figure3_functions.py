@@ -65,7 +65,7 @@ def plot_probe(data, z, ax, clim=[0.1, 0.9], normalize=True, cmap=None):
         else:
             im.set_clim(clim)
         im.set_data(x, y, dat.T)
-        ax.images.append(im)
+        ax.add_image(im)
     ax.set_xlim(0, 4.5)
     return im
 
