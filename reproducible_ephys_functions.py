@@ -630,20 +630,15 @@ def filter_recordings(df_reg=None, recompute=True, freeze='release_2022_11',
                       min_rec_lab=4, min_lab_region=3):
     """
     Filter values in dataframe according to different exclusion criteria
-    :param df_reg: pandas dataframe
-    :param by_anatomy_only: bool
-    :param max_ap_rms:
-    :param max_lfp_power:
-    :param min_neurons_per_channel:
-    :param min_channels_region:
-    :param min_regions:
-    :param min_neuron_region:
-    :param min_lab_region:
-    :param n_trials:
+    :param df_reg:
+    :param recompute:
+    :param freeze:
+    :param by_anatomy_only:
     :param behavior:
+    :param min_rec_lab:
+    :param min_lab_region:
     :return:
     """
-
     # Get region-base dataframe with metrics computed
     df_reg = get_metrics(df_reg, freeze, recompute)
     # Add region level check to df
