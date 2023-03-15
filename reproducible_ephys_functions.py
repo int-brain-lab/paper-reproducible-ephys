@@ -145,7 +145,7 @@ def traj_list_to_dataframe(trajectories):
     return trajectories
 
 
-def get_insertions(level=2, as_dataframe=False, one=None, freeze=None, bilateral=False):
+def get_insertions(level=2, as_dataframe=False, one=None, freeze=None, bilateral=False, recompute=False):
     """
     Find insertions used for analysis based on different exclusion levels
     Level 0: minimum_regions = 0, resolved = True, behavior = False, n_trial >= 0, exclude_critical = True
@@ -173,22 +173,28 @@ def get_insertions(level=2, as_dataframe=False, one=None, freeze=None, bilateral
                               django=f'probe_insertion__in,{list(pids)}')
 
     else:
-        if level == 0:
+
+        if bilateral:  # TODO for next freeze need to think about how to deal with bilateral
             trajs = query(min_regions=0, n_trials=0, behavior=False, exclude_critical=True, one=one,
-                          as_dataframe=as_dataframe)
-        if level >= 1:
-            trajs = query(one=one, as_dataframe=as_dataframe)
+                          as_dataframe=as_dataframe, bilateral=True)
+        else:
+            if level == 0:
+                trajs = query(min_regions=0, n_trials=0, behavior=False, exclude_critical=True, one=one,
+                              as_dataframe=as_dataframe)
+            if level >= 1:
+                trajs = query(one=one, as_dataframe=as_dataframe)
 
-            if level >= 2:
-                df_metrics = recompute_metrics(trajs, one)  # Recompute metrics in case level 2 is required
-                _, ins_df, _ = filter_recordings(df_metrics)  # Apply default and return PID used in analysis
-                pids = ins_df.pid.values
-                trajs = one.alyx.rest('trajectories', 'list', provenance='Planned',
-                                      django=f'probe_insertion__in,{list(pids)}')
+        if recompute:
+            _ = compute_metrics(trajs, one=one, bilateral=bilateral)
 
-    if bilateral:  # TODO for next freeze need to think about how to deal with bilateral
-        trajs = query(min_regions=0, n_trials=0, behavior=False, exclude_critical=True, one=one,
-                      as_dataframe=as_dataframe, bilateral=True)
+        if level >= 2:
+            # Need metrics to filter for level 2
+            # Load or recompute metrics if it does not exist / does not contain all PIDs
+            df_metrics = recompute_metrics(trajs, one, bilateral=False)
+            _, ins_df, _ = filter_recordings(df_metrics)  # Apply default and return PIDs used in analysis
+            pids = ins_df.pid.values
+            trajs = one.alyx.rest('trajectories', 'list', provenance='Planned',
+                                  django=f'probe_insertion__in,{list(pids)}')
 
     if as_dataframe:
         trajs = traj_list_to_dataframe(trajs)
@@ -208,22 +214,22 @@ def get_histology_insertions(one=None, freeze=None):
     return insertions
 
 
-def recompute_metrics(insertions, one, bilateral=False):
+def recompute_metrics(trajs, one, bilateral=False):
     """
-    Determine whether metrics need to be recomputed or not for given list of insertions
+    Determine whether metrics need to be recomputed or not for given list of trajs
     :param insertions: list of insertions
     :param one: ONE object
     :return:
     """
 
-    pids = np.array([ins['probe_insertion'] for ins in insertions])
+    pids = np.array([ins['probe_insertion'] for ins in trajs])
     metrics = load_metrics(bilateral=bilateral)
     if (metrics is None) or (metrics.shape[0] == 0):
-        metrics = compute_metrics(insertions, one=one, bilateral=bilateral)
+        metrics = compute_metrics(trajs, one=one, bilateral=bilateral)
     else:
         isin, _ = ismember(pids, metrics['pid'].unique())
         if not np.all(isin):
-            metrics = compute_metrics(insertions, one=one, bilateral=bilateral)
+            metrics = compute_metrics(trajs, one=one, bilateral=bilateral)
 
     return metrics
 
@@ -599,21 +605,6 @@ def exclude_particular_pid(df):
     df.drop(df[df['pid'].isin(pids_exclude)].index, inplace=True)
     return df
 
-# # def filter
-# def default_filter_reg_to_ins(df_reg):
-#     # Aggregate per PID
-#     df_ins = aggregate_pids(df_reg)  # Note that right now we take average/median over region values, not channels
-#     # Checks
-#     df_ins = insertion_check(df_ins)
-#     # Criteria applied
-#     apply_inclusion_crit(df_ins)
-#     # Exclude any PIDs
-#     df_ins = exclude_particular_pid(df_ins)
-#     # Return secondary table of PID just for analysis
-#     df_a = df_ins.copy()
-#     df_a.drop(df_a[~df_a['include']].index, inplace=True)
-#
-#     return df_ins, df_a
 
 def filter_recordings(df_reg=None, recompute=True, freeze='release_2022_11',
                       by_anatomy_only=False, behavior=True,
