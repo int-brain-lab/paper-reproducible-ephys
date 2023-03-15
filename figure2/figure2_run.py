@@ -8,10 +8,11 @@ from reproducible_ephys_functions import get_histology_insertions, get_insertion
 from one.api import ONE
 
 
-def run_figure2(one, recompute=False, supplementary=False):
-    _ = get_insertions(level=0, one=one, freeze=None)
-    insertions = get_histology_insertions(one=one, freeze=None)
-    prepare_data(insertions, one=one, recompute=recompute)
+def run_figure2(one, recompute=False, supplementary=False, freeze='release_2022_11'):
+    # download all repeated site insertions
+    _ = get_insertions(level=0, one=one, freeze=freeze)
+    insertions = get_histology_insertions(one=one, freeze=freeze)
+    concat_df_chns, concat_df_traj = prepare_data(insertions, one=one, recompute=recompute)
     plot_hist_figure(raw_histology=False)
     if supplementary:
         print('Raw histology data to make figure 2 supplementary is not yet released')
