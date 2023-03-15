@@ -498,26 +498,7 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
     return metrics
 
 
-def filter_recordings(df=None, one=None, by_anatomy_only=False, max_ap_rms=40, max_lfp_power=-150, 
-                      min_neurons_per_channel=0.1, min_channels_region=5, min_regions=3, min_neuron_region=4, 
-                      min_lab_region=3, min_rec_lab=4, n_trials=400, behavior=False, 
-                      exclude_subjects=['ibl_witten_26'], recompute=True, freeze='release_2022_11'):
-    """
-    Filter values in dataframe according to different exclusion criteria
-    :param df: pandas dataframe
-    :param by_anatomy_only: bool
-    :param max_ap_rms:
-    :param max_lfp_power:
-    :param min_neurons_per_channel:
-    :param min_channels_region:
-    :param min_regions:
-    :param min_neuron_region:
-    :param min_lab_region:
-    :param n_trials:
-    :param behavior:
-    :return:
-    """
-
+def get_metrics(df=None, freeze=None, recompute=True):
     # Load in the insertion metrics
     metrics = load_metrics(freeze=freeze)
 
@@ -545,60 +526,159 @@ def filter_recordings(df=None, one=None, by_anatomy_only=False, max_ap_rms=40, m
         # merge the two dataframes
         df['original_index'] = df.index
         df = df.merge(metrics, on=['pid', 'region', 'subject', 'eid', 'probe', 'date', 'lab'])
+    return df
 
+
+def region_check(df, min_channels_region=5, min_neuron_region=4):
     # Region Level
     # no. of channels per region
     df['region_hit'] = df['n_channels'] > min_channels_region
     # no. of neurons per region
     df['low_neurons'] = df['neuron_yield'] < min_neuron_region
+    return df
 
-    # PID level
-    df = df.groupby('pid', group_keys=False).apply(lambda m: m.assign(high_noise=lambda m: m['rms_ap_p90'].median() > max_ap_rms))
-    df = df.groupby('pid', group_keys=False).apply(lambda m: m.assign(high_lfp=lambda m: m['lfp_power_raw'].median() > max_lfp_power))
-    df = df.groupby('pid', group_keys=False).apply(lambda m: m.assign(low_yield=lambda m: (m['neuron_yield'].sum() / m['n_channels'].sum())
-                                                    < min_neurons_per_channel))
-    df = df.groupby('pid', group_keys=False).apply(lambda m: m.assign(missed_target=lambda m: m['region_hit'].sum() < min_regions))
-    df = df.groupby('pid', group_keys=False).apply(lambda m: m.assign(low_trials=lambda m: m['n_trials'] < n_trials))
 
-    sum_metrics = df['high_noise'] + df['high_lfp'] + df['low_yield'] + df['missed_target'] + df['low_trials'] + df['low_neurons']
+def aggregate_pids(df):
+    df_pids = df.groupby('pid', as_index=False).agg(
+        eid=pd.NamedAgg(column="eid", aggfunc="first"),
+        date=pd.NamedAgg(column="date", aggfunc="first"),
+        probe=pd.NamedAgg(column="probe", aggfunc="first"),
+        subject=pd.NamedAgg(column="subject", aggfunc="first"),
+        lab=pd.NamedAgg(column="lab", aggfunc="first"),
+        institute=pd.NamedAgg(column="institute", aggfunc="first"),
+        lab_number=pd.NamedAgg(column="lab_number", aggfunc="first"),
+        rms_ap_p90=pd.NamedAgg(column="rms_ap_p90", aggfunc="median"),
+        lfp_power_raw=pd.NamedAgg(column="lfp_power_raw", aggfunc="median"),
+        # lfp_power=pd.NamedAgg(column="lfp_power", aggfunc="median"),
+        neuron_yield=pd.NamedAgg(column="neuron_yield", aggfunc="sum"),
+        n_channels=pd.NamedAgg(column="n_channels", aggfunc="sum"),
+        region_hit=pd.NamedAgg(column="region_hit", aggfunc="sum"),
+        n_trials=pd.NamedAgg(column="n_trials", aggfunc="first")
+    )
+    # TODO check for 0 values in n_channels for division:
+    df_pids['yield_ch'] = df_pids['neuron_yield'] / df_pids['n_channels']
+    return df_pids
+
+
+def insertion_check(df, max_ap_rms=40, max_lfp_power=-150, n_trials=400,
+                    min_neurons_per_channel=0.1, min_regions=3):
+    # Checks
+    df['high_ap'] = df['rms_ap_p90'] > max_ap_rms
+    df['high_lfp'] = df['lfp_power_raw'] > max_lfp_power
+    df['low_yield'] = df['yield_ch'] < min_neurons_per_channel
+    df['missed_target'] = df['region_hit'] < min_regions
+    df['low_trials'] = df['n_trials'] < n_trials
+    # Note: we do not use the 'low_neurons' per region to remove a PID from analysis in Sankey
+
+    return df
+
+def apply_inclusion_crit(df, by_anatomy_only=False, behavior=True):
+    sum_metrics = df['high_ap'] + df['high_lfp'] + df['low_yield'] + df['missed_target'] + df['low_trials']
     if by_anatomy_only:
-        sum_metrics = df['missed_target'] # by_anatomy_only exclusion criteria applied
+        sum_metrics = df['missed_target']  # by_anatomy_only exclusion criteria applied
     if behavior:
-        sum_metrics += ~df['behavior']
+        sum_metrics += df['low_trials']
 
     df['include'] = sum_metrics == 0
+    return df
 
-    # Exclude subjects indicated to exclude from further analysis
-    df['artifacts'] = bool(0)
-    for subj in exclude_subjects:
-        idx = df.loc[(df['subject'] == subj)].index
-        df.loc[idx, 'include'] = False
-        df.loc[idx, 'artifacts'] = True
 
-    df['lab_include'] = bool(0)
+def apply_min_rec(df, min_rec_lab=4):
+        # Have minimum number of recordings per lab
+        inst_count = df.groupby(['institute']).pid.nunique()
+        institutes = [key for key, val in inst_count.items() if val >= min_rec_lab]
+
+        df['lab_include'] = bool(0)
+        for lab in institutes:
+            idx = df.loc[df['institute'] == lab].index
+            df.loc[idx, 'lab_include'] = True
+
+        # Return secondary table of PID just for analysis
+        df_a = df.copy()
+        df_a.drop(df_a[~df_a['lab_include']].index, inplace=True)
+        return df, institutes, df_a
+
+
+def exclude_particular_pid(df):
+    pids_exclude = [
+        '84fd7fa3-6c2d-4233-b265-46a427d3d68d',  # Marked as artifacts by GM ; Odd LFP
+        'b25799a5-09e8-4656-9c1b-44bc9cbb5279',  # Good PIDs but reject from frozen analysis in March 2023
+        'bbe6ebc1-d32f-42dd-a89c-211226737deb',  # Good PIDs but reject from frozen analysis in March 2023
+        'f2a098e7-a67e-4125-92d8-36fc6b606c45'   # Good PIDs but reject from frozen analysis in March 2023
+        ]
+    df.drop(df[df['pid'].isin(pids_exclude)].index, inplace=True)
+    return df
+
+# # def filter
+# def default_filter_reg_to_ins(df_reg):
+#     # Aggregate per PID
+#     df_ins = aggregate_pids(df_reg)  # Note that right now we take average/median over region values, not channels
+#     # Checks
+#     df_ins = insertion_check(df_ins)
+#     # Criteria applied
+#     apply_inclusion_crit(df_ins)
+#     # Exclude any PIDs
+#     df_ins = exclude_particular_pid(df_ins)
+#     # Return secondary table of PID just for analysis
+#     df_a = df_ins.copy()
+#     df_a.drop(df_a[~df_a['include']].index, inplace=True)
+#
+#     return df_ins, df_a
+
+def filter_recordings(df_reg=None, recompute=True, freeze='release_2022_11',
+                      by_anatomy_only=False, behavior=True,
+                      min_rec_lab=4,
+                      min_neuron_region=4,  min_lab_region=3):
+    """
+    Filter values in dataframe according to different exclusion criteria
+    :param df_reg: pandas dataframe
+    :param by_anatomy_only: bool
+    :param max_ap_rms:
+    :param max_lfp_power:
+    :param min_neurons_per_channel:
+    :param min_channels_region:
+    :param min_regions:
+    :param min_neuron_region:
+    :param min_lab_region:
+    :param n_trials:
+    :param behavior:
+    :return:
+    """
+
+    # Get region-base dataframe with metrics computed
+    df_reg = get_metrics(df_reg, freeze, recompute)
+    # Add region level check to df
+    df_reg = region_check(df_reg)
+    # Aggregate per PID
+    df_ins = aggregate_pids(df_reg)  # Note that right now we take average/median over region values, not channels
+    # Checks
+    df_ins = insertion_check(df_ins)
+    # Criteria applied for rejecting recording prior to analysis
+    df_ins = apply_inclusion_crit(df_ins, by_anatomy_only, behavior)
+    # Exclude any PIDs
+    df_ins = exclude_particular_pid(df_ins)
+    # Create secondary table of PID just for analysis
+    df_a = df_ins.copy()
+    df_a.drop(df_a[~df_a['include']].index, inplace=True)
+
+    # ---- Analysis specific checks ----
+    # 1. Min recording
+    _, institutes, df_a = apply_min_rec(df_a, min_rec_lab)
+    # 2. Permutation test
+    # Join the two tables df_reg and df_a
+
     df['permute_include'] = bool(0)
 
-    # For permutation tests
-    df_red = df[df['include'] == 1]
-
-    # Have minimum number of recordings per lab
-    inst_count = df_red.groupby(['institute']).pid.nunique()
-    institutes = [key for key, val in inst_count.items() if val >= min_rec_lab]
-
-    for lab in institutes:
-        idx = df.loc[(df['institute'] == lab) & df['include'] == 1].index
-        df.loc[idx, 'lab_include'] = True
-
     # Now for permutation test
-    df_red = df_red[df_red['institute'].isin(institutes)]
+    df_red = df_a
 
     # Minimum number of recordings per lab per region with enough good units
-    labreg = {val: {reg: 0 for reg in df.region.unique()} for val in institutes}
+    labreg = {val: {reg: 0 for reg in df_reg.region.unique()} for val in institutes}
     df_red = df_red.groupby(['institute', 'pid', 'region'])
     for key in df_red.groups.keys():
         df_k = df_red.get_group(key)
         # needs to be based on the neuron_yield
-        if df_k.iloc[0]['neuron_yield'] >= min_neuron_region:
+        if df_k.iloc[0]['low_neurons'] is False:  # Todo change to low_neurons == False
             labreg[key[0]][key[2]] += 1
 
     for lab, regs in labreg.items():
