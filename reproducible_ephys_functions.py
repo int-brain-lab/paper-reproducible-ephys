@@ -627,8 +627,7 @@ def exclude_particular_pid(df):
 
 def filter_recordings(df_reg=None, recompute=True, freeze='release_2022_11',
                       by_anatomy_only=False, behavior=True,
-                      min_rec_lab=4,
-                      min_neuron_region=4,  min_lab_region=3):
+                      min_rec_lab=4, min_lab_region=3):
     """
     Filter values in dataframe according to different exclusion criteria
     :param df_reg: pandas dataframe
@@ -664,39 +663,21 @@ def filter_recordings(df_reg=None, recompute=True, freeze='release_2022_11',
     # ---- Analysis specific checks ----
     # 1. Min number of recording
     # Remove from df_a and df_reg the PIDs that didn't pass analysis crit
-    _, institutes, df_a = apply_min_rec(df_a, min_rec_lab)
+    _, _, df_a = apply_min_rec(df_a, min_rec_lab)
     df_reg.drop(df_reg[~df_reg['pid'].isin(df_a['pid'])].index, inplace=True)
     # Add info to df_ins
     df_ins['min_recording'] = False
     df_ins.loc[df_ins['pid'].isin(df_a['pid']), 'min_recording'] = True
 
     # 2. Permutation test
-
-
-
-    df['permute_include'] = bool(0)
-
-    # Now for permutation test
-    df_red = df_a
-
-    # Minimum number of recordings per lab per region with enough good units
-    labreg = {val: {reg: 0 for reg in df_reg.region.unique()} for val in institutes}
-    df_red = df_red.groupby(['institute', 'pid', 'region'])
-    for key in df_red.groups.keys():
-        df_k = df_red.get_group(key)
-        # needs to be based on the neuron_yield
-        if df_k.iloc[0]['low_neurons'] is False:  # Todo change to low_neurons == False
-            labreg[key[0]][key[2]] += 1
-
-    for lab, regs in labreg.items():
-        for reg, count in regs.items():
-            if count >= min_lab_region:
-                idx = df.loc[(df['region'] == reg) & (df['institute'] == lab) & df['include'] == 1].index
-                df.loc[idx, 'permute_include'] = True
-
-    # Sort the index so it is the same as the orignal frame that was passed in
-    df = df.sort_values('original_index').reset_index(drop=True)
-
+    # Per region, we want at least min_lab_region recording with yield pass in each recording
+    df_perm = df_reg.groupby('region', as_index=False).agg(
+        lab_count=pd.NamedAgg(column="institute", aggfunc="nunique"))
+    df_perm['permute_include'] = False
+    df_perm.loc[df_perm['lab_count'] >= min_lab_region, 'permute_include'] = True
+    # Add info to df_reg
+    df_reg['permute_include'] = False
+    df_reg.loc[df_reg['region'].isin(df_perm['region']), 'permute_include'] = True
 
     return df_ins, df_a, df_reg
 
