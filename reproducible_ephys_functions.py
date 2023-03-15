@@ -498,30 +498,24 @@ def get_metrics(df=None, freeze=None, recompute=True):
     # Load in the insertion metrics
     metrics = load_metrics(freeze=freeze)
 
-    if df is None:
-        df = metrics
-        if df is None:
-            ins = get_insertions(level=0, recompute=False, freeze=freeze)
-            df = compute_metrics(ins, one=ONE(), save=True)
-        df['original_index'] = df.index
+    if metrics is None:  # Recompute metrics
+        if df is None:  # Get list of trajectories if not given as input
+            df = get_insertions(level=0, recompute=False, as_dataframe=True)
+        df = compute_metrics(df['pid'].values, save=True)
     else:
-        # make sure that all pids in the dataframe df are included in metrics otherwise recompute metrics
-        if metrics is None:
-            one = ONE()
-            ins = get_insertions(level=0, one=one, recompute=False, freeze=freeze)
-            metrics = compute_metrics(ins, one=one, save=True)
+        if df is not None:
+            isin, _ = ismember(df['pid'].unique(), metrics['pid'].unique())
 
-        isin, _ = ismember(df['pid'].unique(), metrics['pid'].unique())
-        if ~np.all(isin):
-            logger.warning(f'Warning: {np.sum(~isin)} recordings are missing metrics')
-            if recompute:
-                one = ONE()
-                ins = get_insertions(level=0, one=one, recompute=False, freeze=freeze)
-                metrics = compute_metrics(ins, one=one, save=True)
+            if ~np.all(isin):
+                if recompute:
+                    one = ONE()
+                    ins = get_insertions(level=0, one=one, recompute=False, freeze=freeze)
+                    metrics = compute_metrics(ins, one=one, save=True)
+                else:
+                    logger.warning(f'Warning: {np.sum(~isin)} recordings are missing metrics')
 
-        # merge the two dataframes
-        df['original_index'] = df.index
-        df = df.merge(metrics, on=['pid', 'region', 'subject', 'eid', 'probe', 'date', 'lab'])
+            # merge the two dataframes
+            df = df.merge(metrics, on=['pid', 'region', 'subject', 'eid', 'probe', 'date', 'lab'])
     return df
 
 
@@ -606,7 +600,7 @@ def exclude_particular_pid(df):
     return df
 
 
-def filter_recordings(df_reg=None, recompute=True, freeze='release_2022_11',
+def filter_recordings(trajs=None, recompute=True, freeze='release_2022_11',
                       by_anatomy_only=False, behavior=True,
                       min_rec_lab=4, min_lab_region=3):
     """
@@ -621,7 +615,7 @@ def filter_recordings(df_reg=None, recompute=True, freeze='release_2022_11',
     :return:
     """
     # Get region-base dataframe with metrics computed
-    df_reg = get_metrics(df_reg, freeze, recompute)
+    df_reg = get_metrics(trajs, freeze, recompute)
     # Add region level check to df
     df_reg = region_check(df_reg)
     # Aggregate per PID
