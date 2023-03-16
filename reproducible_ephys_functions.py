@@ -63,6 +63,44 @@ def labs():
     return lab_number_map, institution_map, institution_colors
 
 
+def query_critical(one=None, as_dataframe=False):  # Todo bilateral
+    # Get PIDs of critical insertions
+    one = one or ONE()
+
+    # Insertion CRITICAL
+    django_queries = []
+    django_queries.append('probe_insertion__session__project__name,ibl_neuropixel_brainwide_01')
+    django_queries.append('probe_insertion__json__qc,CRITICAL')
+    django_query = ','.join(django_queries)
+
+    trajectories = one.alyx.rest('trajectories', 'list', provenance='Planned',
+                                 x=-2243, y=-2000, theta=15,
+                                 django=django_query)
+    pids_ic = [traj['probe_insertion'] for traj in trajectories]
+
+    # Session CRITICAL
+    django_queries = []
+    django_queries.append('probe_insertion__session__project__name,ibl_neuropixel_brainwide_01')
+    django_queries.append('probe_insertion__session__qc__gte,50')
+    django_query = ','.join(django_queries)
+
+    trajectories = one.alyx.rest('trajectories', 'list', provenance='Planned',
+                                 x=-2243, y=-2000, theta=15,
+                                 django=django_query)
+    pids_sc = [traj['probe_insertion'] for traj in trajectories]
+
+    # Unique set
+    pids_crt = set(pids_ic).union(set(pids_sc))
+    trajs = one.alyx.rest('trajectories', 'list', provenance='Planned',
+                          django=f'probe_insertion__in,{list(pids_crt)}')
+
+    # Convert to dataframe if necessary
+    if as_dataframe:
+        trajs = traj_list_to_dataframe(trajs)
+
+    return trajs
+
+
 def query(behavior=False, n_trials=400, resolved=True, min_regions=2, exclude_critical=True, one=None, str_query=None,
           as_dataframe=False, bilateral=False):
 
@@ -75,10 +113,9 @@ def query(behavior=False, n_trials=400, resolved=True, min_regions=2, exclude_cr
     else:
         django_queries = []
 
-    django_queries.append('probe_insertion__session__project__name,ibl_neuropixel_brainwide_01')
-
-    if exclude_critical:
-        django_queries.append('probe_insertion__session__qc__lt,50,~probe_insertion__json__qc,CRITICAL')
+    # Take only insertions with non-critical status here
+    django_queries.append('probe_insertion__session__project__name,ibl_neuropixel_brainwide_01,'
+                          'probe_insertion__session__qc__lt,50,~probe_insertion__json__qc,CRITICAL')
     if resolved:
         django_queries.append('probe_insertion__json__extended_qc__alignment_resolved,True')
     if behavior:
@@ -122,6 +159,10 @@ def query(behavior=False, n_trials=400, resolved=True, min_regions=2, exclude_cr
         region_pids, num_regions = np.unique(region_traj, return_counts=True)
         isin, _ = ismember(np.array(pids), region_pids[num_regions >= min_regions])
         trajectories = [trajectories[i] for i, val in enumerate(isin) if val]
+
+    if not exclude_critical:
+        trajs_crt = query_critical(one=one, as_dataframe=False)
+        trajectories = trajectories + trajs_crt
 
     # Convert to dataframe if necessary
     if as_dataframe:
@@ -171,13 +212,19 @@ def get_insertions(level=2, as_dataframe=False, one=None, freeze='release_2022_1
                    ):
     """
     Find insertions used for analysis based on different exclusion levels
+    Level -1:
+        1. Query : all insertions possible, even critical and non-resolved
+            minimum_regions = 0, resolved = False, behavior = False, n_trial >= 0, exclude_critical = False
+        2. Filter:
+            Remove specific PIDs
+
     Level 0:
-        1. Query
-            All with the given traj coordinates, including critical
+        1. Query: Level 1 +  critical
+            minimum_regions = 0, resolved = True, behavior = False, n_trial >= 0, exclude_critical = False
         2. Filter:
             Remove specific PIDs
     Level 1:
-        1. Query
+        1. Query : non-critical, resolved, no other filter
             minimum_regions = 0, resolved = True, behavior = False, n_trial >= 0, exclude_critical = True
         2. Filter:
             Remove specific PIDs
@@ -204,9 +251,23 @@ def get_insertions(level=2, as_dataframe=False, one=None, freeze='release_2022_1
     if freeze is not None:
         # TODO for next freeze need to think about how to deal with bilateral
 
-        if level == 0:  # Take set computed for all PIDs (even critical ones)
+        if level < 1:  # Take set computed for all PIDs (even critical ones)
             ins_df = pd.read_csv(data_release_path().joinpath(f'{freeze}.csv'))
+            # Remove particular PIDs
             ins_df = exclude_particular_pid(ins_df)
+            if level == 0:  # Todo change the freeze, currently it does not contain the critical PIDs
+                # Remove those that are level -1 (non resolved)
+                ins_df.drop(ins_df[ins_df['level'] == -1].index, inplace=True)
+
+                # # TODO delete these lines once freeze is fixed (this hits the database and is not a freeze)
+                # Check assumption on what is contained in metrics is correct
+                metrics = pd.read_csv(data_release_path().joinpath(f'metrics_{freeze}.csv'))
+                assert len(set(ins_df.pid.values) - set(metrics.pid.values)) == 0
+                # Compute which PIDs are critical and add
+                trajs_crt = query_critical(one=one, as_dataframe=True)
+                trajs_crt = trajs_crt.rename(columns={"probe_insertion": "pid"})
+                ins_df = pd.concat([ins_df, trajs_crt])  # This is a very ugly DF but the pids in it are correct
+                # # --- End delete
         else:
             metrics = pd.read_csv(data_release_path().joinpath(f'metrics_{freeze}.csv'))   # metrics = load_metrics(bilateral=bilateral)
             if level == 1:  # Take all frozen pids (non-critical)
@@ -227,14 +288,15 @@ def get_insertions(level=2, as_dataframe=False, one=None, freeze='release_2022_1
     else:
 
         if bilateral:  # TODO for next freeze need to think about how to deal with bilateral
-            trajs = query(min_regions=0, n_trials=0, behavior=False, exclude_critical=True, one=one,
+            trajs = query(min_regions=0, n_trials=0, behavior=False, resolved=True, exclude_critical=True, one=one,
                           bilateral=True)
         else:
-            if level == 0:
-                trajs = one.alyx.rest('trajectories', 'list', provenance='Planned', x=-2243, y=-2000, theta=15,
-                                      django='probe_insertion__session__project__name,ibl_neuropixel_brainwide_01')
+            if level == -1:
+                trajs = query(min_regions=0, n_trials=0, behavior=False, resolved=False, exclude_critical=False, one=one)
+            elif level == 0:
+                trajs = query(min_regions=0, n_trials=0, behavior=False, resolved=True, exclude_critical=False, one=one)
             elif level == 1:
-                trajs = query(min_regions=0, n_trials=0, behavior=False, exclude_critical=True, one=one)
+                trajs = query(min_regions=0, n_trials=0, behavior=False, resolved=True, exclude_critical=True, one=one)
                 if recompute:
                     # Load or recompute metrics if it does not exist / does not contain all PIDs
                     metrics = load_metrics(bilateral=bilateral)

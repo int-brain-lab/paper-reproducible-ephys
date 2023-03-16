@@ -1,4 +1,4 @@
-from reproducible_ephys_functions import filter_recordings, labs, BRAIN_REGIONS, query, get_insertions
+from reproducible_ephys_functions import filter_recordings, labs, BRAIN_REGIONS, query_critical, get_insertions
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -19,15 +19,17 @@ br = BrainRegions()
 lab_number_map, institution_map, lab_colors = labs()
 
 
-def panel_sankey(ax, one, freeze=None):
-    # Get all trajectories
+def panel_sankey(ax, one=None, freeze=None):
+    # Get all trajs for sankey (level 0 = level 1 + crt)
     trajs_0, _ = get_insertions(level=0, freeze=freeze, as_dataframe=True, one=one)
     # Get trajs level 1
     trajs_1, ins_df_1 = get_insertions(level=1, freeze=freeze, as_dataframe=True, one=one)
-    # Get trajs level 2
-    trajs_2, ins_df_2 = get_insertions(level=2, freeze=freeze, as_dataframe=True, one=one)
-    # Compute which PIDs are critical
+    # Critical PIDs: difference in set
     pids_crt = set(trajs_0.probe_insertion.values) - set(trajs_1.probe_insertion.values)
+    # Get trajs level 2
+    # trajs_2, _ = get_insertions(level=2, freeze=freeze, as_dataframe=True, one=one)
+    # Get trajs level 3 (level 2 - analysis specific test)
+    trajs_3, _ = get_insertions(level=3, freeze=freeze, as_dataframe=True, one=one, min_lab_region=0, min_rec_lab=0)
 
     # Remove critical PIDs that fail for Hardware failure of tracing missing --> left with Ephys issues
     remove_crt_histology = [
@@ -50,8 +52,7 @@ def panel_sankey(ax, one, freeze=None):
 
     pids_crt_ephysonly = pids_crt - set(remove_crt_histology) - set(remove_crt_hardware)
 
-
-    #Sankey pot
+    # Sankey pot
     all_ins = trajs_0.shape[0]
     hw_crt = len(remove_crt_hardware)
     hist_crt = len(remove_crt_histology)
@@ -74,13 +75,17 @@ def panel_sankey(ax, one, freeze=None):
 
     missed_target = df_drop_sankey.loc[(df_drop_sankey['missed_target'] == True)].shape[0]
     df_drop_sankey.drop(df_drop_sankey[(df_drop_sankey['missed_target'] == True)].index, inplace=True)
-    assert df_drop_sankey.shape[0] == ins_df_2.shape[0]
+
+    # pid_perm_fail = set(trajs_3.probe_insertion.values) - set(trajs_2.probe_insertion.values)
+    # perm_fail = len(pid_perm_fail)
+    # df_drop_sankey.drop(df_drop_sankey[(df_drop_sankey['pid'].isin(pid_perm_fail))].index, inplace=True)
+    # assert df_drop_sankey.shape[0] == trajs_2.shape[0]
 
     num_trajectories = [all_ins, -hw_crt, -hist_crt, -ephys_crt, -low_yield,
-                        -high_noise, -behav, -missed_target, -ins_df_2.shape[0]]
+                        -high_noise, -behav, -missed_target, -df_drop_sankey.shape[0]]
 
-    labels = ['All insertions', 'Hardware failure', 'Missing histology', 'Poor ephys', 'Low neural yield',
-              'High noise', 'Poor behavior', 'Missed target', 'Data analysis']
+    labels = ['All insertions', 'Hardware failure', 'Missing histology', 'Critical ephys', 'Low yield',
+              'High noise', 'Low trials', 'Missed target', 'Data analysis']
 
     sankey = Sankey(ax=ax, scale=0.005, offset=0.05, head_angle=90, shoulder=0.025, gap=0.2, radius=0.05)
     sankey.add(flows=num_trajectories,
