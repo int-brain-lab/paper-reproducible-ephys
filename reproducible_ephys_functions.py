@@ -162,13 +162,27 @@ def recompute_metrics(trajs, metrics=None, one=None, bilateral=False):
             metrics = compute_metrics(trajs, one=one, bilateral=bilateral)
     return metrics
 
-def get_insertions(level=2, as_dataframe=False, one=None, freeze=None, bilateral=False, recompute=False):
+def get_insertions(level=2, as_dataframe=False, one=None, freeze='release_2022_11', bilateral=False, recompute=False):
     """
     Find insertions used for analysis based on different exclusion levels
-    Level 0: minimum_regions = 0, resolved = True, behavior = False, n_trial >= 0, exclude_critical = True
-    Level 1: minimum_regions = 2, resolved = True, behavior = False, n_trial >= 400, exclude_critical = True
-    Level 2: minimum_regions = 2, resolved = True, behavior = False, n_trial >= 400, exclude_critical = True,
-             max_ap_rms=40,  max_lfp_power=-140, min_channels_per_region=5, min_neurons_per_channel=0.1
+    Level 0:
+        1. Query
+            All with the given traj coordinates, including critical
+    Level 1:
+        1. Query
+            minimum_regions = 0, resolved = True, behavior = False, n_trial >= 0, exclude_critical = True
+        2. Filter:
+            Remove specific PIDs
+    Level 2:
+        1. Query:
+            minimum_regions = 2, resolved = True, behavior = False, n_trial >= 400, exclude_critical = True
+        2. Filter:
+            Remove specific PIDs, then apply:
+
+            behavior=False, min_rec_lab=4, min_lab_region=3,
+            max_ap_rms=40, max_lfp_power=-150, n_trials=400,
+            min_neurons_per_channel=0.1, min_regions=3
+
 
     :param level: exclusion level 0, 1 or 2
     :param recompute: whether to recompute the metrics dataframe that is used to exclude recordings at level=2
@@ -179,12 +193,16 @@ def get_insertions(level=2, as_dataframe=False, one=None, freeze=None, bilateral
     one = one or ONE()
 
     if freeze is not None:
-        metrics = load_metrics(bilateral=bilateral, freeze=freeze)
         # TODO for next freeze need to think about how to deal with bilateral
-        if level >= 2:  # Take only those good for analysis
-            _, ins_df, _ = filter_recordings(metrics)
-        if level < 2:  # Take all frozen pids
-            ins_df, _, _ = filter_recordings(metrics)
+        if level == 0:  # Take set computed for all PIDs (even critical ones)
+            ins_df = pd.read_csv(data_release_path().joinpath(f'{freeze}.csv'))  # metrics = load_metrics(bilateral=bilateral)
+            ins_df = exclude_particular_pid(ins_df)
+        else:
+            metrics = pd.read_csv(data_release_path().joinpath(f'metrics_{freeze}.csv'))
+            if level >= 2:  # Take only those good for analysis, default filters
+                _, ins_df, _ = filter_recordings(metrics)
+            elif level == 1:  # Take all frozen pids (non-critical)
+                ins_df, _, _ = filter_recordings(metrics)
 
         pids = ins_df.pid.values
         trajs = one.alyx.rest('trajectories', 'list', provenance='Planned',
@@ -194,13 +212,15 @@ def get_insertions(level=2, as_dataframe=False, one=None, freeze=None, bilateral
 
         if bilateral:  # TODO for next freeze need to think about how to deal with bilateral
             trajs = query(min_regions=0, n_trials=0, behavior=False, exclude_critical=True, one=one,
-                          as_dataframe=as_dataframe, bilateral=True)
+                          bilateral=True)
         else:
             if level == 0:
-                trajs = query(min_regions=0, n_trials=0, behavior=False, exclude_critical=True, one=one,
-                              as_dataframe=as_dataframe)
-            if level >= 1:
-                trajs = query(one=one, as_dataframe=as_dataframe)
+                trajs = one.alyx.rest('trajectories', 'list', provenance='Planned', x=-2243, y=-2000, theta=15,
+                                      django='probe_insertion__session__project__name,ibl_neuropixel_brainwide_01')
+            elif level == 1:
+                trajs = query(min_regions=0, n_trials=0, behavior=False, exclude_critical=True, one=one)
+            elif level >= 2:
+                trajs = query(one=one)
 
         if recompute:
             _ = compute_metrics(trajs, one=one, bilateral=bilateral)
@@ -221,16 +241,16 @@ def get_insertions(level=2, as_dataframe=False, one=None, freeze=None, bilateral
     return trajs
 
 
-def get_histology_insertions(one=None, freeze=None):
-    one = one or ONE()
-    if freeze is not None:
-        ins_df = pd.read_csv(data_release_path().joinpath(f'{freeze}.csv'))
-        pids = ins_df.pid.values
-        insertions = one.alyx.rest('trajectories', 'list', provenance='Planned', django=f'probe_insertion__in,{list(pids)}')
-    else:
-        insertions = one.alyx.rest('trajectories', 'list', provenance='Planned', x=-2243, y=-2000, theta=15,
-                                   django='probe_insertion__session__project__name,ibl_neuropixel_brainwide_01')
-    return insertions
+# def get_histology_insertions(one=None, freeze=None):
+#     one = one or ONE()
+#     if freeze is not None:
+#         ins_df = pd.read_csv(data_release_path().joinpath(f'{freeze}.csv'))
+#         pids = ins_df.pid.values
+#         insertions = one.alyx.rest('trajectories', 'list', provenance='Planned', django=f'probe_insertion__in,{list(pids)}')
+#     else:
+#         insertions = one.alyx.rest('trajectories', 'list', provenance='Planned', x=-2243, y=-2000, theta=15,
+#                                    django='probe_insertion__session__project__name,ibl_neuropixel_brainwide_01')
+#     return insertions
 
 
 def data_release_path():
