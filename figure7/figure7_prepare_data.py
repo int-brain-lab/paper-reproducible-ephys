@@ -1,4 +1,5 @@
-from figure5.figure5_prepare_data import prepare_data as prepare_data_fig5
+from fig_taskmodulation.fig_taskmodulation_prepare_data import prepare_data as prepare_data_fig_taskmodulation
+#from figure5.figure5_prepare_data import prepare_data as prepare_data_fig5
 from figure7.figure7_load_data import load_dataframe, load_data
 from iblutil.numerical import ismember
 from one.api import ONE
@@ -39,7 +40,9 @@ def prepare_data(insertions, one, recompute=False, **kwargs):
                 data = load_data()
                 return df, data
 
-    df, data = prepare_data_fig5(insertions, one, figure='figure7', recompute=True, **kwargs)
+#    df, data = prepare_data_fig5(insertions, one, figure='figure7', recompute=True, **kwargs)
+    df, data = prepare_data_fig_taskmodulation(insertions, one, figure='figure6', recompute=True, **kwargs)
+
     save_figure_path(figure='figure7')
 
     # Compute the centre of mass of the different regions
@@ -69,6 +72,6 @@ def prepare_data(insertions, one, recompute=False, **kwargs):
 if __name__ == '__main__':
     one = ONE()
     one.record_loaded = True
-    insertions = get_insertions(level=2, recompute=True, one=one, freeze=None)
+    insertions = get_insertions(level=2, recompute=True, one=one, freeze='release_2022_11')
     prepare_data(insertions, one=one, recompute=True, **default_params)
     save_dataset_info(one, figure='figure7')

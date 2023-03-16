@@ -10,18 +10,25 @@ import logging
 from pathlib import Path
 import shutil
 from datetime import datetime
+import scipy
+import traceback
 
+from neurodsp import voltage
 from one.api import ONE
 from one.alf.exceptions import ALFObjectNotFound
 from iblutil.numerical import ismember
 from ibllib.atlas import AllenAtlas
 import brainbox.io.one as bbone
 from brainbox.behavior import training
-from reproducible_ephys_processing import compute_new_label
+import yaml
+from brainbox.io.spikeglx import Streamer
 
 from one.params import get_cache_dir
 
-LFP_BAND = [49, 61]
+
+
+LFP_RESAMPLE_FACTOR = 10
+LFP_BAND = [20, 80]  # previously [49, 61]
 THETA_BAND = [6, 12]
 
 
@@ -189,7 +196,7 @@ def get_insertions(level=2, recompute=False, as_dataframe=False, one=None, freez
         pids = np.array([ins['probe_insertion'] for ins in insertions])
         if recompute:
             _ = recompute_metrics(insertions, one)
-        ins = filter_recordings(min_neuron_region=0, one=one)
+        ins = filter_recordings(min_neuron_region=-1, one=one, freeze=freeze)  # TODO freeze = None here, remove?
         ins = ins[ins['include']]
 
         if not as_dataframe:
@@ -295,12 +302,15 @@ def combine_regions(regions):
     return regions
 
 
-def load_metrics(bilateral=False):
-    fname = 'insertion_metrics_bilateral.csv' if bilateral else 'insertion_metrics.csv'
-    if save_data_path().joinpath(fname).exists():
-        metrics = pd.read_csv(save_data_path().joinpath(fname))
+def load_metrics(bilateral=False, freeze=None):
+    if freeze is not None:
+        metrics = pd.read_csv(data_release_path().joinpath(f'metrics_{freeze}.csv'))
     else:
-        metrics = None
+        fname = 'insertion_metrics_bilateral.csv' if bilateral else 'insertion_metrics.csv'
+        if save_data_path().joinpath(fname).exists():
+            metrics = pd.read_csv(save_data_path().joinpath(fname))
+        else:
+            metrics = None
     return metrics
 
 
@@ -410,6 +420,7 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
             lfp = {}
 
         try:
+            df_lfp = compute_lfp_insertion(one=one, pid=ins['probe_insertion'])
             clusters = one.load_object(eid, 'clusters', collection=collection, attribute=['metrics', 'channels'])
             if 'metrics' not in clusters.keys():
                 sl = bbone.SpikeSortingLoader(eid=eid, pname=probe, one=one, atlas=ba)
@@ -432,18 +443,28 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
                                                           clusters['label'] == 1))[0]
                 region_chan = channels['rawInd'][np.where(channels['rep_site_acronym'] == region)[0]]
 
+                if np.all(np.isnan(df_lfp['lfp_theta'])):
+                    lfp_theta_region = np.nan
+                else:
+                    lfp_theta_region = df_lfp['lfp_theta'][region_chan].mean()
+
+                if np.all(np.isnan(df_lfp['lfp_power'])):
+                    lfp_region = np.nan
+                else:
+                    lfp_region = df_lfp['lfp_power'][region_chan].mean()
+
                 if 'power' in lfp.keys() and region_chan.shape[0] > 0:
                     freqs = (lfp['freqs'] > LFP_BAND[0]) & (lfp['freqs'] < LFP_BAND[1])
                     chan_power = lfp['power'][:, region_chan]
-                    lfp_region = np.mean(10 * np.log(chan_power[freqs]))  # convert to dB
+                    lfp_region_raw = np.mean(10 * np.log(chan_power[freqs]))  # convert to dB
 
                     freqs = (lfp['freqs'] > THETA_BAND[0]) & (lfp['freqs'] < THETA_BAND[1])
                     chan_power = lfp['power'][:, region_chan]
-                    lfp_theta_region = np.mean(10 * np.log(chan_power[freqs]))  # convert to dB
+                    lfp_theta_region_raw = np.mean(10 * np.log(chan_power[freqs]))  # convert to dB
                 else:
                     # TO DO SEE IF THIS IS LEGIT
                     lfp_region = np.nan
-
+                    lfp_theta_region = np.nan
                 if 'apRMS' in ap.keys() and region_chan.shape[0] > 0:
                     ap_rms = np.percentile(ap['apRMS'][1, region_chan], 90) * 1e6
                 elif region_chan.shape[0] > 0:
@@ -460,6 +481,8 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
                                                         'neuron_yield': region_clusters.shape[0],
                                                         'lfp_power': lfp_region,
                                                         'lfp_theta_power': lfp_theta_region,
+                                                        'lfp_power_raw': lfp_region_raw,
+                                                        'lfp_theta_power_raw': lfp_theta_region_raw,
                                                         'rms_ap_p90': ap_rms,
                                                         'n_trials': n_trials,
                                                         'behavior': behav,
@@ -475,13 +498,14 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
     return metrics
 
 
-def filter_recordings(df=None, one=None, max_ap_rms=40, max_lfp_power=-150, min_neurons_per_channel=0.1, min_channels_region=5,
-                      min_regions=3, min_neuron_region=4, min_lab_region=3, min_rec_lab=4, n_trials=400, behavior=False,
-                      exclude_subjects=['DY013', 'ibl_witten_26', 'KS084'], recompute=True, freeze=None,
-                      bilateral=False):
+def filter_recordings(df=None, one=None, by_anatomy_only=False, max_ap_rms=40, max_lfp_power=-150, 
+                      min_neurons_per_channel=0.1, min_channels_region=5, min_regions=3, min_neuron_region=4, 
+                      min_lab_region=3, min_rec_lab=4, n_trials=400, behavior=False, 
+                      exclude_subjects=['ibl_witten_26'], recompute=True, freeze='release_2022_11'):
     """
     Filter values in dataframe according to different exclusion criteria
     :param df: pandas dataframe
+    :param by_anatomy_only: bool
     :param max_ap_rms:
     :param max_lfp_power:
     :param min_neurons_per_channel:
@@ -495,7 +519,7 @@ def filter_recordings(df=None, one=None, max_ap_rms=40, max_lfp_power=-150, min_
     """
 
     # Load in the insertion metrics
-    metrics = load_metrics()
+    metrics = load_metrics(freeze=freeze)
 
     if df is None:
         df = metrics
@@ -529,14 +553,16 @@ def filter_recordings(df=None, one=None, max_ap_rms=40, max_lfp_power=-150, min_
     df['low_neurons'] = df['neuron_yield'] < min_neuron_region
 
     # PID level
-    df = df.groupby('pid').apply(lambda m: m.assign(high_noise=lambda m: m['rms_ap_p90'].median() > max_ap_rms))
-    df = df.groupby('pid').apply(lambda m: m.assign(high_lfp=lambda m: m['lfp_power'].median() > max_lfp_power))
-    df = df.groupby('pid').apply(lambda m: m.assign(low_yield=lambda m: (m['neuron_yield'].sum() / m['n_channels'].sum())
+    df = df.groupby('pid', group_keys=False).apply(lambda m: m.assign(high_noise=lambda m: m['rms_ap_p90'].median() > max_ap_rms))
+    df = df.groupby('pid', group_keys=False).apply(lambda m: m.assign(high_lfp=lambda m: m['lfp_power_raw'].median() > max_lfp_power))
+    df = df.groupby('pid', group_keys=False).apply(lambda m: m.assign(low_yield=lambda m: (m['neuron_yield'].sum() / m['n_channels'].sum())
                                                     < min_neurons_per_channel))
-    df = df.groupby('pid').apply(lambda m: m.assign(missed_target=lambda m: m['region_hit'].sum() < min_regions))
-    df = df.groupby('pid').apply(lambda m: m.assign(low_trials=lambda m: m['n_trials'] < n_trials))
+    df = df.groupby('pid', group_keys=False).apply(lambda m: m.assign(missed_target=lambda m: m['region_hit'].sum() < min_regions))
+    df = df.groupby('pid', group_keys=False).apply(lambda m: m.assign(low_trials=lambda m: m['n_trials'] < n_trials))
 
     sum_metrics = df['high_noise'] + df['high_lfp'] + df['low_yield'] + df['missed_target'] + df['low_trials'] + df['low_neurons']
+    if by_anatomy_only:
+        sum_metrics = df['missed_target'] # by_anatomy_only exclusion criteria applied
     if behavior:
         sum_metrics += ~df['behavior']
 
@@ -608,3 +634,104 @@ def save_dataset_info(one, figure):
     _, filename = one.save_loaded_ids(sessions_only=True)
     if filename:
         shutil.move(filename, uuid_path.joinpath(f'{figure}_session_uuids.csv'))
+
+
+def compute_lfp_insertion(one, pid, recompute=False):
+    """
+    From a PID, downloads several snippets of raw data, apply destriping, and output the PSD per channel
+    in the theta and LFP bands in a dataframe
+    :param one:
+    :param pid:
+    :param recompute:
+    :return:
+    """
+    pid_directory = save_data_path().joinpath('lfp_destripe_snippets').joinpath(pid)
+    saved_file = save_data_path().joinpath('lfp_destripe_snippets').joinpath(f"lfp_{pid}.pqt")
+    if recompute is False and saved_file.exists():
+        return pd.read_parquet(saved_file)
+    try:
+        lfp_destripe(pid, one=one, typ='lf', prefix="", destination=pid_directory, remove_cached=True, clobber=False)
+        # then we loop over the snippets and compute the RMS of each
+        lfp_files = list(pid_directory.rglob('lf.npy'))
+        for j, lfp_file in enumerate(lfp_files):
+            lfp = np.load(lfp_file).astype(np.float32)
+            f, pow = scipy.signal.periodogram(lfp, fs=250, scaling='density')
+            if j == 0:
+                rms_lf_band, rms_lf, rms_theta_band = (np.zeros((lfp.shape[0], len(lfp_files))) for i in range(3))
+            rms_lf_band[:, j] = np.nanmean(
+                10 * np.log10(pow[:, np.logical_and(f >= LFP_BAND[0], f <= LFP_BAND[1])]), axis=-1)
+            rms_theta_band[:, j] = np.nanmean(
+                10 * np.log10(pow[:, np.logical_and(f >= THETA_BAND[0], f <= THETA_BAND[1])]), axis=-1)
+            rms_lf[:, j] = np.mean(np.sqrt(lfp.astype(np.double) ** 2), axis=-1)
+        lfp_power = np.nanmedian(rms_lf_band - 20 * np.log10(f[1]), axis=-1) * 2
+        lfp_theta = np.nanmedian(rms_theta_band - 20 * np.log10(f[1]), axis=-1) * 2
+        df_lfp = pd.DataFrame.from_dict({'lfp_power': lfp_power, 'lfp_theta': lfp_theta})
+        df_lfp.to_parquet(saved_file)
+    except Exception:
+        print(f'pid: {pid} RAW LFP ERROR \n', traceback.format_exc())
+        lfp_power = np.nan
+        lfp_theta = np.nan
+        df_lfp = pd.DataFrame.from_dict({'lfp_power': lfp_power, 'lfp_theta': lfp_theta})
+    return df_lfp
+
+
+def lfp_destripe(pid, one=None, typ='ap', prefix="", destination=None, remove_cached=True, clobber=False):
+    """
+    Stream chunks of data from a given probe insertion
+
+    Output folder architecture (the UUID is the probe insertion UUID):
+        f4bd76a6-66c9-41f3-9311-6962315f8fc8
+        ├── T00500
+        │   ├── ap.npy
+        │   ├── ap.yml
+        │   ├── lf.npy
+        │   ├── lf.yml
+        │   ├── spikes.pqt
+        │   └── waveforms.npy
+
+    :param pid:
+    :param one:
+    :param typ:
+    :param prefix:
+    :param destination:
+    :return:
+    """
+    assert one
+    assert destination
+    eid, pname = one.pid2eid(pid)
+
+    butter_kwargs = {'N': 3, 'Wn': 300 / 30000 * 2, 'btype': 'highpass'}
+    sos = scipy.signal.butter(**butter_kwargs, output='sos')
+
+    if typ == 'ap':
+        sample_duration, sample_spacings, skip_start_end = (10 * 30_000, 1_000 * 30_000, 500 * 30_000)
+    elif typ == 'lf':
+        sample_duration, sample_spacings, skip_start_end = (20 * 2_500, 1_000 * 2_500, 500 * 2_500)
+    sr = Streamer(pid=pid, one=one, remove_cached=remove_cached, typ=typ)
+    chunk_size = sr.chunks['chunk_bounds'][1]
+    nsamples = np.ceil((sr.shape[0] - sample_duration - skip_start_end * 2) / sample_spacings)
+    t0_samples = np.round((np.arange(nsamples) * sample_spacings + skip_start_end) / chunk_size) * chunk_size
+
+    for s0 in t0_samples:
+        t0 = int(s0 / chunk_size)
+        file_destripe = destination.joinpath(f"T{t0:05d}", f"{typ}.npy")
+        file_yaml = file_destripe.with_suffix('.yml')
+        if file_destripe.exists() and clobber is False:
+            continue
+        tsel = slice(int(s0), int(s0) + int(sample_duration))
+        raw = sr[tsel, :-sr.nsync].T
+        if typ == 'ap':
+            destripe = voltage.destripe(raw, fs=sr.fs, neuropixel_version=1, channel_labels=True)
+            # saves a 0.05 secs snippet of the butterworth filtered data at 0.5sec offset for QC purposes
+            butt = scipy.signal.sosfiltfilt(sos, raw)[:, int(sr.fs * 0.5):int(sr.fs * 0.55)]
+            fs_out = sr.fs
+        elif typ == 'lf':
+            destripe = voltage.destripe_lfp(raw, fs=sr.fs, neuropixel_version=1, channel_labels=True)
+            destripe = scipy.signal.decimate(destripe, LFP_RESAMPLE_FACTOR, axis=1, ftype='fir')
+            fs_out = sr.fs / LFP_RESAMPLE_FACTOR
+        file_destripe.parent.mkdir(exist_ok=True, parents=True)
+        np.save(file_destripe, destripe.astype(np.float16))
+        with open(file_yaml, 'w+') as fp:
+            yaml.dump(dict(fs=fs_out, eid=eid, pid=pid, pname=pname, nc=raw.shape[0], dtype="float16"), fp)
+        if typ == 'ap':
+            np.save(file_destripe.parent.joinpath('raw.npy'), butt.astype(np.float16))

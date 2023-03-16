@@ -17,10 +17,8 @@ from iblutil.numerical import ismember
 from brainbox.processing import compute_cluster_average
 from brainbox.io.one import SpikeSortingLoader
 
-import ephys_atlas.rawephys
-
 from reproducible_ephys_functions import (get_insertions, combine_regions, BRAIN_REGIONS, save_data_path,
-                                          save_dataset_info, filter_recordings, LFP_BAND, THETA_BAND)
+                                          save_dataset_info, filter_recordings, compute_lfp_insertion, LFP_BAND, THETA_BAND)
 from figure3.figure3_load_data import load_dataframe
 
 
@@ -48,7 +46,6 @@ def prepare_data(insertions, one, recompute=False):
     metrics = pd.DataFrame()
 
     for iIns, ins in enumerate(insertions):
-        print(f'Processing recording {iIns + 1} of {len(insertions)}')
         data_clust, data_chns = {}, {}
         eid = ins['session']['id']
         lab = ins['session']['lab']
@@ -56,6 +53,7 @@ def prepare_data(insertions, one, recompute=False):
         date = ins['session']['start_time'][:10]
         pid = ins['probe_insertion']
         probe = ins['probe_name']
+        print(f'Processing recording {iIns + 1} of {len(insertions)} (pid: {pid})')
 
         sl = SpikeSortingLoader(eid=eid, pname=probe, one=one, atlas=ba)
         try:
@@ -102,40 +100,18 @@ def prepare_data(insertions, one, recompute=False):
         df_clust['date'] = ins['session']['start_time'][:10]
         df_clust['lab'] = ins['session']['lab']
 
-        # Data for channel dataframe
+        
         try:
-            pid_directory = save_data_path().joinpath('lfp_destripe_snippets').joinpath(ins['id'])
-            # this function will download a set of 30 seconds examples and destripe them
-            ephys_atlas.rawephys.destripe(pid, one=one, typ='lf', prefix="", destination=pid_directory, remove_cached=True, clobber=False)
-            # then we loop over the snippets and compute the RMS of each
-            lfp_files = list(pid_directory.rglob('lf.npy'))
-            for j, lfp_file in enumerate(lfp_files):
-                lfp = np.load(lfp_file).astype(np.float32)
-                f, pow = scipy.signal.periodogram(lfp, fs=250, scaling='density')
-                if j == 0:
-                    rms_lf_band, rms_lf, rms_theta_band = (np.zeros((lfp.shape[0], len(lfp_files))) for i in range(3))
-                rms_lf_band[:, j] = np.nanmean(10 * np.log10(pow[:, np.logical_and(f >= LFP_BAND[0], f <= LFP_BAND[1])]), axis=-1)
-                rms_theta_band[:, j] = np.nanmean(10 * np.log10(pow[:, np.logical_and(f >= THETA_BAND[0], f <= THETA_BAND[1])]), axis=-1)
-                rms_lf[:, j] = np.mean(np.sqrt(lfp.astype(np.double) ** 2), axis=-1)
-            lfp_power = np.nanmedian(rms_lf_band - 20 * np.log10(f[1]), axis=-1) * 2
-            lfp_rms = np.median(20 * np.log10(rms_lf), axis=-1) * 2
-            lfp_theta = np.nanmedian(rms_theta_band - 20 * np.log10(f[1]), axis=-1) * 2
-        except Exception:
-            print(f'pid: {pid} RAW LFP ERROR \n', traceback.format_exc())
-            lfp_power = np.nan
-            lfp_rms = np.nan
-            lfp_theta = np.nan
-
-        try:
+            lfp_psd = compute_lfp_insertion(one=one, pid=pid)
             lfp = one.load_object(eid, 'ephysSpectralDensityLF', collection=f'raw_ephys_data/{probe}')
             # Get broadband lfp power
             freqs = (lfp['freqs'] >= LFP_BAND[0]) & (lfp['freqs'] <= LFP_BAND[1])
             power = lfp['power'][:, channels['rawInd']]
             lfp_power_raw = np.nanmean(10 * np.log(power[freqs]), axis=0)
             # # Get theta band lfp power
-            # freqs = (lfp['freqs'] >= THETA_BAND[0]) & (lfp['freqs'] <= THETA_BAND[1])
-            # power = lfp['power'][:, channels['rawInd']]
-            # theta_power = np.nanmean(10 * np.log(power[freqs]), axis=0)
+            freqs = (lfp['freqs'] >= THETA_BAND[0]) & (lfp['freqs'] <= THETA_BAND[1])
+            power = lfp['power'][:, channels['rawInd']]
+            lfp_theta_raw = np.nanmean(10 * np.log(power[freqs]), axis=0)
         except Exception:
             print(f'pid: {pid} LFP ERROR \n', traceback.format_exc())
             lfp_power_raw = np.nan
@@ -145,10 +121,10 @@ def prepare_data(insertions, one, recompute=False):
         data_chns['z'] = channels['z']
         data_chns['axial_um'] = channels['axial_um']
         data_chns['lateral_um'] = channels['lateral_um']
-        data_chns['lfp'] = lfp_power
-        data_chns['lfp_theta'] = lfp_theta
-        data_chns['lfp_rms'] = lfp_rms
+        data_chns['lfp'] = lfp_psd['lfp_power'].values
+        data_chns['lfp_theta'] = lfp_psd['lfp_theta'].values
         data_chns['lfp_raw'] = lfp_power_raw
+        data_chns['lfp_theta_raw'] = lfp_theta_raw
         data_chns['region_id'] = channels['atlas_id']
         data_chns['region_id_rep'] = channels['rep_site_id']
         data_chns['region'] = channels['rep_site_acronym']
@@ -227,7 +203,7 @@ def prepare_data(insertions, one, recompute=False):
 
 
 def run_decoding(metrics=['yield_per_channel', 'median_firing_rate', 'lfp_power', 'rms_ap', 'spike_amp_mean'],
-                 qc='pass', n_shuffle=500, min_lab_region=2, recompute=False):
+                 qc='pass', n_shuffle=500, min_lab_region=4, recompute=False):
     """
     qc can be "pass" (only include recordings that pass QC)
     "high_noise": add the recordings with high noise
@@ -243,19 +219,22 @@ def run_decoding(metrics=['yield_per_channel', 'median_firing_rate', 'lfp_power'
     if recompute or not isfile(save_path.joinpath(file_name)):
 
         # Initialize
-        rf = RandomForestClassifier(random_state=42, n_estimators=100)
+        rf = RandomForestClassifier(random_state=42)
         kfold = KFold(n_splits=5, shuffle=False)
 
         # Load in data
         df_ins = load_dataframe(df_name='ins')
-        data = filter_recordings(df_ins, min_lab_region=min_lab_region, min_rec_lab=0,
-                                 min_neuron_region=2)
+        data = filter_recordings(df_ins, min_lab_region=min_lab_region, min_rec_lab=0)
         if qc == 'pass':
-            data = data[data['include'] == 1]  # select recordings that pass QC
+            data = data[data['permute_include'] == 1]  # select recordings that pass QC
         elif qc != 'all':
-            data = data[(data['include'] == 1) | (data[qc] == 1)]
+            data = data[(data['permute_include'] == 1) | (data[qc] == 1)]
 
-        data = data[data['lfp_power'].notna()]  # exclude recordings that miss LFP data
+        # exclude recordings that miss LFP or AP data
+        data = data[data['lfp_power'].notna()]  
+        data = data[data['rms_ap'].notna()]  
+        
+        # Get yield per channel
         data['yield_per_channel'] = data['neuron_yield'] / data['n_channels']
 
         # Restructure dataframe
@@ -347,15 +326,15 @@ def run_decoding(metrics=['yield_per_channel', 'median_firing_rate', 'lfp_power'
 if __name__ == '__main__':
     one = ONE()
     one.record_loaded = True
-    insertions = get_insertions(level=0, one=one, freeze='release_2022_11')
-    all_df_chns, all_df_clust, metrics = prepare_data(insertions, recompute=True, one=one)
-    save_dataset_info(one, figure='figure3')
-    rerun_decoding = False
+    #insertions = get_insertions(level=0, one=one, freeze='release_2022_11')
+    #all_df_chns, all_df_clust, metrics = prepare_data(insertions, recompute=True, one=one)
+    #save_dataset_info(one, figure='figure3')
+    rerun_decoding = True
     run_decoding(n_shuffle=500, qc='pass', recompute=rerun_decoding)
-    run_decoding(n_shuffle=500, qc='high_noise', recompute=rerun_decoding)
-    run_decoding(n_shuffle=500, qc='low_yield', recompute=rerun_decoding)
-    run_decoding(n_shuffle=500, qc='high_lfp', recompute=rerun_decoding)
-    run_decoding(n_shuffle=500, qc='artifacts', recompute=rerun_decoding)
-    run_decoding(n_shuffle=500, qc='missed_target', recompute=rerun_decoding)
-    run_decoding(n_shuffle=500, qc='low_trials', recompute=rerun_decoding)
-    run_decoding(n_shuffle=500, qc='all', recompute=rerun_decoding)
+    #run_decoding(n_shuffle=500, qc='high_noise', recompute=rerun_decoding)
+    #run_decoding(n_shuffle=500, qc='low_yield', recompute=rerun_decoding)
+    #run_decoding(n_shuffle=500, qc='high_lfp', recompute=rerun_decoding)
+    #run_decoding(n_shuffle=500, qc='artifacts', recompute=rerun_decoding)
+    #run_decoding(n_shuffle=500, qc='missed_target', recompute=rerun_decoding)
+    #run_decoding(n_shuffle=500, qc='low_trials', recompute=rerun_decoding)
+    #run_decoding(n_shuffle=500, qc='all', recompute=rerun_decoding)

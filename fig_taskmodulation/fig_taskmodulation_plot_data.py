@@ -24,23 +24,43 @@ fig_path = save_figure_path(figure='fig_taskmodulation')
 #          'post_reward': 'Post reward',
 #          'avg_ff_post_move': 'FanoFactor'}
 
-tests = {'trial': 'Trial',
-          'start_to_move': 'Reaction period',
-          'post_stim': 'Post-stimulus',
-          'pre_move': 'Pre-movement',
+# tests = {'trial': 'Trial',
+#           'start_to_move': 'Reaction period',
+#           'post_stim': 'Post-stimulus',
+#           'pre_move': 'Pre-movement',
+#           'pre_move_lr': 'L vs. R pre-movement',
+#           'post_move': 'Post-movement',
+#           'post_reward': 'Post-reward',
+#           'avg_ff_post_move': 'Fano Factor'}
+
+# shortened_tests = {'trial': 'Trial',
+#                    'start_to_move': 'Reaction',
+#                    'post_stim': 'Post-stim',
+#                    'pre_move': 'Pre-move',
+#                    'pre_move_lr': 'LvR move',
+#                    'post_move': 'Post-move',
+#                    'post_reward': 'Post-rew',
+#                    'avg_ff_post_move': 'FF'}
+
+#Renamed & remove 'Trial':
+tests = {#'trial': 'Trial (first 400 ms)',
+          'start_to_move': 'Late reaction period',
+          'post_stim': 'Stimulus',
+          'pre_move': 'Movement initiation',
           'pre_move_lr': 'L vs. R pre-movement',
-          'post_move': 'Post-movement',
-          'post_reward': 'Post-reward',
+          'post_move': 'Movement period (250 ms)',
+          'post_reward': 'Reward',
           'avg_ff_post_move': 'Fano Factor'}
 
-shortened_tests = {'trial': 'Trial',
-                   'start_to_move': 'Reaction',
-                   'post_stim': 'Post-stim',
-                   'pre_move': 'Pre-move',
-                   'pre_move_lr': 'LvR move',
-                   'post_move': 'Post-move',
-                   'post_reward': 'Post-rew',
-                   'avg_ff_post_move': 'FF'}
+shortened_tests = {#'trial': 'Trial (first 400 ms)',
+                   'start_to_move': 'Reaction period',
+                   'post_stim': 'Stimulus',
+                   'pre_move': 'Move. initiation',
+                   'pre_move_lr': 'L vs R move.',
+                   'post_move': 'Move. (250 ms)',
+                   'post_reward': 'Reward',
+                   'avg_ff_post_move': 'Fano Factor'}
+
 
 def plot_main_figure():
     DPI = 400  # if the figure is too big on your screen, lower this number
@@ -62,21 +82,21 @@ def plot_main_figure():
     #                                          wspace=0.3),
     #       'panel_D_4': fg.place_axes_on_grid(fig, xspan=[0.70125, 0.9], yspan=[0.38, 0.65],
     #                                          wspace=0.3)}
-    ax = {'panel_A_1': fg.place_axes_on_grid(fig, xspan=[0.08, 0.288], yspan=[0.045, 0.15],
+    ax = {'panel_A_1': fg.place_axes_on_grid(fig, xspan=[0.08, 0.288], yspan=[0.045, 0.13],
                                              wspace=0.3),
-          'panel_A_2': fg.place_axes_on_grid(fig, xspan=[0.08, 0.288], yspan=[0.16, 0.31],
+          'panel_A_2': fg.place_axes_on_grid(fig, xspan=[0.08, 0.288], yspan=[0.14, 0.26],
                                              wspace=0.3),
-          'panel_B': fg.place_axes_on_grid(fig, xspan=[0.388, 0.631], yspan=[0.045, 0.31],
+          'panel_B': fg.place_axes_on_grid(fig, xspan=[0.388, 0.631], yspan=[0.045, 0.26],
                                            wspace=0.3),
-          'panel_C': fg.place_axes_on_grid(fig, xspan=[0.741, 1.], yspan=[0.045, 0.31],
+          'panel_C': fg.place_axes_on_grid(fig, xspan=[0.741, 1.], yspan=[0.045, 0.26],
                                            wspace=0.3),
-          'panel_D_1': fg.place_axes_on_grid(fig, xspan=[0.075,  0.27375], yspan=[0.37, 0.62],
+          'panel_D_1': fg.place_axes_on_grid(fig, xspan=[0.075,  0.27375], yspan=[0.37, 0.58],
                                              wspace=0.3),
-          'panel_D_2': fg.place_axes_on_grid(fig, xspan=[0.28375, 0.4825], yspan=[0.37, 0.62],
+          'panel_D_2': fg.place_axes_on_grid(fig, xspan=[0.28375, 0.4825], yspan=[0.37, 0.58],
                                              wspace=0.3),
-          'panel_D_3': fg.place_axes_on_grid(fig, xspan=[0.4925, 0.69125], yspan=[0.37, 0.62],
+          'panel_D_3': fg.place_axes_on_grid(fig, xspan=[0.4925, 0.69125], yspan=[0.37, 0.58],
                                              wspace=0.3),
-          'panel_D_4': fg.place_axes_on_grid(fig, xspan=[0.70125, .9], yspan=[0.37, 0.62],
+          'panel_D_4': fg.place_axes_on_grid(fig, xspan=[0.70125, .9], yspan=[0.37, 0.58],
                                              wspace=0.3),
           'panel_E_1': fg.place_axes_on_grid(fig, xspan=[0.075, 0.46], yspan=[0.71, 0.76],
                                              wspace=0.3),
@@ -92,7 +112,7 @@ def plot_main_figure():
                                              wspace=0.3),
           'panel_F_3': fg.place_axes_on_grid(fig, xspan=[0.68, 1.], yspan=[0.69, .8],
                                              wspace=0.3),
-          'panel_F_2': fg.place_axes_on_grid(fig, xspan=[0.55, 1.], yspan=[0.83, 1.],
+          'panel_F_2': fg.place_axes_on_grid(fig, xspan=[0.55, 1.], yspan=[0.8, .97],
                                              wspace=0.3)}
           # 'panel_F': fg.place_axes_on_grid(fig, xspan=[0.08, .99], yspan=[0.75, .91],
           #                                  wspace=0.3)}
@@ -124,9 +144,9 @@ def plot_main_figure():
     plot_panel_all_subjects(max_neurons=max_neurons, min_neurons=min_neurons, ax=[ax['panel_C']], save=False, plotted_regions=['LP'])
     plot_panel_all_subjects(max_neurons=max_neurons, min_neurons=min_neurons, ax=[ax['panel_D_1'], ax['panel_D_2'], ax['panel_D_3'], ax['panel_D_4']], save=False, plotted_regions=D_regions)
 
-    labels = [{'label_text': 'a', 'xpos': 0, 'ypos': 0, 'fontsize': 10, 'weight': 'bold'},
-              {'label_text': 'b', 'xpos': 0.305, 'ypos': 0, 'fontsize': 10, 'weight': 'bold'},
-              {'label_text': 'c', 'xpos': 0.66, 'ypos': 0, 'fontsize': 10, 'weight': 'bold'},
+    labels = [{'label_text': 'a', 'xpos': 0, 'ypos': 0.005, 'fontsize': 10, 'weight': 'bold'},
+              {'label_text': 'b', 'xpos': 0.305, 'ypos': 0.005, 'fontsize': 10, 'weight': 'bold'},
+              {'label_text': 'c', 'xpos': 0.66, 'ypos': 0.005, 'fontsize': 10, 'weight': 'bold'},
               {'label_text': 'd', 'xpos': 0, 'ypos': 0.34, 'fontsize': 10, 'weight': 'bold'},
               {'label_text': 'e', 'xpos': 0, 'ypos': 0.66, 'fontsize': 10, 'weight': 'bold'},
               {'label_text': 'f', 'xpos': 0.538, 'ypos': 0.66, 'fontsize': 10, 'weight': 'bold'},
@@ -140,8 +160,9 @@ def plot_main_figure():
     plt.close()
 
 
-def plot_panel_single_neuron_LvsR(ax=None, save=True):
-    # Does not distinguish between contrasts, but distinguishes by side
+def plot_panel_single_neuron(ax=None, save=True):
+    # Code to plot figure similar to figure 4a; plots separately for each contrast
+
     pid = 'f26a6ab1-7e37-4f8d-bb50-295c056e1062'
     neuron = 241 #386
     align_event = 'move'
@@ -165,8 +186,9 @@ def plot_panel_single_neuron_LvsR(ax=None, save=True):
     # Need to put legend for colorbar/side
 
 
-def plot_panel_single_neuron(ax=None, save=True):
-    # Code to plot figure similar to figure 4a; plots separately for each contrast
+def plot_panel_single_neuron_LvsR(ax=None, save=True):
+    # Does not distinguish between contrasts, but distinguishes by side
+
     pid = 'f26a6ab1-7e37-4f8d-bb50-295c056e1062'
     neuron = 241  # 386
     align_event = 'move'
@@ -299,8 +321,8 @@ def plot_panel_all_subjects(max_neurons, min_neurons, ax=None, save=True, plotte
             ax[iR].plot(data['time'], np.mean(frs_subj, axis=0), c=lab_colors[df_subj.iloc[0]['institute']],
                         lw=min_lw + ((subj_idx.shape[0] - min_neurons) / (max_neurons - min_neurons)) * max_lw,
                         alpha=0.8)
-        ax[iR].set_ylim(bottom=-9, top=13.5)
-        ax[iR].set_yticks([-5, 0, 5, 10])
+        ax[iR].set_ylim(bottom=-9, top=21.5)
+        ax[iR].set_yticks([-5, 0, 5, 10, 15, 20])
         ax[iR].axvline(0, color='k', ls='--')
         ax[iR].spines["right"].set_visible(False)
         ax[iR].spines["top"].set_visible(False)
