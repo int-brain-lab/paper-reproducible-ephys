@@ -465,7 +465,9 @@ def plot_panel_permutation(ax=None, recompute=False, n_permut=20000, qc='pass', 
         pickle.dump(results.p_value_permut.values, open("p_values_new_max_metric", 'wb'))
 
     shape = (len(tests.keys()), len(BRAIN_REGIONS))
-    p_vals = pickle.load(open("p_values_new_max_metric", 'rb'))
+    print('shortening the trials test away, yes?')
+    input()
+    p_vals = pickle.load(open("p_values_new_max_metric", 'rb'))[5:]
     print(p_vals)
     print(np.sort(p_vals))
     # _, corrected_p_vals, _, _ = multipletests(results.p_value_permut.values, 0.05, method='fdr_bh')
@@ -759,9 +761,7 @@ def plot_power_analysis():
                 val = significant_disturbances[i, j, 1]
 
                 all_powers[-1] -= val
-                if all_powers[-1] >= 10:
-                    print("So bad")
-                    print(test, reg, lab, all_powers[-1])
+
                 if test == 'avg_ff_post_move':
                     powers_ff[-1] -= val
                 else:
@@ -967,7 +967,7 @@ def find_sig_manipulation(data, lab_to_manip, labs, subjects, p_to_reach, direct
 
 import pickle
 
-# plot_main_figure()
+plot_main_figure()
 # power_analysis_to_table()
 # quit()
 a = plot_power_analysis()
