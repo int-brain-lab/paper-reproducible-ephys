@@ -203,7 +203,7 @@ def prepare_data(insertions, one, recompute=False):
 
 
 def run_decoding(metrics=['yield_per_channel', 'median_firing_rate', 'lfp_power', 'rms_ap', 'spike_amp_mean'],
-                 qc='pass', n_shuffle=500, min_lab_region=2, recompute=False):
+                 qc='pass', n_shuffle=500, min_lab_region=4, recompute=False):
     """
     qc can be "pass" (only include recordings that pass QC)
     "high_noise": add the recordings with high noise
@@ -219,19 +219,22 @@ def run_decoding(metrics=['yield_per_channel', 'median_firing_rate', 'lfp_power'
     if recompute or not isfile(save_path.joinpath(file_name)):
 
         # Initialize
-        rf = RandomForestClassifier(random_state=42, n_estimators=100)
+        rf = RandomForestClassifier(random_state=42)
         kfold = KFold(n_splits=5, shuffle=False)
 
         # Load in data
         df_ins = load_dataframe(df_name='ins')
-        data = filter_recordings(df_ins, min_lab_region=min_lab_region, min_rec_lab=0,
-                                 min_neuron_region=2)
+        data = filter_recordings(df_ins, min_lab_region=min_lab_region, min_rec_lab=0)
         if qc == 'pass':
-            data = data[data['include'] == 1]  # select recordings that pass QC
+            data = data[data['permute_include'] == 1]  # select recordings that pass QC
         elif qc != 'all':
-            data = data[(data['include'] == 1) | (data[qc] == 1)]
+            data = data[(data['permute_include'] == 1) | (data[qc] == 1)]
 
-        data = data[data['lfp_power'].notna()]  # exclude recordings that miss LFP data
+        # exclude recordings that miss LFP or AP data
+        data = data[data['lfp_power'].notna()]  
+        data = data[data['rms_ap'].notna()]  
+        
+        # Get yield per channel
         data['yield_per_channel'] = data['neuron_yield'] / data['n_channels']
 
         # Restructure dataframe
@@ -323,15 +326,15 @@ def run_decoding(metrics=['yield_per_channel', 'median_firing_rate', 'lfp_power'
 if __name__ == '__main__':
     one = ONE()
     one.record_loaded = True
-    insertions = get_insertions(level=0, one=one, freeze='release_2022_11')
-    all_df_chns, all_df_clust, metrics = prepare_data(insertions, recompute=True, one=one)
-    save_dataset_info(one, figure='figure3')
-    rerun_decoding = False
+    #insertions = get_insertions(level=0, one=one, freeze='release_2022_11')
+    #all_df_chns, all_df_clust, metrics = prepare_data(insertions, recompute=True, one=one)
+    #save_dataset_info(one, figure='figure3')
+    rerun_decoding = True
     run_decoding(n_shuffle=500, qc='pass', recompute=rerun_decoding)
-    run_decoding(n_shuffle=500, qc='high_noise', recompute=rerun_decoding)
-    run_decoding(n_shuffle=500, qc='low_yield', recompute=rerun_decoding)
-    run_decoding(n_shuffle=500, qc='high_lfp', recompute=rerun_decoding)
-    run_decoding(n_shuffle=500, qc='artifacts', recompute=rerun_decoding)
-    run_decoding(n_shuffle=500, qc='missed_target', recompute=rerun_decoding)
-    run_decoding(n_shuffle=500, qc='low_trials', recompute=rerun_decoding)
-    run_decoding(n_shuffle=500, qc='all', recompute=rerun_decoding)
+    #run_decoding(n_shuffle=500, qc='high_noise', recompute=rerun_decoding)
+    #run_decoding(n_shuffle=500, qc='low_yield', recompute=rerun_decoding)
+    #run_decoding(n_shuffle=500, qc='high_lfp', recompute=rerun_decoding)
+    #run_decoding(n_shuffle=500, qc='artifacts', recompute=rerun_decoding)
+    #run_decoding(n_shuffle=500, qc='missed_target', recompute=rerun_decoding)
+    #run_decoding(n_shuffle=500, qc='low_trials', recompute=rerun_decoding)
+    #run_decoding(n_shuffle=500, qc='all', recompute=rerun_decoding)

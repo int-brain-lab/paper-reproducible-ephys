@@ -45,8 +45,8 @@ def plot_trajs(plan_colour='w', lab_colour=True):
     all_ins_exit = np.empty((0, 3))
 
     # generate initial plot of brain atlas in each plane using ins_plan to take the correct tilted slice for PLANNED TRAJECTORY
-    cax = brain_atlas.plot_tilted_slice(ins_plan.xyz, axis=1, ax=ax1)
-    sax = brain_atlas.plot_tilted_slice(ins_plan.xyz, axis=0, ax=ax2)
+    cax = brain_atlas.plot_tilted_slice(ins_plan.xyz, axis=1, ax=ax1)[0]
+    sax = brain_atlas.plot_tilted_slice(ins_plan.xyz, axis=0, ax=ax2)[0]
 
     # get institution map and colours
     lab_number_map, institution_map, institution_colors = labs()

@@ -42,24 +42,24 @@ fig_path = save_figure_path(figure='fig_taskmodulation')
 #                    'post_reward': 'Post-rew',
 #                    'avg_ff_post_move': 'FF'}
 
-#Renamed:
-tests = {'trial': 'Trial (first 400 ms)',
+#Renamed & remove 'Trial':
+tests = {#'trial': 'Trial (first 400 ms)',
           'start_to_move': 'Late reaction period',
-          'post_stim': 'Post-stimulus',
+          'post_stim': 'Stimulus',
           'pre_move': 'Movement initiation',
           'pre_move_lr': 'L vs. R pre-movement',
           'post_move': 'Movement period (250 ms)',
-          'post_reward': 'Post-reward',
+          'post_reward': 'Reward',
           'avg_ff_post_move': 'Fano Factor'}
 
-shortened_tests = {'trial': 'Trial (first 400 ms)',
+shortened_tests = {#'trial': 'Trial (first 400 ms)',
                    'start_to_move': 'Reaction period',
-                   'post_stim': 'Post-stimulus',
+                   'post_stim': 'Stimulus',
                    'pre_move': 'Move. initiation',
                    'pre_move_lr': 'L vs R move.',
                    'post_move': 'Move. (250 ms)',
-                   'post_reward': 'Post-reward',
-                   'avg_ff_post_move': 'Fano Factor'}    
+                   'post_reward': 'Reward',
+                   'avg_ff_post_move': 'Fano Factor'}
 
 
 def plot_main_figure():
@@ -108,9 +108,9 @@ def plot_main_figure():
                                              wspace=0.3),
           'panel_E_5': fg.place_axes_on_grid(fig, xspan=[0.075, 0.46], yspan=[0.95, 1.],
                                              wspace=0.3),
-          'panel_F_1': fg.place_axes_on_grid(fig, xspan=[0.55, 0.87], yspan=[0.67, .78],
+          'panel_F_1': fg.place_axes_on_grid(fig, xspan=[0.55, 0.66], yspan=[0.69, .8],
                                              wspace=0.3),
-          'panel_F_3': fg.place_axes_on_grid(fig, xspan=[0.89, 1.], yspan=[0.67, .78],
+          'panel_F_3': fg.place_axes_on_grid(fig, xspan=[0.68, 1.], yspan=[0.69, .8],
                                              wspace=0.3),
           'panel_F_2': fg.place_axes_on_grid(fig, xspan=[0.55, 1.], yspan=[0.8, .97],
                                              wspace=0.3)}
@@ -123,7 +123,7 @@ def plot_main_figure():
     plot_panel_task_modulated_neurons(specific_tests=['pre_move'],
                                       ax=[ax['panel_E_1'], ax['panel_E_2'], ax['panel_E_3'], ax['panel_E_4'], ax['panel_E_5']],
                                       save=False)
-    plot_panel_power_analysis(ax=ax['panel_F_1'], ax2=ax['panel_F_3'])
+    plot_panel_power_analysis(ax=ax['panel_F_3'], ax2=ax['panel_F_1'])
     plot_panel_permutation(ax=ax['panel_F_2'])
 
     # we have to find out max and min neurons here now, because plots are split
@@ -148,8 +148,10 @@ def plot_main_figure():
               {'label_text': 'b', 'xpos': 0.305, 'ypos': 0.005, 'fontsize': 10, 'weight': 'bold'},
               {'label_text': 'c', 'xpos': 0.66, 'ypos': 0.005, 'fontsize': 10, 'weight': 'bold'},
               {'label_text': 'd', 'xpos': 0, 'ypos': 0.34, 'fontsize': 10, 'weight': 'bold'},
-              {'label_text': 'e', 'xpos': 0, 'ypos': 0.64, 'fontsize': 10, 'weight': 'bold'},
-              {'label_text': 'f', 'xpos': 0.538, 'ypos': 0.64, 'fontsize': 10, 'weight': 'bold'}]
+              {'label_text': 'e', 'xpos': 0, 'ypos': 0.66, 'fontsize': 10, 'weight': 'bold'},
+              {'label_text': 'f', 'xpos': 0.538, 'ypos': 0.66, 'fontsize': 10, 'weight': 'bold'},
+              {'label_text': 'g', 'xpos': 0.662, 'ypos': 0.66, 'fontsize': 10, 'weight': 'bold'},
+              {'label_text': 'h', 'xpos': 0.538, 'ypos': 0.82, 'fontsize': 10, 'weight': 'bold'}]
 
     fg.add_labels(fig, labels)
     print(f'Saving figures to {fig_path}')
@@ -537,7 +539,6 @@ def plot_panel_power_analysis(ax, ax2):
 
                 lab_mean = data[labs == lab].mean()
                 ax.plot([lab_to_num[lab] - 0.3, lab_to_num[lab] + 0.3], [lab_mean, lab_mean], color=lab_colors[lab])
-
                 parts = ax.violinplot(data[labs == lab], positions=[lab_to_num[lab]], showextrema=False)
                 parts['bodies'][0].set_facecolor(lab_colors[lab])
                 parts['bodies'][0].set_edgecolor(lab_colors[lab])
@@ -564,42 +565,42 @@ def plot_panel_power_analysis(ax, ax2):
                     parts['bodies'][0].set_edgecolor('red')
                     parts['bodies'][0].set_linestyles('--')
 
-                    parts = ax2.violinplot(data[labs == lab] + 1, positions=[dist_between_violins], showmeans=False, showextrema=False)
+                    parts = ax2.violinplot(data[labs == lab] * 1.4 + 1, positions=[dist_between_violins], showmeans=False, showextrema=False)
                     parts['bodies'][0].set_zorder(-1)
                     parts['bodies'][0].set_facecolor('white')
                     parts['bodies'][0].set_edgecolor('grey')
                     parts['bodies'][0].set_linestyles('--')
-                    parts = ax2.violinplot(data[labs == lab] - 1, positions=[dist_between_violins], showmeans=False, showextrema=False)
+                    parts = ax2.violinplot(data[labs == lab] * 1.4 - 1, positions=[dist_between_violins], showmeans=False, showextrema=False)
                     parts['bodies'][0].set_zorder(-1)
                     parts['bodies'][0].set_facecolor('white')
                     parts['bodies'][0].set_edgecolor('grey')
                     parts['bodies'][0].set_linestyles('--')
-                    parts = ax2.violinplot(data[labs == lab] + 2, positions=[dist_between_violins], showmeans=False, showextrema=False)
+                    parts = ax2.violinplot(data[labs == lab] * 1.4 + 2, positions=[dist_between_violins], showmeans=False, showextrema=False)
                     parts['bodies'][0].set_zorder(-1)
                     parts['bodies'][0].set_facecolor('white')
                     parts['bodies'][0].set_edgecolor('grey')
                     parts['bodies'][0].set_linestyles('--')
-                    parts = ax2.violinplot(data[labs == lab] - 2, positions=[dist_between_violins], showmeans=False, showextrema=False)
+                    parts = ax2.violinplot(data[labs == lab] * 1.4 - 2, positions=[dist_between_violins], showmeans=False, showextrema=False)
                     parts['bodies'][0].set_zorder(-1)
                     parts['bodies'][0].set_facecolor('white')
                     parts['bodies'][0].set_edgecolor('grey')
                     parts['bodies'][0].set_linestyles('--')
-                    parts = ax2.violinplot(data[labs == lab] + 3, positions=[dist_between_violins], showmeans=False, showextrema=False)
+                    parts = ax2.violinplot(data[labs == lab] * 1.4 + 3, positions=[dist_between_violins], showmeans=False, showextrema=False)
                     parts['bodies'][0].set_zorder(-1)
                     parts['bodies'][0].set_facecolor('white')
                     parts['bodies'][0].set_edgecolor('grey')
                     parts['bodies'][0].set_linestyles('--')
-                    parts = ax2.violinplot(data[labs == lab] - 3, positions=[dist_between_violins], showmeans=False, showextrema=False)
+                    parts = ax2.violinplot(data[labs == lab] * 1.4 - 3, positions=[dist_between_violins], showmeans=False, showextrema=False)
                     parts['bodies'][0].set_zorder(-1)
                     parts['bodies'][0].set_facecolor('white')
                     parts['bodies'][0].set_edgecolor('grey')
                     parts['bodies'][0].set_linestyles('--')
-                    parts = ax2.violinplot(data[labs == lab] + 4, positions=[dist_between_violins], showmeans=False, showextrema=False)
+                    parts = ax2.violinplot(data[labs == lab] * 1.4 + 4, positions=[dist_between_violins], showmeans=False, showextrema=False)
                     parts['bodies'][0].set_zorder(-1)
                     parts['bodies'][0].set_facecolor('white')
                     parts['bodies'][0].set_edgecolor('red')
                     parts['bodies'][0].set_linestyles('--')
-                    parts = ax2.violinplot(data[labs == lab] - 4, positions=[dist_between_violins], showmeans=False, showextrema=False)
+                    parts = ax2.violinplot(data[labs == lab] * 1.4 - 4, positions=[dist_between_violins], showmeans=False, showextrema=False)
                     parts['bodies'][0].set_zorder(-1)
                     parts['bodies'][0].set_facecolor('white')
                     parts['bodies'][0].set_edgecolor('red')
@@ -614,11 +615,11 @@ def plot_panel_power_analysis(ax, ax2):
                     parts['bodies'][0].set_facecolor('white')
                     parts['bodies'][0].set_edgecolor('white')
                     parts['bodies'][0].set_alpha(1)
-                    parts = ax2.violinplot(data[labs == lab], positions=[dist_between_violins], showextrema=False)
+                    parts = ax2.violinplot(data[labs == lab] * 1.4, positions=[dist_between_violins], showextrema=False)
                     ax2.plot([dist_between_violins - 0.3, dist_between_violins + 0.3], [np.mean(data[labs == lab]), np.mean(data[labs == lab])], color='grey', zorder=4)
                     parts['bodies'][0].set_facecolor('grey')
                     parts['bodies'][0].set_edgecolor('grey')
-                    parts = ax2.violinplot(data[labs == lab], positions=[dist_between_violins], showextrema=False)
+                    parts = ax2.violinplot(data[labs == lab] * 1.4, positions=[dist_between_violins], showextrema=False)
                     parts['bodies'][0].set_zorder(0)
                     parts['bodies'][0].set_facecolor('white')
                     parts['bodies'][0].set_edgecolor('white')
@@ -635,6 +636,7 @@ def plot_panel_power_analysis(ax, ax2):
                     ax2.plot([0 + perturbation_shift, 0 + perturbation_shift], [lab_mean, lab_mean + 1], color='grey')
                     ax2.plot([dist_between_violins + perturbation_shift, dist_between_violins + perturbation_shift], [lab_mean, lab_mean + 3], color='grey')
 
+                ax.axhline(0, color='grey', alpha=1/3, zorder=0)
                 obs_max = max(obs_max, lab_mean + val)
                 val = significant_disturbances[i, j, 1]
                 temp_color = lab_colors[lab] if val > -1000 else 'red'
@@ -654,23 +656,27 @@ def plot_panel_power_analysis(ax, ax2):
             ax.set_ylim(min_y, max_y)
             ax2.set_ylim(min_y, max_y)
 
-            ax.set_ylabel('FR modulation (sp/s)')
-            ax.annotate("{}, {}, p={:.3f}".format(shortened_tests[test], reg, p_values[i]), xy=(0.5, 1), xytext=(0, pad), xycoords='axes fraction', textcoords='offset points', size='large', ha='center', va='baseline')
-            ax.set_xticks([])
+            ax2.set_ylabel('FR modulation (sp/s)')
+            # ax.annotate("{}, {}, p={:.3f}".format(shortened_tests[test], reg, p_values[i]), xy=(0.5, 1), xytext=(0, pad), xycoords='axes fraction', textcoords='offset points', size='large', ha='center', va='baseline')
             ax2.set_xticks([])
-            ax2.set_yticks([])
+            ax.set_xticks([])
+            ax.set_yticks([])
 
 
 
-def plot_power_analysis(significant_disturbances):
-    lab_to_num = dict(zip(['Berkeley', 'CCU', 'CSHL (C)', 'CSHL (Z)', 'NYU', 'Princeton', 'SWC', 'UCL', 'UCLA'], list(range(9))))
+def plot_power_analysis():
+
+    significant_disturbances = pickle.load(open("new_max_metric.p", 'rb'))
 
     # max_y, min_y = 9, -3
-    max_y, min_y = 14, -8
+    max_y, min_y = 16, -16
 
     obs_max, obs_min = -10, 10
     pad = 5 # in points
     i = -1
+    perturbation_shift = 0.33
+    dist_between_violins = 0.8
+    lab_to_num = dict(zip(['Berkeley', 'CCU', 'CSHL (C)', 'CSHL (Z)', 'NYU', 'Princeton', 'SWC', 'UCL', 'UCLA'], list(np.arange(9) * dist_between_violins)))
 
     p_values = pickle.load(open("p_values_new_max_metric", 'rb'))
     df = load_dataframe()
@@ -678,11 +684,19 @@ def plot_power_analysis(significant_disturbances):
     df_filt = df_filt[df_filt['permute_include'] == 1]
     df_filt_reg = df_filt.groupby('region')
 
+    powers = []
+    vars = []
+    powers_ff = []
+    vars_ff = []
+    perturb_in_std = []
+    all_powers = []
+    ns = []
+
     fig = plt.figure(figsize=(1 * 12, 1.4142 * 12))
     for jj, test in enumerate(tests.keys()):
         for ii, reg in enumerate(BRAIN_REGIONS):
 
-            plt.subplot(8, 5, ii + jj * 5 + 1)
+            plt.subplot(9, 5, ii + jj * 5 + 1)
             df_reg = df_filt_reg.get_group(reg)
             i += 1
 
@@ -705,47 +719,76 @@ def plot_power_analysis(significant_disturbances):
             for j, lab in enumerate(np.unique(labs)):
                 if np.sum(labs == lab) == 0:
                     continue
+                if lab == 'UW':
+                    continue
+
                 lab_mean = data[labs == lab].mean()
                 plt.plot([lab_to_num[lab] - 0.3, lab_to_num[lab] + 0.3], [lab_mean, lab_mean], color=lab_colors[lab])
 
-                parts = plt.gca().violinplot(data[labs == lab], positions=[lab_to_num[lab]])  # , showmeans=True)
-                print("{}, {}, {}".format(lab, lab_to_num[lab], np.min(data[labs == lab])))
+                parts = plt.gca().violinplot(data[labs == lab], positions=[lab_to_num[lab]], showextrema=False)  # , showmeans=True)
+                # print("{}, {}, {}".format(lab, lab_to_num[lab], np.min(data[labs == lab])))
                 parts['bodies'][0].set_facecolor(lab_colors[lab])
                 parts['bodies'][0].set_edgecolor(lab_colors[lab])
-                parts['cbars'].set_linewidth(0)
-                parts['cmins'].set_color(lab_colors[lab])
-                parts['cmaxes'].set_color(lab_colors[lab])
+
+                if test == 'avg_ff_post_move':
+                    vars_ff.append(np.std(data[labs == lab]) / np.sqrt(np.sum(labs == lab)))
+                else:
+                    vars.append(np.std(data[labs == lab]) / np.sqrt(np.sum(labs == lab)))
+
                 # parts['cmeans'].set_color('k') # this can be used to check whether the means align -> whether the datasets are assigned correctly
 
                 val = significant_disturbances[i, j, 0]
+
+                perturb_in_std.append(val / np.std(data[labs == lab]))
+
+                all_powers.append(val)
+                ns.append(np.sum(labs == lab))
+                if test == 'avg_ff_post_move':
+                    powers_ff.append(val)
+                    plt.axhline(1, color='grey', alpha=1/3, zorder=0)
+                else:
+                    powers.append(val)
+                    plt.axhline(0, color='grey', alpha=1/3, zorder=0)
+
                 temp_color = lab_colors[lab] if val < 1000 else 'red'
                 if temp_color == 'red':
                     val = max_y - lab_mean
                     print(ii + jj * 8 + 1)
-                plt.plot([lab_to_num[lab], lab_to_num[lab]], [lab_mean, lab_mean + val], color=temp_color)
+                plt.plot([lab_to_num[lab] + perturbation_shift, lab_to_num[lab] + perturbation_shift], [lab_mean, lab_mean + val], color=temp_color)
                 obs_max = max(obs_max, lab_mean + val)
                 val = significant_disturbances[i, j, 1]
+
+                all_powers[-1] -= val
+                if all_powers[-1] >= 10:
+                    print("So bad")
+                    print(test, reg, lab, all_powers[-1])
+                if test == 'avg_ff_post_move':
+                    powers_ff[-1] -= val
+                else:
+                    powers[-1] -= val
+
+                perturb_in_std.append(val / np.std(data[labs == lab]))
+
                 temp_color = lab_colors[lab] if val > -1000 else 'red'
                 if temp_color == 'red':
                     val = min_y - lab_mean
                     print(ii + jj * 8 + 1)
-                plt.plot([lab_to_num[lab], lab_to_num[lab]], [lab_mean, lab_mean + val], color=temp_color)
+                plt.plot([lab_to_num[lab] + perturbation_shift, lab_to_num[lab] + perturbation_shift], [lab_mean, lab_mean + val], color=temp_color)
                 obs_min = min(obs_min, lab_mean + val)
-            plt.xlim(-0.3, 8.3)
-            plt.axhline(0, color='grey', zorder=0)
+            plt.xlim(-0.3, 8 * dist_between_violins + .36)
             sns.despine()
             if jj == 7:
                 if ii == 0:
                     plt.ylabel('Fano factor', fontsize=18)
-                plt.ylim(0, 2.5)
+                plt.ylim(0, 4)
             else:
                 plt.ylim(min_y, max_y)
             if ii != 0 and ii != 7:
                 plt.gca().set_yticks([])
             if ii == 0:
-                plt.gca().annotate(shortened_tests[test], xy=(-0.53, 0.5), xytext=(0, 0), xycoords='axes fraction', textcoords='offset points', size='x-large', ha='right', va='center', rotation='vertical')
+                plt.gca().annotate(shortened_tests[test], xy=(-0.45, 0.5), xytext=(0, 0), xycoords='axes fraction', textcoords='offset points', size='x-large', ha='right', va='center', rotation='vertical')
                 if jj == 3:
-                    plt.ylabel('Firing rate modulation (sp/s)', fontsize=24)
+                    plt.ylabel('FR modulation (sp/s)', fontsize=21)
             if jj == 0:
                 plt.gca().annotate(reg, xy=(0.5, 1.2), xytext=(0, pad), xycoords='axes fraction', textcoords='offset points', size='x-large', ha='center', va='baseline')
             if jj != 7:
@@ -753,18 +796,70 @@ def plot_power_analysis(significant_disturbances):
             else:
                 plt.gca().set_xticks([])
                 plt.xlabel('Labs', fontsize=18)
-    plt.tight_layout()
-    fig.subplots_adjust(left=0.12)
-    plt.savefig("power stripes", dpi=300)
-    print(obs_min, obs_max)
+
+    plt.subplot(9, 5, ii + jj * 5 + 1 + 2)
+    plt.scatter(powers, np.power(vars, 0.5), color='blue', label="Firing modulation", s=0.15)
+    plt.scatter(powers_ff, np.power(vars_ff, 0.5), color='blue', label="Fano factor", s=0.15)
+    # plt.xlabel("Shifts", size=14)
+    # plt.ylabel("Std / sqrt(N)", size=14)
+    plt.gca().annotate("Shifts", xy=(0.5, -0.45), xytext=(0, pad), xycoords='axes fraction', textcoords='offset points', size='large', ha='center', va='baseline')
+    plt.gca().annotate(r"Std / $\sqrt{N}$", xy=(-0.25, 0.2), xytext=(0, pad), xycoords='axes fraction', textcoords='offset points', size='large', ha='center', va='baseline', rotation='vertical')
+    # plt.legend(fontsize=14, frameon=False)
+    plt.xlim(0)
+    plt.ylim(0)
+    sns.despine()
+
+    plt.subplot(9, 5, ii + jj * 5 + 1 + 4)
+    plt.hist(perturb_in_std, bins=25, color='grey')
+    # plt.xlabel("Shifts (std)", size=14)
+    # plt.ylabel("# of occurences", size=14)
+    plt.gca().annotate("Shifts (std)", xy=(0.5, -0.45), xytext=(0, pad), xycoords='axes fraction', textcoords='offset points', size='large', ha='center', va='baseline')
+    plt.gca().annotate("# occurences", xy=(-0.25, 0.0), xytext=(0, pad), xycoords='axes fraction', textcoords='offset points', size='large', ha='center', va='baseline', rotation='vertical')
+    plt.legend(fontsize=14, frameon=False)
+    plt.ylim(0)
+    sns.despine()
+
+    fig.subplots_adjust(hspace=0.27)
+    fig.subplots_adjust(wspace=0.05)
+    # plt.tight_layout()
+    # fig.subplots_adjust(left=0.12)
+    plt.savefig(fig_path.joinpath('fig_power_analysis.png'), bbox_inches='tight', pad_inches=0)
+    plt.savefig(fig_path.joinpath('fig_power_analysis.pdf'), bbox_inches='tight', pad_inches=0)
     plt.show()
 
+    plt.scatter(powers, np.power(vars, 0.5), color='blue', label="Firing modulation")
+    plt.scatter(powers_ff, np.power(vars_ff, 0.5), color='red', label="Fano factor")
+    plt.xlabel("Range of possible shift", size=14)
+    plt.ylabel("Standard deviation / sqrt(N)", size=14)
+    plt.legend(fontsize=14, frameon=False)
+    plt.xlim(0, 4.5)
+    plt.ylim(0, 1.5)
+    sns.despine()
+    plt.tight_layout()
+    plt.savefig("limited scattering")
+    plt.show()
 
-def power_analysis_to_table(power_an):
-    lab_to_num = dict(zip(['Berkeley', 'CCU', 'CSHL (C)', 'NYU', 'SWC', 'UCLA'], list(range(6))))
-    print("& {} & {} & {} & {} & {} & {} \\\\ \\hline".format(*['Berkeley', 'CCU', 'CSHL (C)', 'NYU', 'SWC', 'UCLA']))
+    from scipy.stats import pearsonr
+    print(pearsonr(powers, vars))
+    print(pearsonr(powers_ff, vars_ff))
+
+    print(obs_min, obs_max)
+    return powers, vars, powers_ff, vars_ff, perturb_in_std, all_powers, ns
+
+
+def power_analysis_to_table():
+    power_an = pickle.load(open("new_max_metric.p", 'rb'))
+    local_labs = ['Berkeley', 'CCU', 'CSHL (C)', 'CSHL (Z)', 'NYU', 'Princeton', 'SWC', 'UCL', 'UCLA']
+    lab_to_num = dict(zip(local_labs, range(len(local_labs))))
+
+    df = load_dataframe()
+    df_filt = filter_recordings(df, recompute=True, min_lab_region=2, min_rec_lab=0, min_neuron_region=2, freeze='release_2022_11')
+    df_filt = df_filt[df_filt['permute_include'] == 1]
+    df_filt_reg = df_filt.groupby('region')
+
+    print("& {} & {} & {} & {} & {} & {} & {} & {} & {} \\\\ \\hline".format(*['Berkeley', 'CCU', 'CSHL (C)', 'CSHL (Z)', 'NYU', 'Princeton', 'SWC', 'UCL', 'UCLA']))
     inside_string = " & {}, {}"
-    formatting_string = "{} {}" + 6 * inside_string + " \\\\ \\hline"
+    formatting_string = "{} {}" + len(local_labs) * inside_string + " \\\\ \\hline"
     i = -1  # probably
     for test in tests.keys():
         test_name = shortened_tests[test]
@@ -773,9 +868,11 @@ def power_analysis_to_table(power_an):
             i += 1
 
             labs = df_reg['institute'].values
-            vals = ['-'] * 12
+            vals = ['-'] * len(local_labs) * 2
 
             for j, lab in enumerate(np.unique(labs)):
+                if lab == 'UW':
+                    continue
                 val = power_an[i, j, 0]
                 vals[lab_to_num[lab] * 2] = "$\\infty$" if val > 1000 else np.round(val, 2)
                 val = power_an[i, j, 1]
@@ -870,7 +967,10 @@ def find_sig_manipulation(data, lab_to_manip, labs, subjects, p_to_reach, direct
 
 import pickle
 
-plot_main_figure()
+# plot_main_figure()
+# power_analysis_to_table()
+# quit()
+a = plot_power_analysis()
 quit()
 
 significant_disturbances = pickle.load(open("new_max_metric.p", 'rb'))
@@ -980,8 +1080,8 @@ for test in tests.keys():
 # pickle.dump(p_values_from_null, open("ps_from_null_{}.p".format(test), 'wb'))
 quit()
 
-power_an = pickle.load(open("new_max_metric.p", 'rb'))
-power_analysis_to_table(power_an)
+
+power_analysis_to_table()
 
 
 quit()

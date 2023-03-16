@@ -135,14 +135,14 @@ def compute_psth(spike_times, spike_clusters, cluster_ids, align_events, align_e
 
 # Added by MT:
 def compute_psth_rxn_time(spike_times, spike_clusters, cluster_ids,
-                          align_events, eventsStim, eventsMove, 
-                          align_epoch=(-0.2, 0.2), bin_size=0.01, smoothing='sliding', baseline_events=None, 
+                          align_events, eventsStim, eventsMove,
+                          align_epoch=(-0.2, 0.2), bin_size=0.01, smoothing='sliding', baseline_events=None,
                           base_epoch=(-0.5, 0), norm=None, return_ff=False, slide_kwargs={}, kernel_kwargs={}):
 
     #For now, only smoothing = sliding is considered:
     bins, t = smoothing_sliding(spike_times, spike_clusters, cluster_ids, align_events, align_epoch=align_epoch,
                                 bin_size=bin_size, **slide_kwargs)
-    
+
     rxntimes = eventsMove - eventsStim
     #First, remove trials with short (<50 ms) rxn times:
     bins[rxntimes<0.05] = np.nan
@@ -153,8 +153,8 @@ def compute_psth_rxn_time(spike_times, spike_clusters, cluster_ids,
         bin_index = np.where(t >= -rxntimes[i])
         start_index = bin_index[0][0] #- 1
         bins[i][0][0:start_index] = np.nan #set all values prior to rxn time window to nan; Is this accurate enough?
-        
-    
+
+
     bins_mean = np.nanmean(bins, axis=0)
     fr_std = np.nanstd(bins, axis=0) / bin_size
     if return_ff:
@@ -172,8 +172,8 @@ def compute_psth_rxn_time(spike_times, spike_clusters, cluster_ids,
     else:
         return fr_mean, fr_std, t
 
-    
-    # #compute_psth_rxn_time(eid): 
+
+    # #compute_psth_rxn_time(eid):
     # # COMPUTE FIRING RATES DURING RXN TIME
     # # For this computation we use correct, non zero contrast trials
     # #trials = one.load_object(eid, 'trials')
@@ -185,7 +185,7 @@ def compute_psth_rxn_time(spike_times, spike_clusters, cluster_ids,
 
     # # Find event times of interest and remove nan values
     # eventStim = trials['stimOn_times'][np.bitwise_and(trial_idx, ~nanStimMove)]
-    # eventMove = trials['firstMovement_times'][np.bitwise_and(trial_idx, ~nanStimMove)]   
+    # eventMove = trials['firstMovement_times'][np.bitwise_and(trial_idx, ~nanStimMove)]
     # return eventStim, eventMove
 
 

@@ -29,7 +29,7 @@ def plot_main_figure(freeze=None, one=None):
               'AP band RMS', 'Spike amp.']
     N_PERMUT = 50000  # Amount of shuffles for permutation testing
     #N_PERMUT = 50  # Amount of shuffles for permutation testing
-    DPI = 150  # if the figure is too big on your screen, lower this number
+    DPI = 100  # if the figure is too big on your screen, lower this number
     np.random.seed(42)  # fix the random seed for reproducible permutatation results
 
     # Get amount of probe plots
@@ -74,7 +74,7 @@ def plot_main_figure(freeze=None, one=None):
     #p_permut = panel_permutation(ax['panel_D'], METRICS, REGIONS, LABELS, n_permut=N_PERMUT,
     #                             n_rec_per_lab=MIN_REC_PER_LAB, n_rec_per_region=MIN_REC_PER_REGION,
     #                             freeze=freeze)
-    #p_decoding = panel_decoding(ax['panel_E'], qc='pass')
+    p_decoding = panel_decoding(ax['panel_E'], qc='pass', bh_correction=True)
     ax['panel_E'].set(title='QC pass')
     _ = panel_decoding(ax['panel_F'], qc='all')
     ax['panel_F'].set(title='All recordings')
