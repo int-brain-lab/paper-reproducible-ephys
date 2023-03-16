@@ -19,6 +19,44 @@ br = BrainRegions()
 lab_number_map, institution_map, lab_colors = labs()
 
 def panel_sankey(fig, ax, one, freeze=None):
+    # Get all trajectories
+    trajs_0 = get_insertions(level=0, freeze=freeze, as_dataframe=True)
+    # Get those level 1
+    trajs_1 = get_insertions(level=1, freeze=freeze, as_dataframe=True)
+    # Compute which PIDs are critical
+    pids_crt = set(trajs_0.probe_insertion.values) - set(trajs_1.probe_insertion.values)
+
+    # Remove critical PIDs that fail for Hardware failure of tracing missing --> left with Ephys issues
+    remove_crt_histology = [
+        '3443eceb-50b3-450e-b7c1-fc465a3bc84f',
+        '553f8d56-b6e7-46bd-a146-ac43b8ec6de7',
+        '6bfa4a99-bdfa-4e44-aa01-9c7eac7e253d',
+        '82a42cdf-3140-427b-8ad0-0d504716c871',
+        'dc6eea9b-a8fb-4151-b298-718f321e6968'
+    ]
+
+    remove_crt_hardware = [
+        '143cff36-30b4-4b25-9d26-5a2dbe6f6fc2',
+        '79bcfe47-33ed-4432-a598-66006b4cde56',
+        '80624507-4be6-4689-92df-0e2c26c3faf3',
+        'e7abb87f-4324-4c89-8a46-97ed4b40577e',
+        'f936a701-5f8a-4aa1-b7a9-9f8b5b69bc7c',
+        'fc626c12-bd1e-45c3-9434-4a7a8c81d7c0',
+        'd8ff1218-75e1-4962-b920-98c40b9dea1a'
+    ]
+
+    pids_crt_ephysonly = pids_crt - set(remove_crt_histology) - set(remove_crt_hardware)
+
+
+    #Sankey pot
+    all_ins = trajs_0.shape[0]
+    hw_crt = len(remove_crt_hardware)
+    hist_crt = len(remove_crt_histology)
+    ephys_crt = len(pids_crt_ephysonly)
+
+    metrics = load_metrics(freeze=freeze)
+
+
 
     # Get number of recordings after freeze cutoff date
     after_freeze = len(get_insertions(one=one)) - len(get_insertions(one=one, freeze=freeze))

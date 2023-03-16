@@ -79,7 +79,6 @@ def query(behavior=False, n_trials=400, resolved=True, min_regions=2, exclude_cr
 
     if exclude_critical:
         django_queries.append('probe_insertion__session__qc__lt,50,~probe_insertion__json__qc,CRITICAL')
-        # Todo new query for session qc critical also
     if resolved:
         django_queries.append('probe_insertion__json__extended_qc__alignment_resolved,True')
     if behavior:
@@ -167,7 +166,8 @@ def get_insertions(level=2, as_dataframe=False, one=None, freeze='release_2022_1
                    by_anatomy_only=False, behavior=False,
                    min_rec_lab=4, min_lab_region=3,
                    max_ap_rms=40, max_lfp_power=-150, n_trials=400,
-                   min_neurons_per_channel=0.1, min_regions=3
+                   min_neurons_per_channel=0.1, min_regions=3,
+                   recompute=False
                    ):
     """
     Find insertions used for analysis based on different exclusion levels
@@ -193,12 +193,13 @@ def get_insertions(level=2, as_dataframe=False, one=None, freeze='release_2022_1
 
 
     :param level: exclusion level 0, 1 or 2 : predefined ; 3: custom set of filters applied if given (level 2 otherwise)
-    :param recompute: whether to recompute the metrics dataframe that is used to exclude recordings at level=2
     :param as_dataframe: whether to return a dict or a dataframe
     :param one: ONE instance
     :return: dict or pandas dataframe of probe insertions
     """
     one = one or ONE()
+
+    ins_df = None
 
     if freeze is not None:
         # TODO for next freeze need to think about how to deal with bilateral
@@ -208,10 +209,10 @@ def get_insertions(level=2, as_dataframe=False, one=None, freeze='release_2022_1
             ins_df = exclude_particular_pid(ins_df)
         else:
             metrics = pd.read_csv(data_release_path().joinpath(f'metrics_{freeze}.csv'))   # metrics = load_metrics(bilateral=bilateral)
-            if level == 2:  # Take only those good for analysis, default filters
-                _, ins_df, _ = filter_recordings(metrics)
-            elif level == 1:  # Take all frozen pids (non-critical)
+            if level == 1:  # Take all frozen pids (non-critical)
                 ins_df, _, _ = filter_recordings(metrics)
+            elif level == 2:  # Take only those good for analysis, default filters
+                _, ins_df, _ = filter_recordings(metrics)
             elif level > 2:  # Custom set of filters (if no input is changed from default, returns level 2)
                 _, ins_df, _ = filter_recordings(metrics,
                                                  by_anatomy_only=by_anatomy_only, behavior=behavior,
@@ -234,32 +235,33 @@ def get_insertions(level=2, as_dataframe=False, one=None, freeze='release_2022_1
                                       django='probe_insertion__session__project__name,ibl_neuropixel_brainwide_01')
             elif level == 1:
                 trajs = query(min_regions=0, n_trials=0, behavior=False, exclude_critical=True, one=one)
+                if recompute:
+                    # Load or recompute metrics if it does not exist / does not contain all PIDs
+                    metrics = load_metrics(bilateral=bilateral)
+                    ins_df = recompute_metrics(trajs=trajs, metrics=metrics, one=one, bilateral=bilateral)
             elif level >= 2:
                 trajs = query(one=one)
-
-        if level >= 2:
-            # Need metrics to filter for level 2
-            # Load or recompute metrics if it does not exist / does not contain all PIDs
-            metrics = load_metrics(bilateral=bilateral)
-            metrics = recompute_metrics(trajs=trajs, metrics=metrics, one=one, bilateral=bilateral)
-
-            if level == 2:
-                _, ins_df, _ = filter_recordings(metrics)  # Apply default and return PIDs used in analysis
-            elif level > 2:  # Custom set of filters (if no input is changed from default, returns level 2)
-                _, ins_df, _ = filter_recordings(metrics,
-                                                 by_anatomy_only=by_anatomy_only, behavior=behavior,
-                                                 min_rec_lab=min_rec_lab, min_lab_region=min_lab_region,
-                                                 max_ap_rms=max_ap_rms, max_lfp_power=max_lfp_power, n_trials=n_trials,
-                                                 min_neurons_per_channel=min_neurons_per_channel, min_regions=min_regions
-                                                 )
-            pids = ins_df.pid.values
-            trajs = one.alyx.rest('trajectories', 'list', provenance='Planned',
-                                  django=f'probe_insertion__in,{list(pids)}')
+                # Need metrics to filter for level >= 2
+                # Load or recompute metrics if it does not exist / does not contain all PIDs
+                metrics = load_metrics(bilateral=bilateral)
+                metrics = recompute_metrics(trajs=trajs, metrics=metrics, one=one, bilateral=bilateral)
+                if level == 2:
+                    _, ins_df, _ = filter_recordings(metrics)  # Apply default and return PIDs used in analysis
+                elif level > 2:  # Custom set of filters (if no input is changed from default, returns level 2)
+                    _, ins_df, _ = filter_recordings(metrics,
+                                                     by_anatomy_only=by_anatomy_only, behavior=behavior,
+                                                     min_rec_lab=min_rec_lab, min_lab_region=min_lab_region,
+                                                     max_ap_rms=max_ap_rms, max_lfp_power=max_lfp_power, n_trials=n_trials,
+                                                     min_neurons_per_channel=min_neurons_per_channel, min_regions=min_regions
+                                                     )
+                pids = ins_df.pid.values
+                trajs = one.alyx.rest('trajectories', 'list', provenance='Planned',
+                                      django=f'probe_insertion__in,{list(pids)}')
 
     if as_dataframe:
         trajs = traj_list_to_dataframe(trajs)
 
-    return trajs
+    return trajs, ins_df
 
 
 def data_release_path():
