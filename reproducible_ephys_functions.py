@@ -524,35 +524,6 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
     return metrics
 
 
-# def get_metrics(df=None, freeze=None, recompute=True):
-#     # Load in the insertion metrics
-#     metrics = load_metrics(freeze=freeze)
-#     get_insertions(level)
-
-#
-#     if metrics is None:  # Recompute metrics
-#         if df is None:  # Get list of trajectories if not given as input
-#             df = get_insertions(level=0, recompute=False, as_dataframe=True)
-#         df = compute_metrics(df['pid'].values, save=True)
-#     else:
-#         if df is not None:
-#             isin, _ = ismember(df['pid'].unique(), metrics['pid'].unique())
-#
-#             if ~np.all(isin):
-#                 if recompute:
-#                     one = ONE()
-#                     ins = get_insertions(level=0, one=one, recompute=False, freeze=freeze)
-#                     metrics = compute_metrics(ins, one=one, save=True)
-#                 else:
-#                     logger.warning(f'Warning: {np.sum(~isin)} recordings are missing metrics')
-#
-#             # merge the two dataframes
-#             df = df.merge(metrics, on=['pid', 'region', 'subject', 'eid', 'probe', 'date', 'lab'])
-#         else:
-#             df = metrics
-#     return df
-
-
 def region_check(df, min_channels_region=5, min_neuron_region=4):
     # Region Level
     # no. of channels per region

@@ -18,11 +18,14 @@ br = BrainRegions()
 
 lab_number_map, institution_map, lab_colors = labs()
 
+
 def panel_sankey(fig, ax, one, freeze=None):
     # Get all trajectories
-    trajs_0 = get_insertions(level=0, freeze=freeze, as_dataframe=True)
-    # Get those level 1
-    trajs_1 = get_insertions(level=1, freeze=freeze, as_dataframe=True)
+    trajs_0, _ = get_insertions(level=0, freeze=freeze, as_dataframe=True)
+    # Get trajs level 1
+    trajs_1, ins_df_1 = get_insertions(level=1, freeze=freeze, as_dataframe=True)
+    # Get trajs level 2
+    trajs_2, ins_df_2 = get_insertions(level=2, freeze=freeze, as_dataframe=True)
     # Compute which PIDs are critical
     pids_crt = set(trajs_0.probe_insertion.values) - set(trajs_1.probe_insertion.values)
 
@@ -54,66 +57,44 @@ def panel_sankey(fig, ax, one, freeze=None):
     hist_crt = len(remove_crt_histology)
     ephys_crt = len(pids_crt_ephysonly)
 
-    metrics = load_metrics(freeze=freeze)
+    # ----
+    df_drop_sankey = ins_df_1.copy()
 
+    low_yield = df_drop_sankey.loc[(df_drop_sankey['low_yield'] == True)].shape[0]  # TODO do not know how to return indx from drop
+    df_drop_sankey.drop(df_drop_sankey[df_drop_sankey['low_yield'] == True].index, inplace=True)
 
+    high_noise = \
+    df_drop_sankey.loc[(df_drop_sankey['high_noise'] == True) | (df_drop_sankey['high_lfp'] == True)].shape[0]
+    df_drop_sankey.drop(
+        df_drop_sankey[(df_drop_sankey['high_noise'] == True) | (df_drop_sankey['high_lfp'] == True)].index,
+        inplace=True)
 
-    # Get number of recordings after freeze cutoff date
-    after_freeze = len(get_insertions(one=one)) - len(get_insertions(one=one, freeze=freeze))
+    behav = df_drop_sankey.loc[(df_drop_sankey['low_trials'] == True)].shape[0]
+    df_drop_sankey.drop(df_drop_sankey[(df_drop_sankey['low_trials'] == True)].index, inplace=True)
 
-    # Get number of failed recordings (CRITICAL)
-    crit = (len(query(behavior=False, n_trials=0, resolved=False, min_regions=0, exclude_critical=False, one=one))
-            - len(query(behavior=False, n_trials=0, resolved=False, min_regions=0, exclude_critical=True, one=one))
-            - after_freeze)
+    missed_target = df_drop_sankey.loc[(df_drop_sankey['missed_target'] == True)].shape[0]
+    df_drop_sankey.drop(df_drop_sankey[(df_drop_sankey['missed_target'] == True)].index, inplace=True)
+    assert df_drop_sankey.shape[0] == ins_df_2.shape[0]
 
-    # Get total number of insertions
-    all_ins = (len(query(behavior=False, n_trials=0, resolved=True, min_regions=0, exclude_critical=True, one=one))
-               + crit - after_freeze)
+    num_trajectories = [all_ins, -hw_crt, -hist_crt, -ephys_crt, -low_yield,
+                        -high_noise, -behav, -missed_target, -ins_df_2.shape[0]]
 
-    # Get drop out due to QC
-    df_filt = filter_recordings(min_rec_lab=0, min_neuron_region=0, freeze=freeze)
-    df_filt = df_filt.drop_duplicates(subset='subject').reset_index()
-    target = df_filt['missed_target'].sum()
-    df_filt = df_filt[~df_filt['missed_target']]
-    behav = df_filt['low_trials'].sum()
-    df_filt = df_filt[~df_filt['low_trials']]
-    low_yield = np.sum(df_filt['low_yield'])
-    df_filt = df_filt[~df_filt['low_yield']]
-    noise = np.sum(df_filt['high_lfp'] | df_filt['high_noise'])
-    df_filt = df_filt[~df_filt['high_lfp'] & ~df_filt['high_noise']]
-    artifacts = np.sum(df_filt['artifacts'])
-    df_filt = df_filt[~df_filt['artifacts']]
+    labels = ['All insertions', 'Hardware failure', 'Missing histology', 'Poor ephys', 'Low neural yield',
+              'High noise', 'Poor behavior', 'Missed target', 'Data analysis']
 
-    # Recordigns left
-    rec_left = df_filt.shape[0]
-
-    #fig, ax = plt.subplots(1, 1, figsize=(6, 3), dpi=400)
-    ax.axis('off')
-
-    #currently hardcoded to match Steven & Guido analyses;
-    #todo: finalize numbers and match with above code
-    num_trajectories = [all_ins, -crit, -target, -behav, -low_yield, -(noise+artifacts), -rec_left]
-
-    # Sankey plot
-    sankey = Sankey(ax=ax, scale=0.005, offset=0.1, head_angle=90, shoulder=0.025, gap=0.5, radius=0.05)
+    fig, ax = plt.subplots()
+    sankey = Sankey(ax=ax, scale=0.005, offset=0.05, head_angle=90, shoulder=0.025, gap=0.2, radius=0.05)
     sankey.add(flows=num_trajectories,
-               labels=['All insertions',
-                       'Recording failure',
-                       'Off target',
-                       'Too few trials',
-                       'Low yield',
-                       'Artifacts',
-                       'Data analysis'],
-               trunklength=0.8,
-               orientations=[0, 1, 1, 1, 1, 1, 0],
-               pathlengths=[0.08, 0.3, 0.15, 0.15, 0.1, 0.08, 0.4],
-               facecolor = sns.color_palette('Pastel1')[1])
+               labels=labels,
+               trunklength=0.7,
+               orientations=[0, 1, 1, 1, 1, 1, 1, 1, 0],
+               pathlengths=[0.08, 0.4, 0.35, 0.3, 0.25, 0.2, 0.15, 0.1, 0.2],
+               facecolor=sns.color_palette('Pastel1')[1])
     diagrams = sankey.finish()
 
-    #text font and positioning
+    # text font and positioning
     for text in diagrams[0].texts:
-            text.set_fontsize('7')
-
+        text.set_fontsize('7')
 
     text = diagrams[0].texts[0]
     xy = text.get_position()
@@ -124,6 +105,8 @@ def panel_sankey(fig, ax, one, freeze=None):
     xy = text.get_position()
     text.set_position((xy[0] + 0.2, xy[1]))
     text.set_weight('bold')
+
+    ax.axis('off')
 
 
 def panel_probe_lfp(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-2000, 2000],
