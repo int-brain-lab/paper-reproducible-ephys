@@ -162,7 +162,6 @@ def recompute_metrics(trajs, metrics=None, one=None, bilateral=False):
             metrics = compute_metrics(trajs, one=one, bilateral=bilateral)
     return metrics
 
-
 def get_insertions(level=2, as_dataframe=False, one=None, freeze=None, bilateral=False, recompute=False):
     """
     Find insertions used for analysis based on different exclusion levels
@@ -497,6 +496,8 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
 # def get_metrics(df=None, freeze=None, recompute=True):
 #     # Load in the insertion metrics
 #     metrics = load_metrics(freeze=freeze)
+#     get_insertions(level)
+
 #
 #     if metrics is None:  # Recompute metrics
 #         if df is None:  # Get list of trajectories if not given as input
@@ -564,12 +565,12 @@ def insertion_check(df, max_ap_rms=40, max_lfp_power=-150, n_trials=400,
 
     return df
 
-def apply_inclusion_crit(df, by_anatomy_only=False, behavior=True):
+def apply_inclusion_crit(df, by_anatomy_only=False, behavior=False):
     sum_metrics = df['high_ap'] + df['high_lfp'] + df['low_yield'] + df['missed_target'] + df['low_trials']
     if by_anatomy_only:
         sum_metrics = df['missed_target']  # by_anatomy_only exclusion criteria applied
     if behavior:
-        sum_metrics += df['low_trials']
+        sum_metrics += df['behavior']
 
     df['include'] = sum_metrics == 0
     return df
@@ -603,8 +604,11 @@ def exclude_particular_pid(df):
 
 
 def filter_recordings(df_reg,
-                      by_anatomy_only=False, behavior=True,
-                      min_rec_lab=4, min_lab_region=3):
+                      by_anatomy_only=False, behavior=False,
+                      min_rec_lab=4, min_lab_region=3,
+                      max_ap_rms=40, max_lfp_power=-150, n_trials=400,
+                      min_neurons_per_channel=0.1, min_regions=3
+                      ):
     """
     Filter values in dataframe according to different exclusion criteria
     :param df_reg:
@@ -621,7 +625,9 @@ def filter_recordings(df_reg,
     # Aggregate per PID
     df_ins = aggregate_pids(df_reg)  # Note that right now we take average/median over region values, not channels
     # Checks
-    df_ins = insertion_check(df_ins)
+    df_ins = insertion_check(df_ins,
+                             max_ap_rms, max_lfp_power, n_trials,
+                             min_neurons_per_channel, min_regions)
     # Criteria applied for rejecting recording prior to analysis
     df_ins = apply_inclusion_crit(df_ins, by_anatomy_only, behavior)
     # Exclude any PIDs
