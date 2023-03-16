@@ -19,13 +19,13 @@ br = BrainRegions()
 lab_number_map, institution_map, lab_colors = labs()
 
 
-def panel_sankey(fig, ax, one, freeze=None):
+def panel_sankey(ax, one, freeze=None):
     # Get all trajectories
-    trajs_0, _ = get_insertions(level=0, freeze=freeze, as_dataframe=True)
+    trajs_0, _ = get_insertions(level=0, freeze=freeze, as_dataframe=True, one=one)
     # Get trajs level 1
-    trajs_1, ins_df_1 = get_insertions(level=1, freeze=freeze, as_dataframe=True)
+    trajs_1, ins_df_1 = get_insertions(level=1, freeze=freeze, as_dataframe=True, one=one)
     # Get trajs level 2
-    trajs_2, ins_df_2 = get_insertions(level=2, freeze=freeze, as_dataframe=True)
+    trajs_2, ins_df_2 = get_insertions(level=2, freeze=freeze, as_dataframe=True, one=one)
     # Compute which PIDs are critical
     pids_crt = set(trajs_0.probe_insertion.values) - set(trajs_1.probe_insertion.values)
 
@@ -64,9 +64,9 @@ def panel_sankey(fig, ax, one, freeze=None):
     df_drop_sankey.drop(df_drop_sankey[df_drop_sankey['low_yield'] == True].index, inplace=True)
 
     high_noise = \
-    df_drop_sankey.loc[(df_drop_sankey['high_noise'] == True) | (df_drop_sankey['high_lfp'] == True)].shape[0]
+    df_drop_sankey.loc[(df_drop_sankey['high_ap'] == True) | (df_drop_sankey['high_lfp'] == True)].shape[0]
     df_drop_sankey.drop(
-        df_drop_sankey[(df_drop_sankey['high_noise'] == True) | (df_drop_sankey['high_lfp'] == True)].index,
+        df_drop_sankey[(df_drop_sankey['high_ap'] == True) | (df_drop_sankey['high_lfp'] == True)].index,
         inplace=True)
 
     behav = df_drop_sankey.loc[(df_drop_sankey['low_trials'] == True)].shape[0]
@@ -82,7 +82,6 @@ def panel_sankey(fig, ax, one, freeze=None):
     labels = ['All insertions', 'Hardware failure', 'Missing histology', 'Poor ephys', 'Low neural yield',
               'High noise', 'Poor behavior', 'Missed target', 'Data analysis']
 
-    fig, ax = plt.subplots()
     sankey = Sankey(ax=ax, scale=0.005, offset=0.05, head_angle=90, shoulder=0.025, gap=0.2, radius=0.05)
     sankey.add(flows=num_trajectories,
                labels=labels,
