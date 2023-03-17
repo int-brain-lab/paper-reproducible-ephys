@@ -251,22 +251,28 @@ def get_insertions(level=2, as_dataframe=False, one=None, freeze='release_2022_1
     if freeze is not None:
         # TODO for next freeze need to think about how to deal with bilateral
 
-        if level < 1:  # Take set computed for all PIDs (even critical ones)
+        if level < 1:  # Take set computed for all PIDs (even critical and unresolved ones)
             ins_df = pd.read_csv(data_release_path().joinpath(f'{freeze}.csv'))
             # Remove particular PIDs
             ins_df = exclude_particular_pid(ins_df)
-            if level == 0:  # Todo change the freeze, currently it does not contain the critical PIDs
-                # Remove those that are level -1 (non resolved)
-                ins_df.drop(ins_df[ins_df['level'] == -1].index, inplace=True)
+            if level == 0:  # Todo change the freeze, currently -1 is a mixture of unresolved and critical PIDs
+                # Todo instead make a freeze for critical PIDs and do a join?
+                # Remove those that are level -1 (non resolved and critical)
+                ins_unre_crit_freeze = ins_df[ins_df['level'] == -1]
+                ins_df2 = ins_df.copy()
+                ins_df2.drop(ins_df2[ins_df2['level'] == -1].index, inplace=True)
 
-                # # TODO delete these lines once freeze is fixed (this hits the database and is not a freeze)
+                # # TODO delete these lines once freeze is fixed
                 # Check assumption on what is contained in metrics is correct
                 metrics = pd.read_csv(data_release_path().joinpath(f'metrics_{freeze}.csv'))
-                assert len(set(ins_df.pid.values) - set(metrics.pid.values)) == 0
-                # Compute which PIDs are critical and add
+                assert len(set(ins_df2.pid.values) - set(metrics.pid.values)) == 0
+                # Compute which PIDs are critical and keep those that were in the set frozen
                 trajs_crt = query_critical(one=one, as_dataframe=True)
                 trajs_crt = trajs_crt.rename(columns={"probe_insertion": "pid"})
-                ins_df = pd.concat([ins_df, trajs_crt])  # This is a very ugly DF but the pids in it are correct
+
+                unresolved_pids = set(ins_unre_crit_freeze.pid.values) - set(trajs_crt.pid.values)
+                ins_df.drop(ins_df[ins_df['pid'].isin(list(unresolved_pids))].index, inplace=True)
+                # ins_df = pd.concat([ins_df, trajs_crt])  # This is a very ugly DF but the pids in it are correct
                 # # --- End delete
         else:
             metrics = pd.read_csv(data_release_path().joinpath(f'metrics_{freeze}.csv'))   # metrics = load_metrics(bilateral=bilateral)

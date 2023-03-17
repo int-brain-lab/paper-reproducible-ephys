@@ -39,6 +39,7 @@ def panel_sankey(ax, one=None, freeze=None):
         '82a42cdf-3140-427b-8ad0-0d504716c871',
         'dc6eea9b-a8fb-4151-b298-718f321e6968'
     ]
+    remove_crt_histology = set(remove_crt_histology).intersection(set(trajs_0.probe_insertion.values))
 
     remove_crt_hardware = [
         '143cff36-30b4-4b25-9d26-5a2dbe6f6fc2',
@@ -49,6 +50,7 @@ def panel_sankey(ax, one=None, freeze=None):
         'fc626c12-bd1e-45c3-9434-4a7a8c81d7c0',
         'd8ff1218-75e1-4962-b920-98c40b9dea1a'
     ]
+    remove_crt_hardware = set(remove_crt_hardware).intersection(set(trajs_0.probe_insertion.values))
 
     pids_crt_ephysonly = pids_crt - set(remove_crt_histology) - set(remove_crt_hardware)
 
