@@ -78,6 +78,7 @@ def panel_sankey(ax, one=None, freeze=None):
     missed_target = df_drop_sankey.loc[(df_drop_sankey['missed_target'] == True)].shape[0]
     df_drop_sankey.drop(df_drop_sankey[(df_drop_sankey['missed_target'] == True)].index, inplace=True)
 
+
     # pid_perm_fail = set(trajs_3.probe_insertion.values) - set(trajs_2.probe_insertion.values)
     # perm_fail = len(pid_perm_fail)
     # df_drop_sankey.drop(df_drop_sankey[(df_drop_sankey['pid'].isin(pid_perm_fail))].index, inplace=True)
@@ -85,6 +86,7 @@ def panel_sankey(ax, one=None, freeze=None):
 
     num_trajectories = [all_ins, -hw_crt, -hist_crt, -ephys_crt, -low_yield,
                         -high_noise, -behav, -missed_target, -df_drop_sankey.shape[0]]
+    assert sum(num_trajectories[0:-1]) == np.abs(num_trajectories[-1])
 
     labels = ['All insertions', 'Hardware failure', 'Missing histology', 'Critical ephys', 'Low yield',
               'High noise', 'Low trials', 'Missed target', 'Data analysis']
