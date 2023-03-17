@@ -203,7 +203,7 @@ def recompute_metrics(trajs, metrics=None, one=None, bilateral=False):
             metrics = compute_metrics(trajs, one=one, bilateral=bilateral)
     return metrics
 
-def get_insertions(level=2, as_dataframe=False, one=None, freeze='release_2022_11', bilateral=False,
+def get_insertions(level=2, as_dataframe=False, one=None, freeze=None, bilateral=False,
                    by_anatomy_only=False, behavior=False,
                    min_rec_lab=4, min_lab_region=3,
                    max_ap_rms=40, max_lfp_power=-150, n_trials=400,
