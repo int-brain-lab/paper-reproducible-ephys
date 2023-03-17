@@ -270,10 +270,9 @@ def get_insertions(level=2, as_dataframe=False, one=None, freeze=None, bilateral
                 # Compute which PIDs are critical and keep those that were in the set frozen
                 trajs_crt = query_critical(one=one, as_dataframe=True)
                 trajs_crt = trajs_crt.rename(columns={"probe_insertion": "pid"})
-
+                # Drop unresolved (=keep critical only)
                 unresolved_pids = set(ins_unre_crit_freeze.pid.values) - set(trajs_crt.pid.values)
                 ins_df.drop(ins_df[ins_df['pid'].isin(list(unresolved_pids))].index, inplace=True)
-                # ins_df = pd.concat([ins_df, trajs_crt])  # This is a very ugly DF but the pids in it are correct
                 # # --- End delete
         else:
             metrics = pd.read_csv(data_release_path().joinpath(f'metrics_{freeze}.csv'))   # metrics = load_metrics(bilateral=bilateral)
