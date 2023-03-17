@@ -237,6 +237,7 @@ def get_insertions(level=2, as_dataframe=False, one=None, freeze=None, bilateral
             behavior=False, min_rec_lab=4, min_lab_region=3,
             max_ap_rms=40, max_lfp_power=-150, n_trials=400,
             min_neurons_per_channel=0.1, min_regions=3
+    Level 3 : Level 1 + Custom filter
 
 
     :param level: exclusion level 0, 1 or 2 : predefined ; 3: custom set of filters applied if given (level 2 otherwise)
