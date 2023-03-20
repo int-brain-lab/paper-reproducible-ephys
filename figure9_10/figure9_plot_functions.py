@@ -649,8 +649,8 @@ def generate_figure9_supplement3(model_config,
     plt.text(10-9, 0-2, 'SWC', color='k',fontsize=20)
     plt.text(10-9, session_boundary[3]-2, 'CCU', color='k',fontsize=20)
     plt.text(10-9, session_boundary[7]-2, 'CSHL (C)', color='k',fontsize=20)
-    plt.text(10-9, session_boundary[11]-2, 'Berkeley', color='k',fontsize=20)
-    #plt.text(10-9, session_boundary[15]-2, 'NYU', color='k',fontsize=20)
+    plt.text(10-9, session_boundary[11]-2, 'UCL', color='k',fontsize=20)
+    plt.text(10-9, session_boundary[15]-2, 'Berkeley', color='k',fontsize=20)
     
     plt.ylabel('neurons', fontsize=18)
     plt.xlabel('time (sec)', fontsize=18)

@@ -38,7 +38,7 @@ def plot_figures():
                             static_bias=True, dynamic_bias=True,
                             hidden_dim_static=HIDDEN_SIZE_STATIC,
                             hidden_dim_dynamic=HIDDEN_SIZE_DYNAMIC, n_layers=n_layers,
-                            dropout=0.2)
+                            dropout=0.15)
 
     model_load_path = data_path.joinpath(f'trained_models/state_dict_rem={remove_cov}_keep={only_keep_cov}.pt')
     model.load_state_dict(torch.load(model_load_path))
@@ -67,6 +67,8 @@ def plot_figures():
         idx += n
 
     for i in range(len(pred_list)):
+        if i not in [14, 15, 16, 17, 18, 19]:
+            continue
         generate_figure_9(feature_list, pred_list, obs_list,
                           neu_list, sess_list, trial_list, which_sess=[i],
                           savefig=True, plot_subsample_ratio=1.0)

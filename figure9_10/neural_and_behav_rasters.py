@@ -5,6 +5,8 @@ from brainbox.behavior.dlc import get_speed_for_features, get_licks, get_sniffs
 from brainbox.task.trials import get_event_aligned_raster, filter_trials
 import matplotlib.pyplot as plt
 from copy import deepcopy
+import pandas as pd
+from reproducible_ephys_functions import save_data_path
 
 def plot_psth_raster(ax, t, psth, raster, title=None, ylabel=None, 
                      xlabel='time (sec)', 
@@ -84,6 +86,22 @@ def plot_neural_behav_raster(eid, probe, trial_idx, stim_dir='left', camera='lef
     one = one or ONE()
 
     dlc = one.load_object(eid, f'{camera}Camera', collection='alf', attribute=['dlc', 'times'])
+    # override with lpks
+    lpks = pd.read_parquet(save_data_path(figure='figure9_10_resubmit').joinpath('lpks', f'{eid}._ibl_leftCamera.pose.pqt'))
+    dlc['dlc']['paw_l_x'] = lpks['paw_l_x']
+    dlc['dlc']['paw_l_y'] = lpks['paw_l_y']
+    dlc['dlc']['paw_r_x'] = lpks['paw_r_x']
+    dlc['dlc']['paw_r_y'] = lpks['paw_r_y']
+    
+    dlc['dlc']['pupil_top_r_x'] = lpks['pupil_top_r_x']
+    dlc['dlc']['pupil_top_r_y'] = lpks['pupil_top_r_y']
+    dlc['dlc']['pupil_bottom_r_x'] = lpks['pupil_bottom_r_x']
+    dlc['dlc']['pupil_bottom_r_y'] = lpks['pupil_bottom_r_y']
+    dlc['dlc']['pupil_left_r_x'] = lpks['pupil_left_r_x']
+    dlc['dlc']['pupil_left_r_y'] = lpks['pupil_left_r_y']
+    dlc['dlc']['pupil_right_r_x'] = lpks['pupil_right_r_x']
+    dlc['dlc']['pupil_right_r_y'] = lpks['pupil_right_r_y']
+    
     dlc_all = get_dlc_everything_skip_threshold(dlc, camera)
     wheel = one.load_object(eid, 'wheel', collection='alf',)
     me = one.load_dataset(eid, 'leftCamera.ROIMotionEnergy.npy')

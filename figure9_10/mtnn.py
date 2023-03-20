@@ -13,9 +13,9 @@ from reproducible_ephys_functions import save_data_path
 
 import random
 
-torch.manual_seed(7)
-np.random.seed(9)
-random.seed(912)
+torch.manual_seed(7358)
+np.random.seed(981414)
+random.seed(55777)
 
 def seed_worker(worker_id):
     worker_seed = torch.initial_seed() % 2**32
@@ -23,7 +23,7 @@ def seed_worker(worker_id):
     random.seed(worker_seed)
 
 g = torch.Generator()
-g.manual_seed(557)
+g.manual_seed(993342310)
 
 class MTNN(nn.Module):
     def __init__(self, n_neurons, 

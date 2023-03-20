@@ -35,28 +35,28 @@ from ibllib.atlas import AllenAtlas
 rng = np.random.default_rng(seed=12345)
 
 lab_offset = 1
-session_offset = 5
-xyz_offset = 9
-max_ptp_offset = 12
-wf_width_offset = 13
-paw_offset = 14
-nose_offset = 15
-pupil_offset = 16
-left_me_offset = 17
-stimulus_offset = 18
-goCue_offset = 20
-firstMovement_offset = 21
-choice_offset = 22
-reward_offset = 24
-wheel_offset = 26
-pLeft_offset = 27
-pLeft_last_offset = 28
-lick_offset = 29
-glmhmm_offset = 30 # changed to k=4 model
-acronym_offset = 34
-noise_offset = 39
+session_offset = 6
+xyz_offset = 10
+max_ptp_offset = 13
+wf_width_offset = 14
+paw_offset = 15
+nose_offset = 16
+pupil_offset = 17
+left_me_offset = 18
+stimulus_offset = 19
+goCue_offset = 21
+firstMovement_offset = 22
+choice_offset = 23
+reward_offset = 25
+wheel_offset = 27
+pLeft_offset = 28
+pLeft_last_offset = 29
+lick_offset = 30
+glmhmm_offset = 31 # changed to k=4 model
+acronym_offset = 35
+noise_offset = 40
 
-static_idx = np.asarray([1,2,3,4,5,6,7,8,9,10,11,12,13,27,28,30,31,32,33,34,35,36,37,38]) - 1
+static_idx = np.asarray([1,2,3,4,5,6,7,8,9,10,11,12,13,14,28,29,31,32,33,34,35,36,37,38,39]) - 1
 static_bool = np.zeros(noise_offset).astype(bool)
 static_bool[static_idx] = True
 
@@ -196,7 +196,7 @@ def run_exp_prevAction(mtnn_eids, one=None):
 
 def get_lab_number_map():
     #lab_number_map = {'angelakilab': 0, 'hoferlab': 1, 'mrsicflogellab': 1, 'mainenlab': 2, 'churchlandlab': 3, 'danlab': 4}
-    lab_number_map = {'hoferlab': 0, 'mrsicflogellab': 0, 'mainenlab': 1, 'churchlandlab': 2, 'danlab': 3}
+    lab_number_map = {'hoferlab': 0, 'mrsicflogellab': 0, 'mainenlab': 1, 'churchlandlab': 2, 'cortexlab': 3, 'danlab': 4}
     return lab_number_map
 
 
@@ -262,21 +262,43 @@ def get_mtnn_eids():
 #                 'd23a44ef-1402-4ed7-97f5-47e9a7a504d9': 0,
 #                }
 
+#     mtnn_eids = {'56b57c38-2699-4091-90a8-aba35103155e': 0, # SWC
+#                  '41872d7f-75cb-4445-bb1a-132b354c44f0': 3, # SWC, no passive
+#                  '6f09ba7e-e3ce-44b0-932b-c003fb44fb89': 0, # SWC
+#                  '862ade13-53cd-4221-a3fa-dda8643641f2': 0, # SWC
+#                  '72cb5550-43b4-4ef0-add5-e4adfdfb5e02': 0, # ZFM
+#                  'ee40aece-cffd-4edb-a4b6-155f158c666a': 0, # ZFM
+#                  '30c4e2ab-dffc-499d-aae4-e51d6b3218c2': 0, # ZFM
+#                  'c7248e09-8c0d-40f2-9eb4-700a8973d8c8': 1, # ZFM
+#                  'f312aaec-3b6f-44b3-86b4-3a0c119c0438': 0, # CSHL (C)
+#                  'dda5fc59-f09a-4256-9fb5-66c67667a466': 0, # CSHL (C)
+#                  'ecb5520d-1358-434c-95ec-93687ecd1396': 0, # CSHL (C)
+#                  '4b00df29-3769-43be-bb40-128b1cba6d35': 0, # CSHL (C)
+#                  '54238fd6-d2d0-4408-b1a9-d19d24fd29ce': 0, # DY
+#                  'db4df448-e449-4a6f-a0e7-288711e7a75a': 0, # DY
+#                  'b03fbc44-3d8e-4a6c-8a50-5ea3498568e0': 3, # DY # no passive
+#                  'd23a44ef-1402-4ed7-97f5-47e9a7a504d9': 0, # DY
+#                 }
+
     mtnn_eids = {'56b57c38-2699-4091-90a8-aba35103155e': 0, # SWC
-                 '41872d7f-75cb-4445-bb1a-132b354c44f0': 3, # SWC, no passive
-                 '6f09ba7e-e3ce-44b0-932b-c003fb44fb89': 0, # SWC
-                 '862ade13-53cd-4221-a3fa-dda8643641f2': 0, # SWC
-                 '72cb5550-43b4-4ef0-add5-e4adfdfb5e02': 0, # ZFM
-                 'ee40aece-cffd-4edb-a4b6-155f158c666a': 0, # ZFM
+                 'dac3a4c1-b666-4de0-87e8-8c514483cacf': 0, # SWC
+                 '41872d7f-75cb-4445-bb1a-132b354c44f0': 0, # SWC, no passive
+                 '3638d102-e8b6-4230-8742-e548cd87a949': 0, # SWC
+                 'a4a74102-2af5-45dc-9e41-ef7f5aed88be': 0, # ZFM
+                 '746d1902-fa59-4cab-b0aa-013be36060d5': 0, # ZFM
                  '30c4e2ab-dffc-499d-aae4-e51d6b3218c2': 0, # ZFM
-                 'c7248e09-8c0d-40f2-9eb4-700a8973d8c8': 1, # ZFM
+                 'd0ea3148-948d-4817-94f8-dcaf2342bbbe': 0, # ZFM
                  'f312aaec-3b6f-44b3-86b4-3a0c119c0438': 0, # CSHL (C)
                  'dda5fc59-f09a-4256-9fb5-66c67667a466': 0, # CSHL (C)
+                 '4b7fbad4-f6de-43b4-9b15-c7c7ef44db4b': 0, # CSHL (C)
                  'ecb5520d-1358-434c-95ec-93687ecd1396': 0, # CSHL (C)
-                 '4b00df29-3769-43be-bb40-128b1cba6d35': 0, # CSHL (C)
+                 '0a018f12-ee06-4b11-97aa-bbbff5448e9f': 0, # UCL
+                 '3f859b5c-e73a-4044-b49e-34bb81e96715': 0, # UCL
+                 '781b35fd-e1f0-4d14-b2bb-95b7263082bb': 0, # UCL
+                 'b22f694e-4a34-4142-ab9d-2556c3487086': 0, # UCL
                  '54238fd6-d2d0-4408-b1a9-d19d24fd29ce': 0, # DY
                  'db4df448-e449-4a6f-a0e7-288711e7a75a': 0, # DY
-                 'b03fbc44-3d8e-4a6c-8a50-5ea3498568e0': 3, # DY # no passive
+                 '4a45c8ba-db6f-4f11-9403-56e06a33dfa4': 0, # DY # no passive
                  'd23a44ef-1402-4ed7-97f5-47e9a7a504d9': 0, # DY
                 }
     
@@ -455,7 +477,24 @@ def featurize(i, trajectory, one, session_counter, bin_size=0.05, align_event='m
     assert (left_dlc['times'].shape[0] == left_dlc['dlc'].shape[0])
 
     left_dlc['dlc'] = dlc.likelihood_threshold(left_dlc['dlc'], threshold=0)
-
+    
+    # override paw and pupil traces with lpks
+    lpks = pd.read_parquet(save_data_path(figure='figure9_10_resubmit').joinpath('lpks', f'{eid}._ibl_leftCamera.pose.pqt'))
+    left_dlc['dlc']['paw_l_x'] = lpks['paw_l_x']
+    left_dlc['dlc']['paw_l_y'] = lpks['paw_l_y']
+    left_dlc['dlc']['paw_r_x'] = lpks['paw_r_x']
+    left_dlc['dlc']['paw_r_y'] = lpks['paw_r_y']
+    
+    left_dlc['dlc']['pupil_top_r_x'] = lpks['pupil_top_r_x']
+    left_dlc['dlc']['pupil_top_r_y'] = lpks['pupil_top_r_y']
+    left_dlc['dlc']['pupil_bottom_r_x'] = lpks['pupil_bottom_r_x']
+    left_dlc['dlc']['pupil_bottom_r_y'] = lpks['pupil_bottom_r_y']
+    left_dlc['dlc']['pupil_left_r_x'] = lpks['pupil_left_r_x']
+    left_dlc['dlc']['pupil_left_r_y'] = lpks['pupil_left_r_y']
+    left_dlc['dlc']['pupil_right_r_x'] = lpks['pupil_right_r_x']
+    left_dlc['dlc']['pupil_right_r_y'] = lpks['pupil_right_r_y']
+    
+    
     # get licks
     # TO DO check if lick times ever nan
     try:
@@ -473,12 +512,13 @@ def featurize(i, trajectory, one, session_counter, bin_size=0.05, align_event='m
 
     # get pupil diameter
     # TODO check in pupil diameter ever nan
-    if 'features' in left_dlc.keys():
-        pupil_diameter = left_dlc.pop('features')['pupilDiameter_smooth']
-        if np.sum(np.isnan(pupil_diameter)) > 0:
-            pupil_diameter = dlc.get_smooth_pupil_diameter(dlc.get_pupil_diameter(left_dlc['dlc']), 'left')
-    else:
-        pupil_diameter = dlc.get_smooth_pupil_diameter(dlc.get_pupil_diameter(left_dlc['dlc']), 'left')
+#     if 'features' in left_dlc.keys():
+#         pupil_diameter = left_dlc.pop('features')['pupilDiameter_smooth']
+#         if np.sum(np.isnan(pupil_diameter)) > 0:
+#             pupil_diameter = dlc.get_smooth_pupil_diameter(dlc.get_pupil_diameter(left_dlc['dlc']), 'left')
+#     else:
+#         pupil_diameter = dlc.get_smooth_pupil_diameter(dlc.get_pupil_diameter(left_dlc['dlc']), 'left')
+    pupil_diameter = dlc.get_pupil_diameter(left_dlc['dlc'])
 
     # get wheel velocity
     wheel = one.load_object(eid, 'wheel')

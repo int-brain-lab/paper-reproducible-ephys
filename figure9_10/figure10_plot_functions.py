@@ -300,6 +300,7 @@ def generate_figure_10(model_config,
     for i in range(len(single_covs)):
         cov = single_covs[single_cov_ordering[i]]
         all_scores_mean = all_scores_mean_list[single_cov_ordering[i]]
+        print(single_cov_ordering[i], all_scores_mean)
 #         ax['panel_A'].plot([i-0.3,i+0.3], [all_scores_mean,all_scores_mean], 
 #                            color='k',linestyle='--')
         for j, region in enumerate(regions):

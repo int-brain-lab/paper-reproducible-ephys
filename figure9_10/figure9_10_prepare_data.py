@@ -11,7 +11,8 @@ import modeling.utils as mut
 import brainbox.io.one as bbone
 
 from reproducible_ephys_functions import save_data_path, save_dataset_info, repo_path
-from figure9_10.utils import get_mtnn_eids, get_traj, featurize, select_high_fr_neurons, preprocess_feature, load_original, load_trials_df
+#from figure9_10.utils import get_mtnn_eids, get_traj, featurize, select_high_fr_neurons, preprocess_feature, load_original, load_trials_df
+from figure9_10.utils import *
 from figure9_10.glm import generate_design, generate_design_full_mtnn_cov, bases, bases_full_mtnn_cov, binwidth, t_before, t_after, GLMPredictor
 from figure9_10.simulate import simulate_cell, concat_simcell_data, to_mtnn_form
 from figure9_10.figure9_10_load_data import download_priors, download_glm_hmm
@@ -44,7 +45,7 @@ def prepare_mtnn_data(eids, insertions, one, brain_atlas=None):
     session_list = []
     session_count = {'mainenlab': 0, 'churchlandlab': 0,
                      ('hoferlab', 'mrsicflogellab'): 0,
-                     'danlab': 0}
+                     'danlab': 0, 'cortexlab': 0}
 
     for i, ins in enumerate(insertions):
         feature, output, cluster_numbers, trial_numbers = featurize(i, ins, one, session_count, brain_atlas=brain_atlas)
@@ -326,7 +327,7 @@ def prepare_glm_and_simulated_data(insertions, one, brain_atlas=None):
     np.save(glm_score_save_path.joinpath('glm_scores.npy'), scores)
 
     # Now prepare simulated data
-    num_trials = 330
+    num_trials = 400 #170 #330
     n_test = int(num_trials*0.2)
     n_train = int((num_trials-n_test)*0.8)
     n_val = num_trials - n_train - n_test
@@ -379,15 +380,33 @@ def prepare_glm_and_simulated_data(insertions, one, brain_atlas=None):
         intercepts = nglm.intercepts
 
         wheeltraces = trialsdf.wheel_velocity.to_list()
+        if len(wheeltraces) < num_trials: # use wheel traces from other sessions
+            for j in range(len(insertions)):
+                if i == j:
+                    continue
+                new_wheeltraces = trialsdf_list[j].wheel_velocity.to_list()
+                wheeltraces.extend(new_wheeltraces[:num_trials-len(wheeltraces)])
+                
+                if len(wheeltraces) >= num_trials:
+                    break
+        if len(wheeltraces) > num_trials:
+            wheeltraces = wheeltraces[:num_trials]
         firstMovement_times = np.ones(num_trials) * 0.5
         stimtimes = rng.choice(stim_rt_vals, size=num_trials, p=stim_rt_probs) \
             + rng.normal(size=num_trials) * 0.05
         fdbktimes = rng.choice(fdb_rt_vals, size=num_trials, p=fdb_rt_probs) \
             + firstMovement_times + rng.normal(size=num_trials) * 0.05
-        if prior_list[i].shape[0] < num_trials:
-            priors = np.concatenate((prior_list[i], prior_list[i][:num_trials-prior_list[i].shape[0]]))
-        else:
-            priors = prior_list[i][:num_trials]
+        priors = prior_list[i]
+        if priors.shape[0] < num_trials:
+            for j in range(len(insertions)):
+                if i == j:
+                    continue
+                new_priors = prior_list[j]
+                priors = np.concatenate((priors, new_priors[:num_trials-priors.shape[0]]))
+                if priors.shape[0] >= num_trials:
+                    break
+        if priors.shape[0] > num_trials:
+            priors = priors[:num_trials]
         prev_priors = np.pad(priors, (1, 0), constant_values=0)[:-1]
         contrasts = rng.choice(contrastvals, replace=True, size=num_trials)
         feedbacktypes = rng.choice([-1, 1], size=num_trials, p=[0.1, 0.9])
@@ -572,8 +591,8 @@ def prepare_glm_and_simulated_data(insertions, one, brain_atlas=None):
 
     
 def prepare_glm_data_full_mtnn_cov(insertions, one, brain_atlas=None):
-    
-    download_priors()
+
+    #download_priors()
     data_load_path = data_path.joinpath('mtnn_data')
     train_trial_ids = np.load(data_load_path.joinpath('train/trials.npy'), allow_pickle=True)
     val_trial_ids = np.load(data_load_path.joinpath('validation/trials.npy'), allow_pickle=True)
@@ -585,7 +604,7 @@ def prepare_glm_data_full_mtnn_cov(insertions, one, brain_atlas=None):
     cluster_list = []
     spk_times_list = []
     clus_list = []
-    for i, ins in tqdm(enumerate(insertions)):
+    for i, ins in notebook.tqdm(enumerate(insertions)):
 
         eid = ins['session']['id']
         probe = ins['probe_name']
@@ -700,4 +719,4 @@ if __name__ == '__main__':
     one = ONE()
     one.record_loaded = True
     prepare_data(one)
-    save_dataset_info(one, figure='figure9_10')
+    save_dataset_info(one, figure='figure9_10_resubmit')
