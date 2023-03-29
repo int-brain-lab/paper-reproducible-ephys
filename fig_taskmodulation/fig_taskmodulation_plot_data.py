@@ -44,21 +44,21 @@ fig_path = save_figure_path(figure='fig_taskmodulation')
 
 #Renamed & remove 'Trial':
 tests = {#'trial': 'Trial (first 400 ms)',
-          'start_to_move': 'Late reaction period',
           'post_stim': 'Stimulus',
-          'pre_move': 'Movement initiation',
-          'pre_move_lr': 'L vs. R pre-movement',
           'post_move': 'Movement period (250 ms)',
+          'start_to_move': 'Late reaction period',
+          'pre_move': 'Movement initiation',
           'post_reward': 'Reward',
+          'pre_move_lr': 'L vs. R pre-movement',
           'avg_ff_post_move': 'Fano Factor'}
 
 shortened_tests = {#'trial': 'Trial (first 400 ms)',
-                   'start_to_move': 'Reaction period',
                    'post_stim': 'Stimulus',
+                   'post_move': 'Movevement',
+                   'start_to_move': 'Reaction period',
                    'pre_move': 'Move. initiation',
-                   'pre_move_lr': 'L vs R move.',
-                   'post_move': 'Move. (250 ms)',
                    'post_reward': 'Reward',
+                   'pre_move_lr': 'L vs R move.',
                    'avg_ff_post_move': 'Fano Factor'}
 
 
@@ -82,21 +82,21 @@ def plot_main_figure():
     #                                          wspace=0.3),
     #       'panel_D_4': fg.place_axes_on_grid(fig, xspan=[0.70125, 0.9], yspan=[0.38, 0.65],
     #                                          wspace=0.3)}
-    ax = {'panel_A_1': fg.place_axes_on_grid(fig, xspan=[0.08, 0.288], yspan=[0.045, 0.13],
+    ax = {'panel_A_1': fg.place_axes_on_grid(fig, xspan=[0.08, 0.288], yspan=[0.045, 0.125],
                                              wspace=0.3),
-          'panel_A_2': fg.place_axes_on_grid(fig, xspan=[0.08, 0.288], yspan=[0.14, 0.26],
+          'panel_A_2': fg.place_axes_on_grid(fig, xspan=[0.08, 0.288], yspan=[0.13, 0.23],
                                              wspace=0.3),
-          'panel_B': fg.place_axes_on_grid(fig, xspan=[0.388, 0.631], yspan=[0.045, 0.26],
+          'panel_B': fg.place_axes_on_grid(fig, xspan=[0.388, 0.631], yspan=[0.045, 0.23],
                                            wspace=0.3),
-          'panel_C': fg.place_axes_on_grid(fig, xspan=[0.741, 1.], yspan=[0.045, 0.26],
+          'panel_C': fg.place_axes_on_grid(fig, xspan=[0.741, 1.], yspan=[0.045, 0.23],
                                            wspace=0.3),
-          'panel_D_1': fg.place_axes_on_grid(fig, xspan=[0.075,  0.27375], yspan=[0.37, 0.58],
+          'panel_D_1': fg.place_axes_on_grid(fig, xspan=[0.075,  0.27375], yspan=[0.32, 0.5],
                                              wspace=0.3),
-          'panel_D_2': fg.place_axes_on_grid(fig, xspan=[0.28375, 0.4825], yspan=[0.37, 0.58],
+          'panel_D_2': fg.place_axes_on_grid(fig, xspan=[0.28375, 0.4825], yspan=[0.32, 0.5],
                                              wspace=0.3),
-          'panel_D_3': fg.place_axes_on_grid(fig, xspan=[0.4925, 0.69125], yspan=[0.37, 0.58],
+          'panel_D_3': fg.place_axes_on_grid(fig, xspan=[0.4925, 0.69125], yspan=[0.32, 0.5],
                                              wspace=0.3),
-          'panel_D_4': fg.place_axes_on_grid(fig, xspan=[0.70125, .9], yspan=[0.37, 0.58],
+          'panel_D_4': fg.place_axes_on_grid(fig, xspan=[0.70125, .9], yspan=[0.32, 0.5],
                                              wspace=0.3),
           'panel_E_1': fg.place_axes_on_grid(fig, xspan=[0.075, 0.46], yspan=[0.71, 0.76],
                                              wspace=0.3),
@@ -104,15 +104,15 @@ def plot_main_figure():
                                              wspace=0.3),
           'panel_E_3': fg.place_axes_on_grid(fig, xspan=[0.075, 0.46], yspan=[0.83, 0.88],
                                              wspace=0.3),
-          'panel_E_4': fg.place_axes_on_grid(fig, xspan=[0.075, 0.46], yspan=[0.89, 0.94],
+          'panel_E_4': fg.place_axes_on_grid(fig, xspan=[0.075, 0.46], yspan=[0.89, .94],
                                              wspace=0.3),
           'panel_E_5': fg.place_axes_on_grid(fig, xspan=[0.075, 0.46], yspan=[0.95, 1.],
                                              wspace=0.3),
-          'panel_F_1': fg.place_axes_on_grid(fig, xspan=[0.55, 0.66], yspan=[0.69, .8],
+          'panel_F_1': fg.place_axes_on_grid(fig, xspan=[0.55, 0.66], yspan=[0.57, .73],
                                              wspace=0.3),
-          'panel_F_3': fg.place_axes_on_grid(fig, xspan=[0.68, 1.], yspan=[0.69, .8],
+          'panel_F_3': fg.place_axes_on_grid(fig, xspan=[0.68, 1.], yspan=[0.57, .73],
                                              wspace=0.3),
-          'panel_F_2': fg.place_axes_on_grid(fig, xspan=[0.55, 1.], yspan=[0.8, .97],
+          'panel_F_2': fg.place_axes_on_grid(fig, xspan=[0.55, 1.], yspan=[0.74, .98],
                                              wspace=0.3)}
           # 'panel_F': fg.place_axes_on_grid(fig, xspan=[0.08, .99], yspan=[0.75, .91],
           #                                  wspace=0.3)}
@@ -128,7 +128,7 @@ def plot_main_figure():
 
     # we have to find out max and min neurons here now, because plots are split
     df = load_dataframe()
-    df_filt = filter_recordings(df, freeze='release_2022_11')
+    df_filt = filter_recordings(df, min_regions=0, min_lab_region=2, min_rec_lab=0, min_neuron_region=2, freeze='release_2022_11')
     df_filt = df_filt[df_filt['include'] == 1].reset_index()
     df_filt_reg = df_filt.groupby('region')
     max_neurons = 0
@@ -144,19 +144,80 @@ def plot_main_figure():
     plot_panel_all_subjects(max_neurons=max_neurons, min_neurons=min_neurons, ax=[ax['panel_C']], save=False, plotted_regions=['LP'])
     plot_panel_all_subjects(max_neurons=max_neurons, min_neurons=min_neurons, ax=[ax['panel_D_1'], ax['panel_D_2'], ax['panel_D_3'], ax['panel_D_4']], save=False, plotted_regions=D_regions)
 
-    labels = [{'label_text': 'a', 'xpos': 0, 'ypos': 0.005, 'fontsize': 10, 'weight': 'bold'},
-              {'label_text': 'b', 'xpos': 0.305, 'ypos': 0.005, 'fontsize': 10, 'weight': 'bold'},
-              {'label_text': 'c', 'xpos': 0.66, 'ypos': 0.005, 'fontsize': 10, 'weight': 'bold'},
-              {'label_text': 'd', 'xpos': 0, 'ypos': 0.34, 'fontsize': 10, 'weight': 'bold'},
-              {'label_text': 'e', 'xpos': 0, 'ypos': 0.66, 'fontsize': 10, 'weight': 'bold'},
-              {'label_text': 'f', 'xpos': 0.538, 'ypos': 0.66, 'fontsize': 10, 'weight': 'bold'},
-              {'label_text': 'g', 'xpos': 0.662, 'ypos': 0.66, 'fontsize': 10, 'weight': 'bold'},
-              {'label_text': 'h', 'xpos': 0.538, 'ypos': 0.82, 'fontsize': 10, 'weight': 'bold'}]
+    labels = [{'label_text': 'a', 'xpos': 0, 'ypos': 0.007, 'fontsize': 10, 'weight': 'bold'},
+              {'label_text': 'b', 'xpos': 0.305, 'ypos': 0.007, 'fontsize': 10, 'weight': 'bold'},
+              {'label_text': 'c', 'xpos': 0.66, 'ypos': 0.007, 'fontsize': 10, 'weight': 'bold'},
+              {'label_text': 'd', 'xpos': 0, 'ypos': 0.29, 'fontsize': 10, 'weight': 'bold'},
+              {'label_text': 'e', 'xpos': 0, 'ypos': 0.57, 'fontsize': 10, 'weight': 'bold'},
+              {'label_text': 'f', 'xpos': 0.5, 'ypos': 0.57, 'fontsize': 10, 'weight': 'bold'},
+              {'label_text': 'g', 'xpos': 0.662, 'ypos': 0.57, 'fontsize': 10, 'weight': 'bold'},
+              {'label_text': 'h', 'xpos': 0.5, 'ypos': 0.75, 'fontsize': 10, 'weight': 'bold'}]
 
     fg.add_labels(fig, labels)
     print(f'Saving figures to {fig_path}')
     plt.savefig(fig_path.joinpath('fig_taskmodulation_combined.png'), bbox_inches='tight', pad_inches=0)
     plt.savefig(fig_path.joinpath('fig_taskmodulation_combined.pdf'), bbox_inches='tight', pad_inches=0)
+    plt.close()
+
+
+
+
+def task_mod_panel_helper(fig, panel_name, xspan, ybot, ytop):
+    step = (ytop - ybot + 0.01) / 5
+    ret = {panel_name + '1': fg.place_axes_on_grid(fig, xspan=xspan, yspan=[ybot + 0 * step, ybot + 1 * step - 0.01],
+                                                   wspace=0.3),
+           panel_name + '2': fg.place_axes_on_grid(fig, xspan=xspan, yspan=[ybot + 1 * step, ybot + 2 * step - 0.01],
+                                                   wspace=0.3),
+           panel_name + '3': fg.place_axes_on_grid(fig, xspan=xspan, yspan=[ybot + 2 * step, ybot + 3 * step - 0.01],
+                                                   wspace=0.3),
+           panel_name + '4': fg.place_axes_on_grid(fig, xspan=xspan, yspan=[ybot + 3 * step, ybot + 4 * step - 0.01],
+                                                   wspace=0.3),
+           panel_name + '5': fg.place_axes_on_grid(fig, xspan=xspan, yspan=[ybot + 4 * step, ytop],
+                                                   wspace=0.3)}
+    return ret
+
+
+def plot_supp_figure():
+    DPI = 400  # if the figure is too big on your screen, lower this number
+    figure_style()
+    fig = plt.figure(figsize=(7, 10.5), dpi=DPI)  # full width figure is 7 inches
+    panel_a = task_mod_panel_helper(fig, 'panel_A_', [0.075, 0.45], 0.13, 0.32)
+    panel_b = task_mod_panel_helper(fig, 'panel_B_', [0.55, 1.], 0.13, 0.32)
+    panel_c = task_mod_panel_helper(fig, 'panel_C_', [0.075, 0.45], 0.46, 0.65)
+    panel_d = task_mod_panel_helper(fig, 'panel_D_', [0.55, 1.], 0.46, 0.65)
+    panel_e = task_mod_panel_helper(fig, 'panel_E_', [0.075, 0.45], 0.79, 1)
+    panel_f = task_mod_panel_helper(fig, 'panel_F_', [0.55, 1.], 0.79, 1)
+
+    plot_panel_task_modulated_neurons(specific_tests=['post_stim'],
+                                      ax=[panel_a['panel_A_{}'.format(x)] for x in range(1, 6)],
+                                      save=False)
+    plot_panel_task_modulated_neurons(specific_tests=['post_move'],
+                                      ax=[panel_b['panel_B_{}'.format(x)] for x in range(1, 6)],
+                                      save=False)
+    plot_panel_task_modulated_neurons(specific_tests=['start_to_move'],
+                                      ax=[panel_c['panel_C_{}'.format(x)] for x in range(1, 6)],
+                                      save=False)
+    plot_panel_task_modulated_neurons(specific_tests=['pre_move'],
+                                      ax=[panel_d['panel_D_{}'.format(x)] for x in range(1, 6)],
+                                      save=False)
+    plot_panel_task_modulated_neurons(specific_tests=['post_reward'],
+                                      ax=[panel_e['panel_E_{}'.format(x)] for x in range(1, 6)],
+                                      save=False)
+    plot_panel_task_modulated_neurons(specific_tests=['pre_move_lr'],
+                                      ax=[panel_f['panel_F_{}'.format(x)] for x in range(1, 6)],
+                                      save=False)
+
+    labels = [{'label_text': 'a', 'xpos': 0, 'ypos': 0, 'fontsize': 10, 'weight': 'bold'},
+              {'label_text': 'b', 'xpos': 0.5, 'ypos': 0, 'fontsize': 10, 'weight': 'bold'},
+              {'label_text': 'c', 'xpos': 0, 'ypos': 0.33, 'fontsize': 10, 'weight': 'bold'},
+              {'label_text': 'd', 'xpos': 0.5, 'ypos': 0.33, 'fontsize': 10, 'weight': 'bold'},
+              {'label_text': 'e', 'xpos': 0, 'ypos': 0.66, 'fontsize': 10, 'weight': 'bold'},
+              {'label_text': 'f', 'xpos': 0.5, 'ypos': 0.66, 'fontsize': 10, 'weight': 'bold'}]
+    fg.add_labels(fig, labels)
+
+    print(f'Saving figures to {fig_path}')
+    plt.savefig(fig_path.joinpath('figure_taskmodulation_supp.png'), bbox_inches='tight', pad_inches=0)
+    plt.savefig(fig_path.joinpath('figure_taskmodulation_supp.pdf'), bbox_inches='tight', pad_inches=0)
     plt.close()
 
 
@@ -224,7 +285,7 @@ def plot_panel_single_subject(event='move', norm='subtract', smoothing='sliding'
     df = load_dataframe()
     data = load_data(event=event, norm=norm, smoothing=smoothing)
 
-    df_filt = filter_recordings(df, freeze='release_2022_11')
+    df_filt = filter_recordings(df, min_regions=0, min_lab_region=2, min_rec_lab=0, min_neuron_region=2, freeze='release_2022_11')
     all_frs_l = data['all_frs_l'][df_filt['include'] == 1]
     all_frs_r = data['all_frs_r'][df_filt['include'] == 1]
     all_frs_l_std = data['all_frs_l_std'][df_filt['include'] == 1]
@@ -287,7 +348,7 @@ def plot_panel_all_subjects(max_neurons, min_neurons, ax=None, save=True, plotte
     df = load_dataframe()
     data = load_data(event='move', norm='subtract', smoothing='sliding')
 
-    df_filt = filter_recordings(df, freeze='release_2022_11')
+    df_filt = filter_recordings(df, min_regions=0, min_lab_region=2, min_rec_lab=0, min_neuron_region=2, freeze='release_2022_11')
     all_frs_l = data['all_frs_l'][df_filt['include'] == 1]
     all_frs_r = data['all_frs_r'][df_filt['include'] == 1]
     all_frs_l_std = data['all_frs_l_std'][df_filt['include'] == 1]
@@ -364,7 +425,7 @@ def plot_panel_task_modulated_neurons(specific_tests=None, ax=None, save=True):
 
     # load dataframe from prev fig. 5 (To be combined with new Fig 4)
     df = load_dataframe()
-    df_filt = filter_recordings(df, freeze='release_2022_11')
+    df_filt = filter_recordings(df, min_regions=0, min_lab_region=2, min_rec_lab=0, min_neuron_region=2, freeze='release_2022_11')
     df_filt = df_filt[df_filt['include'] == 1]
 
     # Group data frame by region
@@ -422,7 +483,7 @@ def plot_panel_permutation(ax=None, recompute=False, n_permut=20000, qc='pass', 
     # load dataframe from prev fig. 5 (To be combined with new Fig 4)
     # Prev Figure 5d permutation tests
     df = load_dataframe()
-    df_filt = filter_recordings(df, recompute=True, min_lab_region=2, min_rec_lab=0, min_neuron_region=2, freeze='release_2022_11')
+    df_filt = filter_recordings(df, recompute=True, min_regions=0, min_lab_region=2, min_rec_lab=0, min_neuron_region=2, freeze='release_2022_11')
     if qc == 'pass':
         df_filt = df_filt[df_filt['permute_include'] == 1]
     elif qc != 'all':
@@ -505,7 +566,7 @@ def plot_panel_power_analysis(ax, ax2):
 
     p_values = pickle.load(open("p_values_new_max_metric", 'rb'))
     df = load_dataframe()
-    df_filt = filter_recordings(df, recompute=True, min_lab_region=2, min_rec_lab=0, min_neuron_region=2, freeze='release_2022_11')
+    df_filt = filter_recordings(df, recompute=True, min_regions=0, min_lab_region=2, min_rec_lab=0, min_neuron_region=2, freeze='release_2022_11')
     df_filt = df_filt[df_filt['permute_include'] == 1]
     df_filt_reg = df_filt.groupby('region')
 
@@ -682,7 +743,7 @@ def plot_power_analysis():
 
     p_values = pickle.load(open("p_values_new_max_metric", 'rb'))
     df = load_dataframe()
-    df_filt = filter_recordings(df, recompute=True, min_lab_region=2, min_rec_lab=0, min_neuron_region=2, freeze='release_2022_11')
+    df_filt = filter_recordings(df, recompute=True, min_regions=0, min_lab_region=2, min_rec_lab=0, min_neuron_region=2, freeze='release_2022_11')
     df_filt = df_filt[df_filt['permute_include'] == 1]
     df_filt_reg = df_filt.groupby('region')
 
@@ -853,7 +914,7 @@ def power_analysis_to_table():
     lab_to_num = dict(zip(local_labs, range(len(local_labs))))
 
     df = load_dataframe()
-    df_filt = filter_recordings(df, recompute=True, min_lab_region=2, min_rec_lab=0, min_neuron_region=2, freeze='release_2022_11')
+    df_filt = filter_recordings(df, recompute=True, min_regions=0, min_lab_region=2, min_rec_lab=0, min_neuron_region=2, freeze='release_2022_11')
     df_filt = df_filt[df_filt['permute_include'] == 1]
     df_filt_reg = df_filt.groupby('region')
 
@@ -984,7 +1045,7 @@ print(np.sum(p_values < 0.01))
 
 
 df = load_dataframe()
-df_filt = filter_recordings(df, recompute=True, min_lab_region=2, min_rec_lab=0, min_neuron_region=2, freeze='release_2022_11')
+df_filt = filter_recordings(df, recompute=True, min_regions=0, min_lab_region=2, min_rec_lab=0, min_neuron_region=2, freeze='release_2022_11')
 df_filt = df_filt[df_filt['permute_include'] == 1]
 
 df_filt_reg = df_filt.groupby('region')
@@ -1088,3 +1149,5 @@ quit()
 
 if __name__ == '__main__':
     plot_main_figure()
+    plot_supp_figure()
+    

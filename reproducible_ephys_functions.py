@@ -152,12 +152,16 @@ def get_insertions(level=2, recompute=False, as_dataframe=False, one=None, freez
     Level 1: minimum_regions = 2, resolved = True, behavior = False, n_trial >= 400, exclude_critical = True
     Level 2: minimum_regions = 2, resolved = True, behavior = False, n_trial >= 400, exclude_critical = True,
              max_ap_rms=40,  max_lfp_power=-140, min_channels_per_region=5, min_neurons_per_channel=0.1
+    Level 3: minimum_regions = 0, resolved = True, behavior = False, n_trial >= 400, exclude_critical = True,
+             max_ap_rms=40,  max_lfp_power=-150, min_channels_per_region=5, min_neurons_per_channel=0.1,
+             min_lab_region=0, min_rec_lab=0, min_neuron_region=-1
 
-    :param level: exclusion level 0, 1 or 2
+    :param level: exclusion level 0, 1, 2, or 3
     :param recompute: whether to recompute the metrics dataframe that is used to exclude recordings at level=2
     :param as_dataframe: whether to return a dict or a dataframe
     :param one: ONE instance
     :return: dict or pandas dataframe of probe insertions
+
     """
     one = one or ONE()
 
@@ -191,7 +195,7 @@ def get_insertions(level=2, recompute=False, as_dataframe=False, one=None, freez
             _ = recompute_metrics(insertions, one)
         return insertions
 
-    if level >= 2:
+    if level == 2:
         insertions = query(one=one, as_dataframe=False)
         pids = np.array([ins['probe_insertion'] for ins in insertions])
         if recompute:
@@ -205,6 +209,20 @@ def get_insertions(level=2, recompute=False, as_dataframe=False, one=None, freez
 
         return ins
 
+    if level >= 3:
+        insertions = query(min_regions=0, one=one, as_dataframe=False)
+        pids = np.array([ins['probe_insertion'] for ins in insertions])
+        if recompute:
+            _ = recompute_metrics(insertions, one)
+        ins = filter_recordings(min_regions=0, min_lab_region=0, min_rec_lab=0, min_neuron_region=-1, one=one, freeze=freeze)  # TODO freeze = None here, remove?
+        ins = ins[ins['include']]
+
+        if not as_dataframe:
+            isin, _ = ismember(pids, ins['pid'].unique())
+            ins = [insertions[i] for i, val in enumerate(isin) if val]
+
+        return ins
+    
 
 def get_histology_insertions(one=None, freeze=None):
     one = one or ONE()
