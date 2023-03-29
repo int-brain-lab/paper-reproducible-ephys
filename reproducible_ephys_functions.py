@@ -251,7 +251,6 @@ def figure_style(return_colors=False):
     Set seaborn style for plotting figures
     """
     sns.set(style="ticks", context="paper",
-            font="Arial",
             rc={"font.size": 7,
                 "axes.titlesize": 8,
                 "axes.labelsize": 7,

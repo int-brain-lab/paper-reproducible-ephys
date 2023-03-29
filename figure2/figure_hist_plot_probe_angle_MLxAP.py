@@ -26,7 +26,7 @@ from permutation_test import permut_test, distribution_dist_approx_max
 lab_number_map, institution_map, institution_colors = labs()
 
 
-def plot_probe_angle_histology_panel(perform_permutation_test=True):
+def plot_probe_angle_histology_panel(min_rec_per_lab=4, perform_permutation_test=True):
     """
     Plot the whole probe histology panel, consisting of:
 
@@ -49,12 +49,13 @@ def plot_probe_angle_histology_panel(perform_permutation_test=True):
 
     sns.set(font="serif") # stop error findfont: Font family 'Arial' not found.
     # generate scatterplot in first axes
-    plot_probe_angle_histology()  # saves as SVG to output
+    plot_probe_angle_histology(min_rec_per_lab=min_rec_per_lab)  # saves as SVG to output
 
     # generate histogram/density plot of Euclidean distance at surface from
     # planned to actual for all trajectories
     # AND plot by lab
-    plot_probe_angle_histology_all_lab(perform_permutation_test=perform_permutation_test)
+    plot_probe_angle_histology_all_lab(min_rec_per_lab=min_rec_per_lab,
+                                       perform_permutation_test=perform_permutation_test)
 
     fig_path = save_figure_path(figure='figure2')
     fig = sc.Figure("66mm", "140mm",
@@ -63,7 +64,7 @@ def plot_probe_angle_histology_panel(perform_permutation_test=True):
     fig.save(fig_path.joinpath("angle_histology_panel.svg"))
 
 
-def plot_probe_angle_histology():
+def plot_probe_angle_histology(min_rec_per_lab=4):
     """
     Plot the PLANNED probe angle at [0,0], VECTORS from planned angle to
     actual angle of histology tracks, histology track points coloured
@@ -102,7 +103,8 @@ def plot_probe_angle_histology():
     ax1.plot(mean_ml, mean_ap, color='k', marker="+", markersize=6, alpha=0.7, label="MEAN")
     ax1.tick_params(axis='both', which='major', labelsize=5)
 
-    df = filter_recordings(min_neuron_region=0)
+    df = filter_recordings(by_anatomy_only=True, min_neuron_region=0)
+    #df = filter_recordings(by_anatomy_only=True, min_rec_lab=min_rec_per_lab)
     # Find the pids are that are passing the inclusion criteria
     pids = df[df['include'] == 1]['pid'].unique()
     isin, _ = ismember(probe_data.pid.values, pids)

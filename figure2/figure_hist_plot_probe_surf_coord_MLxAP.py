@@ -26,7 +26,7 @@ from permutation_test import permut_test, distribution_dist_approx_max
 lab_number_map, institution_map, institution_colors = labs()
 
 
-def plot_probe_surf_coord_micro_panel(perform_permutation_test=True):
+def plot_probe_surf_coord_micro_panel(min_rec_per_lab=4, perform_permutation_test=True):
     '''
     Plot the whole probe micro-manipulator panel, consisting of:
 
@@ -49,11 +49,12 @@ def plot_probe_surf_coord_micro_panel(perform_permutation_test=True):
     '''
 
     # generate scatterplot in first axes
-    plot_probe_surf_coord(traj='micro')  # saves as SVG to output
+    plot_probe_surf_coord(traj='micro', min_rec_per_lab=min_rec_per_lab)  # saves as SVG to output
 
     # generate histogram/density plot of Euclidean distance at surface from
     # planned to actual for all trajectories AND dotplots by lab
-    plot_probe_distance_all_lab(traj='micro', perform_permutation_test=perform_permutation_test)
+    plot_probe_distance_all_lab(traj='micro', min_rec_per_lab=min_rec_per_lab,
+                                perform_permutation_test=perform_permutation_test)
 
     fig_path = save_figure_path(figure='figure2')
     fig = sc.Figure("66mm", "140mm",
@@ -63,7 +64,7 @@ def plot_probe_surf_coord_micro_panel(perform_permutation_test=True):
     fig.save(fig_path.joinpath("surf_coord_micro_panel.svg"))
 
 
-def plot_probe_surf_coord_histology_panel(perform_permutation_test=True):
+def plot_probe_surf_coord_histology_panel(min_rec_per_lab=4, perform_permutation_test=True):
     '''
     Plot the whole probe histology panel, consisting of:
 
@@ -86,11 +87,12 @@ def plot_probe_surf_coord_histology_panel(perform_permutation_test=True):
     '''
 
     # generate scatterplot in first axes
-    plot_probe_surf_coord(traj='hist')  # saves as SVG to output
+    plot_probe_surf_coord(traj='hist', min_rec_per_lab=min_rec_per_lab)  # saves as SVG to output
 
     # generate histogram/density plot of Euclidean distance at surface from
     # planned to actual for all trajectories AND dotplots by lab
-    plot_probe_distance_all_lab(traj='hist', perform_permutation_test=perform_permutation_test)
+    plot_probe_distance_all_lab(traj='hist', min_rec_per_lab=min_rec_per_lab,
+                                perform_permutation_test=perform_permutation_test)
 
     fig_path = save_figure_path(figure='figure2')
     fig = sc.Figure("66mm", "140mm",
@@ -100,7 +102,7 @@ def plot_probe_surf_coord_histology_panel(perform_permutation_test=True):
     fig.save(fig_path.joinpath("surf_coord_histology_panel.svg"))
 
 
-def plot_probe_surf_coord(traj='micro'):
+def plot_probe_surf_coord(traj='micro', min_rec_per_lab=4):
     '''Plot the PLANNED surface coord at [0,0], VECTORS from planned surface to
     actual surface coord of histology tracks, histology track points coloured
     by lab affiliation.
@@ -146,7 +148,9 @@ def plot_probe_surf_coord(traj='micro'):
     ax1.tick_params(axis='both', which='major', labelsize=5)
 
     # Compute targeting error at surface of brain
-    df = filter_recordings(min_neuron_region=0)
+    df = filter_recordings(by_anatomy_only=True, min_neuron_region=0)
+    #df = filter_recordings(by_anatomy_only=True, min_rec_lab=min_rec_per_lab)
+    
     # Find the pids are that are passing the inclusion criteria
     pids = df[df['include'] == 1]['pid'].unique()
     isin, _ = ismember(probe_data.pid.values, pids)
@@ -449,118 +453,3 @@ def plot_probe_distance_all_lab(traj='micro', min_rec_per_lab=4, perform_permuta
         print("PERMUTATION TEST PASS : ", pp_m)
 
 
-
-def plot_probe_distance_all_lab_old(traj='micro', min_rec_per_lab=4):
-    '''Plot the DISTANCES from planned to micro displacement, histogram plus
-    density plot of ALL distances - to see its distribution shape.
-    COMBINED with plot of distances, split by lab
-    '''
-
-    # Load in data
-    probe_data = load_dataframe(df_name='traj')
-
-    # use repo-ephys figure style
-    figure_style()
-    fig, (ax1, ax2) = plt.subplots(2, gridspec_kw={'height_ratios': [1, 2]})
-
-    # add institution col
-    probe_data['institute'] = probe_data['lab'].map(institution_map)
-
-    # get the histology distance
-
-    # create new column to indicate if each row passes advanced query
-    df = filter_recordings(min_neuron_region=0)
-    # Find the pids are that are passing the inclusion criteria
-    pids = df[df['include'] == 1]['pid'].unique()
-    isin, _ = ismember(probe_data.pid.values, pids)
-    probe_data['include'] = isin
-    probe_data['passed'] = np.full(len(probe_data), 'PASS')
-    probe_data.loc[~probe_data['include'], 'passed'] = 'FAIL'
-    # probe_data['passed'][~probe_data['include']] = 'FAIL'
-
-    # Find the pids are that are passing the permuation test inclusion criteria
-    pids = df[df['permute_include'] == 1]['pid'].unique()
-    isin, _ = ismember(probe_data.pid.values, pids)
-    probe_data['permute_include'] = isin
-
-    # Create an array with the colors you want to use
-    colors = ["#000000", "#FF0B04"]  # BLACK AND RED
-    # Set your custom color palette
-    sns.set_palette(sns.color_palette(colors))
-
-    #sns.histplot(probe_data[f'{traj}_error_surf_xy'], kde=True, color='grey', ax=ax1)
-    sns.boxplot(y='passed', x=f'{traj}_error_surf_xy', data=probe_data, hue='passed', orient="h", fliersize=2,
-                order = ['PASS', 'FAIL'], ax=ax1)
-    ax1.legend_.remove()
-    # round up to nearest hundred from maximum xy surface error for histoloy
-    max_distance = int(math.ceil( max(probe_data['hist_error_surf_xy']) / 100.0)) * 100
-    ax1.set_xlim(0, max_distance)
-    ax1.set_ylabel('density', fontsize=6)
-    ax1.set_xlabel(None)
-    ax1.xaxis.set_major_locator(plt.MaxNLocator(5))
-    ax1.tick_params(axis='x', labelrotation=90)
-    ax1.set(xticklabels=[])
-    ax1.tick_params(bottom=False)
-
-    sns.stripplot(y='institute', x=f'{traj}_error_surf_xy', data=probe_data, hue='passed', size=1.5, orient="h", ax=ax2)
-
-    # plot the mean line
-    sns.boxplot(showmeans=True, meanline=True, meanprops={'color': 'gray', 'ls': '-', 'lw': 1}, medianprops={'visible': False},
-                whiskerprops={'visible': False}, zorder=10, x=f'{traj}_error_surf_xy', y="institute", data=probe_data,
-                showfliers=False, showbox=False, showcaps=False, ax=ax2)
-    ax2.set_ylabel(None)
-    ax2.set_xlim(0, max_distance)
-    if traj == 'micro':
-        ax2.set_xlabel('Micromanipulator distance (µm)')
-        #leg = ax2.legend(fontsize=4, title='Advanced \n query', title_fontsize=6, loc='upper right', markerscale=0.2)
-        #plt.setp(leg.get_title(), multialignment='center')
-        ax2.get_legend().remove()
-    else:
-        ax2.set_xlabel('Histology distance (µm)')
-        ax2.get_legend().remove()
-
-    ax2.xaxis.set_major_locator(plt.MaxNLocator(5))
-    ax2.tick_params(axis='x', labelrotation=90)
-
-    # compute permutation testing - ALL DATA
-    # For this we need to limit to labs with min_rec_per_lab
-    inst_counts = probe_data['institute'].value_counts()
-    remove_inst = inst_counts.index[(inst_counts < min_rec_per_lab).values]
-    remove_inst = ~probe_data['institute'].isin(remove_inst).values
-
-    probe_data_permute = probe_data[remove_inst]
-    p_m = permut_test(probe_data_permute[f'{traj}_error_surf_xy'].values,
-                      metric=distribution_dist_approx_max,
-                      labels1=probe_data_permute['lab'].values,
-                      labels2=probe_data_permute['subject'].values,
-                      n_cores=8, n_permut=500000)
-    
-    if traj == 'micro':
-        print('\nMicro-Manipulator brain surface coordinate')
-    else:
-        print('\nHistology brain surface coordinate')
-    
-    print("PERMUTATION TEST ALL : ", p_m)
-
-    # permutation testing - PASS DATA ONLY
-    probe_data_permute = probe_data[probe_data['permute_include'] == 1]
-    pp_m = permut_test(probe_data_permute[f'{traj}_error_surf_xy'].values,
-                       metric=distribution_dist_approx_max,
-                       labels1=probe_data_permute['lab'].values,
-                       labels2=probe_data_permute['subject'].values,
-                       n_cores=8, n_permut=500000)
-    
-    print("PERMUTATION TEST PASS : ", pp_m)
-
-    if traj == 'micro':
-        ax1.set_title('Micromanipulator-to-planned distance', fontsize=7)
-    else:
-        ax1.set_title('Histology-to-planned distance', fontsize=7)
-    #ax1.set_title('Permutation Test p-value: \n    ALL : ' + str(round(p_m, 4)) + '    PASS : ' + str(round(pp_m, 4)))
-
-    plt.tight_layout()  # tighten layout around xlabel & ylabel
-
-    fig.set_size_inches(2.15, 2.8)
-
-    fig_path = save_figure_path(figure='figure2')
-    fig.savefig(fig_path.joinpath(f'D_probe_dist_{traj}_all_lab.svg'), bbox_inches="tight")
