@@ -43,7 +43,7 @@ def prepare_data(insertions, one, recompute=False, **kwargs):
 #    df, data = prepare_data_fig5(insertions, one, figure='figure7', recompute=True, **kwargs)
     df, data = prepare_data_fig_taskmodulation(insertions, one, figure='figure7', recompute=True, **kwargs)
 
-    df_filt = filter_recordings(df, min_regions=0, min_neuron_region=0, min_lab_region=0, min_rec_lab=0)
+    df_filt = filter_recordings(df, min_regions=0, min_neuron_region=-1, min_lab_region=0, min_rec_lab=0)
     df_filt = df_filt[df_filt['include'] == 1]
 
     df_filt.to_csv(save_data_path(figure='figure7').joinpath('figure7_dataframe_filt.csv'))
