@@ -395,7 +395,7 @@ def prepare_data(insertions, one, figure='fig_taskmodulation', recompute=False, 
     print(f'Saving data to {save_path}')
     concat_df.to_csv(save_path.joinpath(f'{figure}_dataframe.csv'))
 
-    if figure == 'figure6':
+    if figure != 'fig_taskmodulation':
         data = {'all_frs_l': all_frs_l,
                 'all_ffs_l': all_ffs_l,
                 'all_frs_r': all_frs_r,

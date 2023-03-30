@@ -186,6 +186,6 @@ def prepare_data(insertions, one, recompute=False, **kwargs):
 if __name__ == '__main__':
     one = ONE()
     one.record_loaded = True
-    insertions = get_insertions(level=2, one=one, freeze='release_2022_11')
+    insertions = get_insertions(level=0, one=one, freeze='release_2022_11')
     prepare_data(insertions, one=one, **default_params)
     save_dataset_info(one, figure='fig_PCA')
