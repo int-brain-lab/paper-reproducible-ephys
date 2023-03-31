@@ -260,7 +260,7 @@ def prepare_data(insertions, one, figure='fig_taskmodulation', recompute=False, 
             data['avg_ff_post_move'] = np.nanmean(ff_r[:, np.bitwise_and(time_ff >= 0.04, time_ff <= 0.2)], axis=1)
 
             # Extra computations for figure 7 (now figure 6)
-            if figure == 'figure6':
+            if figure != 'fig_taskmodulation':
                 # Compute firing rate waveforms for right 100% contrast
                 fr_r, _, time_fr = compute_psth(spikes['times'][spike_idx], spikes['clusters'][spike_idx], data['cluster_ids'],
                                                 eventTimes, align_epoch=event_epoch, bin_size=fr_bin_size,
