@@ -417,7 +417,7 @@ def plot_panel_all_subjects(max_neurons, min_neurons, ax=None, save=True, plotte
             # this is a hack for the legend
             for lab in all_present_labs:
                 ax[iR].plot(data['time'], np.zeros_like(data['time']) - 100, c=lab_colors[lab], label=lab)
-            leg = ax[iR].legend(frameon=False, bbox_to_anchor=(1, 1), labelcolor='linecolor', handlelength=0, handletextpad=0, fancybox=True)
+            leg = ax[iR].legend(frameon=False, bbox_to_anchor=(1, 1.19), labelcolor='linecolor', handlelength=0, handletextpad=0, fancybox=True)
             for item in leg.legendHandles:
                 item.set_visible(False)
 
@@ -1037,7 +1037,7 @@ def find_sig_manipulation(data, lab_to_manip, labs, subjects, p_to_reach, direct
 #     plt.close()
 
 
-recompute_power = True
+recompute_power = False
 if recompute_power:
     plot_panel_permutation(recompute=True, n_permut=20000)
     p_values = pickle.load(open("p_values_new_max_metric", 'rb'))  # renew by calling plot_panel_permutation
