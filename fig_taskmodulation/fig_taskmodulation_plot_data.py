@@ -877,17 +877,18 @@ def plot_power_analysis():
     plt.ylim(0)
     sns.despine()
 
+    std_limit = 3
     plt.subplot(8, 5, ii + jj * 5 + 1 + 4)
     perturb_in_std = np.array(perturb_in_std)
-    plt.hist(perturb_in_std[np.abs(perturb_in_std) < 5], bins=25, color='grey')
-    print("excluded stds {}".format(np.sum(np.abs(perturb_in_std) >= 5)))
+    plt.hist(perturb_in_std[np.abs(perturb_in_std) < std_limit], bins=25, color='grey')
+    print("excluded stds {}".format(np.sum(np.abs(perturb_in_std) >= std_limit)))
     # plt.xlabel("Shifts (std)", size=14)
     # plt.ylabel("# of occurences", size=14)
     plt.gca().annotate("Shifts (std)", xy=(0.5, -0.45), xytext=(0, pad), xycoords='axes fraction', textcoords='offset points', size='large', ha='center', va='baseline')
     plt.gca().annotate("# occurences", xy=(-0.25, 0.0), xytext=(0, pad), xycoords='axes fraction', textcoords='offset points', size='large', ha='center', va='baseline', rotation='vertical')
     plt.legend(fontsize=14, frameon=False)
     plt.ylim(0)
-    plt.xlim(-5, 5)
+    plt.xlim(-std_limit, std_limit)
     sns.despine()
 
     fig.subplots_adjust(hspace=0.27)
@@ -979,7 +980,7 @@ def find_sig_p_value(p_values_to_copy, i):
         else:
             p_attempt += step_unit * 0.5 ** j
 
-def find_sig_manipulation(data, lab_to_manip, labs, subjects, p_to_reach, direction='positive', sensitivity=0.01, n_permut=20000):
+def find_sig_manipulation(data, lab_to_manip, labs, subjects, p_to_reach, direction='positive', sensitivity=0.01, n_permut=50000):
     lower_bound = 0 if direction == 'positive' else -1000
     higher_bound = 1000 if direction == 'positive' else 0
 
@@ -1039,10 +1040,11 @@ def find_sig_manipulation(data, lab_to_manip, labs, subjects, p_to_reach, direct
 
 recompute_power = False
 if recompute_power:
-    plot_panel_permutation(recompute=True, n_permut=20000)
+    plot_panel_permutation(recompute=True, n_permut=50000)
     p_values = pickle.load(open("p_values_new_max_metric", 'rb'))  # renew by calling plot_panel_permutation
     print(p_values)
     print(np.sum(p_values < 0.01))
+    quit()
 
     df = load_dataframe()
     df_filt = filter_recordings(df, **filtering_criteria)
