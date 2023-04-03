@@ -16,6 +16,8 @@ import pickle
 lab_number_map, institution_map, lab_colors = labs()
 fig_path = save_figure_path(figure='fig_taskmodulation')
 
+filtering_criteria = {'min_regions': 0, 'min_lab_region': 3, 'min_rec_lab': 0, 'min_neuron_region': 2, 'freeze': 'release_2022_11'}
+
 # tests = {'trial': 'Trial',
 #          'start_to_move': 'Pre move (TW)',
 #          'post_stim': 'Post stim',
@@ -130,7 +132,7 @@ def plot_main_figure():
 
     # we have to find out max and min neurons here now, because plots are split
     df = load_dataframe()
-    df_filt = filter_recordings(df, min_regions=0, min_lab_region=2, min_rec_lab=0, min_neuron_region=2, freeze='release_2022_11')
+    df_filt = filter_recordings(df, **filtering_criteria)
     df_filt = df_filt[df_filt['include'] == 1].reset_index()
     df_filt_reg = df_filt.groupby('region')
     max_neurons = 0
@@ -287,7 +289,7 @@ def plot_panel_single_subject(event='move', norm='subtract', smoothing='sliding'
     df = load_dataframe()
     data = load_data(event=event, norm=norm, smoothing=smoothing)
 
-    df_filt = filter_recordings(df, min_regions=0, min_lab_region=2, min_rec_lab=0, min_neuron_region=2, freeze='release_2022_11')
+    df_filt = filter_recordings(df, **filtering_criteria)
     all_frs_l = data['all_frs_l'][df_filt['include'] == 1]
     all_frs_r = data['all_frs_r'][df_filt['include'] == 1]
     all_frs_l_std = data['all_frs_l_std'][df_filt['include'] == 1]
@@ -350,7 +352,7 @@ def plot_panel_all_subjects(max_neurons, min_neurons, ax=None, save=True, plotte
     df = load_dataframe()
     data = load_data(event='move', norm='subtract', smoothing='sliding')
 
-    df_filt = filter_recordings(df, min_regions=0, min_lab_region=2, min_rec_lab=0, min_neuron_region=2, freeze='release_2022_11')
+    df_filt = filter_recordings(df, **filtering_criteria)
     all_frs_l = data['all_frs_l'][df_filt['include'] == 1]
     all_frs_r = data['all_frs_r'][df_filt['include'] == 1]
     all_frs_l_std = data['all_frs_l_std'][df_filt['include'] == 1]
@@ -427,7 +429,7 @@ def plot_panel_task_modulated_neurons(specific_tests=None, ax=None, save=True):
 
     # load dataframe from prev fig. 5 (To be combined with new Fig 4)
     df = load_dataframe()
-    df_filt = filter_recordings(df, min_regions=0, min_lab_region=2, min_rec_lab=0, min_neuron_region=2, freeze='release_2022_11')
+    df_filt = filter_recordings(df, **filtering_criteria)
     df_filt = df_filt[df_filt['include'] == 1]
 
     # Group data frame by region
@@ -471,7 +473,7 @@ def plot_panel_task_modulated_neurons(specific_tests=None, ax=None, save=True):
             plt.savefig(fig_path.joinpath(test))
 
 
-def plot_panel_permutation(ax=None, recompute=False, n_permut=2000, qc='pass', n_cores=8):
+def plot_panel_permutation(ax=None, recompute=False, n_permut=20000, qc='pass', n_cores=8):
     """
     qc can be "pass" (only include recordings that pass QC)
     "high_noise": add the recordings with high noise
@@ -485,7 +487,7 @@ def plot_panel_permutation(ax=None, recompute=False, n_permut=2000, qc='pass', n
     # load dataframe from prev fig. 5 (To be combined with new Fig 4)
     # Prev Figure 5d permutation tests
     df = load_dataframe()
-    df_filt = filter_recordings(df, freeze='release_2022_11')
+    df_filt = filter_recordings(df, **filtering_criteria)
     if qc == 'pass':
         df_filt = df_filt[df_filt['permute_include'] == 1]
     elif qc != 'all':
@@ -566,7 +568,7 @@ def plot_panel_power_analysis(ax, ax2):
 
     p_values = pickle.load(open("p_values_new_max_metric", 'rb'))
     df = load_dataframe()
-    df_filt = filter_recordings(df, freeze='release_2022_11')
+    df_filt = filter_recordings(df, **filtering_criteria)
     df_filt = df_filt[df_filt['permute_include'] == 1]
     df_filt_reg = df_filt.groupby('region')
 
@@ -744,7 +746,7 @@ def plot_power_analysis():
 
     p_values = pickle.load(open("p_values_new_max_metric", 'rb'))
     df = load_dataframe()
-    df_filt = filter_recordings(df, freeze='release_2022_11')
+    df_filt = filter_recordings(df, **filtering_criteria)
     df_filt = df_filt[df_filt['permute_include'] == 1]
     df_filt_reg = df_filt.groupby('region')
 
@@ -922,7 +924,7 @@ def power_analysis_to_table():
     lab_to_num = dict(zip(local_labs, range(len(local_labs))))
 
     df = load_dataframe()
-    df_filt = filter_recordings(df, freeze='release_2022_11')
+    df_filt = filter_recordings(df, **filtering_criteria)
     df_filt = df_filt[df_filt['permute_include'] == 1]
     df_filt_reg = df_filt.groupby('region')
 
@@ -977,7 +979,7 @@ def find_sig_p_value(p_values_to_copy, i):
         else:
             p_attempt += step_unit * 0.5 ** j
 
-def find_sig_manipulation(data, lab_to_manip, labs, subjects, p_to_reach, direction='positive', sensitivity=0.01):
+def find_sig_manipulation(data, lab_to_manip, labs, subjects, p_to_reach, direction='positive', sensitivity=0.01, n_permut=20000):
     lower_bound = 0 if direction == 'positive' else -1000
     higher_bound = 1000 if direction == 'positive' else 0
 
@@ -986,7 +988,7 @@ def find_sig_manipulation(data, lab_to_manip, labs, subjects, p_to_reach, direct
     while not found_bound:
         bound += 10 if direction == 'positive' else -10
         p = permut_test(data + (labs == lab_to_manip) * bound, metric=distribution_dist_approx_max, labels1=labs,
-                        labels2=subjects, shuffling='labels1_based_on_2', n_cores=8, n_permut=2000)
+                        labels2=subjects, shuffling='labels1_based_on_2', n_cores=8, n_permut=n_permut)
         if p < p_to_reach:
             found_bound = True
             if direction == 'positive':
@@ -1012,7 +1014,7 @@ def find_sig_manipulation(data, lab_to_manip, labs, subjects, p_to_reach, direct
 
         test = (lower_bound + higher_bound) / 2
         p = permut_test(data + (labs == lab_to_manip) * test, metric=distribution_dist_approx_max, labels1=labs,
-                        labels2=subjects, shuffling='labels1_based_on_2', n_cores=8, n_permut=2000)
+                        labels2=subjects, shuffling='labels1_based_on_2', n_cores=8, n_permut=n_permut)
         if p < p_to_reach:
             if direction == 'positive':
                 higher_bound = test
@@ -1035,15 +1037,15 @@ def find_sig_manipulation(data, lab_to_manip, labs, subjects, p_to_reach, direct
 #     plt.close()
 
 
-recompute_power = False
+recompute_power = True
 if recompute_power:
-    plot_panel_permutation(recompute=True)
+    plot_panel_permutation(recompute=True, n_permut=20000)
     p_values = pickle.load(open("p_values_new_max_metric", 'rb'))  # renew by calling plot_panel_permutation
     print(p_values)
     print(np.sum(p_values < 0.01))
 
     df = load_dataframe()
-    df_filt = filter_recordings(df, freeze='release_2022_11')
+    df_filt = filter_recordings(df, **filtering_criteria)
     df_filt = df_filt[df_filt['permute_include'] == 1]
 
     df_filt_reg = df_filt.groupby('region')
@@ -1121,7 +1123,7 @@ if recompute_power:
                 significant_disturbances[i, j, 1] = lower
                 print("found bound: {}".format(lower))
             pickle.dump(significant_disturbances, open("new_max_metric.p", 'wb'))
-
+    quit()
 
 if __name__ == '__main__':
     plot_main_figure()
