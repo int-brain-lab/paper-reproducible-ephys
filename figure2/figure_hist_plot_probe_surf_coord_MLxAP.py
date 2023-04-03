@@ -111,9 +111,16 @@ def plot_probe_surf_coord(traj='micro', min_rec_per_lab=4):
     # Load in data
     probe_data = load_dataframe(df_name='traj')
 
-    # for micro-manipulator EXCLUDE DANLAB as micro-manipulator data was not recorded - planned == micro
+    # map labs to institutions
+    probe_data['institution'] = probe_data['lab'].map(institution_map)
+
+    # for micro-manipulator EXCLUDE wheremicro-manipulator data was not recorded - planned == micro
     if traj == 'micro':
-        probe_data = probe_data[probe_data['lab'] != 'danlab']
+        # exclude data where planned xyz == micro xyz
+        xPM = probe_data['planned_x'] == probe_data['micro_x']
+        yPM = probe_data['planned_y'] == probe_data['micro_y']
+        zPM = probe_data['planned_z'] == probe_data['micro_z']
+        probe_data = probe_data[ (xPM & yPM & zPM) == False ].reset_index()
 
     # use repo-ephys figure style
     figure_style()
@@ -126,21 +133,24 @@ def plot_probe_surf_coord(traj='micro', min_rec_per_lab=4):
     for idx, row in probe_data.iterrows():
 
         ax1.plot([row[f'{traj}_x'], row['planned_x']], [row[f'{traj}_y'], row['planned_y']],
-                 color=institution_colors[institution_map[row['lab']]], linewidth=0.2, alpha=0.8)
+                 color=institution_colors[institution_map[row['lab']]], 
+                 linewidth=0.2, alpha=0.8)
 
-        ax1.plot(row[f'{traj}_x'], row[f'{traj}_y'], color=institution_colors[institution_map[row['lab']]],
+        ax1.plot(row[f'{traj}_x'], row[f'{traj}_y'], 
+                 color=institution_colors[institution_map[row['lab']]],
                  marker="o", markersize=0.5, alpha=0.8, markeredgewidth=0.5)
 
-    # Plot the mean micro coords
-    # lab means
-    lab_mean_x = probe_data.groupby('lab')[f'{traj}_x'].mean()
-    lab_mean_y = probe_data.groupby('lab')[f'{traj}_y'].mean()
+    # Plot the mean micro coords - institution means
+    inst_mean_x = probe_data.groupby('institution')[f'{traj}_x'].mean()
+    inst_mean_y = probe_data.groupby('institution')[f'{traj}_y'].mean()
 
-    for x, y, k in zip(lab_mean_x, lab_mean_y, lab_mean_x.keys()):
-        ax1.plot(x, y, color=institution_colors[institution_map[k]], marker="+", markersize=3, alpha=0.5,
-                 label=institution_map[k])
+    for x, y, k in zip(inst_mean_x, inst_mean_y, inst_mean_x.keys()):
+        ax1.plot(x, y, 
+                 color=institution_colors[k], 
+                 label=k, 
+                 marker="+", markersize=3, alpha=0.5)
 
-    # overall mean (mean of labs)
+    # overall mean (mean of institutions)
     mean_x = probe_data[f'{traj}_x'].mean()
     mean_y = probe_data[f'{traj}_y'].mean()
 
@@ -193,10 +203,10 @@ def plot_probe_surf_coord(traj='micro', min_rec_per_lab=4):
 
     if traj == 'micro':
         ax1.set_xlim((-2500, -1800))
-        ax1.set_ylim((-2500, -700))
+        ax1.set_ylim((-2500, -1500))
     else:
         ax1.set_xlim((-3000, -1000))
-        ax1.set_ylim((-3000, -0))
+        ax1.set_ylim((-3000, -1000))
     ax1.xaxis.set_major_locator(plt.MaxNLocator(5))
     ax1.yaxis.set_major_locator(plt.MaxNLocator(5))
 
@@ -218,7 +228,7 @@ def plot_probe_surf_coord(traj='micro', min_rec_per_lab=4):
     #    axav.set_xlim((-2500, -1650))
     #    axav.set_ylim((-2400, -1550))
 
-    #for x, y, k in zip(lab_mean_x, lab_mean_y, lab_mean_x.keys()):
+    #for x, y, k in zip(inst_mean_x, inst_mean_y, inst_mean_x.keys()):
     #    axav.plot(x, y, color=institution_colors[institution_map[k]], marker="+", markersize=5, alpha=0.7,
     #              label=institution_map[k])
 
@@ -237,9 +247,13 @@ def plot_probe_distance_all_lab(traj='micro', min_rec_per_lab=4, perform_permuta
     # Load data
     probe_data = load_dataframe(df_name='traj')
 
-    # for micro-manipulator EXCLUDE DANLAB as micro-manipulator data was not recorded
+    # for micro-manipulator EXCLUDE wheremicro-manipulator data was not recorded - planned == micro
     if traj == 'micro':
-        probe_data = probe_data[probe_data['lab'] != 'danlab']
+        # exclude data where planned xyz == micro xyz
+        xPM = probe_data['planned_x'] == probe_data['micro_x']
+        yPM = probe_data['planned_y'] == probe_data['micro_y']
+        zPM = probe_data['planned_z'] == probe_data['micro_z']
+        probe_data = probe_data[ (xPM & yPM & zPM) == False ].reset_index()
 
     # add institution col
     probe_data['institute'] = probe_data['lab'].map(institution_map)
@@ -274,6 +288,8 @@ def plot_probe_distance_all_lab(traj='micro', min_rec_per_lab=4, perform_permuta
     probe_data_pass = probe_data_pass.reset_index()
     probe_data_pass_plot = probe_data[ probe_data['passed'] == 'PASS']
     probe_data_pass_plot = probe_data_pass_plot.reset_index()
+    probe_data_pass_plot_count = probe_data[ probe_data['passed'] == 'PASS']
+    probe_data_pass_plot_count = probe_data_pass_plot_count.reset_index()
 
     # remove any institutes which have N less than min_rec_per_lab
     pd_inst_counts = probe_data_pass['institute'].value_counts()
@@ -294,8 +310,12 @@ def plot_probe_distance_all_lab(traj='micro', min_rec_per_lab=4, perform_permuta
         sir[f'{traj}_error_surf_xy'] = -100.0
         # remove all institute entries
         probe_data_pass_plot = probe_data_pass_plot[probe_data_pass_plot['institute'] != ie]
+        probe_data_pass_plot_count = probe_data_pass_plot_count[probe_data_pass_plot_count['institute'] != ie]
         # now re-add sir with angle set to -1.0
         probe_data_pass_plot = probe_data_pass_plot.append(sir, ignore_index=True)
+
+    # list pids for figure: probe_data_pass_plot_count['pid'].reset_index()['pid']
+    # probe_data['pid'].reset_index()['pid']
 
     # use repo-ephys figure style
     figure_style()
