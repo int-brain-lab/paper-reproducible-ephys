@@ -1074,48 +1074,9 @@ if recompute_power:
 
             if p_values[i] < 0.01:
                 print("test already significant {}, {}, {}".format(test, reg, i))
-                # p = permut_test(data, metric=distribution_dist_approx_max, labels1=labs, title="{} {}".format(test[:4], reg),
-                #                 labels2=subjects, shuffling='labels1_based_on_2', n_permut=10)
                 continue
 
-            # continue
-
-            #power_ps.append(pickle.load(open("ps_from_null_{}.p".format(test), 'rb')))
-            #continue
-
-
-            # print("shuffle test")
-            # permuted_labels1, permuted_labels2 = shuffle_labels(labels1=labs, labels2=subjects, n_permut=100000, n_cores=5, shuffling='labels1_based_on_2')
-
-            # terrible_counter = 0
-            # iiis = []
-            # for iii in range(100000):
-            #     for local_lab in range(6):
-            #         if set(np.unique(permuted_labels2[0][permuted_labels1[iii] == local_lab])) <= set([0, 1, 2, 3]):
-            #             terrible_counter += 1
-            #             iiis.append(iii)
-
-            # print(terrible_counter)
-
-            # quit()
-
-            # print('normal test')
-            # p = permut_test(data, metric=distribution_dist_approx_max, labels1=labs,
-            #                 labels2=subjects, shuffling='labels1_based_on_2', n_cores=3, n_permut=30000)
-            #
-            # quit()
-
-            # for j, manipulate_lab in enumerate(np.unique(labs)):
-            #     if significant_disturbances[i, j, 0] > 100:
-            #         print('pos')
-            #     if significant_disturbances[i, j, 1] < -100:
-            #         print('neg')
-            #         quit()
-            # continue
-
             for j, manipulate_lab in enumerate(np.unique(labs)):
-                # if significant_disturbances[i, j, 0] < 100 and significant_disturbances[i, j, 1] > -100:
-                #     continue
                 lower, higher = find_sig_manipulation(data.copy(), manipulate_lab, labs, subjects, 0.01, 'positive')
                 significant_disturbances[i, j, 0] = higher
                 print("found bound: {}".format(higher))
