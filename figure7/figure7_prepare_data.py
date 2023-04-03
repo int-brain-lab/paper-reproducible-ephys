@@ -4,7 +4,7 @@ from figure7.figure7_load_data import load_dataframe, load_data
 from iblutil.numerical import ismember
 from one.api import ONE
 from reproducible_ephys_functions import (get_insertions, save_dataset_info, save_figure_path, BRAIN_REGIONS, combine_regions,
-                                          save_data_path)
+                                          save_data_path, filter_recordings)
 
 from ibllib.atlas import AllenAtlas, Insertion
 from ibllib.pipes.histology import get_brain_regions
@@ -41,7 +41,12 @@ def prepare_data(insertions, one, recompute=False, **kwargs):
                 return df, data
 
 #    df, data = prepare_data_fig5(insertions, one, figure='figure7', recompute=True, **kwargs)
-    df, data = prepare_data_fig_taskmodulation(insertions, one, figure='figure6', recompute=True, **kwargs)
+    df, data = prepare_data_fig_taskmodulation(insertions, one, figure='figure7', recompute=True, **kwargs)
+
+    df_filt = filter_recordings(df, min_regions=0, min_neuron_region=-1, min_lab_region=0, min_rec_lab=0)
+    df_filt = df_filt[df_filt['include'] == 1]
+
+    df_filt.to_csv(save_data_path(figure='figure7').joinpath('figure7_dataframe_filt.csv'))
 
     save_figure_path(figure='figure7')
 
@@ -72,6 +77,6 @@ def prepare_data(insertions, one, recompute=False, **kwargs):
 if __name__ == '__main__':
     one = ONE()
     one.record_loaded = True
-    insertions = get_insertions(level=2, recompute=True, one=one, freeze='release_2022_11')
+    insertions = get_insertions(level=0, recompute=True, one=one, freeze='release_2022_11')
     prepare_data(insertions, one=one, recompute=True, **default_params)
     save_dataset_info(one, figure='figure7')
