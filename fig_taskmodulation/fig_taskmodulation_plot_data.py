@@ -102,21 +102,21 @@ def plot_main_figure():
                                              wspace=0.3),
           'panel_D_4': fg.place_axes_on_grid(fig, xspan=[0.70125, .9], yspan=[0.32, 0.5],
                                              wspace=0.3),
-          'panel_E_1': fg.place_axes_on_grid(fig, xspan=[0.075, 0.46], yspan=[0.71, 0.76],
+          'panel_E_1': fg.place_axes_on_grid(fig, xspan=[0.075, 0.55], yspan=[0.71, 0.76],
                                              wspace=0.3),
-          'panel_E_2': fg.place_axes_on_grid(fig, xspan=[0.075, 0.46], yspan=[0.77, 0.82],
+          'panel_E_2': fg.place_axes_on_grid(fig, xspan=[0.075, 0.55], yspan=[0.77, 0.82],
                                              wspace=0.3),
-          'panel_E_3': fg.place_axes_on_grid(fig, xspan=[0.075, 0.46], yspan=[0.83, 0.88],
+          'panel_E_3': fg.place_axes_on_grid(fig, xspan=[0.075, 0.55], yspan=[0.83, 0.88],
                                              wspace=0.3),
-          'panel_E_4': fg.place_axes_on_grid(fig, xspan=[0.075, 0.46], yspan=[0.89, .94],
+          'panel_E_4': fg.place_axes_on_grid(fig, xspan=[0.075, 0.55], yspan=[0.89, .94],
                                              wspace=0.3),
-          'panel_E_5': fg.place_axes_on_grid(fig, xspan=[0.075, 0.46], yspan=[0.95, 1.],
+          'panel_E_5': fg.place_axes_on_grid(fig, xspan=[0.075, 0.55], yspan=[0.95, 1.],
                                              wspace=0.3),
-          'panel_F_1': fg.place_axes_on_grid(fig, xspan=[0.55, 0.66], yspan=[0.57, .73],
+          'panel_F_1': fg.place_axes_on_grid(fig, xspan=[0.64, 0.71], yspan=[0.57, .73],
                                              wspace=0.3),
-          'panel_F_3': fg.place_axes_on_grid(fig, xspan=[0.68, 1.], yspan=[0.57, .73],
+          'panel_F_3': fg.place_axes_on_grid(fig, xspan=[0.73, 1.], yspan=[0.57, .73],
                                              wspace=0.3),
-          'panel_F_2': fg.place_axes_on_grid(fig, xspan=[0.55, 1.], yspan=[0.74, .98],
+          'panel_F_2': fg.place_axes_on_grid(fig, xspan=[0.64, 1.], yspan=[0.74, .98],
                                              wspace=0.3)}
           # 'panel_F': fg.place_axes_on_grid(fig, xspan=[0.08, .99], yspan=[0.75, .91],
           #                                  wspace=0.3)}
@@ -153,9 +153,9 @@ def plot_main_figure():
               {'label_text': 'c', 'xpos': 0.66, 'ypos': 0.007, 'fontsize': 10, 'weight': 'bold'},
               {'label_text': 'd', 'xpos': 0, 'ypos': 0.29, 'fontsize': 10, 'weight': 'bold'},
               {'label_text': 'e', 'xpos': 0, 'ypos': 0.57, 'fontsize': 10, 'weight': 'bold'},
-              {'label_text': 'f', 'xpos': 0.5, 'ypos': 0.57, 'fontsize': 10, 'weight': 'bold'},
-              {'label_text': 'g', 'xpos': 0.662, 'ypos': 0.57, 'fontsize': 10, 'weight': 'bold'},
-              {'label_text': 'h', 'xpos': 0.5, 'ypos': 0.75, 'fontsize': 10, 'weight': 'bold'}]
+              {'label_text': 'f', 'xpos': 0.59, 'ypos': 0.57, 'fontsize': 10, 'weight': 'bold'},
+              {'label_text': 'g', 'xpos': 0.708, 'ypos': 0.57, 'fontsize': 10, 'weight': 'bold'},
+              {'label_text': 'h', 'xpos': 0.59, 'ypos': 0.75, 'fontsize': 10, 'weight': 'bold'}]
 
     fg.add_labels(fig, labels)
     print(f'Saving figures to {fig_path}')
