@@ -466,7 +466,7 @@ def plot_panel_task_modulated_neurons(specific_tests=None, ax=None, save=True):
                 if i == 4:
                     ax[i].set_xlabel('Mice')
                 elif i == 0:
-                    ax[i].set_title('% modulated neurons (Pre-move.)', loc='left')
+                    ax[i].set_title('% modulated neurons ({})'.format(shortened_tests[test]), loc='left')
         if specific_tests is None:
             plt.suptitle(tests[test], size=22)
         if save:
@@ -1044,7 +1044,6 @@ if recompute_power:
     p_values = pickle.load(open("p_values_new_max_metric", 'rb'))  # renew by calling plot_panel_permutation
     print(p_values)
     print(np.sum(p_values < 0.01))
-    quit()
 
     df = load_dataframe()
     df_filt = filter_recordings(df, **filtering_criteria)
@@ -1053,7 +1052,6 @@ if recompute_power:
     df_filt_reg = df_filt.groupby('region')
     results = pd.DataFrame()
 
-    power_ps = []
     i = -1
     significant_disturbances = np.zeros((len(p_values), 10, 2))
     for test in tests.keys():
