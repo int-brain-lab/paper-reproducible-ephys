@@ -145,7 +145,7 @@ def traj_list_to_dataframe(trajectories):
     return trajectories
 
 
-def get_insertions(level=2, recompute=False, as_dataframe=False, one=None, freeze=None, bilateral=False):
+def get_insertions(level=0, recompute=False, as_dataframe=False, one=None, freeze=None, bilateral=False):
     """
     Find insertions used for analysis based on different exclusion levels
     Level 0: minimum_regions = 0, resolved = True, behavior = False, n_trial >= 0, exclude_critical = True
@@ -166,6 +166,7 @@ def get_insertions(level=2, recompute=False, as_dataframe=False, one=None, freez
     one = one or ONE()
 
     if freeze is not None:
+
         # TODO for next freeze need to think about how to deal with bilateral
         ins_df = pd.read_csv(data_release_path().joinpath(f'{freeze}.csv'))
         pids = ins_df[ins_df['level'] >= level].pid.values
@@ -558,6 +559,12 @@ def filter_recordings(df=None, one=None, by_anatomy_only=False, max_ap_rms=40, m
                 one = ONE()
                 ins = get_insertions(level=0, one=one, recompute=False, freeze=freeze)
                 metrics = compute_metrics(ins, one=one, save=True)
+
+        isin, _ = ismember(metrics['pid'].unique(), df['pid'].unique())
+        if ~np.all(isin):
+            rm_pids = metrics['pid'].unique()[~isin]
+            metrics = metrics[~metrics.pid.isin(rm_pids)]
+
 
         # merge the two dataframes
         df['original_index'] = df.index
