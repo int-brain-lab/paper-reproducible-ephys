@@ -301,11 +301,15 @@ def perm_test(inclu=False, print_=False,
     samp: for region-targeted test, restrict to random subset 
     '''
         
-    emb, regs, labss = all_panels(get_dat=True)
-    regs_ = list(Counter(regs))
-    labs_ = list(Counter(labss))    
+    emb00, regs00, labss00 = all_panels(get_dat=True)
+    labs_ = list(Counter(labss00))
+    regs_ = Counter(regs00)
+    
+    assert len(emb00) == len(regs00) == len(labss00), 'mismatch' 
+    
     
     if samp:
+        
 
         fig_path = save_figure_path(figure='fig_PCA')
         
@@ -320,115 +324,124 @@ def perm_test(inclu=False, print_=False,
             for i in range(100):
 
                 # restrict KS analysis to subset of cells
-                reg0 = random.sample(list(Counter(regs)),1)[0]
+                reg0 = random.sample(list(regs_),1)[0]
                 print('restricting tests on subsets of cells')
-                n0 = dict(Counter(regs))[reg0]
+                n0 = dict(Counter(regs00))[reg0]
                 print(f'sampling randomly {n0} cells ({reg0})')
-                s0 = random.sample(range(len(regs)),n0)
+                s0 = random.sample(range(len(regs00)),n0)
                 
-                emb = emb[s0]
-                regs = regs[s0]
-                labss = labss[s0]
+                emb = emb00[s0]
+                regs = regs00[s0]
+                labss = labss00[s0]
                 
-            td = {'regs':regs,'labs':labss}
-            RKS = {}
+                td = {'regs':regs,'labs':labss}
+                RKS = {}
 
-            for tarn in td:
-                
-                tar = td[tarn]
-
-                for reg in regs_ + ['all']:
-                    if tarn != 'labs':
-                        if reg != 'all':
-                            continue
-                        else:
-                            emb0 = emb
-                            tar0 = tar
-                    else:
-                        if reg == 'all':
-                            emb0 = emb
-                            tar0 = tar
-                                       
-                        else:
-                            emb0 = emb[regs == reg]
-                            tar0 = tar[regs == reg]
-                        
-                    tar_ = Counter(tar0)
-                    gs = {}  # first PCs per class (for KS test)
-                    gsi = {}  # first PCs per remaining classes
+                for tarn in td:
                     
-                    for x in tar_:
-                        gs[x] = emb0[tar0 == x][:,0]
-                        gsi[x] = emb0[tar0 != x][:,0]                
+                    tar = td[tarn]
 
-                    centsr = []  # null_d
-                    centsir = []  # null_d inverse
-                    pKS = {}
-                          
-                    for x in tar_:
-                        if inclu:
-                            g_ = emb0[:,0]
+                    for reg in list(regs_) + ['all']:
+                        if tarn != 'labs':
+                            if reg != 'all':
+                                continue
+                            else:
+                                emb0 = emb
+                                tar0 = tar
                         else:
-                            g_ = gsi[x]
-                        
-                        _, pKS[x] = ks_2samp(g_, gs[x])
+                            if reg == 'all':
+                                emb0 = emb
+                                tar0 = tar
+                                           
+                            else:
+                                emb0 = emb[regs == reg]
+                                tar0 = tar[regs == reg]
                             
-                    if fdr:
-                        _, pls_cKS, _, _ = multipletests([pKS[x] for x in pKS],
-                                                        sig_lev, method='fdr_bh')
-                    else:
-                        pls_cKS = [pKS[x] for x in pKS]
+                        tar_ = Counter(tar0)
+                        gs = {}  # first PCs per class (for KS test)
+                        gsi = {}  # first PCs per remaining classes
+                        
+                        for x in tar_:
+                            gs[x] = emb0[tar0 == x][:,0]
+                            gsi[x] = emb0[tar0 != x][:,0]                
 
-                    resKS = dict(zip([x for x in pKS], 
-                                     [np.round(y,4) for y in pls_cKS]))
-                    RKS[tarn+'_'+reg] = resKS  
-
-                    if print_:            
-                        print('')     
-                        print(f'target:{tarn}, region {reg}, inclu = {inclu}')
-                        print('')
-                        print(f'KS p-values')           
-                        print([(x,resKS[x]) for x in resKS 
-                                if resKS[x] < sig_lev])               
-                        print('')
-
-
-            # matrix to summarize p-values    
-            AKS = np.empty([len(regs_) + 1, len(labs_) + 1])
-            AKS[:] = np.nan
-
-
-            # fill entries for region contsraint tests    
-            for i in range(len(regs_)):
-                for j in range(len(labs_)):
-                    if labs_[j] not in RKS[f'labs_{regs_[i]}']:
-                        if print_:
-                            print(labs_[j], 'not in', f'labs_{regs_[i]}')
-                        continue        
-                    else:
-                        AKS[i,j] = RKS[f'labs_{regs_[i]}'][labs_[j]] + 0.0001
-
-
-            # add for tests that use all cells
-            j = 0
-            for lab in RKS['labs_all']:        
-                AKS[-1,j] = RKS['labs_all'][lab] + 0.0001
+                        centsr = []  # null_d
+                        centsir = []  # null_d inverse
+                        pKS = {}
+                              
+                        for x in tar_:
+                            if inclu:
+                                g_ = emb0[:,0]
+                            else:
+                                g_ = gsi[x]
+                            
+                            _, pKS[x] = ks_2samp(g_, gs[x])
                                 
-                j += 1
+                        if fdr:
+                            _, pls_cKS, _, _ = multipletests(
+                                                  [pKS[x] for x in pKS],
+                                                  sig_lev, method='fdr_bh')
+                        else:
+                            pls_cKS = [pKS[x] for x in pKS]
 
-            i = 0
-            for reg in RKS['regs_all']:       
-                AKS[i,-1] = RKS['regs_all'][reg] + 0.0001
-                                                                                       
-                i += 1             
-        
-            As.append(AKS)
-            A = np.mean(As,axis=0)
+                        resKS = dict(zip([x for x in pKS], 
+                                         [np.round(y,4) for y in pls_cKS]))
+                        RKS[tarn+'_'+reg] = resKS  
+
+                        if print_:            
+                            print('')     
+                            print(f'target:{tarn}, region {reg},'
+                                  f' inclu = {inclu}')
+                            print('')
+                            print(f'KS p-values')           
+                            print([(x,resKS[x]) for x in resKS 
+                                    if resKS[x] < sig_lev])               
+                            print('')
+
+
+                # matrix to summarize p-values    
+                AKS = np.empty([len(regs_) + 1, len(labs_) + 1])
+                AKS[:] = np.nan
+
+
+                # fill entries for region contsraint tests    
+                for i in range(len(regs_)):
+                    for j in range(len(labs_)):
+                        if labs_[j] not in RKS[f'labs_{list(regs_)[i]}']:
+                            if print_:
+                                print(labs_[j], 'not in',
+                                f'labs_{list(regs_)[i]}')
+                            continue        
+                        else:
+                            AKS[i,j] = RKS[
+                                f'labs_{list(regs_)[i]}'][labs_[j]] + 0.0001
+
+
+                # add for tests that use all cells
+                j = 0
+                for lab in RKS['labs_all']:        
+                    AKS[-1,j] = RKS['labs_all'][lab] + 0.0001
+                                    
+                    j += 1
+
+                i = 0
+                for reg in RKS['regs_all']:       
+                    AKS[i,-1] = RKS['regs_all'][reg] + 0.0001
+                                                                                           
+                    i += 1             
+            
+                As.append(AKS)
+            A = np.nanmean(As,axis=0)
             np.save(fig_path.joinpath('A.npy'),A)
             AKS = A
 
     else:
         print('computing KS and dist test on all cells')
+        
+        emb = emb00
+        regs = regs00
+        labss = labss00 
+        
         if print_:    
             print('data')
             print(emb.shape)
@@ -451,7 +464,7 @@ def perm_test(inclu=False, print_=False,
             
             tar = td[tarn]
 
-            for reg in regs_ + ['all']:
+            for reg in list(regs_) + ['all']:
                 if tarn != 'labs':
                     if reg != 'all':
                         continue
@@ -500,6 +513,7 @@ def perm_test(inclu=False, print_=False,
 
                 pr = {}
                 pKS = {}
+                
                       
                 for x in tar_:
                     if inclu:
@@ -532,7 +546,8 @@ def perm_test(inclu=False, print_=False,
                 R[tarn+'_'+reg] = res
 
                 resKS = dict(zip([x for x in pKS], 
-                                 [np.round(y,4) for y in pls_cKS]))              
+                                 [np.round(y,4) for y in
+                                  pls_cKS]))              
                 RKS[tarn+'_'+reg] = resKS  
 
         
@@ -560,13 +575,13 @@ def perm_test(inclu=False, print_=False,
         # fill entries for region contsraint tests    
         for i in range(len(regs_)):
             for j in range(len(labs_)):
-                if labs_[j] not in RKS[f'labs_{regs_[i]}']:
+                if labs_[j] not in RKS[f'labs_{list(regs_)[i]}']:
                     if print_:
-                        print(labs_[j], 'not in', f'labs_{regs_[i]}')
+                        print(labs_[j], 'not in', f'labs_{list(regs_)[i]}')
                     continue        
                 else:
-                    A[i,j] = R[f'labs_{regs_[i]}'][labs_[j]]
-                    AKS[i,j] = RKS[f'labs_{regs_[i]}'][labs_[j]] + 0.0001
+                    A[i,j] = R[f'labs_{list(regs_)[i]}'][labs_[j]]
+                    AKS[i,j] = RKS[f'labs_{list(regs_)[i]}'][labs_[j]] + 0.0001
 
         # add for tests that use all cells
         j = 0
@@ -617,12 +632,12 @@ def perm_test(inclu=False, print_=False,
         cbar.set_label('p-value (log scale)', labelpad=8)
     
     ax.set(xlabel='', ylabel='', 
-              xticks=np.arange(len(regs_ + ['all'])) + 0.5, 
+              xticks=np.arange(len(list(regs_) + ['all'])) + 0.5, 
               yticks=np.arange(len([b[x] for x in labs_] + ['all'])) + 0.5,
               title='KS test mean' if samp else 'KS test')
     ax.set_yticklabels([b[x] for x in labs_] + ['all'], 
                           va='center', rotation=0)
-    ax.set_xticklabels(regs_ + ['all'], rotation=90)
+    ax.set_xticklabels(list(regs_) + ['all'], rotation=90)
     
     # separate 'all' from others via lines
     ax.axvline(x=5,c='k', linewidth=2)
@@ -635,7 +650,7 @@ def perm_test(inclu=False, print_=False,
 def all_panels(rm_unre=True, align='move', split='rt', 
                xyz_res=False, re_rank=2, fdr=True, permute_include=True,
                nrand = 2000, sig_lev = 0.01, inclu = False, 
-               perm_tests=True, get_dat=False):
+               perm_tests=True, get_dat=False, freeze='release_2022_11'):
                              
     '''
     Plotting main figure and supp figure;
