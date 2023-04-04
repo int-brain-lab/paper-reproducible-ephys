@@ -1,22 +1,20 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import figrid as fg
-from reproducible_ephys_functions import filter_recordings, BRAIN_REGIONS, labs, save_figure_path, figure_style
-from fig_taskmodulation.fig_taskmodulation_load_data import load_data, load_dataframe
+from reproducible_ephys_functions import filter_recordings, BRAIN_REGIONS, labs, save_figure_path, figure_style, save_data_path
+from fig_taskmodulation.fig_taskmodulation_load_data import load_data, load_dataframe, tests, filtering_criteria
 from fig_taskmodulation.fig_taskmodulation_plot_functions import plot_raster_and_psth, plot_raster_and_psth_LvsR
 import seaborn as sns
 import pandas as pd
-from statsmodels.stats.multitest import multipletests
 import pickle
-from permutation_test import permut_test, distribution_dist_approx, shuffle_labels, distribution_dist_approx_max
 from matplotlib.transforms import Bbox
-import pickle
+import json
 
 
 lab_number_map, institution_map, lab_colors = labs()
 fig_path = save_figure_path(figure='fig_taskmodulation')
 
-filtering_criteria = {'min_regions': 0, 'min_lab_region': 3, 'min_rec_lab': 0, 'min_neuron_region': 2, 'freeze': 'release_2022_11'}
+PRINT_PIDS = True
 
 # tests = {'trial': 'Trial',
 #          'start_to_move': 'Pre move (TW)',
@@ -45,15 +43,6 @@ filtering_criteria = {'min_regions': 0, 'min_lab_region': 3, 'min_rec_lab': 0, '
 #                    'post_reward': 'Post-rew',
 #                    'avg_ff_post_move': 'FF'}
 
-#Renamed & remove 'Trial':
-tests = {#'trial': 'Trial (first 400 ms)',
-          'post_stim': 'Stimulus',
-          'post_move': 'Movement period (250 ms)',
-          'start_to_move': 'Late reaction period',
-          'pre_move': 'Movement initiation',
-          'post_reward': 'Reward',
-          'pre_move_lr': 'L vs. R pre-movement',
-          'avg_ff_post_move': 'Fano Factor'}
 
 shortened_tests = {#'trial': 'Trial (first 400 ms)',
                    'post_stim': 'Stimulus',
@@ -359,6 +348,9 @@ def plot_panel_all_subjects(max_neurons, min_neurons, ax=None, save=True, plotte
     all_frs_r_std = data['all_frs_r_std'][df_filt['include'] == 1]
     df_filt = df_filt[df_filt['include'] == 1].reset_index()
 
+    if PRINT_PIDS:
+        json.dump(list(np.unique(df_filt['pid'])), open("panel d", 'w'))
+
     # Example to get similar plot to figure 4c
     if ax is None:
         fig, ax = plt.subplots(1, len(plotted_regions))
@@ -432,6 +424,9 @@ def plot_panel_task_modulated_neurons(specific_tests=None, ax=None, save=True):
     df_filt = filter_recordings(df, **filtering_criteria)
     df_filt = df_filt[df_filt['include'] == 1]
 
+    if PRINT_PIDS:
+        json.dump(list(np.unique(df_filt['pid'])), open("panel e", 'w'))
+
     # Group data frame by region
     df_region = df_filt.groupby('region')
 
@@ -473,7 +468,7 @@ def plot_panel_task_modulated_neurons(specific_tests=None, ax=None, save=True):
             plt.savefig(fig_path.joinpath(test))
 
 
-def plot_panel_permutation(ax=None, recompute=False, n_permut=20000, qc='pass', n_cores=8):
+def plot_panel_permutation(ax=None, n_permut=20000, qc='pass', n_cores=8):
     """
     qc can be "pass" (only include recordings that pass QC)
     "high_noise": add the recordings with high noise
@@ -486,51 +481,10 @@ def plot_panel_permutation(ax=None, recompute=False, n_permut=20000, qc='pass', 
     """
     # load dataframe from prev fig. 5 (To be combined with new Fig 4)
     # Prev Figure 5d permutation tests
-    df = load_dataframe()
-    df_filt = filter_recordings(df, **filtering_criteria)
-    if qc == 'pass':
-        df_filt = df_filt[df_filt['permute_include'] == 1]
-    elif qc != 'all':
-        df_filt = df_filt[(df_filt['permute_include'] == 1) | (df_filt[qc] == 1)]
-
     test_names = [shortened_tests[test] for test in tests.keys()]
-    if recompute:
-        df_filt_reg = df_filt.groupby('region')
-        results = pd.DataFrame()
-
-        for test in tests.keys():
-            for reg in BRAIN_REGIONS:
-                df_reg = df_filt_reg.get_group(reg)
-                # vals = df_reg.groupby(['institute', 'subject'])[test].mean()
-                # labs = vals.index.get_level_values('institute')
-                # subjects = vals.index.get_level_values('subject')
-                # data = vals.values
-                if test == 'avg_ff_post_move':
-                    data = df_reg[test].values
-                else:
-                    data = df_reg['mean_fr_diff_{}'.format(test)].values
-                labs = df_reg['institute'].values
-                subjects = df_reg['subject'].values
-
-                labs = labs[~np.isnan(data)]
-                subjects = subjects[~np.isnan(data)]
-                data = data[~np.isnan(data)]
-                # lab_names, this_n_labs = np.unique(labs, return_counts=True)  # what is this for?
-
-                print(".", end='')
-                p = permut_test(data, metric=distribution_dist_approx_max, labels1=labs,
-                                labels2=subjects, shuffling='labels1_based_on_2', n_cores=n_cores, n_permut=n_permut)
-
-                # print(p)
-                # if p > 0.05:
-                #     return data, labs, subjects
-                results = pd.concat((results, pd.DataFrame(index=[results.shape[0] + 1],
-                                                           data={'test': test, 'region': reg, 'p_value_permut': p})))
-
-        pickle.dump(results.p_value_permut.values, open("p_values_new_max_metric", 'wb'))
 
     shape = (len(tests.keys()), len(BRAIN_REGIONS))
-    p_vals = pickle.load(open("p_values_new_max_metric", 'rb'))
+    p_vals = pickle.load(open(save_data_path(figure='fig_taskmodulation').joinpath('p_values'), 'rb'))
     print(p_vals)
     print(np.sort(p_vals))
     # _, corrected_p_vals, _, _ = multipletests(results.p_value_permut.values, 0.05, method='fdr_bh')
@@ -554,23 +508,24 @@ def plot_panel_permutation(ax=None, recompute=False, n_permut=20000, qc='pass', 
 
 def plot_panel_power_analysis(ax, ax2):
 
-    significant_disturbances = pickle.load(open("new_max_metric.p", 'rb'))
+    significant_disturbances = pickle.load(open(save_data_path(figure='fig_taskmodulation').joinpath('shifts'), 'rb'))
     # max_y, min_y = 9, -3
     max_y, min_y = 14, -8
 
     obs_max, obs_min = -10, 10
-    pad = 5 # in points
     i = -1
     perturbation_shift = 0.33
     dist_between_violins = 0.8
     lab_to_num = dict(zip(['Berkeley', 'CCU', 'CSHL (C)', 'CSHL (Z)', 'NYU', 'Princeton', 'SWC', 'UCL', 'UCLA'], list(np.arange(9) * dist_between_violins)))
     visualisation_plot = 'SWC'
 
-    p_values = pickle.load(open("p_values_new_max_metric", 'rb'))
     df = load_dataframe()
     df_filt = filter_recordings(df, **filtering_criteria)
     df_filt = df_filt[df_filt['permute_include'] == 1]
     df_filt_reg = df_filt.groupby('region')
+
+    if PRINT_PIDS:
+        json.dump(list(np.unique(df_filt['pid'])), open("panel g", 'w'))
 
     for jj, test in enumerate(tests.keys()):
         if test != 'post_stim':
@@ -598,8 +553,6 @@ def plot_panel_power_analysis(ax, ax2):
 
             for j, lab in enumerate(np.unique(labs)):
                 if np.sum(labs == lab) == 0:
-                    continue
-                if lab == 'UW':
                     continue
 
                 lab_mean = data[labs == lab].mean()
@@ -728,10 +681,9 @@ def plot_panel_power_analysis(ax, ax2):
             ax.set_yticks([])
 
 
-
 def plot_power_analysis():
 
-    significant_disturbances = pickle.load(open("new_max_metric.p", 'rb'))
+    significant_disturbances = pickle.load(open(save_data_path(figure='fig_taskmodulation').joinpath('shifts'), 'rb'))
 
     # max_y, min_y = 9, -3
     max_y, min_y = 16, -16
@@ -742,9 +694,9 @@ def plot_power_analysis():
     i = -1
     perturbation_shift = 0.33
     dist_between_violins = 0.8
-    lab_to_num = dict(zip(['Berkeley', 'CCU', 'CSHL (C)', 'CSHL (Z)', 'NYU', 'Princeton', 'SWC', 'UCL', 'UCLA'], list(np.arange(9) * dist_between_violins)))
+    lab_to_num = dict(zip(['Berkeley', 'CCU', 'CSHL (C)', 'CSHL (Z)', 'NYU', 'Princeton', 'SWC', 'UCL', 'UCLA', 'UW'], list(np.arange(10) * dist_between_violins)))
 
-    p_values = pickle.load(open("p_values_new_max_metric", 'rb'))
+    p_values = pickle.load(open(save_data_path(figure='fig_taskmodulation').joinpath('p_values'), 'rb'))
     df = load_dataframe()
     df_filt = filter_recordings(df, **filtering_criteria)
     df_filt = df_filt[df_filt['permute_include'] == 1]
@@ -789,8 +741,6 @@ def plot_power_analysis():
             for j, lab in enumerate(np.unique(labs)):
                 if np.sum(labs == lab) == 0:
                     continue
-                if lab == 'UW':
-                    continue
 
                 lab_mean = data[labs == lab].mean()
                 plt.plot([lab_to_num[lab] - 0.3, lab_to_num[lab] + 0.3], [lab_mean, lab_mean], color=lab_colors[lab])
@@ -823,7 +773,7 @@ def plot_power_analysis():
                 temp_color = lab_colors[lab] if val < 1000 else 'red'
                 if temp_color == 'red':
                     val = max_y - lab_mean
-                    print(ii + jj * 8 + 1)
+                    # print(ii + jj * 8 + 1)
                 plt.plot([lab_to_num[lab] + perturbation_shift, lab_to_num[lab] + perturbation_shift], [lab_mean, lab_mean + val], color=temp_color)
                 obs_max = max(obs_max, lab_mean + val)
                 val = significant_disturbances[i, j, 1]
@@ -840,7 +790,7 @@ def plot_power_analysis():
                 temp_color = lab_colors[lab] if val > -1000 else 'red'
                 if temp_color == 'red':
                     val = min_y - lab_mean
-                    print(ii + jj * 8 + 1)
+                    # print(ii + jj * 8 + 1)
                 plt.plot([lab_to_num[lab] + perturbation_shift, lab_to_num[lab] + perturbation_shift], [lab_mean, lab_mean + val], color=temp_color)
                 obs_min = min(obs_min, lab_mean + val)
             plt.xlim(-0.3, 8 * dist_between_violins + .36)
@@ -920,7 +870,7 @@ def plot_power_analysis():
 
 
 def power_analysis_to_table():
-    power_an = pickle.load(open("new_max_metric.p", 'rb'))
+    power_an = pickle.load(open(save_data_path(figure='fig_taskmodulation').joinpath('shifts'), 'rb'))
     local_labs = ['Berkeley', 'CCU', 'CSHL (C)', 'CSHL (Z)', 'NYU', 'Princeton', 'SWC', 'UCL', 'UCLA']
     lab_to_num = dict(zip(local_labs, range(len(local_labs))))
 
@@ -943,90 +893,13 @@ def power_analysis_to_table():
             vals = ['-'] * len(local_labs) * 2
 
             for j, lab in enumerate(np.unique(labs)):
-                if lab == 'UW':
-                    continue
+
                 val = power_an[i, j, 0]
                 vals[lab_to_num[lab] * 2] = "$\\infty$" if val > 1000 else np.round(val, 2)
                 val = power_an[i, j, 1]
                 vals[lab_to_num[lab] * 2 + 1] = "$-\\infty$" if val < -1000 else np.round(val, 2)
 
             print(formatting_string.format(test_name, reg, *vals))
-
-
-def find_sig_p_value(p_values_to_copy, i):
-    # take an array of p_values, and index i specifying the relevant one
-    # see what p[i] what need to be, to be significant after correction
-    p_values = p_values_to_copy.copy()
-    _, corrected_p_vals, _, _ = multipletests(p_values, 0.05, method='fdr_bh')
-    if corrected_p_vals[i] < 0.05:
-        return p_values[i], corrected_p_vals[i]
-    actual_p = p_values[i]
-    p_attempt = np.round(actual_p / 2, 5)
-    step_unit = p_attempt
-    j = 0
-    while True:
-        j += 1
-        p_values[i] = np.round(p_attempt, 5)
-        _, corrected_p_vals_low, _, _ = multipletests(p_values, 0.05, method='fdr_bh')
-        p_values[i] += 0.00002
-        _, corrected_p_vals_high, _, _ = multipletests(p_values, 0.05, method='fdr_bh')
-        if corrected_p_vals_low[i] < 0.05 and corrected_p_vals_high[i] >= 0.05:
-            return p_values[i] - 0.00002, corrected_p_vals_low[i]
-        if j == 100:
-            print("Failed, current p_value is {}".format(corrected_p_vals_low[i]))
-            return p_values[i] - 0.00002, corrected_p_vals_low[i]
-        if corrected_p_vals_low[i] >= 0.05:
-            p_attempt -= step_unit * 0.5 ** j
-        else:
-            p_attempt += step_unit * 0.5 ** j
-
-def find_sig_manipulation(data, lab_to_manip, labs, subjects, p_to_reach, direction='positive', sensitivity=0.01, n_permut=50000):
-    lower_bound = 0 if direction == 'positive' else -1000
-    higher_bound = 1000 if direction == 'positive' else 0
-
-    found_bound = False
-    bound = 0
-    while not found_bound:
-        bound += 10 if direction == 'positive' else -10
-        p = permut_test(data + (labs == lab_to_manip) * bound, metric=distribution_dist_approx_max, labels1=labs,
-                        labels2=subjects, shuffling='labels1_based_on_2', n_cores=8, n_permut=n_permut)
-        if p < p_to_reach:
-            found_bound = True
-            if direction == 'positive':
-                higher_bound = bound
-            else:
-                lower_bound = bound
-        else:
-            if direction == 'positive':
-                lower_bound = bound
-            else:
-                higher_bound = bound
-        if not found_bound:
-            if direction == 'positive':
-                if bound > data.max() + 20:
-                    print("Failed to find")
-                    return -np.inf, np.inf
-            else:
-                if bound < data.min() - 20:
-                    print("Failed to find")
-                    return -np.inf, np.inf
-
-    while np.abs(lower_bound - higher_bound) > sensitivity:
-
-        test = (lower_bound + higher_bound) / 2
-        p = permut_test(data + (labs == lab_to_manip) * test, metric=distribution_dist_approx_max, labels1=labs,
-                        labels2=subjects, shuffling='labels1_based_on_2', n_cores=8, n_permut=n_permut)
-        if p < p_to_reach:
-            if direction == 'positive':
-                higher_bound = test
-            else:
-                lower_bound = test
-        else:
-            if direction == 'positive':
-                lower_bound = test
-            else:
-                higher_bound = test
-    return lower_bound, higher_bound
 
 
 # qcs = ["pass", "high_noise", "low_yield", "missed_target", "artifacts", "low_trials", "high_lfp", "all"]
@@ -1037,54 +910,6 @@ def find_sig_manipulation(data, lab_to_manip, labs, subjects, p_to_reach, direct
 #     plt.savefig("temp_{}".format(qc))
 #     plt.close()
 
-
-recompute_power = False
-if recompute_power:
-    plot_panel_permutation(recompute=True, n_permut=50000)
-    p_values = pickle.load(open("p_values_new_max_metric", 'rb'))  # renew by calling plot_panel_permutation
-    print(p_values)
-    print(np.sum(p_values < 0.01))
-
-    df = load_dataframe()
-    df_filt = filter_recordings(df, **filtering_criteria)
-    df_filt = df_filt[df_filt['permute_include'] == 1]
-
-    df_filt_reg = df_filt.groupby('region')
-    results = pd.DataFrame()
-
-    i = -1
-    significant_disturbances = np.zeros((len(p_values), 10, 2))
-    for test in tests.keys():
-        print(test)
-        for jj, reg in enumerate(BRAIN_REGIONS):
-            i += 1
-
-            df_reg = df_filt_reg.get_group(reg)
-
-            if test == 'avg_ff_post_move':
-                data = df_reg[test].values
-            else:
-                data = df_reg['mean_fr_diff_{}'.format(test)].values
-            labs = df_reg['institute'].values
-            subjects = df_reg['subject'].values
-
-            labs = labs[~np.isnan(data)]
-            subjects = subjects[~np.isnan(data)]
-            data = data[~np.isnan(data)]
-
-            if p_values[i] < 0.01:
-                print("test already significant {}, {}, {}".format(test, reg, i))
-                continue
-
-            for j, manipulate_lab in enumerate(np.unique(labs)):
-                lower, higher = find_sig_manipulation(data.copy(), manipulate_lab, labs, subjects, 0.01, 'positive')
-                significant_disturbances[i, j, 0] = higher
-                print("found bound: {}".format(higher))
-                lower, higher = find_sig_manipulation(data.copy(), manipulate_lab, labs, subjects, 0.01, 'negative')
-                significant_disturbances[i, j, 1] = lower
-                print("found bound: {}".format(lower))
-            pickle.dump(significant_disturbances, open("new_max_metric.p", 'wb'))
-    quit()
 
 if __name__ == '__main__':
     plot_main_figure()

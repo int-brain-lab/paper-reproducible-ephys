@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import time
+import pickle
 
 from one.api import ONE
 from ibllib.atlas import AllenAtlas
@@ -9,9 +10,10 @@ from brainbox.task.closed_loop import compute_comparison_statistics
 from brainbox.io.one import SpikeSortingLoader
 from iblutil.numerical import ismember
 
-from reproducible_ephys_functions import combine_regions, get_insertions, BRAIN_REGIONS, save_data_path, save_dataset_info, compute_metrics
+from reproducible_ephys_functions import combine_regions, get_insertions, BRAIN_REGIONS, save_data_path, save_dataset_info, compute_metrics, filter_recordings
 from reproducible_ephys_processing import compute_psth
-from fig_taskmodulation.fig_taskmodulation_load_data import load_dataframe
+from fig_taskmodulation.fig_taskmodulation_load_data import load_dataframe, tests, filtering_criteria
+from permutation_test import permut_test, distribution_dist_approx, shuffle_labels, distribution_dist_approx_max
 
 
 ba = AllenAtlas()
@@ -422,6 +424,141 @@ def prepare_data(insertions, one, figure='fig_taskmodulation', recompute=False, 
         np.savez(save_path.joinpath(f'{figure}_data_event_{align_event}_smoothing_{smoothing}_norm_{norm}.npz'), **data)
         return concat_df
 
+def compute_permutation_test(n_permut=20000, qc='pass', n_cores=8):
+    df = load_dataframe()
+    df_filt = filter_recordings(df, **filtering_criteria)
+    if qc == 'pass':
+        df_filt = df_filt[df_filt['permute_include'] == 1]
+    elif qc != 'all':
+        df_filt = df_filt[(df_filt['permute_include'] == 1) | (df_filt[qc] == 1)]
+
+    df_filt_reg = df_filt.groupby('region')
+    results = pd.DataFrame()
+
+    for test in tests.keys():
+        for reg in BRAIN_REGIONS:
+            df_reg = df_filt_reg.get_group(reg)
+            # vals = df_reg.groupby(['institute', 'subject'])[test].mean()
+            # labs = vals.index.get_level_values('institute')
+            # subjects = vals.index.get_level_values('subject')
+            # data = vals.values
+            if test == 'avg_ff_post_move':
+                data = df_reg[test].values
+            else:
+                data = df_reg['mean_fr_diff_{}'.format(test)].values
+            labs = df_reg['institute'].values
+            subjects = df_reg['subject'].values
+
+            labs = labs[~np.isnan(data)]
+            subjects = subjects[~np.isnan(data)]
+            data = data[~np.isnan(data)]
+            # lab_names, this_n_labs = np.unique(labs, return_counts=True)  # what is this for?
+
+            print(".", end='')
+            p = permut_test(data, metric=distribution_dist_approx_max, labels1=labs,
+                            labels2=subjects, shuffling='labels1_based_on_2', n_cores=n_cores, n_permut=n_permut)
+
+            # print(p)
+            # if p > 0.05:
+            #     return data, labs, subjects
+            results = pd.concat((results, pd.DataFrame(index=[results.shape[0] + 1],
+                                                       data={'test': test, 'region': reg, 'p_value_permut': p})))
+
+    pickle.dump(results.p_value_permut.values, open(save_data_path(figure='fig_taskmodulation').joinpath('p_values'), 'wb'))
+
+def compute_power_analysis(n_permut=50000, n_cores=8):
+    p_values = pickle.load(open(save_data_path(figure='fig_taskmodulation').joinpath('p_values'), 'rb'))  # renew by calling plot_panel_permutation
+    print(p_values)
+    print(np.sum(p_values < 0.01))
+
+    df = load_dataframe()
+    df_filt = filter_recordings(df, **filtering_criteria)
+    df_filt = df_filt[df_filt['permute_include'] == 1]
+
+    df_filt_reg = df_filt.groupby('region')
+
+    i = -1
+    significant_disturbances = np.zeros((len(p_values), 10, 2))
+    for test in tests.keys():
+        print(test)
+        for jj, reg in enumerate(BRAIN_REGIONS):
+            i += 1
+
+            df_reg = df_filt_reg.get_group(reg)
+
+            if test == 'avg_ff_post_move':
+                data = df_reg[test].values
+            else:
+                data = df_reg['mean_fr_diff_{}'.format(test)].values
+            labs = df_reg['institute'].values
+            subjects = df_reg['subject'].values
+
+            labs = labs[~np.isnan(data)]
+            subjects = subjects[~np.isnan(data)]
+            data = data[~np.isnan(data)]
+
+            if p_values[i] < 0.01:
+                print("test already significant {}, {}, {}".format(test, reg, i))
+                continue
+
+            for j, manipulate_lab in enumerate(np.unique(labs)):
+                lower, higher = find_sig_manipulation(data.copy(), manipulate_lab, labs, subjects, 0.01, 'positive', n_permut=n_permut, n_cores=n_cores)
+                significant_disturbances[i, j, 0] = higher
+                print("found bound: {}".format(higher))
+                lower, higher = find_sig_manipulation(data.copy(), manipulate_lab, labs, subjects, 0.01, 'negative', n_permut=n_permut, n_cores=n_cores)
+                significant_disturbances[i, j, 1] = lower
+                print("found bound: {}".format(lower))
+            pickle.dump(significant_disturbances, open(save_data_path(figure='fig_taskmodulation').joinpath('shifts'), 'wb'))
+
+
+def find_sig_manipulation(data, lab_to_manip, labs, subjects, p_to_reach, direction='positive', sensitivity=0.01, n_permut=50000, n_cores=8):
+    lower_bound = 0 if direction == 'positive' else -1000
+    higher_bound = 1000 if direction == 'positive' else 0
+
+    found_bound = False
+    bound = 0
+    while not found_bound:
+        bound += 10 if direction == 'positive' else -10
+        p = permut_test(data + (labs == lab_to_manip) * bound, metric=distribution_dist_approx_max, labels1=labs,
+                        labels2=subjects, shuffling='labels1_based_on_2', n_cores=n_cores, n_permut=n_permut)
+        if p < p_to_reach:
+            found_bound = True
+            if direction == 'positive':
+                higher_bound = bound
+            else:
+                lower_bound = bound
+        else:
+            if direction == 'positive':
+                lower_bound = bound
+            else:
+                higher_bound = bound
+        if not found_bound:
+            if direction == 'positive':
+                if bound > data.max() + 20:
+                    print("Failed to find")
+                    return -np.inf, np.inf
+            else:
+                if bound < data.min() - 20:
+                    print("Failed to find")
+                    return -np.inf, np.inf
+
+    while np.abs(lower_bound - higher_bound) > sensitivity:
+
+        test = (lower_bound + higher_bound) / 2
+        p = permut_test(data + (labs == lab_to_manip) * test, metric=distribution_dist_approx_max, labels1=labs,
+                        labels2=subjects, shuffling='labels1_based_on_2', n_cores=n_cores, n_permut=n_permut)
+        if p < p_to_reach:
+            if direction == 'positive':
+                higher_bound = test
+            else:
+                lower_bound = test
+        else:
+            if direction == 'positive':
+                lower_bound = test
+            else:
+                higher_bound = test
+    return lower_bound, higher_bound
+
 
 if __name__ == '__main__':
     one = ONE()
@@ -429,3 +566,5 @@ if __name__ == '__main__':
     insertions = get_insertions(level=0, one=one, freeze='release_2022_11', recompute=True)
     prepare_data(insertions, one=one, recompute=True, **default_params)
     save_dataset_info(one, figure='figure4')
+    compute_permutation_test(n_permut=50000, n_cores=8)
+    compute_power_analysis(n_permut=50000, n_cores=8)
