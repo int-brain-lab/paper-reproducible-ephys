@@ -506,18 +506,16 @@ def filter_recordings(df=None, by_anatomy_only=False, max_ap_rms=40, max_lfp_pow
     # Region Level
     # no. of channels per region
     metrics['region_hit'] = metrics['n_channels'] > min_channels_region
-    # no. of neurons per region
-    metrics['low_neurons'] = metrics['neuron_yield'] < min_neuron_region
 
     # PID level
     metrics = metrics.groupby('pid', group_keys=False).apply(lambda m: m.assign(high_noise=lambda m: m['rms_ap_p90'].median() > max_ap_rms))
     metrics = metrics.groupby('pid', group_keys=False).apply(lambda m: m.assign(high_lfp=lambda m: m['lfp_power_raw'].median() > max_lfp_power))
     metrics = metrics.groupby('pid', group_keys=False).apply(lambda m: m.assign(low_yield=lambda m: (m['neuron_yield'].sum() / m['n_channels'].sum())
-                                                    < min_neurons_per_channel))
+                                                             < min_neurons_per_channel))
     metrics = metrics.groupby('pid', group_keys=False).apply(lambda m: m.assign(missed_target=lambda m: m['region_hit'].sum() < min_regions))
     metrics = metrics.groupby('pid', group_keys=False).apply(lambda m: m.assign(low_trials=lambda m: m['n_trials'] < n_trials))
 
-    sum_metrics = metrics['high_noise'] + metrics['high_lfp'] + metrics['low_yield'] + metrics['missed_target'] + metrics['low_trials'] + metrics['low_neurons']
+    sum_metrics = metrics['high_noise'] + metrics['high_lfp'] + metrics['low_yield'] + metrics['missed_target'] + metrics['low_trials']
     if by_anatomy_only:
         sum_metrics = metrics['missed_target']  # by_anatomy_only exclusion criteria applied
     if behavior:
