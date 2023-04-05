@@ -660,16 +660,18 @@ def all_panels(rm_unre=True, align='move', split='rt',
                
     # load metainfo df, row per cell
     concat_df = load_dataframe()
+    
     # load PSTHs, one per cell
     data = load_data(event=align, split=split, smoothing='none')
     all_frs = data['all_frs']
 
     ts = 'fast|slow RT PETH'
-
+    
     # include has minimum number of clusters as being 3
-    concat_df = filter_recordings(concat_df)
+    concat_df = filter_recordings(concat_df, min_regions=0)
 
     if permute_include:
+        
         all_frs = all_frs[concat_df['permute_include'] == 1, :]
         concat_df = concat_df[concat_df['permute_include'] == 1].reset_index()
 
@@ -740,10 +742,15 @@ def all_panels(rm_unre=True, align='move', split='rt',
     inner = [['Ea'],
              ['Eb']]
 
-    mosaic = [[inner, 'F', 'KS', 'KSmean'],
-              ['B','B', 'D', 'KSregs'],
-              ['c_labs', 'c_labs', 'm_labs', 'KSlabs']]
+#    mosaic = [[inner, 'F', 'KS', 'KSmean'],
+#              ['B','B', 'D', 'KSregs'],
+#              ['c_labs', 'c_labs', 'm_labs', 'KSlabs']]
 
+
+    mosaic = [[inner, 'F','B','B'],
+              ['D', 'KSregs','c_labs', 'c_labs'],
+              ['m_labs', 'KSlabs', 'KS', 'KSmean']]
+    
 
     mosaic_supp = [['Ha', 'Hb', 'H'],
                    ['Ia', 'Ib', 'I'],
@@ -1184,9 +1191,7 @@ def all_panels(rm_unre=True, align='move', split='rt',
     axs['KSregs'].sharex(axs['KSlabs'])
     axs['KSregs'].sharey(axs['KSlabs'])
 
- 
- 
-        
+
     '''
     analysis per region
     '''
@@ -1291,7 +1296,7 @@ def all_panels(rm_unre=True, align='move', split='rt',
 
         # plot ks scores as bar plot inset with asterics for small p 
         axsi.append(inset_axes(axs3[ms3[k]], width="30%", height="35%", 
-                               loc=4, borderpad=0,
+                               loc=4, borderpad=1,
                                bbox_to_anchor=(-0.02,0.1,1,1), 
                                bbox_transform=axs3[ms3[k]].transAxes))
                    
