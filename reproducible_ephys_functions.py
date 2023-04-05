@@ -148,15 +148,10 @@ def traj_list_to_dataframe(trajectories):
 def get_insertions(level=0, recompute=False, as_dataframe=False, one=None, freeze=None, bilateral=False):
     """
     Find insertions used for analysis based on different exclusion levels
+    Level -1: minimum_regions = 0, resolved = True, behavior = False, n_trial >= 0, exclude_critical = False
     Level 0: minimum_regions = 0, resolved = True, behavior = False, n_trial >= 0, exclude_critical = True
-    Level 1: minimum_regions = 2, resolved = True, behavior = False, n_trial >= 400, exclude_critical = True
-    Level 2: minimum_regions = 2, resolved = True, behavior = False, n_trial >= 400, exclude_critical = True,
-             max_ap_rms=40,  max_lfp_power=-140, min_channels_per_region=5, min_neurons_per_channel=0.1
-    Level 3: minimum_regions = 0, resolved = True, behavior = False, n_trial >= 400, exclude_critical = True,
-             max_ap_rms=40,  max_lfp_power=-150, min_channels_per_region=5, min_neurons_per_channel=0.1,
-             min_lab_region=0, min_rec_lab=0, min_neuron_region=-1
 
-    :param level: exclusion level 0, 1, 2, or 3
+    :param level: exclusion level -1, 0
     :param recompute: whether to recompute the metrics dataframe that is used to exclude recordings at level=2
     :param as_dataframe: whether to return a dict or a dataframe
     :param one: ONE instance
@@ -166,8 +161,6 @@ def get_insertions(level=0, recompute=False, as_dataframe=False, one=None, freez
     one = one or ONE()
 
     if freeze is not None:
-
-        # TODO for next freeze need to think about how to deal with bilateral
         ins_df = pd.read_csv(data_release_path().joinpath(f'{freeze}.csv'))
         pids = ins_df[ins_df['level'] >= level].pid.values
         insertions = one.alyx.rest('trajectories', 'list', provenance='Planned', django=f'probe_insertion__in,{list(pids)}')
@@ -185,56 +178,17 @@ def get_insertions(level=0, recompute=False, as_dataframe=False, one=None, freez
 
         return insertions
 
+    if level == -1:
+        insertions = one.alyx.rest('trajectories', 'list', provenance='Planned', x=-2243, y=-2000, theta=15,
+                                   django='probe_insertion__session__project__name,ibl_neuropixel_brainwide_01')
+        return insertions
+
     if level == 0:
         insertions = query(min_regions=0, n_trials=0, behavior=False, exclude_critical=True, one=one,
                            as_dataframe=as_dataframe)
-        return insertions
-
-    if level == 1:
-        insertions = query(one=one, as_dataframe=as_dataframe)
         if recompute:
             _ = recompute_metrics(insertions, one)
         return insertions
-
-    if level == 2:
-        insertions = query(one=one, as_dataframe=False)
-        pids = np.array([ins['probe_insertion'] for ins in insertions])
-        if recompute:
-            _ = recompute_metrics(insertions, one)
-        ins = filter_recordings(min_neuron_region=-1, one=one, freeze=freeze)  # TODO freeze = None here, remove?
-        ins = ins[ins['include']]
-
-        if not as_dataframe:
-            isin, _ = ismember(pids, ins['pid'].unique())
-            ins = [insertions[i] for i, val in enumerate(isin) if val]
-
-        return ins
-
-    if level >= 3:
-        insertions = query(min_regions=0, one=one, as_dataframe=False)
-        pids = np.array([ins['probe_insertion'] for ins in insertions])
-        if recompute:
-            _ = recompute_metrics(insertions, one)
-        ins = filter_recordings(min_regions=0, min_lab_region=0, min_rec_lab=0, min_neuron_region=-1, one=one, freeze=freeze)  # TODO freeze = None here, remove?
-        ins = ins[ins['include']]
-
-        if not as_dataframe:
-            isin, _ = ismember(pids, ins['pid'].unique())
-            ins = [insertions[i] for i, val in enumerate(isin) if val]
-
-        return ins
-    
-
-def get_histology_insertions(one=None, freeze=None):
-    one = one or ONE()
-    if freeze is not None:
-        ins_df = pd.read_csv(data_release_path().joinpath(f'{freeze}.csv'))
-        pids = ins_df.pid.values
-        insertions = one.alyx.rest('trajectories', 'list', provenance='Planned', django=f'probe_insertion__in,{list(pids)}')
-    else:
-        insertions = one.alyx.rest('trajectories', 'list', provenance='Planned', x=-2243, y=-2000, theta=15,
-                                   django='probe_insertion__session__project__name,ibl_neuropixel_brainwide_01')
-    return insertions
 
 
 def recompute_metrics(insertions, one, bilateral=False):
@@ -516,10 +470,10 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
     return metrics
 
 
-def filter_recordings(df=None, one=None, by_anatomy_only=False, max_ap_rms=40, max_lfp_power=-150,
-                      min_neurons_per_channel=0.1, min_channels_region=5, min_regions=3, min_neuron_region=4,
+def filter_recordings(df=None, by_anatomy_only=False, max_ap_rms=40, max_lfp_power=-150,
+                      min_neurons_per_channel=0.1, min_channels_region=5, min_regions=0, min_neuron_region=4,
                       min_lab_region=3, min_rec_lab=4, n_trials=400, behavior=False,
-                      exclude_subjects=['ibl_witten_26'], recompute=True, freeze='release_2022_11'):
+                      exclude_subjects=['ibl_witten_26'], recompute=True, freeze='release_2022_11', one=None):
     """
     Filter values in dataframe according to different exclusion criteria
     :param df: pandas dataframe
@@ -538,89 +492,68 @@ def filter_recordings(df=None, one=None, by_anatomy_only=False, max_ap_rms=40, m
 
     # Load in the insertion metrics
     metrics = load_metrics(freeze=freeze)
-
-    if df is None:
-        df = metrics
-        if df is None:
-            ins = get_insertions(level=0, recompute=False, freeze=freeze)
-            df = compute_metrics(ins, one=ONE(), save=True)
-        df['original_index'] = df.index
-    else:
-        # make sure that all pids in the dataframe df are included in metrics otherwise recompute metrics
-        if metrics is None:
-            one = ONE()
-            ins = get_insertions(level=0, one=one, recompute=False, freeze=freeze)
-            metrics = compute_metrics(ins, one=one, save=True)
-
+    if metrics is None:
+        ins = get_insertions(level=0, recompute=False, freeze=freeze)
+        metrics = compute_metrics(ins, one=one, save=True)
+    if df is not None:
         isin, _ = ismember(df['pid'].unique(), metrics['pid'].unique())
         if ~np.all(isin):
             logger.warning(f'Warning: {np.sum(~isin)} recordings are missing metrics')
             if recompute:
-                one = ONE()
                 ins = get_insertions(level=0, one=one, recompute=False, freeze=freeze)
                 metrics = compute_metrics(ins, one=one, save=True)
 
-        isin, _ = ismember(metrics['pid'].unique(), df['pid'].unique())
-        if ~np.all(isin):
-            rm_pids = metrics['pid'].unique()[~isin]
-            metrics = metrics[~metrics.pid.isin(rm_pids)]
-
-
-        # merge the two dataframes
-        df['original_index'] = df.index
-        df = df.merge(metrics, on=['pid', 'region', 'subject', 'eid', 'probe', 'date', 'lab'])
-
     # Region Level
     # no. of channels per region
-    df['region_hit'] = df['n_channels'] > min_channels_region
+    metrics['region_hit'] = metrics['n_channels'] > min_channels_region
     # no. of neurons per region
-    df['low_neurons'] = df['neuron_yield'] < min_neuron_region
+    metrics['low_neurons'] = metrics['neuron_yield'] < min_neuron_region
 
     # PID level
-    df = df.groupby('pid', group_keys=False).apply(lambda m: m.assign(high_noise=lambda m: m['rms_ap_p90'].median() > max_ap_rms))
-    df = df.groupby('pid', group_keys=False).apply(lambda m: m.assign(high_lfp=lambda m: m['lfp_power_raw'].median() > max_lfp_power))
-    df = df.groupby('pid', group_keys=False).apply(lambda m: m.assign(low_yield=lambda m: (m['neuron_yield'].sum() / m['n_channels'].sum())
+    metrics = metrics.groupby('pid', group_keys=False).apply(lambda m: m.assign(high_noise=lambda m: m['rms_ap_p90'].median() > max_ap_rms))
+    metrics = metrics.groupby('pid', group_keys=False).apply(lambda m: m.assign(high_lfp=lambda m: m['lfp_power_raw'].median() > max_lfp_power))
+    metrics = metrics.groupby('pid', group_keys=False).apply(lambda m: m.assign(low_yield=lambda m: (m['neuron_yield'].sum() / m['n_channels'].sum())
                                                     < min_neurons_per_channel))
-    df = df.groupby('pid', group_keys=False).apply(lambda m: m.assign(missed_target=lambda m: m['region_hit'].sum() < min_regions))
-    df = df.groupby('pid', group_keys=False).apply(lambda m: m.assign(low_trials=lambda m: m['n_trials'] < n_trials))
+    metrics = metrics.groupby('pid', group_keys=False).apply(lambda m: m.assign(missed_target=lambda m: m['region_hit'].sum() < min_regions))
+    metrics = metrics.groupby('pid', group_keys=False).apply(lambda m: m.assign(low_trials=lambda m: m['n_trials'] < n_trials))
 
-    sum_metrics = df['high_noise'] + df['high_lfp'] + df['low_yield'] + df['missed_target'] + df['low_trials'] + df['low_neurons']
+    sum_metrics = metrics['high_noise'] + metrics['high_lfp'] + metrics['low_yield'] + metrics['missed_target'] + metrics['low_trials'] + metrics['low_neurons']
     if by_anatomy_only:
-        sum_metrics = df['missed_target'] # by_anatomy_only exclusion criteria applied
+        sum_metrics = metrics['missed_target']  # by_anatomy_only exclusion criteria applied
     if behavior:
-        sum_metrics += ~df['behavior']
+        sum_metrics += ~metrics['behavior']
 
-    df['include'] = sum_metrics == 0
+    metrics['include'] = sum_metrics == 0
 
     # Exclude subjects indicated to exclude from further analysis
-    df['artifacts'] = bool(0)
+    metrics['artifacts'] = bool(0)
     for subj in exclude_subjects:
-        idx = df.loc[(df['subject'] == subj)].index
-        df.loc[idx, 'include'] = False
-        df.loc[idx, 'artifacts'] = True
+        idx = metrics.loc[(metrics['subject'] == subj)].index
+        metrics.loc[idx, 'include'] = False
+        metrics.loc[idx, 'artifacts'] = True
 
-    df['lab_include'] = bool(0)
-    df['permute_include'] = bool(0)
+    metrics['lab_include'] = bool(0)
+    metrics['permute_include'] = bool(0)
 
     # For permutation tests
-    df_red = df[df['include'] == 1]
+    metrics_red = metrics[metrics['include'] == 1]
 
     # Have minimum number of recordings per lab
-    inst_count = df_red.groupby(['institute']).pid.nunique()
+    inst_count = metrics_red.groupby(['institute']).pid.nunique()
     institutes = [key for key, val in inst_count.items() if val >= min_rec_lab]
 
     for lab in institutes:
-        idx = df.loc[(df['institute'] == lab) & df['include'] == 1].index
-        df.loc[idx, 'lab_include'] = True
+        idx = metrics.loc[(metrics['institute'] == lab) & metrics['include'] == 1].index
+        metrics.loc[idx, 'lab_include'] = True
 
     # Now for permutation test
-    df_red = df_red[df_red['institute'].isin(institutes)]
+    metrics_red = metrics_red[metrics_red['institute'].isin(institutes)]
 
     # Minimum number of recordings per lab per region with enough good units
-    labreg = {val: {reg: 0 for reg in df.region.unique()} for val in institutes}
-    df_red = df_red.groupby(['institute', 'pid', 'region'])
-    for key in df_red.groups.keys():
-        df_k = df_red.get_group(key)
+    labreg = {val: {reg: 0 for reg in metrics.region.unique()} for val in institutes}
+    metrics_red = metrics_red.groupby(['institute', 'pid', 'region'])
+    for key in metrics_red.groups.keys():
+        df_k = metrics_red.get_group(key)
         # needs to be based on the neuron_yield
         if df_k.iloc[0]['neuron_yield'] >= min_neuron_region:
             labreg[key[0]][key[2]] += 1
@@ -628,11 +561,17 @@ def filter_recordings(df=None, one=None, by_anatomy_only=False, max_ap_rms=40, m
     for lab, regs in labreg.items():
         for reg, count in regs.items():
             if count >= min_lab_region:
-                idx = df.loc[(df['region'] == reg) & (df['institute'] == lab) & df['include'] == 1].index
-                df.loc[idx, 'permute_include'] = True
+                idx = metrics.loc[(metrics['region'] == reg) & (metrics['institute'] == lab) & metrics['include'] == 1].index
+                metrics.loc[idx, 'permute_include'] = True
 
-    # Sort the index so it is the same as the orignal frame that was passed in
-    df = df.sort_values('original_index').reset_index(drop=True)
+    if df is None:
+        # Sort the index so it is the same as the orignal frame that was passed in
+        df = metrics
+    else:
+        df['original_index'] = df.index
+        df = df.merge(metrics, on=['pid', 'region', 'subject', 'eid', 'probe', 'date', 'lab'])
+        # Sort the index so it is the same as the orignal frame that was passed in
+        df = df.sort_values('original_index').reset_index(drop=True)
 
     return df
 
