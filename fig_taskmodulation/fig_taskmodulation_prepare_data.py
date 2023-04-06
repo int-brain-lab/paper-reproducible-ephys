@@ -565,6 +565,6 @@ if __name__ == '__main__':
     one.record_loaded = True
     insertions = get_insertions(level=0, one=one, freeze='release_2022_11', recompute=True)
     prepare_data(insertions, one=one, recompute=True, **default_params)
-    save_dataset_info(one, figure='figure4')
+    save_dataset_info(one, figure='fig_taskmodulation')
     compute_permutation_test(n_permut=50000, n_cores=8)
     compute_power_analysis(n_permut=50000, n_cores=8)
