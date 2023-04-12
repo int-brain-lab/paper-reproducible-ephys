@@ -14,7 +14,7 @@ import json
 lab_number_map, institution_map, lab_colors = labs()
 fig_path = save_figure_path(figure='fig_taskmodulation')
 
-PRINT_PIDS = True
+PRINT_PIDS = False
 
 # tests = {'trial': 'Trial',
 #          'start_to_move': 'Pre move (TW)',
@@ -350,6 +350,7 @@ def plot_panel_all_subjects(max_neurons, min_neurons, ax=None, save=True, plotte
 
     if PRINT_PIDS:
         json.dump(list(np.unique(df_filt['pid'])), open("panel d", 'w'))
+        return
 
     # Example to get similar plot to figure 4c
     if ax is None:
@@ -426,6 +427,7 @@ def plot_panel_task_modulated_neurons(specific_tests=None, ax=None, save=True):
 
     if PRINT_PIDS:
         json.dump(list(np.unique(df_filt['pid'])), open("panel e", 'w'))
+        return
 
     # Group data frame by region
     df_region = df_filt.groupby('region')
@@ -517,7 +519,7 @@ def plot_panel_power_analysis(ax, ax2):
     perturbation_shift = 0.33
     dist_between_violins = 0.8
     lab_to_num = dict(zip(['Berkeley', 'CCU', 'CSHL (C)', 'CSHL (Z)', 'NYU', 'Princeton', 'SWC', 'UCL', 'UCLA'], list(np.arange(9) * dist_between_violins)))
-    visualisation_plot = 'SWC'
+    visualisation_plot = 'CSHL (C)'
 
     df = load_dataframe()
     df_filt = filter_recordings(df, **filtering_criteria)
@@ -526,12 +528,15 @@ def plot_panel_power_analysis(ax, ax2):
 
     if PRINT_PIDS:
         json.dump(list(np.unique(df_filt['pid'])), open("panel g", 'w'))
+        return
 
     for jj, test in enumerate(tests.keys()):
         if test != 'post_stim':
+            i += 1
             continue
         for ii, reg in enumerate(BRAIN_REGIONS):
             if reg != 'CA1':
+                i += 1
                 continue
             df_reg = df_filt_reg.get_group(reg)
             i += 1
@@ -759,7 +764,8 @@ def plot_power_analysis():
 
                 val = significant_disturbances[i, j, 0]
 
-                perturb_in_std.append(val / np.std(data[labs == lab]))
+                if not (significant_disturbances[i, 0, 0] == 0 and significant_disturbances[i, 0, 1] == 0):
+                    perturb_in_std.append(val / np.std(data[labs == lab]))
 
                 all_powers.append(val)
                 ns.append(np.sum(labs == lab))
@@ -785,7 +791,8 @@ def plot_power_analysis():
                 else:
                     powers[-1] -= val
 
-                perturb_in_std.append(val / np.std(data[labs == lab]))
+                if not (significant_disturbances[i, 0, 0] == 0 and significant_disturbances[i, 0, 1] == 0):
+                    perturb_in_std.append(val / np.std(data[labs == lab]))
 
                 temp_color = lab_colors[lab] if val > -1000 else 'red'
                 if temp_color == 'red':
@@ -830,6 +837,7 @@ def plot_power_analysis():
     std_limit = 3
     plt.subplot(8, 5, ii + jj * 5 + 1 + 4)
     perturb_in_std = np.array(perturb_in_std)
+    assert np.sum(perturb_in_std == 0) == 0, "Perturbations of significant tests in histogram"
     plt.hist(perturb_in_std[np.abs(perturb_in_std) < std_limit], bins=25, color='grey')
     print("excluded stds {}".format(np.sum(np.abs(perturb_in_std) >= std_limit)))
     # plt.xlabel("Shifts (std)", size=14)
