@@ -401,10 +401,37 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
             else:
                 clusters['label'] = clusters['metrics']['label']
                 channels = bbone.load_channel_locations(eid, probe=probe, one=one, aligned=True, brain_atlas=ba)[probe]
+                clusters['acronym'] = channels['acronym'][clusters['channels']]
+                clusters['atlas_id'] = channels['atlas_id'][clusters['channels']]
 
             channels['rawInd'] = one.load_dataset(eid, dataset='channels.rawInd.npy', collection=collection)
             channels['rep_site_acronym'] = combine_regions(channels['acronym'])
             clusters['rep_site_acronym'] = channels['rep_site_acronym'][clusters['channels']]
+
+        except Exception as err:
+            logger.error(f'{pid}: {err}')
+
+        try:
+            # Compute total yield on probe
+            for feat in [clusters, channels]:
+                unique_ids = np.unique(feat['atlas_id'])
+                root_ids = []
+                for un in unique_ids:
+                    if un in [0, 997]:
+                        continue
+                    ancs = ba.regions.ancestors(un)
+                    if ancs['id'][1] != 8:
+                        root_ids.append(un)
+
+                idx = np.isin(feat['atlas_id'], np.array(root_ids))
+                feat['acronym'][idx] = 'root'
+
+            good_channels = np.bitwise_and(channels['acronym'] != 'void', channels['acronym'] != 'root')
+            la = np.sum(np.bitwise_or(clusters['acronym'] == 'void', clusters['acronym'] == 'root'))
+
+            good_clusters = np.bitwise_and(clusters['label'] == 1, np.bitwise_and(clusters['acronym'] != 'void',
+                                                                                  clusters['acronym'] != 'root'))
+            total_yield = np.sum(good_clusters) / np.sum(good_channels)
 
         except Exception as err:
             logger.error(f'{pid}: {err}')
@@ -451,6 +478,7 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
                                                         'region': region, 'date': sess_date,
                                                         'n_channels': region_chan.shape[0],
                                                         'neuron_yield': region_clusters.shape[0],
+                                                        'total_yield': total_yield,
                                                         'lfp_power': lfp_region,
                                                         'lfp_theta_power': lfp_theta_region,
                                                         'lfp_power_raw': lfp_region_raw,
@@ -510,8 +538,7 @@ def filter_recordings(df=None, by_anatomy_only=False, max_ap_rms=40, max_lfp_pow
     # PID level
     metrics = metrics.groupby('pid', group_keys=False).apply(lambda m: m.assign(high_noise=lambda m: m['rms_ap_p90'].median() > max_ap_rms))
     metrics = metrics.groupby('pid', group_keys=False).apply(lambda m: m.assign(high_lfp=lambda m: m['lfp_power_raw'].median() > max_lfp_power))
-    metrics = metrics.groupby('pid', group_keys=False).apply(lambda m: m.assign(low_yield=lambda m: (m['neuron_yield'].sum() / m['n_channels'].sum())
-                                                             < min_neurons_per_channel))
+    metrics = metrics.groupby('pid', group_keys=False).apply(lambda m: m.assign(low_yield=lambda m: m['total_yield'] < min_neurons_per_channel))
     metrics = metrics.groupby('pid', group_keys=False).apply(lambda m: m.assign(missed_target=lambda m: m['region_hit'].sum() < min_regions))
     metrics = metrics.groupby('pid', group_keys=False).apply(lambda m: m.assign(low_trials=lambda m: m['n_trials'] < n_trials))
 
