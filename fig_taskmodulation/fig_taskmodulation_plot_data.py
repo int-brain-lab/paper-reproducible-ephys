@@ -507,7 +507,7 @@ def plot_panel_permutation(ax=None, n_permut=20000, qc='pass', n_cores=8):
     return p_vals
 
 
-def plot_panel_power_analysis(ax, ax2):
+def plot_panel_power_analysis(ax, ax2, pert):
 
     significant_disturbances = pickle.load(open(save_data_path(figure='fig_taskmodulation').joinpath('shifts'), 'rb'))
     # max_y, min_y = 9, -3
@@ -583,7 +583,7 @@ def plot_panel_power_analysis(ax, ax2):
 
                 lab_mean = data[labs == lab].mean()
                 # ax.plot([lab_to_num[lab] - 0.3, lab_to_num[lab] + 0.3], [lab_mean, lab_mean], color=lab_colors[lab])
-                parts = ax.violinplot(data[labs == lab], positions=[lab_to_num[lab]], showextrema=False)
+                parts = ax.violinplot(data[labs == lab] + (lab == 'SWC') * pert, positions=[lab_to_num[lab]], showextrema=False)
                 parts['bodies'][0].set_facecolor(lab_colors[lab])
                 parts['bodies'][0].set_edgecolor(lab_colors[lab])
 
@@ -943,13 +943,15 @@ def power_analysis_to_table():
 
 if __name__ == '__main__':
 
-    plt.figure(figsize=(16 * 0.75, 9 * 0.75))
-    ax = plt.gca()
-    plt.figure(figsize=(16 * 0.75, 9 * 0.75))
-    ax2 = plt.gca()
-    plot_panel_power_analysis(ax=ax2, ax2=ax)
-    plt.savefig("firing rates")
-    plt.show()
+    for pert in [1, 2, 3, 4, 5, -1, -2, -3, -4, -5]:
+        plt.figure(figsize=(16 * 0.75, 9 * 0.75))
+        ax = plt.gca()
+        plt.figure(figsize=(16 * 0.75, 9 * 0.75))
+        ax2 = plt.gca()
+        plot_panel_power_analysis(ax=ax2, ax2=ax, pert=pert)
+        plt.savefig("firing rates {}".format(pert))
+        plt.close()
+    quit()
 
     plot_main_figure()
     plot_power_analysis()
