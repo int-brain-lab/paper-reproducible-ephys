@@ -507,7 +507,7 @@ def plot_panel_permutation(ax=None, n_permut=20000, qc='pass', n_cores=8):
     return p_vals
 
 
-def plot_panel_power_analysis(ax, ax2, pert):
+def plot_panel_power_analysis(ax, ax2):
 
     significant_disturbances = pickle.load(open(save_data_path(figure='fig_taskmodulation').joinpath('shifts'), 'rb'))
     # max_y, min_y = 9, -3
@@ -515,7 +515,7 @@ def plot_panel_power_analysis(ax, ax2, pert):
 
     obs_max, obs_min = -10, 10
     i = -1
-    perturbation_shift = 0.33
+    perturbation_shift = 0.3
     dist_between_violins = 0.8
     lab_to_num = dict(zip(['Berkeley', 'CCU', 'CSHL (C)', 'CSHL (Z)', 'NYU', 'Princeton', 'SWC', 'UCL', 'UCLA'], list(np.arange(9) * dist_between_violins)))
     visualisation_plot = 'CSHL (C)'
@@ -582,8 +582,8 @@ def plot_panel_power_analysis(ax, ax2, pert):
                     continue
 
                 lab_mean = data[labs == lab].mean()
-                # ax.plot([lab_to_num[lab] - 0.3, lab_to_num[lab] + 0.3], [lab_mean, lab_mean], color=lab_colors[lab])
-                parts = ax.violinplot(data[labs == lab] + (lab == 'SWC') * pert, positions=[lab_to_num[lab]], showextrema=False)
+                ax.plot([lab_to_num[lab] - 0.3, lab_to_num[lab] + 0.3], [lab_mean, lab_mean], color=lab_colors[lab])
+                parts = ax.violinplot(data[labs == lab], positions=[lab_to_num[lab]], showextrema=False)
                 parts['bodies'][0].set_facecolor(lab_colors[lab])
                 parts['bodies'][0].set_edgecolor(lab_colors[lab])
 
@@ -675,7 +675,7 @@ def plot_panel_power_analysis(ax, ax2, pert):
                 if temp_color == 'red':
                     val = max_y - lab_mean
                     print(ii + jj * 8 + 1)
-                # ax.plot([lab_to_num[lab] + perturbation_shift, lab_to_num[lab] + perturbation_shift], [lab_mean, lab_mean + val], color=temp_color)
+                ax.plot([lab_to_num[lab] + perturbation_shift, lab_to_num[lab] + perturbation_shift], [lab_mean, lab_mean + val], color=temp_color)
                 if lab == visualisation_plot:
                     ax2.plot([0 + perturbation_shift, 0 + perturbation_shift], [lab_mean, lab_mean + 1], color='grey')
                     ax2.plot([dist_between_violins + perturbation_shift, dist_between_violins + perturbation_shift], [lab_mean, lab_mean + 3], color='grey')
@@ -687,7 +687,7 @@ def plot_panel_power_analysis(ax, ax2, pert):
                 if temp_color == 'red':
                     val = min_y - lab_mean
                     print(ii + jj * 8 + 1)
-                # ax.plot([lab_to_num[lab] + perturbation_shift, lab_to_num[lab] + perturbation_shift], [lab_mean, lab_mean + val], color=temp_color)
+                ax.plot([lab_to_num[lab] + perturbation_shift, lab_to_num[lab] + perturbation_shift], [lab_mean, lab_mean + val], color=temp_color)
                 if lab == visualisation_plot:
                     ax2.plot([0 + perturbation_shift, 0 + perturbation_shift], [lab_mean, lab_mean - 1], color='grey')
                     ax2.plot([dist_between_violins + perturbation_shift, dist_between_violins + perturbation_shift], [lab_mean, lab_mean - 3], color='grey')
@@ -943,15 +943,13 @@ def power_analysis_to_table():
 
 if __name__ == '__main__':
 
-    for pert in [1, 2, 3, 4, 5, -1, -2, -3, -4, -5]:
-        plt.figure(figsize=(16 * 0.75, 9 * 0.75))
-        ax = plt.gca()
-        plt.figure(figsize=(16 * 0.75, 9 * 0.75))
-        ax2 = plt.gca()
-        plot_panel_power_analysis(ax=ax2, ax2=ax, pert=pert)
-        plt.savefig("firing rates {}".format(pert))
-        plt.close()
-    quit()
+    plt.figure(figsize=(16 * 0.75, 9 * 0.75))
+    ax = plt.gca()
+    plt.figure(figsize=(16 * 0.75, 9 * 0.75))
+    ax2 = plt.gca()
+    plot_panel_power_analysis(ax=ax2, ax2=ax)
+    plt.savefig("firing rates plus shifts")
+    plt.show()
 
     plot_main_figure()
     plot_power_analysis()
