@@ -263,7 +263,7 @@ def distribution_dist_approx_max(data, labs, mice, n=400, print_it=False, plot_i
         total_array = np.cumsum(total_array)
         total_array = total_array / total_array[-1]
         # plt.axvline(np.linspace(low, high, n)[dist_inds[max_diff_ind]])
-        # plt.plot(np.linspace(low, high, n), total_array, label='Overall', color='k', lw=3)
+        plt.plot(np.linspace(low, high, n), total_array, label='Overall', color='k', lw=3)
         plt.xlabel("Firing rate modulation", size=22)
         plt.ylabel("Cumulative probability", size=22)
         plt.legend(frameon=False, fontsize=17)
@@ -272,7 +272,7 @@ def distribution_dist_approx_max(data, labs, mice, n=400, print_it=False, plot_i
         plt.gca().tick_params(axis='both', which='major', labelsize=14)
         plt.gca().spines[['right', 'top']].set_visible(False)
         plt.tight_layout()
-        plt.savefig("CA1 CDFs simple")
+        plt.savefig("CA1 CDFs plus overall")
         # plt.title("diff = {}".format(cdf_dists[max_diff_ind]))
         plt.show()
 
