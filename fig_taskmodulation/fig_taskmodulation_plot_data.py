@@ -582,7 +582,7 @@ def plot_panel_power_analysis(ax, ax2):
                     continue
 
                 lab_mean = data[labs == lab].mean()
-                ax.plot([lab_to_num[lab] - 0.3, lab_to_num[lab] + 0.3], [lab_mean, lab_mean], color=lab_colors[lab])
+                # ax.plot([lab_to_num[lab] - 0.3, lab_to_num[lab] + 0.3], [lab_mean, lab_mean], color=lab_colors[lab])
                 parts = ax.violinplot(data[labs == lab], positions=[lab_to_num[lab]], showextrema=False)
                 parts['bodies'][0].set_facecolor(lab_colors[lab])
                 parts['bodies'][0].set_edgecolor(lab_colors[lab])
@@ -675,7 +675,7 @@ def plot_panel_power_analysis(ax, ax2):
                 if temp_color == 'red':
                     val = max_y - lab_mean
                     print(ii + jj * 8 + 1)
-                ax.plot([lab_to_num[lab] + perturbation_shift, lab_to_num[lab] + perturbation_shift], [lab_mean, lab_mean + val], color=temp_color)
+                # ax.plot([lab_to_num[lab] + perturbation_shift, lab_to_num[lab] + perturbation_shift], [lab_mean, lab_mean + val], color=temp_color)
                 if lab == visualisation_plot:
                     ax2.plot([0 + perturbation_shift, 0 + perturbation_shift], [lab_mean, lab_mean + 1], color='grey')
                     ax2.plot([dist_between_violins + perturbation_shift, dist_between_violins + perturbation_shift], [lab_mean, lab_mean + 3], color='grey')
@@ -687,20 +687,21 @@ def plot_panel_power_analysis(ax, ax2):
                 if temp_color == 'red':
                     val = min_y - lab_mean
                     print(ii + jj * 8 + 1)
-                ax.plot([lab_to_num[lab] + perturbation_shift, lab_to_num[lab] + perturbation_shift], [lab_mean, lab_mean + val], color=temp_color)
+                # ax.plot([lab_to_num[lab] + perturbation_shift, lab_to_num[lab] + perturbation_shift], [lab_mean, lab_mean + val], color=temp_color)
                 if lab == visualisation_plot:
                     ax2.plot([0 + perturbation_shift, 0 + perturbation_shift], [lab_mean, lab_mean - 1], color='grey')
                     ax2.plot([dist_between_violins + perturbation_shift, dist_between_violins + perturbation_shift], [lab_mean, lab_mean - 3], color='grey')
 
                 obs_min = min(obs_min, lab_mean + val)
             ax.set_xlim(-0.3, 8 * dist_between_violins + .36)
+            sns.despine(ax=ax)
             ax2.set_xlim(-0.3, dist_between_violins + .36)
             sns.despine()
 
             ax.set_ylim(min_y, max_y)
             ax2.set_ylim(min_y, max_y)
 
-            ax2.set_ylabel('FR modulation (sp/s)')
+            ax.set_ylabel('FR modulation (sp/s)', size=22)
             # ax.annotate("{}, {}, p={:.3f}".format(shortened_tests[test], reg, p_values[i]), xy=(0.5, 1), xytext=(0, pad), xycoords='axes fraction', textcoords='offset points', size='large', ha='center', va='baseline')
             ax2.set_xticks([])
             ax.set_xticks([])
@@ -942,8 +943,13 @@ def power_analysis_to_table():
 
 if __name__ == '__main__':
 
-    from fig_taskmodulation.fig_taskmodulation_prepare_data import compute_permutation_test
-    compute_permutation_test(n_permut=1000, n_cores=1)
+    plt.figure(figsize=(16 * 0.75, 9 * 0.75))
+    ax = plt.gca()
+    plt.figure(figsize=(16 * 0.75, 9 * 0.75))
+    ax2 = plt.gca()
+    plot_panel_power_analysis(ax=ax2, ax2=ax)
+    plt.savefig("firing rates")
+    plt.show()
 
     plot_main_figure()
     plot_power_analysis()
