@@ -437,6 +437,11 @@ def compute_permutation_test(n_permut=20000, qc='pass', n_cores=8):
 
     for test in tests.keys():
         for reg in BRAIN_REGIONS:
+
+            print("Warning, region reduced")
+            if reg != 'CA1':
+                continue
+
             df_reg = df_filt_reg.get_group(reg)
             # vals = df_reg.groupby(['institute', 'subject'])[test].mean()
             # labs = vals.index.get_level_values('institute')
