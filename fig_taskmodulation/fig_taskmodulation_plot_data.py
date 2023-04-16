@@ -251,7 +251,6 @@ def plot_panel_single_neuron_LvsR(ax=None, save=True):
               'event_epoch': [-0.2, 0.2],  # [-0.3, 0.22],
               'slide_kwargs_fr': {'n_win': 3, 'causal': 1}}
 
-    # neuron = 241 #323 #265 #144 #614
     # pid = 'a12c8ae8-d5ad-4d15-b805-436ad23e5ad1' #'36362f75-96d8-4ed4-a728-5e72284d0995'#'31f3e083-a324-4b88-b0a4-7788ec37b191' #'ce397420-3cd2-4a55-8fd1-5e28321981f4'  # SWC_054
     side = 'right' #'left' #'all'
     feedback = 'correct' #'all'
@@ -528,6 +527,28 @@ def plot_panel_power_analysis(ax, ax2):
 
     if PRINT_PIDS:
         json.dump(list(np.unique(df_filt['pid'])), open("panel g", 'w'))
+        print("Overall num of PIDs: {}".format(len(np.unique(df_filt['pid']))))
+
+        temp = df_filt[(df_filt['permute_include'] == 1) & (df_filt['region'] == BRAIN_REGIONS[0])]
+        json.dump(list(np.unique(temp['pid'])), open("panel g in {}".format(BRAIN_REGIONS[0]), 'w'))
+        print("{} has {} PIDs".format(BRAIN_REGIONS[0], len(np.unique(temp['pid']))))
+
+        temp = df_filt[(df_filt['permute_include'] == 1) & (df_filt['region'] == BRAIN_REGIONS[1])]
+        json.dump(list(np.unique(temp['pid'])), open("panel g in {}".format(BRAIN_REGIONS[1]), 'w'))
+        print("{} has {} PIDs".format(BRAIN_REGIONS[1], len(np.unique(temp['pid']))))
+
+        temp = df_filt[(df_filt['permute_include'] == 1) & (df_filt['region'] == BRAIN_REGIONS[2])]
+        json.dump(list(np.unique(temp['pid'])), open("panel g in {}".format(BRAIN_REGIONS[2]), 'w'))
+        print("{} has {} PIDs".format(BRAIN_REGIONS[2], len(np.unique(temp['pid']))))
+
+        temp = df_filt[(df_filt['permute_include'] == 1) & (df_filt['region'] == BRAIN_REGIONS[3])]
+        json.dump(list(np.unique(temp['pid'])), open("panel g in {}".format(BRAIN_REGIONS[3]), 'w'))
+        print("{} has {} PIDs".format(BRAIN_REGIONS[3], len(np.unique(temp['pid']))))
+
+        temp = df_filt[(df_filt['permute_include'] == 1) & (df_filt['region'] == BRAIN_REGIONS[4])]
+        json.dump(list(np.unique(temp['pid'])), open("panel g in {}".format(BRAIN_REGIONS[4]), 'w'))
+        print("{} has {} PIDs".format(BRAIN_REGIONS[4], len(np.unique(temp['pid']))))
+
         return
 
     for jj, test in enumerate(tests.keys()):
@@ -737,11 +758,11 @@ def plot_power_analysis():
             plt.title("p={:.3f}".format(p_values[i]))
             if significant_disturbances[i, 0, 0] == 0 and significant_disturbances[i, 0, 1] == 0:
                 if jj == 6:
-                    plt.plot([-0.3, 7.3], [ff_min_y, ff_max_y], 'k')
-                    plt.plot([-0.3, 7.3], [ff_max_y, ff_min_y], 'k')
+                    plt.plot([-0.3, 6.3], [ff_min_y, ff_max_y], 'k')
+                    plt.plot([-0.3, 6.3], [ff_max_y, ff_min_y], 'k')
                 else:
-                    plt.plot([-0.3, 7.3], [min_y, max_y], 'k')
-                    plt.plot([-0.3, 7.3], [max_y, min_y], 'k')
+                    plt.plot([-0.3, 6.3], [min_y, max_y], 'k')
+                    plt.plot([-0.3, 6.3], [max_y, min_y], 'k')
 
             for j, lab in enumerate(np.unique(labs)):
                 if np.sum(labs == lab) == 0:
@@ -920,6 +941,10 @@ def power_analysis_to_table():
 
 
 if __name__ == '__main__':
+
+    from fig_taskmodulation.fig_taskmodulation_prepare_data import compute_permutation_test
+    compute_permutation_test(n_permut=1000, n_cores=1)
+
     plot_main_figure()
     plot_power_analysis()
     # power_analysis_to_table()

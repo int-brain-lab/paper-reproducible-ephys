@@ -455,7 +455,7 @@ def compute_permutation_test(n_permut=20000, qc='pass', n_cores=8):
             # lab_names, this_n_labs = np.unique(labs, return_counts=True)  # what is this for?
 
             print(".", end='')
-            p = permut_test(data, metric=distribution_dist_approx_max, labels1=labs,
+            p = permut_test(data, metric=distribution_dist_approx_max, labels1=labs, plot=True,
                             labels2=subjects, shuffling='labels1_based_on_2', n_cores=n_cores, n_permut=n_permut)
 
             # print(p)
@@ -561,6 +561,7 @@ def find_sig_manipulation(data, lab_to_manip, labs, subjects, p_to_reach, direct
 
 
 if __name__ == '__main__':
+    print("Filtering criteria: {}".format(filtering_criteria))
     one = ONE()
     one.record_loaded = True
     insertions = get_insertions(level=0, one=one, freeze='release_2022_11', recompute=True)

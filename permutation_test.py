@@ -8,8 +8,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 import multiprocessing as mp
-from itertools import combinations
+from reproducible_ephys_functions import labs
 
+lab_number_map, institution_map, lab_colors = labs()
 
 def permut_test(data, metric, labels1, labels2, n_permut=10000, shuffling='labels1', plot=False, return_details=False, mark_p=None, n_cores=1, title=None):
     """
@@ -48,7 +49,7 @@ def permut_test(data, metric, labels1, labels2, n_permut=10000, shuffling='label
     TODO:
     """
     # Calculate metric
-    observed_val = metric(data, labels1, labels2)
+    observed_val = metric(data, labels1, labels2, print_it=True, plot_it=True)
 
     # Prepare permutations
     permuted_labels1, permuted_labels2 = shuffle_labels(labels1, labels2, n_permut, shuffling, n_cores=n_cores)
@@ -225,6 +226,8 @@ def distribution_dist_approx_max(data, labs, mice, n=400, print_it=False, plot_i
 
     if print_it:
         print()
+    if plot_it:
+        plt.figure(figsize=(16 * 0.75, 9 * 0.75))
 
     cdf_dists = []
     dist_inds = []
@@ -235,7 +238,15 @@ def distribution_dist_approx_max(data, labs, mice, n=400, print_it=False, plot_i
         p1_array = p1_array / p1_array[-1]
 
         if plot_it:
-            plt.plot(np.linspace(low, high, n), p1_array, label=lab)
+            plt.plot(np.linspace(low, high, n), p1_array, label=lab, color=lab_colors[lab])
+            # if lab == 'UCLA':
+            #     for mouse in np.unique(mice[labs == lab]):
+            #         temp = np.zeros(n)
+            #         temp = np.bincount(np.clip(((data[np.logical_and(labs == lab, mice == mouse)] - low) / (high - low) * n).astype(int), a_min=None, a_max=n-1), minlength=n)
+            #         temp = np.cumsum(temp)
+            #         temp = temp / temp[-1]
+            #         # print(data[np.logical_and(labs == lab, mice == mouse)].shape)
+            #         plt.plot(np.linspace(low, high, n), temp, label=mouse, ls='--')
 
         temp, temp_ind = helper(n, p1_array, data[labs != lab], low, high)
         cdf_dists.append(temp)
@@ -252,7 +263,9 @@ def distribution_dist_approx_max(data, labs, mice, n=400, print_it=False, plot_i
         total_array = np.cumsum(total_array)
         total_array = total_array / total_array[-1]
         plt.axvline(np.linspace(low, high, n)[dist_inds[max_diff_ind]])
-        plt.plot(np.linspace(low, high, n), total_array, label='Overall')
+        plt.plot(np.linspace(low, high, n), total_array, label='Overall', color='k', lw=3)
+        plt.xlabel("Firing rate modulation")
+        plt.ylabel("Cumulative probability")
         plt.legend()
         plt.xlim(-5, 10)
         plt.title("diff = {}".format(cdf_dists[max_diff_ind]))
