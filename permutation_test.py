@@ -155,10 +155,11 @@ def shuffle_helper(size, label1_values, label2_values, labels1, labels2, seed):
 
 def plot_permut_test(null_dist, observed_val, p, mark_p, title=None):
     """Plot permutation test result."""
+    plt.figure(figsize=(16 * 0.75, 9 * 0.75))
     n, _, _ = plt.hist(null_dist)
 
     # Plot the observed metric as red star
-    plt.plot(observed_val, np.max(n) / 20, '*r', markersize=12)
+    plt.plot(observed_val, np.max(n) / 20, '*r', markersize=12, label="Observed distance")
     plt.axvline(np.mean(null_dist), color='k', label="Expectation")
     if mark_p is not None:
         sorted = np.sort(null_dist)
@@ -166,13 +167,18 @@ def plot_permut_test(null_dist, observed_val, p, mark_p, title=None):
         print("p value of critical point is {}".format(len(null_dist[null_dist > critical_point]) / len(null_dist)))
         plt.axvline(critical_point, color='r', label="Significance")
 
-    plt.legend()
+    plt.xlabel("Firing rate modulation", size=22)
+    plt.ylabel("Permuted occurences", size=22)
+    plt.gca().tick_params(axis='both', which='major', labelsize=14)
+
+    plt.legend(frameon=False, fontsize=17)
     # Prettify plot
     plt.gca().spines['top'].set_visible(False)
     plt.gca().spines['right'].set_visible(False)
-    plt.title("p = {}".format(p))
+    plt.title("p = {}".format(np.round(p, 3)), size=22)
 
-    plt.savefig("temp")
+    plt.tight_layout()
+    plt.savefig("null dist")
     plt.show()
 
 
