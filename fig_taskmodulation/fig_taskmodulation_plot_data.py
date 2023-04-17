@@ -14,7 +14,7 @@ import json
 lab_number_map, institution_map, lab_colors = labs()
 fig_path = save_figure_path(figure='fig_taskmodulation')
 
-PRINT_PIDS = True
+PRINT_PIDS = False
 
 # tests = {'trial': 'Trial',
 #          'start_to_move': 'Pre move (TW)',
@@ -251,7 +251,6 @@ def plot_panel_single_neuron_LvsR(ax=None, save=True):
               'event_epoch': [-0.2, 0.2],  # [-0.3, 0.22],
               'slide_kwargs_fr': {'n_win': 3, 'causal': 1}}
 
-    # neuron = 241 #323 #265 #144 #614
     # pid = 'a12c8ae8-d5ad-4d15-b805-436ad23e5ad1' #'36362f75-96d8-4ed4-a728-5e72284d0995'#'31f3e083-a324-4b88-b0a4-7788ec37b191' #'ce397420-3cd2-4a55-8fd1-5e28321981f4'  # SWC_054
     side = 'right' #'left' #'all'
     feedback = 'correct' #'all'
@@ -350,6 +349,7 @@ def plot_panel_all_subjects(max_neurons, min_neurons, ax=None, save=True, plotte
 
     if PRINT_PIDS:
         json.dump(list(np.unique(df_filt['pid'])), open("panel d", 'w'))
+        return
 
     # Example to get similar plot to figure 4c
     if ax is None:
@@ -426,6 +426,7 @@ def plot_panel_task_modulated_neurons(specific_tests=None, ax=None, save=True):
 
     if PRINT_PIDS:
         json.dump(list(np.unique(df_filt['pid'])), open("panel e", 'w'))
+        return
 
     # Group data frame by region
     df_region = df_filt.groupby('region')
@@ -514,10 +515,10 @@ def plot_panel_power_analysis(ax, ax2):
 
     obs_max, obs_min = -10, 10
     i = -1
-    perturbation_shift = 0.33
+    perturbation_shift = 0.3
     dist_between_violins = 0.8
     lab_to_num = dict(zip(['Berkeley', 'CCU', 'CSHL (C)', 'CSHL (Z)', 'NYU', 'Princeton', 'SWC', 'UCL', 'UCLA'], list(np.arange(9) * dist_between_violins)))
-    visualisation_plot = 'SWC'
+    visualisation_plot = 'CSHL (C)'
 
     df = load_dataframe()
     df_filt = filter_recordings(df, **filtering_criteria)
@@ -526,12 +527,37 @@ def plot_panel_power_analysis(ax, ax2):
 
     if PRINT_PIDS:
         json.dump(list(np.unique(df_filt['pid'])), open("panel g", 'w'))
+        print("Overall num of PIDs: {}".format(len(np.unique(df_filt['pid']))))
+
+        temp = df_filt[(df_filt['permute_include'] == 1) & (df_filt['region'] == BRAIN_REGIONS[0])]
+        json.dump(list(np.unique(temp['pid'])), open("panel g in {}".format(BRAIN_REGIONS[0]), 'w'))
+        print("{} has {} PIDs".format(BRAIN_REGIONS[0], len(np.unique(temp['pid']))))
+
+        temp = df_filt[(df_filt['permute_include'] == 1) & (df_filt['region'] == BRAIN_REGIONS[1])]
+        json.dump(list(np.unique(temp['pid'])), open("panel g in {}".format(BRAIN_REGIONS[1]), 'w'))
+        print("{} has {} PIDs".format(BRAIN_REGIONS[1], len(np.unique(temp['pid']))))
+
+        temp = df_filt[(df_filt['permute_include'] == 1) & (df_filt['region'] == BRAIN_REGIONS[2])]
+        json.dump(list(np.unique(temp['pid'])), open("panel g in {}".format(BRAIN_REGIONS[2]), 'w'))
+        print("{} has {} PIDs".format(BRAIN_REGIONS[2], len(np.unique(temp['pid']))))
+
+        temp = df_filt[(df_filt['permute_include'] == 1) & (df_filt['region'] == BRAIN_REGIONS[3])]
+        json.dump(list(np.unique(temp['pid'])), open("panel g in {}".format(BRAIN_REGIONS[3]), 'w'))
+        print("{} has {} PIDs".format(BRAIN_REGIONS[3], len(np.unique(temp['pid']))))
+
+        temp = df_filt[(df_filt['permute_include'] == 1) & (df_filt['region'] == BRAIN_REGIONS[4])]
+        json.dump(list(np.unique(temp['pid'])), open("panel g in {}".format(BRAIN_REGIONS[4]), 'w'))
+        print("{} has {} PIDs".format(BRAIN_REGIONS[4], len(np.unique(temp['pid']))))
+
+        return
 
     for jj, test in enumerate(tests.keys()):
         if test != 'post_stim':
+            i += 1
             continue
         for ii, reg in enumerate(BRAIN_REGIONS):
             if reg != 'CA1':
+                i += 1
                 continue
             df_reg = df_filt_reg.get_group(reg)
             i += 1
@@ -668,13 +694,14 @@ def plot_panel_power_analysis(ax, ax2):
 
                 obs_min = min(obs_min, lab_mean + val)
             ax.set_xlim(-0.3, 8 * dist_between_violins + .36)
+            sns.despine(ax=ax)
             ax2.set_xlim(-0.3, dist_between_violins + .36)
             sns.despine()
 
             ax.set_ylim(min_y, max_y)
             ax2.set_ylim(min_y, max_y)
 
-            ax2.set_ylabel('FR modulation (sp/s)')
+            ax.set_ylabel('FR modulation (sp/s)', size=22)
             # ax.annotate("{}, {}, p={:.3f}".format(shortened_tests[test], reg, p_values[i]), xy=(0.5, 1), xytext=(0, pad), xycoords='axes fraction', textcoords='offset points', size='large', ha='center', va='baseline')
             ax2.set_xticks([])
             ax.set_xticks([])
@@ -732,11 +759,11 @@ def plot_power_analysis():
             plt.title("p={:.3f}".format(p_values[i]))
             if significant_disturbances[i, 0, 0] == 0 and significant_disturbances[i, 0, 1] == 0:
                 if jj == 6:
-                    plt.plot([-0.3, 7.3], [ff_min_y, ff_max_y], 'k')
-                    plt.plot([-0.3, 7.3], [ff_max_y, ff_min_y], 'k')
+                    plt.plot([-0.3, 6.3], [ff_min_y, ff_max_y], 'k')
+                    plt.plot([-0.3, 6.3], [ff_max_y, ff_min_y], 'k')
                 else:
-                    plt.plot([-0.3, 7.3], [min_y, max_y], 'k')
-                    plt.plot([-0.3, 7.3], [max_y, min_y], 'k')
+                    plt.plot([-0.3, 6.3], [min_y, max_y], 'k')
+                    plt.plot([-0.3, 6.3], [max_y, min_y], 'k')
 
             for j, lab in enumerate(np.unique(labs)):
                 if np.sum(labs == lab) == 0:
@@ -759,7 +786,8 @@ def plot_power_analysis():
 
                 val = significant_disturbances[i, j, 0]
 
-                perturb_in_std.append(val / np.std(data[labs == lab]))
+                if not (significant_disturbances[i, 0, 0] == 0 and significant_disturbances[i, 0, 1] == 0):
+                    perturb_in_std.append(val / np.std(data[labs == lab]))
 
                 all_powers.append(val)
                 ns.append(np.sum(labs == lab))
@@ -785,7 +813,8 @@ def plot_power_analysis():
                 else:
                     powers[-1] -= val
 
-                perturb_in_std.append(val / np.std(data[labs == lab]))
+                if not (significant_disturbances[i, 0, 0] == 0 and significant_disturbances[i, 0, 1] == 0):
+                    perturb_in_std.append(val / np.std(data[labs == lab]))
 
                 temp_color = lab_colors[lab] if val > -1000 else 'red'
                 if temp_color == 'red':
@@ -830,6 +859,7 @@ def plot_power_analysis():
     std_limit = 3
     plt.subplot(8, 5, ii + jj * 5 + 1 + 4)
     perturb_in_std = np.array(perturb_in_std)
+    assert np.sum(perturb_in_std == 0) == 0, "Perturbations of significant tests in histogram"
     plt.hist(perturb_in_std[np.abs(perturb_in_std) < std_limit], bins=25, color='grey')
     print("excluded stds {}".format(np.sum(np.abs(perturb_in_std) >= std_limit)))
     # plt.xlabel("Shifts (std)", size=14)
@@ -912,6 +942,15 @@ def power_analysis_to_table():
 
 
 if __name__ == '__main__':
+
+    plt.figure(figsize=(16 * 0.75, 9 * 0.75))
+    ax = plt.gca()
+    plt.figure(figsize=(16 * 0.75, 9 * 0.75))
+    ax2 = plt.gca()
+    plot_panel_power_analysis(ax=ax2, ax2=ax)
+    plt.savefig("firing rates plus shifts")
+    plt.show()
+
     plot_main_figure()
     plot_power_analysis()
     # power_analysis_to_table()

@@ -8,8 +8,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 import multiprocessing as mp
-from itertools import combinations
+from reproducible_ephys_functions import labs
 
+lab_number_map, institution_map, lab_colors = labs()
 
 def permut_test(data, metric, labels1, labels2, n_permut=10000, shuffling='labels1', plot=False, return_details=False, mark_p=None, n_cores=1, title=None):
     """
@@ -48,7 +49,7 @@ def permut_test(data, metric, labels1, labels2, n_permut=10000, shuffling='label
     TODO:
     """
     # Calculate metric
-    observed_val = metric(data, labels1, labels2)
+    observed_val = metric(data, labels1, labels2, print_it=True, plot_it=True)
 
     # Prepare permutations
     permuted_labels1, permuted_labels2 = shuffle_labels(labels1, labels2, n_permut, shuffling, n_cores=n_cores)
@@ -154,10 +155,11 @@ def shuffle_helper(size, label1_values, label2_values, labels1, labels2, seed):
 
 def plot_permut_test(null_dist, observed_val, p, mark_p, title=None):
     """Plot permutation test result."""
+    plt.figure(figsize=(16 * 0.75, 9 * 0.75))
     n, _, _ = plt.hist(null_dist)
 
     # Plot the observed metric as red star
-    plt.plot(observed_val, np.max(n) / 20, '*r', markersize=12)
+    plt.plot(observed_val, np.max(n) / 20, '*r', markersize=12, label="Observed distance")
     plt.axvline(np.mean(null_dist), color='k', label="Expectation")
     if mark_p is not None:
         sorted = np.sort(null_dist)
@@ -165,13 +167,18 @@ def plot_permut_test(null_dist, observed_val, p, mark_p, title=None):
         print("p value of critical point is {}".format(len(null_dist[null_dist > critical_point]) / len(null_dist)))
         plt.axvline(critical_point, color='r', label="Significance")
 
-    plt.legend()
+    plt.xlabel("Firing rate modulation", size=22)
+    plt.ylabel("Permuted occurences", size=22)
+    plt.gca().tick_params(axis='both', which='major', labelsize=14)
+
+    plt.legend(frameon=False, fontsize=17)
     # Prettify plot
     plt.gca().spines['top'].set_visible(False)
     plt.gca().spines['right'].set_visible(False)
-    plt.title("p = {}".format(p))
+    plt.title("p = {}".format(np.round(p, 3)), size=22)
 
-    plt.savefig("temp")
+    plt.tight_layout()
+    plt.savefig("null dist")
     plt.show()
 
 
@@ -225,6 +232,8 @@ def distribution_dist_approx_max(data, labs, mice, n=400, print_it=False, plot_i
 
     if print_it:
         print()
+    if plot_it:
+        plt.figure(figsize=(16 * 0.75, 9 * 0.75))
 
     cdf_dists = []
     dist_inds = []
@@ -235,7 +244,15 @@ def distribution_dist_approx_max(data, labs, mice, n=400, print_it=False, plot_i
         p1_array = p1_array / p1_array[-1]
 
         if plot_it:
-            plt.plot(np.linspace(low, high, n), p1_array, label=lab)
+            plt.plot(np.linspace(low, high, n), p1_array, label=lab, color=lab_colors[lab])
+            # if lab == 'UCLA':
+            #     for mouse in np.unique(mice[labs == lab]):
+            #         temp = np.zeros(n)
+            #         temp = np.bincount(np.clip(((data[np.logical_and(labs == lab, mice == mouse)] - low) / (high - low) * n).astype(int), a_min=None, a_max=n-1), minlength=n)
+            #         temp = np.cumsum(temp)
+            #         temp = temp / temp[-1]
+            #         # print(data[np.logical_and(labs == lab, mice == mouse)].shape)
+            #         plt.plot(np.linspace(low, high, n), temp, label=mouse, ls='--')
 
         temp, temp_ind = helper(n, p1_array, data[labs != lab], low, high)
         cdf_dists.append(temp)
@@ -252,10 +269,17 @@ def distribution_dist_approx_max(data, labs, mice, n=400, print_it=False, plot_i
         total_array = np.cumsum(total_array)
         total_array = total_array / total_array[-1]
         plt.axvline(np.linspace(low, high, n)[dist_inds[max_diff_ind]])
-        plt.plot(np.linspace(low, high, n), total_array, label='Overall')
-        plt.legend()
+        plt.plot(np.linspace(low, high, n), total_array, label='Overall', color='k', lw=3)
+        plt.xlabel("Firing rate modulation", size=22)
+        plt.ylabel("Cumulative probability", size=22)
+        plt.legend(frameon=False, fontsize=17)
         plt.xlim(-5, 10)
-        plt.title("diff = {}".format(cdf_dists[max_diff_ind]))
+        plt.ylim(0, 1.01)
+        plt.gca().tick_params(axis='both', which='major', labelsize=14)
+        # plt.title("Distance = {}".format(np.round(cdf_dists[max_diff_ind], 2)), size=22)
+        plt.gca().spines[['right', 'top']].set_visible(False)
+        plt.tight_layout()
+        plt.savefig("CA1 CDFs plus no title")
         plt.show()
 
     return max(cdf_dists)
