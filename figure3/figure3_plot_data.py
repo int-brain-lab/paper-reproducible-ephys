@@ -6,9 +6,10 @@ By: Guido Meijer
 """
 
 import figrid as fg
-from figure3.figure3_plot_functions import (panel_probe_lfp, panel_probe_neurons, panel_example,
-                                            panel_permutation, panel_sankey, panel_decoding)
+from figure3.figure3_plot_functions import (panel_probe_lfp, panel_probe_neurons, 
+                                            panel_permutation, panel_decoding)
 import matplotlib.pyplot as plt
+import pickle
 from reproducible_ephys_functions import figure_style, filter_recordings, save_figure_path
 from one.api import ONE
 import numpy as np
@@ -65,16 +66,22 @@ def plot_main_figure(freeze=None, one=None):
     fg.add_labels(fig, labels)
 
     # Call functions to plot panels
-    panel_sankey(fig, ax['panel_A'], one, freeze=freeze)
-    panel_probe_lfp(fig, ax['panel_B'], n_rec_per_lab=MIN_REC_PER_LAB, boundary_align=BOUNDARY,
-                    freeze=freeze)
+    ax['panel_A'].axis('off')
+    pids_b = panel_probe_lfp(fig, ax['panel_B'],
+                             n_rec_per_lab=MIN_REC_PER_LAB,
+                             boundary_align=BOUNDARY,
+                             freeze=freeze)
 
-    panel_probe_neurons(fig, ax['panel_C'], n_rec_per_lab=MIN_REC_PER_LAB, boundary_align=BOUNDARY,
-                        freeze=freeze)
-    #p_permut = panel_permutation(ax['panel_D'], METRICS, REGIONS, LABELS, n_permut=N_PERMUT,
-    #                             n_rec_per_lab=MIN_REC_PER_LAB, n_rec_per_region=MIN_REC_PER_REGION,
-    #                             freeze=freeze)
-    p_decoding = panel_decoding(ax['panel_E'], qc='pass', bh_correction=True)
+    pids_c = panel_probe_neurons(fig, ax['panel_C'],
+                                 n_rec_per_lab=MIN_REC_PER_LAB,
+                                 boundary_align=BOUNDARY,
+                                 freeze=freeze)
+    p_permut, pids_d = panel_permutation(ax['panel_D'], METRICS, REGIONS, LABELS,
+                                         n_permut=N_PERMUT,
+                                         n_rec_per_lab=MIN_REC_PER_LAB,
+                                         n_rec_per_region=MIN_REC_PER_REGION,
+                                         freeze=freeze)
+    p_decoding = panel_decoding(ax['panel_E'], qc='pass')
     ax['panel_E'].set(title='QC pass')
     _ = panel_decoding(ax['panel_F'], qc='all')
     ax['panel_F'].set(title='All recordings')
@@ -84,7 +91,18 @@ def plot_main_figure(freeze=None, one=None):
     print(f'Saving figures to {save_path}')
     plt.savefig(save_path.joinpath('figure3.png'))
     plt.savefig(save_path.joinpath('figure3.pdf'))
-
+    
+    # Save dict with pids
+    dict_pids = dict()
+    dict_pids['fig3'] = dict()
+    dict_pids['fig3']['b'] = pids_b
+    dict_pids['fig3']['c'] = pids_c
+    dict_pids['fig3']['d'] = pids_d
+    dict_pids['fig3']['e'] = pids_d  # same as panel d
+    dict_pids['fig3']['f'] = pids_b  # same as panel b
+    with open(save_path.joinpath('dict_pids.pkl'), 'wb') as fp:
+        pickle.dump(dict_pids, fp)
+    
     return p_decoding, p_permut
 
 

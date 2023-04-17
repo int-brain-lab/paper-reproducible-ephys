@@ -203,14 +203,13 @@ def prepare_data(insertions, one, recompute=False):
 
 
 def run_decoding(metrics=['yield_per_channel', 'median_firing_rate', 'lfp_power', 'rms_ap', 'spike_amp_mean'],
-                 qc='pass', n_shuffle=500, min_lab_region=4, recompute=False):
+                 qc='pass', n_shuffle=500, min_lab_region=3, recompute=False):
     """
     qc can be "pass" (only include recordings that pass QC)
     "high_noise": add the recordings with high noise
     "low_yield": add low yield recordings
     "missed_target": add recordings that missed the target regions
     "artifacts": add recordings with artifacts
-    "low_trials": add recordings with < 400 trials
     "high_lfp": add recordings with high LFP power
     "all": add all recordings regardless of QC
     """
@@ -219,12 +218,14 @@ def run_decoding(metrics=['yield_per_channel', 'median_firing_rate', 'lfp_power'
     if recompute or not isfile(save_path.joinpath(file_name)):
 
         # Initialize
-        rf = RandomForestClassifier(random_state=42)
+        rf = RandomForestClassifier(random_state=42, n_estimators=10)
         kfold = KFold(n_splits=5, shuffle=False)
 
         # Load in data
         df_ins = load_dataframe(df_name='ins')
         data = filter_recordings(df_ins, min_lab_region=min_lab_region, min_rec_lab=0)
+        
+        # Recording selection
         if qc == 'pass':
             data = data[data['permute_include'] == 1]  # select recordings that pass QC
         elif qc != 'all':
@@ -337,4 +338,4 @@ if __name__ == '__main__':
     #run_decoding(n_shuffle=500, qc='artifacts', recompute=rerun_decoding)
     #run_decoding(n_shuffle=500, qc='missed_target', recompute=rerun_decoding)
     #run_decoding(n_shuffle=500, qc='low_trials', recompute=rerun_decoding)
-    #run_decoding(n_shuffle=500, qc='all', recompute=rerun_decoding)
+    run_decoding(n_shuffle=500, qc='all', recompute=rerun_decoding)

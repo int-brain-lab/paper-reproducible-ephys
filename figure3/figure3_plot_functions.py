@@ -18,81 +18,12 @@ br = BrainRegions()
 
 lab_number_map, institution_map, lab_colors = labs()
 
-def panel_sankey(fig, ax, one, freeze=None):
 
-    # Get number of recordings after freeze cutoff date
-    after_freeze = len(get_insertions(one=one)) - len(get_insertions(one=one, freeze=freeze))
-
-    # Get number of failed recordings (CRITICAL)
-    crit = (len(query(behavior=False, n_trials=0, resolved=False, min_regions=0, exclude_critical=False, one=one))
-            - len(query(behavior=False, n_trials=0, resolved=False, min_regions=0, exclude_critical=True, one=one))
-            - after_freeze)
-
-    # Get total number of insertions
-    all_ins = (len(query(behavior=False, n_trials=0, resolved=True, min_regions=0, exclude_critical=True, one=one))
-               + crit - after_freeze)
-
-    # Get drop out due to QC
-    df_filt = filter_recordings(min_rec_lab=0, min_neuron_region=0, freeze=freeze)
-    df_filt = df_filt.drop_duplicates(subset='subject').reset_index()
-    target = df_filt['missed_target'].sum()
-    df_filt = df_filt[~df_filt['missed_target']]
-    behav = df_filt['low_trials'].sum()
-    df_filt = df_filt[~df_filt['low_trials']]
-    low_yield = np.sum(df_filt['low_yield'])
-    df_filt = df_filt[~df_filt['low_yield']]
-    noise = np.sum(df_filt['high_lfp'] | df_filt['high_noise'])
-    df_filt = df_filt[~df_filt['high_lfp'] & ~df_filt['high_noise']]
-    artifacts = np.sum(df_filt['artifacts'])
-    df_filt = df_filt[~df_filt['artifacts']]
-
-    # Recordigns left
-    rec_left = df_filt.shape[0]
-
-    #fig, ax = plt.subplots(1, 1, figsize=(6, 3), dpi=400)
-    ax.axis('off')
-
-    #currently hardcoded to match Steven & Guido analyses;
-    #todo: finalize numbers and match with above code
-    num_trajectories = [all_ins, -crit, -target, -behav, -low_yield, -(noise+artifacts), -rec_left]
-
-    # Sankey plot
-    sankey = Sankey(ax=ax, scale=0.005, offset=0.1, head_angle=90, shoulder=0.025, gap=0.5, radius=0.05)
-    sankey.add(flows=num_trajectories,
-               labels=['All insertions',
-                       'Recording failure',
-                       'Off target',
-                       'Too few trials',
-                       'Low yield',
-                       'Artifacts',
-                       'Data analysis'],
-               trunklength=0.8,
-               orientations=[0, 1, 1, 1, 1, 1, 0],
-               pathlengths=[0.08, 0.3, 0.15, 0.15, 0.1, 0.08, 0.4],
-               facecolor = sns.color_palette('Pastel1')[1])
-    diagrams = sankey.finish()
-
-    #text font and positioning
-    for text in diagrams[0].texts:
-            text.set_fontsize('7')
-
-
-    text = diagrams[0].texts[0]
-    xy = text.get_position()
-    text.set_position((xy[0] - 0.3, xy[1]))
-    text.set_weight('bold')
-
-    text = diagrams[0].texts[-1]
-    xy = text.get_position()
-    text.set_position((xy[0] + 0.2, xy[1]))
-    text.set_weight('bold')
-
-
-def panel_probe_lfp(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-2000, 2000],
+def panel_probe_lfp(fig, ax, n_rec_per_lab=0, boundary_align='DG-TH', ylim=[-2000, 2000],
                     normalize=False, clim=[-190, -150], freeze=None):
 
     df_chns = load_dataframe(df_name='chns')
-    df_filt = filter_recordings(min_rec_lab=n_rec_per_lab, min_neuron_region=0, freeze=freeze)
+    df_filt = filter_recordings(min_rec_lab=n_rec_per_lab, freeze=freeze)
     df_filt = df_filt[df_filt['lab_include'] == 1]
     df_filt['lab_number'] = df_filt['lab'].map(lab_number_map)
     df_filt = df_filt.sort_values(by=['institute', 'subject']).reset_index(drop=True)
@@ -143,14 +74,14 @@ def panel_probe_lfp(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-200
     # Add lab names
     plt.figtext(0.24, 0.715, 'Berkeley', va="center", ha="center", size=7, color=lab_colors['Berkeley'])
     plt.figtext(0.34, 0.715, 'Champalimaud', va="center", ha="center", size=7, color=lab_colors['CCU'])
-    plt.figtext(0.435, 0.715, 'CSHL', va="center", ha="center", size=7, color=lab_colors['CSHL (C)'])
-    #plt.figtext(0.505, 0.715, '(Z)', va="center", ha="center", size=7, color=lab_colors['CSHL (Z)'])
-    plt.figtext(0.515, 0.715, 'NYU', va="center", ha="center", size=7, color=lab_colors['NYU'])
+    plt.figtext(0.42, 0.715, 'CSHL (C)', va="center", ha="center", size=7, color=lab_colors['CSHL (C)'])
+    plt.figtext(0.46, 0.715, '(Z)', va="center", ha="center", size=7, color=lab_colors['CSHL (Z)'])
+    plt.figtext(0.5, 0.715, 'NYU', va="center", ha="center", size=7, color=lab_colors['NYU'])
     plt.figtext(0.57, 0.715, 'Princeton', va="center", ha="center", size=7, color=lab_colors['Princeton'])
     plt.figtext(0.63, 0.715, 'SWC', va="center", ha="center", size=7, color=lab_colors['SWC'])
-    plt.figtext(0.735, 0.715, 'UCL', va="center", ha="center", size=7, color=lab_colors['UCL'])
+    plt.figtext(0.71, 0.715, 'UCL', va="center", ha="center", size=7, color=lab_colors['UCL'])
     #plt.figtext(0.805, 0.715, '(H)', va="center", ha="center", size=7, color=lab_colors['UCL (H)'])
-    plt.figtext(0.83, 0.715, 'UCLA', va="center", ha="center", size=7, color=lab_colors['UCLA'])
+    plt.figtext(0.82, 0.715, 'UCLA', va="center", ha="center", size=7, color=lab_colors['UCLA'])
     plt.figtext(0.875, 0.715, 'UW', va="center", ha="center", size=7, color=lab_colors['UW'])
 
     # Add colorbar
@@ -162,6 +93,9 @@ def panel_probe_lfp(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-200
     else:
         cbar.ax.set_yticklabels([f'{clim[0]}', f'{clim[1]}'])
     cbar.set_label('Power spectral density (dB)', rotation=270, labelpad=-5)
+    
+    # Return the list of pids used in this figure
+    return np.unique(df_filt['pid'])
 
 
 def panel_probe_neurons(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-2000, 2000],
@@ -170,7 +104,7 @@ def panel_probe_neurons(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[
     df_chns = load_dataframe(df_name='chns')
     df_clust = load_dataframe(df_name='clust')
 
-    df_filt = filter_recordings(min_rec_lab=n_rec_per_lab, min_neuron_region=0, freeze=freeze)
+    df_filt = filter_recordings(min_rec_lab=n_rec_per_lab, freeze=freeze)
     df_filt = df_filt[df_filt['lab_include'] == 1]
     df_filt['lab_number'] = df_filt['lab'].map(lab_number_map)
     df_filt = df_filt.sort_values(by=['institute', 'subject']).reset_index(drop=True)
@@ -285,55 +219,8 @@ def panel_probe_neurons(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[
     cbar.ax.set_yticklabels([f'{levels[0]}', f'{levels[1]}'])
     cbar.set_label('Firing rate (spks/s)', rotation=270, labelpad=-2)
 
-
-def panel_example(ax, n_rec_per_lab=0, n_rec_per_region=3,
-                  example_region='CA1', example_metric='lfp_power', ylabel='LFP power in CA1 (db)',
-                  ylim=None, yticks=None, despine=True, freeze=None):
-
-    df_ins = load_dataframe(df_name='ins')
-    df_filt = filter_recordings(df_ins, min_rec_lab=n_rec_per_lab, min_lab_region=n_rec_per_region,
-                                min_neuron_region=2, recompute=False, freeze=freeze)
-    df_filt['lab_number'] = df_filt['lab'].map(lab_number_map)
-    df_filt['yield_per_channel'] = df_filt['neuron_yield'] / df_filt['n_channels']
-    df_filt.loc[df_filt['lfp_power'] < -100000, 'lfp_power'] = np.nan
-    data = df_filt[df_filt['permute_include'] == 1]
-
-    data_example = pd.DataFrame(data={
-        'institute': data.loc[data['region'] == example_region, 'institute'],
-        'lab_number': data.loc[data['region'] == example_region, 'lab_number'],
-        example_metric: data.loc[data['region'] == example_region, example_metric].values})
-    data_example = data_example[~data_example[example_metric].isnull()]
-
-    data_example = data_example.sort_values('institute')
-    cmap = []
-    for i, inst in enumerate(data_example['institute'].unique()):
-        cmap.append(lab_colors[inst])
-
-    sns.swarmplot(data=data_example, x='institute', y=example_metric, palette=cmap, s=3, ax=ax)
-
-    """
-    # Plot lab means and overal mean
-    ax_lines = sns.pointplot(x='institute', y=example_metric, data=data_example,
-                             ci=0, join=False, estimator=np.mean, color='k',
-                             markers="_", scale=1, ax=ax)
-    plt.setp(ax_lines.collections, zorder=100, label="")
-    ax.plot(np.arange(data_example['institute'].unique().shape[0]),
-             [data_example[example_metric].mean()] * data_example['institute'].unique().shape[0],
-             color='r', lw=1)
-    """
-
-    ax.set(ylabel=ylabel, xlabel='', xlim=[-.5, len(data_example['institute'].unique())])
-    if ylim is not None:
-        ax.set(ylim=ylim)
-    if yticks is not None:
-        ax.set(yticks=yticks)
-    ax.set_xticklabels(data_example['institute'].unique(), rotation=90, ha='center')
-    #ax.plot([-.5, len(data['institute'].unique()) + .5], [-165, -165], lw=0.5, color='k')
-    #ax.plot([-0.5, -0.5], ax.get_ylim(),  lw=0.5, color='k')
-
-    if despine:
-        sns.despine(trim=True)
-
+    # Return the list of pids used in this figure
+    return np.unique(df_filt['pid'])
 
 
 def panel_permutation(ax, metrics, regions, labels, n_permut=10000, n_rec_per_lab=0,
@@ -341,7 +228,7 @@ def panel_permutation(ax, metrics, regions, labels, n_permut=10000, n_rec_per_la
 
     df_ins = load_dataframe(df_name='ins')
     df_filt = filter_recordings(df_ins, min_lab_region=n_rec_per_region, min_rec_lab=n_rec_per_lab,
-                                min_neuron_region=2, recompute=True, freeze=freeze)
+                                min_neuron_region=2, recompute=False, n_trials=0, freeze=freeze)
     data = df_filt[df_filt['permute_include'] == 1]
     data['yield_per_channel'] = data['neuron_yield'] / data['n_channels']
     data.loc[data['lfp_power'] < -100000, 'lfp_power'] = np.nan
@@ -405,7 +292,8 @@ def panel_permutation(ax, metrics, regions, labels, n_permut=10000, n_rec_per_la
     regions[regions == 'PPC'] = 'VISa/am'
     ax.set_yticklabels(regions, va='center', rotation=0)
     ax.set_xticklabels(labels, rotation=45, ha='right')
-    return results
+    
+    return results, np.unique(df_filt['pid'])
 
 
 def panel_decoding(ax, qc='pass', region_decoding=True, bh_correction=False):
