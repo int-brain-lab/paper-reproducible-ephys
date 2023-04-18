@@ -576,17 +576,23 @@ def filter_recordings(df=None, by_anatomy_only=False, max_ap_rms=40, max_lfp_pow
 
     # Minimum number of recordings per lab per region with enough good units
     labreg = {val: {reg: 0 for reg in metrics.region.unique()} for val in institutes}
+    pid_labreg = {val: {reg: [] for reg in metrics.region.unique()} for val in institutes}
     metrics_red = metrics_red.groupby(['institute', 'pid', 'region'])
     for key in metrics_red.groups.keys():
         df_k = metrics_red.get_group(key)
         # needs to be based on the neuron_yield
         if df_k.iloc[0]['neuron_yield'] >= min_neuron_region:
             labreg[key[0]][key[2]] += 1
+            pid_labreg[key[0]][key[2]].append(key[1])
 
     for lab, regs in labreg.items():
         for reg, count in regs.items():
             if count >= min_lab_region:
+                pids = pid_labreg[lab][reg]
                 idx = metrics.loc[(metrics['region'] == reg) & (metrics['institute'] == lab) & metrics['include'] == 1].index
+                m_pids = metrics.loc[idx, 'pid'].values
+                _, _, loc = np.intersect1d(pids, m_pids, return_indices=True)
+                idx = idx[loc]
                 metrics.loc[idx, 'permute_include'] = True
 
     if df is None:
