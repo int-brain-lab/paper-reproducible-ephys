@@ -49,7 +49,7 @@ def permut_test(data, metric, labels1, labels2, n_permut=10000, shuffling='label
     TODO:
     """
     # Calculate metric
-    observed_val = metric(data, labels1, labels2, print_it=True, plot_it=True)
+    observed_val = metric(data, labels1, labels2, print_it=False, plot_it=plot)
 
     # Prepare permutations
     permuted_labels1, permuted_labels2 = shuffle_labels(labels1, labels2, n_permut, shuffling, n_cores=n_cores)
@@ -58,7 +58,7 @@ def permut_test(data, metric, labels1, labels2, n_permut=10000, shuffling='label
     null_dist = np.zeros(n_permut)
     if n_cores == 1:
         for i in range(n_permut):
-            null_dist[i] = metric(data, permuted_labels1[i], permuted_labels2[i], print_it=False, plot_it=False)
+            null_dist[i] = metric(data, permuted_labels1[i], permuted_labels2[i], print_it=False, plot_it=plot)
     else:
         size = n_permut // n_cores
         arg_list = [(metric, data, permuted_labels1[i*size:(i+1)*size], permuted_labels2[i*size:(i+1)*size]) for i in range(n_cores)]
