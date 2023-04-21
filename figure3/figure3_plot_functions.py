@@ -293,7 +293,7 @@ def panel_permutation(ax, metrics, regions, labels, n_permut=10000, n_rec_per_la
     ax.set_yticklabels(regions, va='center', rotation=0)
     ax.set_xticklabels(labels, rotation=45, ha='right')
     
-    return results, np.unique(df_filt['pid'])
+    return results, np.unique(data['pid'])
 
 
 def panel_decoding(ax, qc='pass', region_decoding=True, bh_correction=False):

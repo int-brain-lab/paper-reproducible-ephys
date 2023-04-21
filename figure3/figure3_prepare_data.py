@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from os.path import isfile
 import traceback
+import pickle
 
 import scipy.signal
 from sklearn.ensemble import RandomForestClassifier
@@ -18,7 +19,8 @@ from brainbox.processing import compute_cluster_average
 from brainbox.io.one import SpikeSortingLoader
 
 from reproducible_ephys_functions import (get_insertions, combine_regions, BRAIN_REGIONS, save_data_path,
-                                          save_dataset_info, filter_recordings, compute_lfp_insertion, LFP_BAND, THETA_BAND)
+                                          save_dataset_info, filter_recordings, compute_lfp_insertion,
+                                          LFP_BAND, THETA_BAND, save_figure_path)
 from figure3.figure3_load_data import load_dataframe
 
 
@@ -225,15 +227,33 @@ def run_decoding(metrics=['yield_per_channel', 'median_firing_rate', 'lfp_power'
         df_ins = load_dataframe(df_name='ins')
         data = filter_recordings(df_ins, min_lab_region=min_lab_region, min_rec_lab=0)
         
+        # Manually remove ibl_witten_26 
+        data = data[data['subject'] != 'ibl_witten_26']
+        
         # Recording selection
         if qc == 'pass':
             data = data[data['permute_include'] == 1]  # select recordings that pass QC
         elif qc != 'all':
             data = data[(data['permute_include'] == 1) | (data[qc] == 1)]
+        elif qc == 'all':
+            data = data[data['decode_no_qc_include'] == 1]
 
         # exclude recordings that miss LFP or AP data
         data = data[data['lfp_power'].notna()]  
         data = data[data['rms_ap'].notna()]  
+        
+        # Save pid list to file
+        save_path = save_figure_path(figure='figure3')
+        dict_pids = dict()
+        dict_pids['fig3'] = dict()
+        if qc == 'pass':
+            dict_pids['fig3']['e'] = data['pid']
+            with open(save_path.joinpath('fig3_e.pkl'), 'wb') as fp:
+                pickle.dump(dict_pids, fp)
+        elif qc == 'all':
+            dict_pids['fig3']['f'] = data['pid']
+            with open(save_path.joinpath('fig3_f.pkl'), 'wb') as fp:
+                pickle.dump(dict_pids, fp)
         
         # Get yield per channel
         data['yield_per_channel'] = data['neuron_yield'] / data['n_channels']

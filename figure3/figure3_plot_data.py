@@ -98,8 +98,6 @@ def plot_main_figure(freeze=None, one=None):
     dict_pids['fig3']['b'] = pids_b
     dict_pids['fig3']['c'] = pids_c
     dict_pids['fig3']['d'] = pids_d
-    dict_pids['fig3']['e'] = pids_d  # same as panel d
-    dict_pids['fig3']['f'] = pids_b  # same as panel b
     with open(save_path.joinpath('dict_pids.pkl'), 'wb') as fp:
         pickle.dump(dict_pids, fp)
     
