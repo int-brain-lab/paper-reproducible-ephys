@@ -559,6 +559,7 @@ def filter_recordings(df=None, by_anatomy_only=False, max_ap_rms=40, max_lfp_pow
 
     metrics['lab_include'] = bool(0)
     metrics['permute_include'] = bool(0)
+    metrics['decode_no_qc_include'] = bool(0)
 
     # For permutation tests
     metrics_red = metrics[metrics['include'] == 1]
@@ -589,11 +590,30 @@ def filter_recordings(df=None, by_anatomy_only=False, max_ap_rms=40, max_lfp_pow
         for reg, count in regs.items():
             if count >= min_lab_region:
                 pids = pid_labreg[lab][reg]
-                idx = metrics.loc[(metrics['region'] == reg) & (metrics['institute'] == lab) & metrics['include'] == 1].index
+                idx = metrics.loc[(metrics['region'] == reg) & (metrics['institute'] == lab)].index
                 m_pids = metrics.loc[idx, 'pid'].values
                 _, _, loc = np.intersect1d(pids, m_pids, return_indices=True)
                 idx = idx[loc]
                 metrics.loc[idx, 'permute_include'] = True
+                
+    # Now for lab decodig regardless of QC
+    metrics_no_qc = metrics.groupby(['institute', 'pid', 'region'])
+    for key in metrics_no_qc.groups.keys():
+        df_k = metrics_no_qc.get_group(key)
+        # needs to be based on the neuron_yield
+        if df_k.iloc[0]['neuron_yield'] >= min_neuron_region:
+            labreg[key[0]][key[2]] += 1
+            pid_labreg[key[0]][key[2]].append(key[1])
+
+    for lab, regs in labreg.items():
+        for reg, count in regs.items():
+            if count >= min_lab_region:
+                pids = pid_labreg[lab][reg]
+                idx = metrics.loc[(metrics['region'] == reg) & (metrics['institute'] == lab)].index
+                m_pids = metrics.loc[idx, 'pid'].values
+                _, _, loc = np.intersect1d(pids, m_pids, return_indices=True)
+                idx = idx[loc]
+                metrics.loc[idx, 'decode_no_qc_include'] = True
 
     if df is None:
         # Sort the index so it is the same as the orignal frame that was passed in
