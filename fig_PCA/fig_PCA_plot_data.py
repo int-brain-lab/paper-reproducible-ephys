@@ -650,7 +650,8 @@ def perm_test(inclu=False, print_=False,
 def all_panels(rm_unre=True, align='move', split='rt', 
                xyz_res=False, re_rank=2, fdr=True, permute_include=True,
                nrand = 2000, sig_lev = 0.01, inclu = False, 
-               perm_tests=True, get_dat=False, freeze='release_2022_11'):
+               perm_tests=True, get_dat=False, freeze='release_2022_11',
+               get_info=False):
                              
     '''
     Plotting main figure and supp figure;
@@ -684,6 +685,9 @@ def all_panels(rm_unre=True, align='move', split='rt',
     y = all_frs
     regs = concat_df['region'].values
     labs = concat_df['lab'].values
+    
+    print(len(Counter(concat_df['pid'].values)), 'insertions')
+    
     xyz = np.array([concat_df[g].values for g in ['x', 'y', 'z']]).T
 
     # merge hofer and mirsicflogel labs
@@ -700,7 +704,9 @@ def all_panels(rm_unre=True, align='move', split='rt',
 
     if get_dat:
         return emb, regs, labs
-
+  
+    if get_info:
+        return concat_df
 
     if xyz_res:
         clf = Ridge(alpha=0)
@@ -709,6 +715,7 @@ def all_panels(rm_unre=True, align='move', split='rt',
         res = emb_p - emb
         emb = res
         print('xyz influence subtracted')
+        return emb_p, emb
 
     # get reproduction using serveral first PCs
     u, s, vh = np.linalg.svd(y)
@@ -1016,7 +1023,7 @@ def all_panels(rm_unre=True, align='move', split='rt',
                                c='g', label='movement onset')
 
         axs[ms[k]].set_ylabel('Firing rate \n (spikes/s)')
-        stext = rf'$r^2$={np.round(r2_score(y[idxs[k]], y_res[2][idxs[k]]), 2)}'
+        stext = rf'$R^2$={np.round(r2_score(y[idxs[k]], y_res[2][idxs[k]]), 2)}'
         axs[ms[k]].text(0.3, 1, stext, transform=axs[ms[k]].transAxes,
                         fontsize=7, va='top', ha='right')
 
@@ -1392,9 +1399,9 @@ def all_panels(rm_unre=True, align='move', split='rt',
     B = axs['KS'].get_position()
     axs['KS'].set_position([B.x0 - 0.02, B.y0, B.width, B.height])
 
-    fig_path = save_figure_path(figure='fig_PCA')
-    print(f'Saving figures to {fig_path}')
-    fig.savefig(fig_path.joinpath('figure_PCA.pdf'))
-    figs.savefig(fig_path.joinpath('figure_PCA_supp1.pdf'))
+#    fig_path = save_figure_path(figure='fig_PCA')
+#    print(f'Saving figures to {fig_path}')
+#    fig.savefig(fig_path.joinpath('figure_PCA.pdf'))
+#    figs.savefig(fig_path.joinpath('figure_PCA_supp1.pdf'))
         
     
