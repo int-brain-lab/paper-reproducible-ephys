@@ -132,7 +132,8 @@ def get_metrics(save_path, channel_idx=None, shank=None):
     kp_idx = ~np.isnan(spikes.depths)
     _, cluster_depth, _ = compute_cluster_average(spikes.clusters[kp_idx], spikes.depths[kp_idx])
     _, cluster_amp, _ = compute_cluster_average(spikes.clusters[kp_idx], spikes.amps[kp_idx])
-    good_idx = np.where(clusters.metrics.label == 1)
+    good_idx = np.where(clusters.metrics.label[np.isin(clusters.metrics.cluster_id,
+                                                       np.unique(spikes.clusters[kp_idx]))] == 1)
     mua = gs0_ax2.scatter(cluster_amp * 1e6, cluster_depth, c='r')
     good = gs0_ax2.scatter(cluster_amp[good_idx] * 1e6, cluster_depth[good_idx], c='g')
     gs0_ax1.legend(handles=[mua, good], labels=['mua', 'good'], frameon=False, bbox_to_anchor=(0.8, 0.2))
