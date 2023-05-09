@@ -567,6 +567,7 @@ def filter_recordings(df=None, by_anatomy_only=False, max_ap_rms=40, max_lfp_pow
     # Have minimum number of recordings per lab
     inst_count = metrics_red.groupby(['institute']).pid.nunique()
     institutes = [key for key, val in inst_count.items() if val >= min_rec_lab]
+    #institutes = [key for key, val in inst_count.items()]
 
     for lab in institutes:
         idx = metrics.loc[(metrics['institute'] == lab) & metrics['include'] == 1].index
@@ -602,8 +603,9 @@ def filter_recordings(df=None, by_anatomy_only=False, max_ap_rms=40, max_lfp_pow
         df_k = metrics_no_qc.get_group(key)
         # needs to be based on the neuron_yield
         if df_k.iloc[0]['neuron_yield'] >= min_neuron_region:
-            labreg[key[0]][key[2]] += 1
-            pid_labreg[key[0]][key[2]].append(key[1])
+            if key[0] in labreg: # make sure the institute key is in institutes!
+                labreg[key[0]][key[2]] += 1
+                pid_labreg[key[0]][key[2]].append(key[1])
 
     for lab, regs in labreg.items():
         for reg, count in regs.items():
