@@ -54,7 +54,7 @@ def plot_probe_angle_histology_panel(min_rec_per_lab=4, perform_permutation_test
     # generate histogram/density plot of Euclidean distance at surface from
     # planned to actual for all trajectories
     # AND plot by lab
-    plot_probe_angle_histology_all_lab(min_rec_per_lab=min_rec_per_lab,
+    plot_probe_angle_histology_all_lab(min_rec_per_lab=min_rec_per_lab, 
                                        perform_permutation_test=perform_permutation_test)
 
     fig_path = save_figure_path(figure='figure2')
@@ -64,7 +64,7 @@ def plot_probe_angle_histology_panel(min_rec_per_lab=4, perform_permutation_test
     fig.save(fig_path.joinpath("angle_histology_panel.svg"))
 
 
-def plot_probe_angle_histology(min_rec_per_lab=4):
+def plot_probe_angle_histology(traj='hist', min_rec_per_lab=4):
     """
     Plot the PLANNED probe angle at [0,0], VECTORS from planned angle to
     actual angle of histology tracks, histology track points coloured
@@ -72,6 +72,17 @@ def plot_probe_angle_histology(min_rec_per_lab=4):
     """
 
     probe_data = load_dataframe(df_name='traj')
+
+    # manually exclude (for now) unresolved PIDs + one odd?(68d) looking insertion..?
+    pids = [
+        '2ff92e61-c2af-4dbf-8862-bd50b344762b',
+        '8f1d5aad-8c1f-4e81-869a-5a1ab1bf53b2',
+        'b53cc868-008a-4d20-a33a-ea3101be2d34',
+        'f06d6cd9-a6b8-49a4-90d1-7905d04c2f8b',
+        '84fd7fa3-6c2d-4233-b265-46a427d3d68d']
+
+    for p in pids:
+        probe_data = probe_data[ probe_data['pid'] != p]
 
     figure_style()
     fig1, ax1 = plt.subplots()
@@ -156,13 +167,24 @@ def plot_probe_angle_histology(min_rec_per_lab=4):
     fig1.savefig(fig_path.joinpath('E_probe_angle_hist_label.svg'), bbox_inches="tight")
 
 
-def plot_probe_angle_histology_all_lab(min_rec_per_lab=4, perform_permutation_test=True):
+def plot_probe_angle_histology_all_lab(traj='hist', min_rec_per_lab=4, perform_permutation_test=True):
     '''Plot the DISTANCES from planned to histology angles, histology track
     boxplot of ALL angles - to see its distribution shape.
     '''
 
     # Load data
     probe_data = load_dataframe(df_name='traj')
+
+    # manually exclude (for now) unresolved PIDs + one odd?(68d) looking insertion..?
+    pids = [
+        '2ff92e61-c2af-4dbf-8862-bd50b344762b',
+        '8f1d5aad-8c1f-4e81-869a-5a1ab1bf53b2',
+        'b53cc868-008a-4d20-a33a-ea3101be2d34',
+        'f06d6cd9-a6b8-49a4-90d1-7905d04c2f8b',
+        '84fd7fa3-6c2d-4233-b265-46a427d3d68d']
+
+    for p in pids:
+        probe_data = probe_data[ probe_data['pid'] != p]
 
     # add institution col
     probe_data['institute'] = probe_data['lab'].map(institution_map)
@@ -224,19 +246,14 @@ def plot_probe_angle_histology_all_lab(min_rec_per_lab=4, perform_permutation_te
     figure_style()
     
     # generate 2x2 subplots with 1:9 height ratios
-    widths = [1, 1]
-    heights = [1, 9]
-    gs_kw = dict(width_ratios=widths, height_ratios=heights)
-    fig, fig_axes = plt.subplots(ncols=2, nrows=2, constrained_layout=True,
-        gridspec_kw=gs_kw)
-    axr0c0 = fig_axes[0][0]
-    axr1c0 = fig_axes[1][0]
-    axr0c1 = fig_axes[0][1]
-    axr1c1 = fig_axes[1][1]
+    fig, fig_axes = plt.subplots(ncols=1, nrows=2, constrained_layout=True,
+        gridspec_kw={'height_ratios': [1, 9]})
+    axr0c0 = fig_axes[0]
+    axr1c0 = fig_axes[1]
 
     # Create an array with the colors you want to use
-    #colors = ["#000000", "#FF0B04"]  # BLACK AND RED
-    colors_pts = ["#0BFF0B", "#FF0B0B"]  # GREEN AND RED FOR PASS/FAIL
+    #colors_pts = ["#0BFF0B", "#FF0B0B"]  # GREEN AND RED FOR PASS/FAIL
+    colors_pts = ["#000000"]  # BLACK
 
     # Set your custom color palette
     #sns.set_palette(sns.color_palette(colors))
@@ -276,8 +293,8 @@ def plot_probe_angle_histology_all_lab(min_rec_per_lab=4, perform_permutation_te
                 palette=order_colors, linewidth = 0.5, order=order_by, ax=axr1c0)
 
     # overlay points
-    axx = sns.stripplot(y='institute', x='angle', data=probe_data, hue='passed', 
-                        size=1.5,  orient="h", palette=colors_pts, order=order_by, ax=axr1c0)
+    axx = sns.stripplot(y='institute', x='angle', data=probe_data, size=1.5,  
+                        orient="h", color="#000000", order=order_by, ax=axr1c0)
 
     # plot overall mean angle (mean of labs)
     mean_error_angle = probe_data['angle'].mean()
@@ -289,54 +306,7 @@ def plot_probe_angle_histology_all_lab(min_rec_per_lab=4, perform_permutation_te
     axr1c0.set_xlabel(None)
     axr1c0.xaxis.set_major_locator(plt.MaxNLocator(5))
     axr1c0.tick_params(axis='x', labelrotation=90)
-    axr1c0.get_legend().remove()
-
-    # Plot PASS-ONLY kdeplot + boxplot/stripplot
-    #sns.histplot(probe_data['angle'], kde=True, color='grey', ax=ax1)
-    #sns.boxplot(y='passed', x='angle', data=probe_data, hue='passed', orient="h", fliersize=2,
-    #            order = ['PASS', 'FAIL'], ax=ax1)
-    #ax1.legend_.remove()
-    sns.kdeplot( x='angle', data=probe_data_pass_plot, color='#0BFF0B', fill=True, ax=axr0c1)
-    # round up to nearest hundred from maximum xy surface error for histoloy
-    axr0c1.tick_params(axis='both', which='major', labelsize=5)
-    max_distance = int(1.1 * math.ceil( max(probe_data['angle'])))
-    axr0c1.set_xlim(0, max_distance)
-    axr0c1.set_ylabel(None)
-    axr0c1.set_xlabel(None)
-    axr0c1.xaxis.set_major_locator(plt.MaxNLocator(5))
-    axr0c1.tick_params(axis='x', labelrotation=90)
-    axr0c1.set(xticklabels=[])
-    axr0c1.tick_params(bottom=False)
-    axr0c1.set(yticklabels=[])
-    axr0c1.tick_params(left=False)
-
-    # plot boxplot
-    #sns.boxplot(y='institute', x='angle', data=probe_data_pass_plot, orient="h", showfliers = False, 
-    #            order=order_by, ax=axr1c1)
-    sns.boxplot(y='institute', x='angle', data=probe_data_pass_plot, orient="h", showfliers = False, 
-                palette=order_colors, linewidth = 0.5, order=order_by, ax=axr1c1)
-
-    # overlay points
-    axx = sns.stripplot(y='institute', x='angle', data=probe_data_pass_plot, hue='passed', 
-                        size=1.5,  orient="h", palette=colors_pts, order=order_by, ax=axr1c1)
-
-    # plot overall mean angle (mean of labs)
-    mean_error_angle = probe_data_pass['angle'].mean()
-    axr1c1.axvline(x=mean_error_angle, linestyle='--', linewidth=0.5, color='#B4FFB4')
-
-    axr1c1.tick_params(axis='both', which='major', labelsize=5)
-    axr1c1.set_ylabel(None)
-    axr1c1.set_xlim(0, max_distance)
-    axr1c1.set_xlabel(None)
-    axr1c1.xaxis.set_major_locator(plt.MaxNLocator(5))
-    axr1c1.tick_params(axis='x', labelrotation=90)
-    axr1c1.get_legend().remove()
-    axr1c1.set(yticklabels=[])
-    axr1c1.tick_params(left=False)
-
-    #handles, labels = axr1c0.get_legend_handles_labels()
-    #axr1c0.legend(handles[0:2], labels[0:2], bbox_to_anchor=(0.98, 0.05), loc=4, 
-    #       borderaxespad=0., prop={'size': 4}, markerscale=0.2)
+    #axr1c0.get_legend().remove()
 
     fig.suptitle('Histology-to-planned angle', fontsize=7)
     fig.supxlabel('Histology angle (degrees)', fontsize=7)
@@ -359,16 +329,5 @@ def plot_probe_angle_histology_all_lab(min_rec_per_lab=4, perform_permutation_te
     
         print('\nHistology probe angle')
         print("PERMUTATION TEST ALL : ", p_m)
-    
-        # permutation testing - PASS DATA ONLY
-        probe_data_permute = probe_data_pass[probe_data_pass['permute_include'] == 1]
-        pp_m = permut_test(probe_data_permute['angle'].values, 
-                           metric=distribution_dist_approx_max,
-                           labels1=probe_data_permute['lab'].values,
-                           labels2=probe_data_permute['subject'].values,
-                           n_cores=8, n_permut=500000)
-    
-        print("PERMUTATION TEST PASS : ", pp_m)
-
 
 

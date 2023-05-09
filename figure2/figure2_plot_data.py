@@ -30,14 +30,14 @@ def plot_hist_figure(raw_histology=False, perform_permutation_test=False):
 
     plot_trajs()
 
-    plot_probe_surf_coord_micro_panel(min_rec_per_lab=4, 
+    plot_probe_surf_coord_micro_panel(min_rec_per_lab=4,
                                       perform_permutation_test=perform_permutation_test)
 
-    plot_probe_surf_coord_histology_panel(min_rec_per_lab=4, 
-                                          perform_permutation_test=perform_permutation_test)
+    plot_probe_surf_coord_histology_panel(min_rec_per_lab=4,
+                                      perform_permutation_test=perform_permutation_test)
 
     plot_probe_angle_histology_panel(min_rec_per_lab=4,
-                                     perform_permutation_test=perform_permutation_test)
+                                      perform_permutation_test=perform_permutation_test)
 
     font_size = 3
     fig_path = save_figure_path(figure='figure2')

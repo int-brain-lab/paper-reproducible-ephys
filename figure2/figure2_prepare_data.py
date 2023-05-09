@@ -12,7 +12,7 @@ from one.api import ONE
 from ibllib.atlas import Insertion, AllenAtlas
 from iblutil.numerical import ismember
 from brainbox.io.one import load_channel_locations
-from reproducible_ephys_functions import save_data_path, get_histology_insertions, save_dataset_info, get_insertions
+from reproducible_ephys_functions import save_data_path, save_dataset_info, get_insertions
 from figure2.figure2_load_data import load_dataframe
 
 import numpy as np
@@ -266,7 +266,6 @@ def prepare_data(insertions, one=None, brain_atlas=None, recompute=False):
 if __name__ == '__main__':
     one = ONE()
     one.record_loaded = True
-    _ = get_insertions(level=0, one=one, freeze='release_2022_11')
-    insertions = get_histology_insertions(one=one, freeze='release_2022_11')
+    insertions = get_insertions(level=-1, one=one, freeze='release_2022_11')
     all_df_chns, all_df_traj = prepare_data(insertions, one=one)
     save_dataset_info(one, figure='figure2')

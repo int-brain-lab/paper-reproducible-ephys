@@ -111,10 +111,21 @@ def plot_probe_surf_coord(traj='micro', min_rec_per_lab=4):
     # Load in data
     probe_data = load_dataframe(df_name='traj')
 
+    # manually exclude (for now) unresolved PIDs + one odd?(68d) looking insertion..?
+    pids = [
+        '2ff92e61-c2af-4dbf-8862-bd50b344762b',
+        '8f1d5aad-8c1f-4e81-869a-5a1ab1bf53b2',
+        'b53cc868-008a-4d20-a33a-ea3101be2d34',
+        'f06d6cd9-a6b8-49a4-90d1-7905d04c2f8b',
+        '84fd7fa3-6c2d-4233-b265-46a427d3d68d']
+
+    for p in pids:
+        probe_data = probe_data[ probe_data['pid'] != p]
+
     # map labs to institutions
     probe_data['institution'] = probe_data['lab'].map(institution_map)
 
-    # for micro-manipulator EXCLUDE wheremicro-manipulator data was not recorded - planned == micro
+    # for micro-manipulator EXCLUDE where micro-manipulator data was not recorded - planned == micro
     if traj == 'micro':
         # exclude data where planned xyz == micro xyz
         xPM = probe_data['planned_x'] == probe_data['micro_x']
@@ -130,6 +141,7 @@ def plot_probe_surf_coord(traj='micro', min_rec_per_lab=4):
     ax1.axvline(x=-2243, color="grey", linestyle="--", linewidth=0.5)
     ax1.axhline(y=-2000, color="grey", linestyle="--", linewidth=0.5)
 
+    # plot each micro-manipulator position on ax1 as line from origin (planned) and dot
     for idx, row in probe_data.iterrows():
 
         ax1.plot([row[f'{traj}_x'], row['planned_x']], [row[f'{traj}_y'], row['planned_y']],
@@ -140,7 +152,7 @@ def plot_probe_surf_coord(traj='micro', min_rec_per_lab=4):
                  color=institution_colors[institution_map[row['lab']]],
                  marker="o", markersize=0.5, alpha=0.8, markeredgewidth=0.5)
 
-    # Plot the mean micro coords - institution means
+    # Plot mean micro coords - institution means - as cross
     inst_mean_x = probe_data.groupby('institution')[f'{traj}_x'].mean()
     inst_mean_y = probe_data.groupby('institution')[f'{traj}_y'].mean()
 
@@ -150,7 +162,7 @@ def plot_probe_surf_coord(traj='micro', min_rec_per_lab=4):
                  label=k, 
                  marker="+", markersize=3, alpha=0.5)
 
-    # overall mean (mean of institutions)
+    # Plot overall mean (mean of institutions) - as large cross
     mean_x = probe_data[f'{traj}_x'].mean()
     mean_y = probe_data[f'{traj}_y'].mean()
 
@@ -184,8 +196,8 @@ def plot_probe_surf_coord(traj='micro', min_rec_per_lab=4):
         
         # print average values
         print('MICRO-MANIPULATOR: Mean (SD) distance \n    '
-              'ALL : ' + str(np.around(top_mean_all, 1)) + ' (' + str(np.around(top_std_all, 2)) + ')' + ' µm \n' +
-              'PASS : ' + str(np.around(top_mean_include, 1)) + ' (' + str(np.around(top_std_include, 2)) + ')' + ' µm')
+              'ALL : ' + str(np.around(top_mean_all, 1)) + ' (' + str(np.around(top_std_all, 2)) + ')' + ' µm \n' )
+        #      'PASS : ' + str(np.around(top_mean_include, 1)) + ' (' + str(np.around(top_std_include, 2)) + ')' + ' µm')
         # add legend
         ax1.legend(loc='upper right', prop={'size': 3.5})
     else:
@@ -198,8 +210,8 @@ def plot_probe_surf_coord(traj='micro', min_rec_per_lab=4):
         #              fontsize=8)
         # print average values
         print('HISTOLOGY: Mean (SD) distance \n    '
-              'ALL : ' + str(np.around(top_mean_all, 1)) + ' (' + str(np.around(top_std_all, 2)) + ')' + ' µm \n' +
-              'PASS : ' + str(np.around(top_mean_include, 1)) + ' (' + str(np.around(top_std_include, 2)) + ')' + ' µm')
+              'ALL : ' + str(np.around(top_mean_all, 1)) + ' (' + str(np.around(top_std_all, 2)) + ')' + ' µm \n' )
+        #      'PASS : ' + str(np.around(top_mean_include, 1)) + ' (' + str(np.around(top_std_include, 2)) + ')' + ' µm')
 
     if traj == 'micro':
         ax1.set_xlim((-2500, -1800))
@@ -246,6 +258,17 @@ def plot_probe_distance_all_lab(traj='micro', min_rec_per_lab=4, perform_permuta
     
     # Load data
     probe_data = load_dataframe(df_name='traj')
+
+    # manually exclude (for now) unresolved PIDs + one odd?(68d) looking insertion..?
+    pids = [
+        '2ff92e61-c2af-4dbf-8862-bd50b344762b',
+        '8f1d5aad-8c1f-4e81-869a-5a1ab1bf53b2',
+        'b53cc868-008a-4d20-a33a-ea3101be2d34',
+        'f06d6cd9-a6b8-49a4-90d1-7905d04c2f8b',
+        '84fd7fa3-6c2d-4233-b265-46a427d3d68d']
+
+    for p in pids:
+        probe_data = probe_data[ probe_data['pid'] != p]
 
     # for micro-manipulator EXCLUDE wheremicro-manipulator data was not recorded - planned == micro
     if traj == 'micro':
@@ -321,18 +344,14 @@ def plot_probe_distance_all_lab(traj='micro', min_rec_per_lab=4, perform_permuta
     figure_style()
 
     # generate 2x2 subplots with 1:9 height ratios
-    widths = [1, 1]
-    heights = [1, 9]
-    gs_kw = dict(width_ratios=widths, height_ratios=heights)
-    fig, fig_axes = plt.subplots(ncols=2, nrows=2, constrained_layout=True,
-        gridspec_kw=gs_kw)
-    axr0c0 = fig_axes[0][0]
-    axr1c0 = fig_axes[1][0]
-    axr0c1 = fig_axes[0][1]
-    axr1c1 = fig_axes[1][1]
+    fig, fig_axes = plt.subplots(ncols=1, nrows=2, constrained_layout=True,
+        gridspec_kw={'height_ratios': [1, 9]})
+    axr0c0 = fig_axes[0]
+    axr1c0 = fig_axes[1]
 
     # Create an array with colors to use
-    colors_pts = ["#0BFF0B", "#FF0B0B"]  # GREEN AND RED FOR PASS/FAIL
+    #colors_pts = ["#0BFF0B", "#FF0B0B"]  # GREEN AND RED FOR PASS/FAIL
+    colors_pts = ["#000000"]  # BLACK
 
     # Plot ALL kdeplot + boxplot/stripplot
     #sns.histplot(probe_data[f'{traj}_error_surf_xy'], kde=True, color='grey', ax=ax1)
@@ -370,8 +389,8 @@ def plot_probe_distance_all_lab(traj='micro', min_rec_per_lab=4, perform_permuta
                 order=order_by, ax=axr1c0)
 
     # overlay points
-    axx = sns.stripplot(y='institute', x=f'{traj}_error_surf_xy', data=probe_data, hue='passed', 
-                        size=1.5,  orient="h", palette=colors_pts, order=order_by, ax=axr1c0)
+    axx = sns.stripplot(y='institute', x=f'{traj}_error_surf_xy', data=probe_data, 
+                        size=1.5,  orient="h", color="#000000", order=order_by, ax=axr1c0)
 
     # plot overall mean distance (mean of labs)
     mean_error_surf_xy = probe_data[f'{traj}_error_surf_xy'].mean()
@@ -383,55 +402,13 @@ def plot_probe_distance_all_lab(traj='micro', min_rec_per_lab=4, perform_permuta
     axr1c0.set_xlabel(None)
     axr1c0.xaxis.set_major_locator(plt.MaxNLocator(5))
     axr1c0.tick_params(axis='x', labelrotation=90)
-    axr1c0.get_legend().remove()
-
-    # Plot PASS-ONLY kdeplot + boxplot/stripplot
-    #sns.histplot(probe_data[f'{traj}_error_surf_xy'], kde=True, color='grey', ax=ax1)
-    #sns.boxplot(y='passed', x=f'{traj}_error_surf_xy', data=probe_data, hue='passed', orient="h", fliersize=2,
-    #            order = ['PASS', 'FAIL'], ax=ax1)
-    #ax1.legend_.remove()
-    sns.kdeplot( x=f'{traj}_error_surf_xy', data=probe_data_pass_plot, color='#0BFF0B', fill=True, ax=axr0c1)
-    # round up to nearest hundred from maximum xy surface error for histoloy
-    axr0c1.tick_params(axis='both', which='major', labelsize=5)
-    max_distance = int(math.ceil( max(probe_data[f'{traj}_error_surf_xy']) / 100.0)) * 100
-    axr0c1.set_xlim(0, max_distance)
-    axr0c1.set_ylabel(None)
-    axr0c1.set_xlabel(None)
-    axr0c1.set(xticklabels=[])
-    axr0c1.tick_params(bottom=False)
-    axr0c1.set(yticklabels=[])
-    axr0c1.tick_params(left=False)
-
-    # plot boxplot
-    #sns.boxplot(y='institute', x=f'{traj}_error_surf_xy', data=probe_data_pass_plot, orient="h", showfliers = False, 
-    #            order=order_by, ax=axr1c1)
-    sns.boxplot(y='institute', x=f'{traj}_error_surf_xy', data=probe_data_pass_plot, 
-                palette=order_colors, orient="h", showfliers=False, linewidth=0.5, 
-                order=order_by, ax=axr1c1)
-
-    # overlay points
-    axx = sns.stripplot(y='institute', x=f'{traj}_error_surf_xy', data=probe_data_pass_plot, hue='passed', 
-                        size=1.5,  orient="h", palette=colors_pts, order=order_by, ax=axr1c1)
-
-    # plot overall mean distance (mean of labs)
-    mean_error_surf_xy_pass = probe_data_pass_plot[f'{traj}_error_surf_xy'].mean()
-    axr1c1.axvline(x=mean_error_surf_xy_pass, linestyle='--', linewidth=0.5, color='#B4FFB4')
-
-    axr1c1.tick_params(axis='both', which='major', labelsize=5)
-    axr1c1.set_ylabel(None)
-    axr1c1.set_xlim(0, max_distance)
-    axr1c1.set_xlabel(None)
-    axr1c1.xaxis.set_major_locator(plt.MaxNLocator(5))
-    axr1c1.tick_params(axis='x', labelrotation=90)
-    axr1c1.get_legend().remove()
-    axr1c1.set(yticklabels=[])
-    axr1c1.tick_params(left=False)
+    #axr1c0.get_legend().remove()
 
     if traj == 'micro':
         # add legend to micro group plot only
-        handles, labels = axr1c0.get_legend_handles_labels()
-        axr1c0.legend(handles[0:2], labels[0:2], bbox_to_anchor=(0.98, 0.05), loc=4, 
-               borderaxespad=0., prop={'size': 4}, markerscale=0.2)
+        #handles, labels = axr1c0.get_legend_handles_labels()
+        #axr1c0.legend(handles[0:2], labels[0:2], bbox_to_anchor=(0.98, 0.05), loc=4, 
+        #       borderaxespad=0., prop={'size': 4}, markerscale=0.2)
         fig.suptitle('Micromanipulator-to-planned distance', fontsize=7)
         fig.supxlabel('Micromanipulator distance (µm)', fontsize=7)
     else:
@@ -446,7 +423,7 @@ def plot_probe_distance_all_lab(traj='micro', min_rec_per_lab=4, perform_permuta
     fig.savefig(fig_path.joinpath(f'D_probe_dist_{traj}_all_lab.svg'), bbox_inches="tight")
 
     if perform_permutation_test == True:
-        
+
         # compute permutation testing - ALL DATA
         probe_data_permute = probe_data
         p_m = permut_test(probe_data_permute[f'{traj}_error_surf_xy'].values,
@@ -454,22 +431,12 @@ def plot_probe_distance_all_lab(traj='micro', min_rec_per_lab=4, perform_permuta
                           labels1=probe_data_permute['lab'].values,
                           labels2=probe_data_permute['subject'].values,
                           n_cores=8, n_permut=500000)
-        
+
         if traj == 'micro':
             print('\nMicro-Manipulator brain surface coordinate')
         else:
             print('\nHistology brain surface coordinate')
-        
-        print("PERMUTATION TEST ALL : ", p_m)
-    
-        # permutation testing - PASS DATA ONLY
-        probe_data_permute = probe_data_pass[probe_data_pass['permute_include'] == 1]
-        pp_m = permut_test(probe_data_permute[f'{traj}_error_surf_xy'].values,
-                           metric=distribution_dist_approx_max,
-                           labels1=probe_data_permute['lab'].values,
-                           labels2=probe_data_permute['subject'].values,
-                           n_cores=8, n_permut=500000)
-        
-        print("PERMUTATION TEST PASS : ", pp_m)
+
+        print("PERMUTATION TEST ALL : ", p_m, "\n\n")
 
 
