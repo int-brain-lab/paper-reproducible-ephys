@@ -712,10 +712,9 @@ def all_panels(rm_unre=True, align='move', split='rt',
         clf = Ridge(alpha=0)
         clf.fit(xyz, emb)
         emb_p = clf.predict(xyz)
-        res = emb_p - emb
-        emb = res
         print('xyz influence subtracted')
-        return emb_p, emb
+        print('r**2', r2_score(emb, emb_p))
+        return
 
     # get reproduction using serveral first PCs
     u, s, vh = np.linalg.svd(y)
