@@ -20,7 +20,7 @@ import math
 from iblutil.numerical import ismember
 
 from reproducible_ephys_functions import figure_style, save_figure_path, labs, filter_recordings
-from figure2.figure2_load_data import load_dataframe
+from fig_hist.fig_hist_load_data import load_dataframe
 from permutation_test import permut_test, distribution_dist_approx_max
 
 lab_number_map, institution_map, institution_colors = labs()
@@ -57,7 +57,7 @@ def plot_probe_angle_histology_panel(min_rec_per_lab=4, perform_permutation_test
     plot_probe_angle_histology_all_lab(min_rec_per_lab=min_rec_per_lab, 
                                        perform_permutation_test=perform_permutation_test)
 
-    fig_path = save_figure_path(figure='figure2')
+    fig_path = save_figure_path(figure='fig_hist')
     fig = sc.Figure("66mm", "140mm",
                     sc.Panel(sc.SVG(fig_path.joinpath('E_probe_angle_hist_label.svg')).scale(0.35)),
                     sc.Panel(sc.SVG(fig_path.joinpath('E_probe_angle_hist_all_lab.svg')).scale(0.35).move(0, 64)))
@@ -163,7 +163,7 @@ def plot_probe_angle_histology(traj='hist', min_rec_per_lab=4):
     plt.tight_layout()
     fig1.set_size_inches(2.15, 2.15)
 
-    fig_path = save_figure_path(figure='figure2')
+    fig_path = save_figure_path(figure='fig_hist')
     fig1.savefig(fig_path.joinpath('E_probe_angle_hist_label.svg'), bbox_inches="tight")
 
 
@@ -315,7 +315,7 @@ def plot_probe_angle_histology_all_lab(traj='hist', min_rec_per_lab=4, perform_p
     plt.tight_layout()  # tighten layout around xlabel & ylabel
     fig.set_size_inches(2.15, 2.8)
 
-    fig_path = save_figure_path(figure='figure2')
+    fig_path = save_figure_path(figure='fig_hist')
     fig.savefig(fig_path.joinpath('E_probe_angle_hist_all_lab.svg'), bbox_inches="tight")
 
     if perform_permutation_test == True:

@@ -14,8 +14,8 @@ import matplotlib.pyplot as plt
 from ibllib.atlas import Insertion
 import numpy as np
 import ibllib.atlas as atlas
-from figure2.figure2_load_data import load_dataframe
-from figure2.figure2_functions import df_to_traj_dict
+from fig_hist.fig_hist_load_data import load_dataframe
+from fig_hist.fig_hist_functions import df_to_traj_dict
 from reproducible_ephys_functions import save_figure_path, filter_recordings
 from iblutil.numerical import ismember
 
@@ -241,7 +241,7 @@ def plot_all_channels(subjects=None, remove_exclusions=True):
     figsag.tight_layout()
 
     # save to output
-    fig_path = save_figure_path(figure='figure2')
+    fig_path = save_figure_path(figure='fig_hist')
     figcor.savefig(fig_path.joinpath('all_channels_subj_hist_coronal.svg'), bbox_inches="tight")
     figsag.savefig(fig_path.joinpath('all_channels_subj_hist_sagittal.svg'), bbox_inches="tight")
 
@@ -276,7 +276,7 @@ def plot_channels_n3():
     figsag.tight_layout()
 
     # save to output
-    fig_path = save_figure_path(figure='figure2')
+    fig_path = save_figure_path(figure='fig_hist')
     figcor.savefig(fig_path.joinpath('B_channels_subj3_hist_coronal.svg'), bbox_inches="tight")
     figsag.savefig(fig_path.joinpath('B_channels_subj3_hist_sagittal.svg'), bbox_inches="tight")
 

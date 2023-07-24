@@ -13,7 +13,7 @@ from ibllib.atlas import Insertion, AllenAtlas
 from iblutil.numerical import ismember
 from brainbox.io.one import load_channel_locations
 from reproducible_ephys_functions import save_data_path, save_dataset_info, get_insertions
-from figure2.figure2_load_data import load_dataframe
+from fig_hist.fig_hist_load_data import load_dataframe
 
 import numpy as np
 import pandas as pd
@@ -252,13 +252,13 @@ def prepare_data(insertions, one=None, brain_atlas=None, recompute=False):
         all_df_chns.append(df_chns)
 
     # Concat dataframes from all insertions
-    save_path = save_data_path(figure='figure2')
+    save_path = save_data_path(figure='fig_hist')
     print(f'Saving data to {save_path}')
     concat_df_chns = pd.concat(all_df_chns, ignore_index=True)
     concat_df_traj = pd.concat(all_df_traj, ignore_index=True)
     concat_df_traj = concat_df_traj.drop_duplicates(subset='subject')
-    concat_df_chns.to_csv(save_path.joinpath('figure2_dataframe_chns.csv'))
-    concat_df_traj.to_csv(save_path.joinpath('figure2_dataframe_traj.csv'))
+    concat_df_chns.to_csv(save_path.joinpath('fig_hist_dataframe_chns.csv'))
+    concat_df_traj.to_csv(save_path.joinpath('fig_hist_dataframe_traj.csv'))
 
     return concat_df_chns, concat_df_traj
 
@@ -268,4 +268,4 @@ if __name__ == '__main__':
     one.record_loaded = True
     insertions = get_insertions(level=-1, one=one, freeze='release_2022_11')
     all_df_chns, all_df_traj = prepare_data(insertions, one=one)
-    save_dataset_info(one, figure='figure2')
+    save_dataset_info(one, figure='fig_hist')

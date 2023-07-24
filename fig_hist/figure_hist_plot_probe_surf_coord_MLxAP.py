@@ -20,7 +20,7 @@ import math
 from iblutil.numerical import ismember
 
 from reproducible_ephys_functions import figure_style, save_figure_path, labs, filter_recordings
-from figure2.figure2_load_data import load_dataframe
+from fig_hist.fig_hist_load_data import load_dataframe
 from permutation_test import permut_test, distribution_dist_approx_max
 
 lab_number_map, institution_map, institution_colors = labs()
@@ -56,7 +56,7 @@ def plot_probe_surf_coord_micro_panel(min_rec_per_lab=4, perform_permutation_tes
     plot_probe_distance_all_lab(traj='micro', min_rec_per_lab=min_rec_per_lab,
                                 perform_permutation_test=perform_permutation_test)
 
-    fig_path = save_figure_path(figure='figure2')
+    fig_path = save_figure_path(figure='fig_hist')
     fig = sc.Figure("66mm", "140mm",
                     sc.Panel(sc.SVG(fig_path.joinpath('D_probe_surf_coord_micro_label.svg')).scale(0.35)),
                     sc.Panel(sc.SVG(fig_path.joinpath('D_probe_dist_micro_all_lab.svg')).scale(0.35).move(0, 64)))
@@ -94,7 +94,7 @@ def plot_probe_surf_coord_histology_panel(min_rec_per_lab=4, perform_permutation
     plot_probe_distance_all_lab(traj='hist', min_rec_per_lab=min_rec_per_lab,
                                 perform_permutation_test=perform_permutation_test)
 
-    fig_path = save_figure_path(figure='figure2')
+    fig_path = save_figure_path(figure='fig_hist')
     fig = sc.Figure("66mm", "140mm",
                     sc.Panel(sc.SVG(fig_path.joinpath('D_probe_surf_coord_hist_label.svg')).scale(0.35)),
                     sc.Panel(sc.SVG(fig_path.joinpath('D_probe_dist_hist_all_lab.svg')).scale(0.35).move(0, 64)))
@@ -246,7 +246,7 @@ def plot_probe_surf_coord(traj='micro', min_rec_per_lab=4):
 
     #axav.plot(mean_x, mean_y, color='k', marker="+", markersize=8, alpha=0.7, label="MEAN")
 
-    fig_path = save_figure_path(figure='figure2')
+    fig_path = save_figure_path(figure='fig_hist')
     fig1.savefig(fig_path.joinpath(f'D_probe_surf_coord_{traj}_label.svg'), bbox_inches="tight")
 
 
@@ -419,7 +419,7 @@ def plot_probe_distance_all_lab(traj='micro', min_rec_per_lab=4, perform_permuta
     plt.tight_layout()  # tighten layout around xlabel & ylabel
     fig.set_size_inches(2.15, 2.8)
 
-    fig_path = save_figure_path(figure='figure2')
+    fig_path = save_figure_path(figure='fig_hist')
     fig.savefig(fig_path.joinpath(f'D_probe_dist_{traj}_all_lab.svg'), bbox_inches="tight")
 
     if perform_permutation_test == True:

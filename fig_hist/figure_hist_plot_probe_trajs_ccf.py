@@ -15,8 +15,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import ibllib.atlas as atlas
 from reproducible_ephys_functions import figure_style, labs, save_figure_path
-from figure2.figure2_load_data import load_dataframe
-from figure2.figure2_functions import df_to_traj_dict
+from fig_hist.fig_hist_load_data import load_dataframe
+from fig_hist.fig_hist_functions import df_to_traj_dict
 
 
 def plot_trajs(plan_colour='w', lab_colour=True):
@@ -99,7 +99,7 @@ def plot_trajs(plan_colour='w', lab_colour=True):
     fig1.tight_layout()
     fig2.tight_layout()
 
-    fig_path = save_figure_path(figure='figure2')
+    fig_path = save_figure_path(figure='fig_hist')
     fig1.savefig(fig_path.joinpath('C_probe_trajs_ccf_coronal.svg'), bbox_inches="tight")
     fig2.savefig(fig_path.joinpath('C_probe_trajs_ccf_sagittal.svg'), bbox_inches="tight")
 
