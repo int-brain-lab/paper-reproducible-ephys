@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from os.path import isfile
+from os.path import isfile, join
 import traceback
 import pickle
 
@@ -336,9 +336,9 @@ def run_decoding(metrics=['yield_per_channel', 'median_firing_rate', 'lfp_power'
             'region': 'all', 'accuracy_shuffle': shuf_acc})), ignore_index=True)
 
         # Save results
-        decode_df.to_csv(save_path.joinpath(file_name))
-        shuffle_df.to_csv(save_path.joinpath(f'figure3_dataframe_decode_shuf_{qc}.csv'))
-        matrix_df.to_csv(save_path.joinpath(f'figure3_dataframe_conf_mat_{qc}.csv'))
+        decode_df.to_csv(join(save_data_path(), file_name))
+        shuffle_df.to_csv(join(save_data_path(), f'figure3_dataframe_decode_shuf_{qc}.csv'))
+        matrix_df.to_csv(join(save_data_path(), f'figure3_dataframe_conf_mat_{qc}.csv'))
 
     else:
         print('Decoding results found, not running again')
@@ -352,10 +352,4 @@ if __name__ == '__main__':
     #save_dataset_info(one, figure='figure3')
     rerun_decoding = True
     run_decoding(n_shuffle=500, qc='pass', recompute=rerun_decoding)
-    #run_decoding(n_shuffle=500, qc='high_noise', recompute=rerun_decoding)
-    #run_decoding(n_shuffle=500, qc='low_yield', recompute=rerun_decoding)
-    #run_decoding(n_shuffle=500, qc='high_lfp', recompute=rerun_decoding)
-    #run_decoding(n_shuffle=500, qc='artifacts', recompute=rerun_decoding)
-    #run_decoding(n_shuffle=500, qc='missed_target', recompute=rerun_decoding)
-    #run_decoding(n_shuffle=500, qc='low_trials', recompute=rerun_decoding)
     run_decoding(n_shuffle=500, qc='all', recompute=rerun_decoding)
