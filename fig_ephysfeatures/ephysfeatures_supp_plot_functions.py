@@ -6,9 +6,9 @@ By: Guido Meijer
 """
 
 from ibllib.atlas import BrainRegions
-from figure3.figure3_functions import plot_probe, get_brain_boundaries
+from fig_ephysfeatures.ephysfeatures_functions import plot_probe, get_brain_boundaries
 from reproducible_ephys_functions import filter_recordings, BRAIN_REGIONS
-from figure3.figure3_load_data import load_dataframe
+from fig_ephysfeatures.ephysfeatures_load_data import load_dataframe
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 import numpy as np
 

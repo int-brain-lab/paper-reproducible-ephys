@@ -6,7 +6,7 @@ By: Guido Meijer
 """
 
 import figrid as fg
-from figure3.figure3_supp_plot_functions import panel_probe_lfp, panel_probe_neurons
+from fig_ephysfeatures.ephysfeatures_supp_plot_functions import panel_probe_lfp, panel_probe_neurons
 import matplotlib.pyplot as plt
 from reproducible_ephys_functions import figure_style, save_figure_path, filter_recordings
 

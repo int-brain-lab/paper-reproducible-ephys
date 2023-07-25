@@ -21,7 +21,7 @@ from brainbox.io.one import SpikeSortingLoader
 from reproducible_ephys_functions import (get_insertions, combine_regions, BRAIN_REGIONS, save_data_path,
                                           save_dataset_info, filter_recordings, compute_lfp_insertion,
                                           LFP_BAND, THETA_BAND, save_figure_path)
-from figure3.figure3_load_data import load_dataframe
+from fig_ephysfeatures.ephysfeatures_load_data import load_dataframe
 
 
 ba = AllenAtlas()

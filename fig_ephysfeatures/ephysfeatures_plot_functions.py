@@ -2,7 +2,7 @@ from reproducible_ephys_functions import filter_recordings, labs, BRAIN_REGIONS,
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from figure3.figure3_functions import get_brain_boundaries, plot_probe
+from fig_ephysfeatures.ephysfeatures_functions import get_brain_boundaries, plot_probe
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from ibllib.atlas.regions import BrainRegions
 from figure3.figure3_load_data import load_dataframe

@@ -6,8 +6,8 @@ By: Guido Meijer
 """
 
 import figrid as fg
-from figure3.figure3_plot_functions import (panel_probe_lfp, panel_probe_neurons, 
-                                            panel_permutation, panel_decoding)
+from fig_ephysfeatures.ephysfeatures_plot_functions import (panel_probe_lfp, panel_probe_neurons, 
+                                                            panel_permutation, panel_decoding)
 import matplotlib.pyplot as plt
 import pickle
 from reproducible_ephys_functions import figure_style, filter_recordings, save_figure_path

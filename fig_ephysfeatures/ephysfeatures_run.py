@@ -3,8 +3,8 @@ Script to prepare data for figure 3 and generate plots in the style that are sho
 """
 import logging
 
-from figure3.figure3_prepare_data import prepare_data
-from figure3.figure3_plot_data import plot_main_figure
+from fig_ephysfeatures.ephysfeatures_prepare_data import prepare_data
+from fig_ephysfeatures.ephysfeatures_plot_data import plot_main_figure
 import reproducible_ephys_functions
 from one.api import ONE
 
