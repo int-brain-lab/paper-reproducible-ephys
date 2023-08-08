@@ -9,7 +9,12 @@ import pandas as pd
 import pickle
 from matplotlib.transforms import Bbox
 import json
+from permutation_test import permut_test, permut_dist
+from matplotlib import cm
+from matplotlib.colors import ListedColormap, to_rgb
 
+
+np.set_printoptions(suppress=True)
 
 lab_number_map, institution_map, lab_colors = labs()
 fig_path = save_figure_path(figure='fig_taskmodulation')
@@ -58,7 +63,7 @@ region_rename = dict(zip(BRAIN_REGIONS, ['VISa/am', 'CA1', 'DG', 'LP', 'PO']))
 def plot_main_figure():
     DPI = 400  # if the figure is too big on your screen, lower this number
     figure_style()
-    fig = plt.figure(figsize=(7, 10.5), dpi=DPI)  # full width figure is 7 inches
+    fig = plt.figure(figsize=(7, 10.5), dpi=500)  # full width figure is 7 inches
     # ax = {'panel_A_1': fg.place_axes_on_grid(fig, xspan=[0.075, 0.323], yspan=[0., 0.15],
     #                                          wspace=0.3),
     #       'panel_A_2': fg.place_axes_on_grid(fig, xspan=[0.075, 0.323], yspan=[0.15, 0.3],
@@ -150,7 +155,7 @@ def plot_main_figure():
     print(f'Saving figures to {fig_path}')
     plt.savefig(fig_path.joinpath('fig_taskmodulation_combined.png'), bbox_inches='tight', pad_inches=0)
     plt.savefig(fig_path.joinpath('fig_taskmodulation_combined.pdf'), bbox_inches='tight', pad_inches=0)
-    plt.show()
+    plt.close()
 
 
 
@@ -173,13 +178,13 @@ def task_mod_panel_helper(fig, panel_name, xspan, ybot, ytop):
 def plot_supp_figure():
     DPI = 400  # if the figure is too big on your screen, lower this number
     figure_style()
-    fig = plt.figure(figsize=(7, 10.5), dpi=DPI)  # full width figure is 7 inches
-    panel_a = task_mod_panel_helper(fig, 'panel_A_', [0.075, 0.45], 0.13, 0.32)
-    panel_b = task_mod_panel_helper(fig, 'panel_B_', [0.55, 1.], 0.13, 0.32)
-    panel_c = task_mod_panel_helper(fig, 'panel_C_', [0.075, 0.45], 0.46, 0.65)
-    panel_d = task_mod_panel_helper(fig, 'panel_D_', [0.55, 1.], 0.46, 0.65)
-    panel_e = task_mod_panel_helper(fig, 'panel_E_', [0.075, 0.45], 0.79, 1)
-    panel_f = task_mod_panel_helper(fig, 'panel_F_', [0.55, 1.], 0.79, 1)
+    fig = plt.figure(figsize=(7, 10.5), dpi=500)  # full width figure is 7 inches
+    panel_a = task_mod_panel_helper(fig, 'panel_A_', [0.075, 0.45], 0.17, 0.32)
+    panel_b = task_mod_panel_helper(fig, 'panel_B_', [0.55, 1.], 0.17, 0.32)
+    panel_c = task_mod_panel_helper(fig, 'panel_C_', [0.075, 0.45], 0.5, 0.65)
+    panel_d = task_mod_panel_helper(fig, 'panel_D_', [0.55, 1.], 0.5, 0.65)
+    panel_e = task_mod_panel_helper(fig, 'panel_E_', [0.075, 0.45], 0.83, 1)
+    panel_f = task_mod_panel_helper(fig, 'panel_F_', [0.55, 1.], 0.83, 1)
 
     plot_panel_task_modulated_neurons(specific_tests=['post_stim'],
                                       ax=[panel_a['panel_A_{}'.format(x)] for x in range(1, 6)],
@@ -485,23 +490,30 @@ def plot_panel_permutation(ax=None, n_permut=20000, qc='pass', n_cores=8):
     test_names = [shortened_tests[test] for test in tests.keys()]
 
     shape = (len(tests.keys()), len(BRAIN_REGIONS))
+    p_vals_perc_mod = pickle.load(open(save_data_path(figure='fig_taskmodulation').joinpath('p_values_percent_modulated'), 'rb'))
     p_vals = pickle.load(open(save_data_path(figure='fig_taskmodulation').joinpath('p_values'), 'rb'))
     print(p_vals)
     print(np.sort(p_vals))
+    print(p_vals_perc_mod)
+    print(np.sort(p_vals_perc_mod))
     # _, corrected_p_vals, _, _ = multipletests(results.p_value_permut.values, 0.05, method='fdr_bh')
     p_vals = p_vals.reshape(shape)
+    p_vals_perc_mod = p_vals_perc_mod.reshape(shape)
     # corrected_p_vals = results.p_value_permut.values.reshape(shape)
 
-    ax = sns.heatmap(np.log10(p_vals.T), cmap='RdYlGn', square=True,
+    RdYlGn = cm.get_cmap('RdYlGn', 256)(np.linspace(0, 1, 800))
+    color_array = np.vstack([np.tile(np.concatenate((to_rgb('darkviolet'), [1])), (200, 1)), RdYlGn, np.tile(np.concatenate((to_rgb('white'), [1])), (1, 1))])
+    newcmp = ListedColormap(color_array)
+    ax = sns.heatmap(np.vstack([np.clip(np.log10(p_vals_perc_mod.T), None, - 2.5/800), np.log10(np.ones(shape[0])), np.clip(np.log10(p_vals.T), None, - 2.5/800)]), cmap=newcmp, square=True,
                      cbar=True, annot=False, annot_kws={"size": 12}, ax=ax,
                      linewidths=.5, fmt='.2f', vmin=-2.5, vmax=np.log10(1), cbar_kws={"shrink": .7})
     cbar = ax.collections[0].colorbar
     cbar.set_ticks(np.log10([0.01, 0.05, 0.25, 1]))
     cbar.set_ticklabels([0.01, 0.05, 0.25, 1])
 
-    # ax.set(xlabel='', ylabel='', title='Permutation p-values')
-    ax.set_yticklabels([region_rename[br] for br in BRAIN_REGIONS], va='center', rotation=0)
-    ax.set_xticklabels(test_names, rotation=90, ha='center')  # rotation=30, ha='right')
+    ax.set_yticks([0.5, 1.5, 2.5, 3.5, 4.5, 6.5, 7.5, 8.5, 9.5, 10.5])
+    ax.set_yticklabels([region_rename[br] for br in BRAIN_REGIONS] + [region_rename[br] for br in BRAIN_REGIONS], va='center', rotation=0)
+    ax.set_xticklabels(test_names, ha='center', rotation=90)  # rotation=30, ha='right')
     #ax.set_title('Task-driven activity: Comparison across labs', loc='left', pad=15)
 
     return p_vals
@@ -553,7 +565,7 @@ def plot_panel_power_analysis(ax, ax2):
 
     for jj, test in enumerate(tests.keys()):
         if test != 'post_stim':
-            i += 1
+            i += 1 # this should probably be in the next loop and only works because the picked test is the first in the dict, TODO
             continue
         for ii, reg in enumerate(BRAIN_REGIONS):
             if reg != 'CA1':
@@ -701,7 +713,7 @@ def plot_panel_power_analysis(ax, ax2):
             ax.set_ylim(min_y, max_y)
             ax2.set_ylim(min_y, max_y)
 
-            ax.set_ylabel('FR modulation (sp/s)', size=22)
+            ax2.set_ylabel('FR modulation (sp/s)')
             # ax.annotate("{}, {}, p={:.3f}".format(shortened_tests[test], reg, p_values[i]), xy=(0.5, 1), xytext=(0, pad), xycoords='axes fraction', textcoords='offset points', size='large', ha='center', va='baseline')
             ax2.set_xticks([])
             ax.set_xticks([])
@@ -877,7 +889,7 @@ def plot_power_analysis():
     # fig.subplots_adjust(left=0.12)
     plt.savefig(fig_path.joinpath('fig_power_analysis.png'), bbox_inches='tight', pad_inches=0)
     plt.savefig(fig_path.joinpath('fig_power_analysis.pdf'), bbox_inches='tight', pad_inches=0)
-    plt.show()
+    plt.close()
 
     plt.scatter(powers, np.power(vars, 0.5), color='blue', label="Firing modulation")
     plt.scatter(powers_ff, np.power(vars_ff, 0.5), color='red', label="Fano factor")
@@ -943,13 +955,39 @@ def power_analysis_to_table():
 
 if __name__ == '__main__':
 
-    plt.figure(figsize=(16 * 0.75, 9 * 0.75))
-    ax = plt.gca()
-    plt.figure(figsize=(16 * 0.75, 9 * 0.75))
-    ax2 = plt.gca()
-    plot_panel_power_analysis(ax=ax2, ax2=ax)
-    plt.savefig("firing rates plus shifts")
-    plt.show()
+    # plt.figure(figsize=(16 * 0.75, 9 * 0.75))
+    # ax = plt.gca()
+    # plt.figure(figsize=(16 * 0.75, 9 * 0.75))
+    # ax2 = plt.gca()
+    # plot_panel_power_analysis(ax=ax2, ax2=ax)
+    # plt.savefig("firing rates plus shifts")
+    # plt.show()
+
+    # df = load_dataframe()
+    # df_filt = filter_recordings(df, **filtering_criteria)
+    # df_filt = df_filt[df_filt['permute_include'] == 1]
+    #
+    # results = pd.DataFrame()
+    #
+    # df_region = df_filt.groupby('region')
+    # names = tests.keys()
+    # ps = []
+    # for test in names:
+    #     for i, br in enumerate(BRAIN_REGIONS):
+    #         df_br = df_region.get_group(br)
+    #
+    #         vals = df_br.groupby(['subject', 'institute'])[test].mean()
+    #
+    #         labs = vals.index.get_level_values('institute')
+    #         subjects = vals.index.get_level_values('subject')
+    #         data = vals.values
+    #         p = permut_test(data, metric=permut_dist, labels1=labs,
+    #                         labels2=subjects, n_permut=20000, n_cores=5)
+    #         print(p)
+    #         results = pd.concat((results, pd.DataFrame(index=[results.shape[0] + 1],
+    #                                                    data={'test': test, 'region': br, 'p_value_permut': p})))
+    #
+    # pickle.dump(results.p_value_permut.values, open(save_data_path(figure='fig_taskmodulation').joinpath('p_values_percent_modulated'), 'wb'))
 
     plot_main_figure()
     plot_power_analysis()
