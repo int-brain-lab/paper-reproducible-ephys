@@ -4,3 +4,4 @@ ibl-neuropixel
 svgutils
 figrid
 statsmodels
+umap

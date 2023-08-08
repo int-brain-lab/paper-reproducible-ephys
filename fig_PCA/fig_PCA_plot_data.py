@@ -1398,9 +1398,9 @@ def all_panels(rm_unre=True, align='move', split='rt',
     B = axs['KS'].get_position()
     axs['KS'].set_position([B.x0 - 0.02, B.y0, B.width, B.height])
 
-#    fig_path = save_figure_path(figure='fig_PCA')
-#    print(f'Saving figures to {fig_path}')
-#    fig.savefig(fig_path.joinpath('figure_PCA.pdf'))
-#    figs.savefig(fig_path.joinpath('figure_PCA_supp1.pdf'))
+    fig_path = save_figure_path(figure='fig_PCA')
+    print(f'Saving figures to {fig_path}')
+    fig.savefig(fig_path.joinpath('figure_PCA.pdf'))
+    figs.savefig(fig_path.joinpath('figure_PCA_supp1.pdf'))
         
     
