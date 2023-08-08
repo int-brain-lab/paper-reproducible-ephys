@@ -156,7 +156,7 @@ def shuffle_helper(size, label1_values, label2_values, labels1, labels2, seed):
 def plot_permut_test(null_dist, observed_val, p, mark_p, title=None):
     """Plot permutation test result."""
     plt.figure(figsize=(16 * 0.75, 9 * 0.75))
-    n, _, _ = plt.hist(null_dist)
+    n, _, _ = plt.hist(null_dist, bins=25)
 
     # Plot the observed metric as red star
     plt.plot(observed_val, np.max(n) / 20, '*r', markersize=12, label="Observed distance")
@@ -198,7 +198,7 @@ def example_metric(data, labels1, labels2):
     return np.var(means, ddof=1)
 
 
-def permut_dist(data, labs, mice):
+def permut_dist(data, labs, mice, print_it, plot_it):
     lab_means = []
     for lab in np.unique(labs):
         lab_means.append(np.mean(data[labs == lab]))

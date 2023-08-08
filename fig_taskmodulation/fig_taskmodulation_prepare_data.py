@@ -438,10 +438,9 @@ def compute_permutation_test(n_permut=20000, qc='pass', n_cores=8):
     for test in tests.keys():
         for reg in BRAIN_REGIONS:
 
-            print("Warning, region reduced")
-            if reg != 'CA1':
-                continue
-
+            print()
+            print(test)
+            print(reg)
             df_reg = df_filt_reg.get_group(reg)
             # vals = df_reg.groupby(['institute', 'subject'])[test].mean()
             # labs = vals.index.get_level_values('institute')
@@ -459,10 +458,19 @@ def compute_permutation_test(n_permut=20000, qc='pass', n_cores=8):
             data = data[~np.isnan(data)]
             # lab_names, this_n_labs = np.unique(labs, return_counts=True)  # what is this for?
 
-            print(".", end='')
-            p = permut_test(data, metric=distribution_dist_approx_max, labels1=labs, plot=True,
+            lab_names, temp_counts = np.unique(labs, return_counts=True)
+            string = ''
+            for lab, count in zip(lab_names, temp_counts):
+                string += lab
+                string += ': '
+                string += str(count)
+                string += ', '
+            print(string)
+            # print(".", end='')
+            p = permut_test(data, metric=distribution_dist_approx_max, labels1=labs, plot=False,
                             labels2=subjects, shuffling='labels1_based_on_2', n_cores=n_cores, n_permut=n_permut)
 
+            print("p-value = {}".format(p))
             # print(p)
             # if p > 0.05:
             #     return data, labs, subjects
@@ -569,8 +577,8 @@ if __name__ == '__main__':
     print("Filtering criteria: {}".format(filtering_criteria))
     one = ONE()
     one.record_loaded = True
-    insertions = get_insertions(level=0, one=one, freeze='release_2022_11', recompute=True)
-    prepare_data(insertions, one=one, recompute=True, **default_params)
-    save_dataset_info(one, figure='fig_taskmodulation')
-    compute_permutation_test(n_permut=50000, n_cores=8)
-    compute_power_analysis(n_permut=50000, n_cores=8)
+    # insertions = get_insertions(level=0, one=one, freeze='release_2022_11', recompute=True)
+    # prepare_data(insertions, one=one, recompute=True, **default_params)
+    # save_dataset_info(one, figure='fig_taskmodulation')
+    compute_permutation_test(n_permut=20000, n_cores=8)
+    # compute_power_analysis(n_permut=50000, n_cores=8)
