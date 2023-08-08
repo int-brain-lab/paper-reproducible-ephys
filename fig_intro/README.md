@@ -8,18 +8,18 @@ pip install pyqt5
 
 ## Figure 1
 
-Figure 1 can be reproduced by executing figure1_run.py file 
+Figure 1 can be reproduced by executing fig_intro_run.py file 
 ```
-python figure1_run.py
+python fig_intro_run.py
 ```
 
 or by using the following code snippet in an ipython terminal
 ```python
 
 from one.api import ONE
-from figure1.figure1_run import run_figure1
+from fig_intro.fig_intro_run import run_fig_intro
 one = ONE()
-run_figure1(one)
+run_fig_intro(one)
 
 ```
 ## Info

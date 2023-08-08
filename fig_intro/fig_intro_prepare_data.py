@@ -1,5 +1,5 @@
-from figure1.figure1_functions import download_meshes
-from figure1.figure1_load_data import mesh_regions, example_pid, suppl_pids
+from fig_intro.fig_intro_functions import download_meshes
+from fig_intro.fig_intro_load_data import mesh_regions, example_pid, suppl_pids
 from ibllib.atlas import AllenAtlas
 from brainbox.io.one import SpikeSortingLoader
 from one.api import ONE

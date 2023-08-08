@@ -4,12 +4,12 @@ from ibllib.atlas.regions import BrainRegions
 
 
 def download_meshes(atlas_id):
-    save_dir = save_data_path(figure='figure1').joinpath('meshes')
+    save_dir = save_data_path(figure='fig_intro').joinpath('meshes')
     save_dir.mkdir(exist_ok=True, parents=True)
     if save_dir.joinpath(f'{atlas_id}.obj').exists():
         return
     url = 'http://download.alleninstitute.org/informatics-archive/current-release/mouse_ccf/annotation/ccf_2017/structure_meshes/'
-    save_dir = save_data_path(figure='figure1').joinpath('meshes')
+    save_dir = save_data_path(figure='fig_intro').joinpath('meshes')
     save_dir.mkdir(exist_ok=True, parents=True)
     mesh_url = url + str(atlas_id) + '.obj'
     http_download_file(mesh_url, target_dir=save_dir)
@@ -48,7 +48,7 @@ def add_br_meshes(fig, brain_areas=None, opacity=0.6, br=None):
     brain_areas = brain_areas or ['root', 'VISa', 'CA1', 'DG', 'LP', 'PO']
     for area in brain_areas:
         atlas_id = br.acronym2id(area)[0]
-        mesh_path = save_data_path(figure='figure1').joinpath('meshes', f'{atlas_id}.obj')
+        mesh_path = save_data_path(figure='fig_intro').joinpath('meshes', f'{atlas_id}.obj')
         _, idx = br.id2index(atlas_id)
         color = br.rgb[idx[0][0], :] / 255
         add_mesh(fig, mesh_path, color, opacity=opacity)

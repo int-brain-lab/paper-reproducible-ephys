@@ -6,8 +6,8 @@ import numpy as np
 from brainbox.io.one import SpikeSortingLoader
 from brainbox.plot import driftmap
 from brainbox.ephys_plots import plot_brain_regions
-from figure1.figure1_load_data import example_pid, suppl_pids
-from figure1.figure1_functions import add_br_meshes
+from fig_intro.fig_intro_load_data import example_pid, suppl_pids
+from fig_intro.fig_intro_functions import add_br_meshes
 from one.api import ONE
 
 import matplotlib.pyplot as plt
@@ -85,8 +85,8 @@ def plot_repeated_site_slice(one, ba=None):
     axs[1].spines['top'].set_visible(False)
     axs[1].spines['bottom'].set_visible(False)
 
-    fig_path = save_figure_path(figure='figure1')
-    plt.savefig(fig_path.joinpath('figure1_panelC.png'))
+    fig_path = save_figure_path(figure='fig_intro')
+    plt.savefig(fig_path.joinpath('fig_intro_panelC.png'))
     plt.close()
 
 
@@ -113,8 +113,8 @@ def plot_3D_repeated_site_trajectories(one, ba=None):
     add_br_meshes(fig, opacity=0.4)
     mlab.view(azimuth=180, elevation=0)
     mlab.view(azimuth=-160, elevation=111, reset_roll=False)
-    fig_path = save_figure_path(figure='figure1')
-    mlab.savefig(filename=str(fig_path.joinpath('figure1_panelD.png')))
+    fig_path = save_figure_path(figure='fig_intro')
+    mlab.savefig(filename=str(fig_path.joinpath('fig_intro_panelD.png')))
     mlab.close()
 
 
@@ -138,8 +138,8 @@ def plot_example_raster_with_regions(one, pid=None, ba=None):
     axs[1].set_ylabel('Distance from probe tip (um)', size=16)
     axs[1].set_xlabel('Time (s)', size=16)
 
-    fig_path = save_figure_path(figure='figure1')
-    plt.savefig(fig_path.joinpath('figure1_panelE.png'))
+    fig_path = save_figure_path(figure='fig_intro')
+    plt.savefig(fig_path.joinpath('fig_intro_panelE.png'))
     plt.close()
 
 
@@ -173,8 +173,8 @@ def plot_3D_select_pids(one, ba=None):
     mlab.view(azimuth=180, elevation=0)
     mlab.view(azimuth=-160, elevation=111, reset_roll=False)
     mlab.view(azimuth=-46, elevation=107, reset_roll=False)
-    fig_path = save_figure_path(figure='figure1')
-    mlab.savefig(filename=str(fig_path.joinpath('figure1_supp2_3D.png')))
+    fig_path = save_figure_path(figure='fig_intro')
+    mlab.savefig(filename=str(fig_path.joinpath('fig_intro_supp2_3D.png')))
     mlab.close()
 
 
@@ -212,8 +212,8 @@ def plot_multiple_raster_with_regions(one, pids=None, ba=None):
             axs[0].set_ylabel('', size=12)
             axs[0].set_xlabel('', size=12)
 
-    fig_path = save_figure_path(figure='figure1')
-    plt.savefig(fig_path.joinpath('figure1_supp2_rasters.png'))
+    fig_path = save_figure_path(figure='fig_intro')
+    plt.savefig(fig_path.joinpath('fig_intro_supp2_rasters.png'))
     plt.close()
 
 
