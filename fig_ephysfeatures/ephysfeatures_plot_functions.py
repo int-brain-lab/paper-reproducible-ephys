@@ -356,3 +356,52 @@ def panel_decoding(ax, qc='pass', region_decoding=True, bh_correction=False):
     ax_left.spines['bottom'].set_visible(False)
 
     return p_values
+
+
+def panel_example(ax, n_rec_per_lab=0, n_rec_per_region=3,
+                  example_region='CA1', example_metric='lfp_power', ylabel='LFP power in CA1 (db)',
+                  ylim=None, yticks=None, despine=True, freeze=None):
+
+    df_ins = load_dataframe(df_name='ins')
+    df_filt = filter_recordings(df_ins, min_rec_lab=n_rec_per_lab, min_lab_region=n_rec_per_region,
+                                min_neuron_region=2, recompute=False, freeze=freeze)
+    df_filt['lab_number'] = df_filt['lab'].map(lab_number_map)
+    df_filt['yield_per_channel'] = df_filt['neuron_yield'] / df_filt['n_channels']
+    df_filt.loc[df_filt['lfp_power'] < -100000, 'lfp_power'] = np.nan
+    data = df_filt[df_filt['permute_include'] == 1]
+
+    data_example = pd.DataFrame(data={
+        'institute': data.loc[data['region'] == example_region, 'institute'],
+        'lab_number': data.loc[data['region'] == example_region, 'lab_number'],
+        example_metric: data.loc[data['region'] == example_region, example_metric].values})
+    data_example = data_example[~data_example[example_metric].isnull()]
+
+    data_example = data_example.sort_values('institute')
+    cmap = []
+    for i, inst in enumerate(data_example['institute'].unique()):
+        cmap.append(lab_colors[inst])
+
+    sns.swarmplot(data=data_example, x='institute', y=example_metric, palette=cmap, s=3, ax=ax)
+
+    """
+    # Plot lab means and overal mean
+    ax_lines = sns.pointplot(x='institute', y=example_metric, data=data_example,
+                             ci=0, join=False, estimator=np.mean, color='k',
+                             markers="_", scale=1, ax=ax)
+    plt.setp(ax_lines.collections, zorder=100, label="")
+    ax.plot(np.arange(data_example['institute'].unique().shape[0]),
+             [data_example[example_metric].mean()] * data_example['institute'].unique().shape[0],
+             color='r', lw=1)
+    """
+
+    ax.set(ylabel=ylabel, xlabel='', xlim=[-.5, len(data_example['institute'].unique())])
+    if ylim is not None:
+        ax.set(ylim=ylim)
+    if yticks is not None:
+        ax.set(yticks=yticks)
+    ax.set_xticklabels(data_example['institute'].unique(), rotation=90, ha='center')
+    #ax.plot([-.5, len(data['institute'].unique()) + .5], [-165, -165], lw=0.5, color='k')
+    #ax.plot([-0.5, -0.5], ax.get_ylim(),  lw=0.5, color='k')
+
+    if despine:
+        sns.despine(trim=True)
