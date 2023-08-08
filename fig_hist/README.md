@@ -1,17 +1,17 @@
-## Figure 2
+## Figure Histology
 
 Figure 2 can be reproduced by executing figure2_run.py file 
 ```
-python figure2_run.py
+python fig_hist_run.py
 ```
 
 or by using the following code snippet in an ipython terminal
 ```python
 
 from one.api import ONE
-from figure2.figure2_run import run_figure2
+from fig_hist.fig_hist_run import run_fig_hist
 one = ONE()
-run_figure2(one)
+run_fig_hist(one)
 
 ```
 ## Info
