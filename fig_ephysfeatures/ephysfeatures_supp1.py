@@ -39,7 +39,7 @@ def plot_figure_supp1():
     fg.add_labels(fig, labels)
 
     # Save figure
-    save_path = save_figure_path(figure='figure3')
+    save_path = save_figure_path(figure='fig_ephysfeatures')
     plt.savefig(save_path.joinpath('figure3_supp1.png'))
     plt.savefig(save_path.joinpath('figure3_supp1.pdf'))
 

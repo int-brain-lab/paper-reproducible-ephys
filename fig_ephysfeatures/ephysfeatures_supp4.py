@@ -16,17 +16,23 @@ METRICS = ['yield_per_channel', 'median_firing_rate', 'lfp_power', 'rms_ap', 'sp
 LABELS = ['Neuron yield\n(neurons/channel)', 'Firing rate\n(spks/s)', 'LFP power (dB)', 'AP band RMS', 'Spike amp. (uV)']
 N_REC_PER_REGION = 2
 
-f, axs = plt.subplots(len(REGIONS), len(METRICS), figsize=(12, 10), dpi=100)
 
-for i, region in enumerate(REGIONS):
-    for j, metric in enumerate(METRICS):
-        panel_example(axs[i, j], n_rec_per_region=N_REC_PER_REGION, ylabel=LABELS[j],
-                      example_metric=metric, example_region=region,
-                      despine=False, freeze='release_2022_11')
-        if region == 'PPC':
-            axs[i, j].set(title='VISa/am')
-        else:
-            axs[i, j].set(title=region)
-plt.tight_layout()
-sns.despine()
-plt.savefig(join(save_figure_path(), 'figure3_supp4_metrics.pdf'))
+def plot_figure_supp4():
+    f, axs = plt.subplots(len(REGIONS), len(METRICS), figsize=(12, 10), dpi=100)
+
+    for i, region in enumerate(REGIONS):
+        for j, metric in enumerate(METRICS):
+            panel_example(axs[i, j], n_rec_per_region=N_REC_PER_REGION, ylabel=LABELS[j],
+                          example_metric=metric, example_region=region,
+                          despine=False, freeze='release_2022_11')
+            if region == 'PPC':
+                axs[i, j].set(title='VISa/am')
+            else:
+                axs[i, j].set(title=region)
+    plt.tight_layout()
+    sns.despine()
+    plt.savefig(join(save_figure_path(figure='fig_ephysfeatures'), 'figure3_supp4_metrics.pdf'))
+
+
+if __name__ == '__main__':
+    plot_figure_supp4()

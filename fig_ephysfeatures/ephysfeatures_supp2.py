@@ -7,7 +7,7 @@ from reproducible_ephys_functions import labs, figure_style, filter_recordings, 
 from fig_ephysfeatures.ephysfeatures_load_data import load_dataframe
 
 
-def plot_figure_supp1(freeze=None):
+def plot_figure_supp2(freeze=None):
 
     ba = AllenAtlas()
 
@@ -95,10 +95,10 @@ def plot_figure_supp1(freeze=None):
     cbar.set_label('Power spectral density', rotation=270, labelpad=-8)
     cbar.ax.set_yticklabels([f'{-190} dB', f'{-150} dB'])
 
-    save_path = save_figure_path(figure='figure3')
+    save_path = save_figure_path(figure='fig_ephysfeatures')
     plt.savefig(save_path.joinpath('figure3_supp2.png'))
     plt.savefig(save_path.joinpath('figure3_supp2.pdf'))
 
 
 if __name__ == '__main__':
-    plot_figure_supp1(freeze='release_2022_11')
+    plot_figure_supp2(freeze='release_2022_11')

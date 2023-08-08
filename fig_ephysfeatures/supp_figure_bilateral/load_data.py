@@ -4,7 +4,7 @@ import numpy as np
 
 
 def load_dataframe(df_name='chns', exists_only=False):
-    df_path = save_data_path(figure='supp_figure_bilateral').joinpath(f'supp_figure_bilateral_dataframe_{df_name}.csv')
+    df_path = save_data_path(figure='fig_ephysfeatures').joinpath(f'fig_ephysfeatures_bilateral_dataframe_{df_name}.csv')
     if exists_only:
         return df_path.exists()
     else:
@@ -19,8 +19,8 @@ def load_neural_data(event='move', norm='subtract', smoothing='sliding', exists_
     smoothing = smoothing or 'none'
     norm = norm or 'none'
 
-    df_path = save_data_path(figure='supp_figure_bilateral').joinpath(
-        f'supp_figure_bilateral_data_event_{event}_smoothing_{smoothing}_norm_{norm}.npz')
+    df_path = save_data_path(figure='fig_ephysfeatures').joinpath(
+        f'fig_ephysfeatures_bilateral_data_event_{event}_smoothing_{smoothing}_norm_{norm}.npz')
     if exists_only:
         return df_path.exists()
     else:

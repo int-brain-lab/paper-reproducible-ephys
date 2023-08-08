@@ -195,11 +195,11 @@ def prepare_data(insertions, one, recompute=False):
 
     concat_df_clust = pd.concat(all_df_clust, ignore_index=True)
     concat_df_chns = pd.concat(all_df_chns, ignore_index=True)
-    save_path = save_data_path(figure='figure3')
+    save_path = save_data_path(figure='fig_ephysfeatures')
     print(f'Saving data to {save_path}')
-    concat_df_clust.to_csv(save_path.joinpath('figure3_dataframe_clust.csv'))
-    concat_df_chns.to_csv(save_path.joinpath('figure3_dataframe_chns.csv'))
-    metrics.to_csv(save_path.joinpath('figure3_dataframe_ins.csv'))
+    concat_df_clust.to_csv(save_path.joinpath('fig_ephysfeatures_dataframe_clust.csv'))
+    concat_df_chns.to_csv(save_path.joinpath('fig_ephysfeatures_dataframe_chns.csv'))
+    metrics.to_csv(save_path.joinpath('fig_ephysfeatures_dataframe_ins.csv'))
 
     return all_df_chns, all_df_clust, metrics
 
@@ -215,8 +215,8 @@ def run_decoding(metrics=['yield_per_channel', 'median_firing_rate', 'lfp_power'
     "high_lfp": add recordings with high LFP power
     "all": add all recordings regardless of QC
     """
-    save_path = save_data_path(figure='figure3')
-    file_name = f'figure3_dataframe_decode_{qc}.csv'
+    save_path = save_data_path(figure='fig_ephysfeatures')
+    file_name = f'fig_ephysfeatures_dataframe_decode_{qc}.csv'
     if recompute or not isfile(save_path.joinpath(file_name)):
 
         # Initialize
@@ -243,7 +243,7 @@ def run_decoding(metrics=['yield_per_channel', 'median_firing_rate', 'lfp_power'
         data = data[data['rms_ap'].notna()]  
         
         # Save pid list to file
-        save_path = save_figure_path(figure='figure3')
+        save_path = save_figure_path(figure='fig_ephysfeatures')
         dict_pids = dict()
         dict_pids['fig3'] = dict()
         if qc == 'pass':
@@ -336,9 +336,9 @@ def run_decoding(metrics=['yield_per_channel', 'median_firing_rate', 'lfp_power'
             'region': 'all', 'accuracy_shuffle': shuf_acc})), ignore_index=True)
 
         # Save results
-        decode_df.to_csv(join(save_data_path(), file_name))
-        shuffle_df.to_csv(join(save_data_path(), f'figure3_dataframe_decode_shuf_{qc}.csv'))
-        matrix_df.to_csv(join(save_data_path(), f'figure3_dataframe_conf_mat_{qc}.csv'))
+        decode_df.to_csv(join(save_data_path(figure='fig_ephysfeatures'), file_name))
+        shuffle_df.to_csv(join(save_data_path(figure='fig_ephysfeatures'), f'fig_ephysfeatures_dataframe_decode_shuf_{qc}.csv'))
+        matrix_df.to_csv(join(save_data_path(figure='fig_ephysfeatures'), f'fig_ephysfeatures_dataframe_conf_mat_{qc}.csv'))
 
     else:
         print('Decoding results found, not running again')
@@ -349,7 +349,7 @@ if __name__ == '__main__':
     one.record_loaded = True
     #insertions = get_insertions(level=0, one=one, freeze='release_2022_11')
     #all_df_chns, all_df_clust, metrics = prepare_data(insertions, recompute=True, one=one)
-    #save_dataset_info(one, figure='figure3')
+    #save_dataset_info(one, figure='fig_ephysfeatures')
     rerun_decoding = True
     run_decoding(n_shuffle=500, qc='pass', recompute=rerun_decoding)
     run_decoding(n_shuffle=500, qc='all', recompute=rerun_decoding)

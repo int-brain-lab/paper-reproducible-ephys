@@ -1,12 +1,12 @@
 from reproducible_ephys_functions import filter_recordings, labs, BRAIN_REGIONS, query, get_insertions
 import pandas as pd
 import numpy as np
-from figure3.figure3_functions import get_brain_boundaries, plot_probe
+from fig_ephysfeatures.ephysfeatures_functions import get_brain_boundaries, plot_probe
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from ibllib.atlas.regions import BrainRegions
 from scipy.stats import mannwhitneyu, iqr
-from figure3.supp_figure_bilateral.load_data import load_dataframe as load_bilateral_data
-from figure3.figure3_load_data import load_dataframe as load_all_data
+from fig_ephysfeatures.supp_figure_bilateral.load_data import load_dataframe as load_bilateral_data
+from fig_ephysfeatures.ephysfeatures_load_data import load_dataframe as load_all_data
 import seaborn as sns
 
 br = BrainRegions()
@@ -229,6 +229,7 @@ def panel_distribution(ax, example_region='CA1', example_metric='lfp_power',
     # Load in bilateral data
     df_bilateral_ins = load_bilateral_data(df_name='ins')
     df_bl_slice = df_bilateral_ins[(df_bilateral_ins['region'] == example_region)]
+    print(df_bl_slice)
 
     # Load in all data
     df_all_ins = load_all_data(df_name='ins')
@@ -238,7 +239,9 @@ def panel_distribution(ax, example_region='CA1', example_metric='lfp_power',
 
     # Calculate within animal variability
     within_var = np.empty(np.unique(df_bl_slice['subject']).shape[0])
+    print(within_var)
     for i, subject in enumerate(np.unique(df_bl_slice['subject'])):
+        print(subject)
         within_var[i] = np.abs(df_bl_slice[(df_bl_slice['subject'] == subject)
                                         & (df_bl_slice['probe'] == 'probe00')][example_metric].values[0]
                                - df_bl_slice[(df_bl_slice['subject'] == subject)

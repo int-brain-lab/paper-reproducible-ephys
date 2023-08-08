@@ -87,7 +87,7 @@ def plot_main_figure(freeze=None, one=None):
     ax['panel_F'].set(title='All recordings')
 
     # Save figure
-    save_path = save_figure_path(figure='figure3')
+    save_path = save_figure_path(figure='fig_ephysfeatures')
     print(f'Saving figures to {save_path}')
     plt.savefig(save_path.joinpath('figure3.png'))
     plt.savefig(save_path.joinpath('figure3.pdf'))

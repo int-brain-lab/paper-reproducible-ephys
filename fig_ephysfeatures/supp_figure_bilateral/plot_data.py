@@ -76,10 +76,10 @@ def plot_main_figure(one=None):
 
 
     # Save figure
-    save_path = save_figure_path(figure='figure3')
+    save_path = save_figure_path(figure='fig_ephysfeatures')
     #print(f'Saving figures to {save_path}')
-    plt.savefig(save_path.joinpath('figure3_supp2_bilateral.png'))
-    plt.savefig(save_path.joinpath('figure3_supp2_bilateral.pdf'))
+    plt.savefig(save_path.joinpath('figure3_supp3_bilateral.png'))
+    plt.savefig(save_path.joinpath('figure3_supp3_bilateral.pdf'))
 
 
 

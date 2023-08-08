@@ -12,7 +12,7 @@ import reproducible_ephys_functions
 from reproducible_ephys_functions import (get_insertions, combine_regions, BRAIN_REGIONS, save_data_path,
                                           save_dataset_info, filter_recordings, query)
 from reproducible_ephys_processing import compute_new_label, compute_psth
-from fig_ephysfeatures.ephysfeatures_load_data import load_dataframe
+from fig_ephysfeatures.supp_figure_bilateral.load_data import load_neural_data, load_dataframe
 
 
 ba = AllenAtlas()
@@ -186,11 +186,11 @@ def prepare_data(insertions, one, recompute=False):
 
     concat_df_clust = pd.concat(all_df_clust, ignore_index=True)
     concat_df_chns = pd.concat(all_df_chns, ignore_index=True)
-    save_path = save_data_path(figure='supp_figure_bilateral')
+    save_path = save_data_path(figure='fig_ephysfeatures')
     print(f'Saving data to {save_path}')
-    concat_df_clust.to_csv(save_path.joinpath('supp_figure_bilateral_dataframe_clust.csv'))
-    concat_df_chns.to_csv(save_path.joinpath('supp_figure_bilateral_dataframe_chns.csv'))
-    metrics.to_csv(save_path.joinpath('supp_figure_bilateral_dataframe_ins.csv'))
+    concat_df_clust.to_csv(save_path.joinpath('fig_ephysfeatures_bilateral_dataframe_clust.csv'))
+    concat_df_chns.to_csv(save_path.joinpath('fig_ephysfeatures_bilateral_dataframe_chns.csv'))
+    metrics.to_csv(save_path.joinpath('fig_ephysfeatures_bilateral_dataframe_ins.csv'))
 
     return all_df_chns, all_df_clust, metrics
 
@@ -229,18 +229,16 @@ def prepare_neural_data(insertions, one, recompute=False, **kwargs):
               'slide_kwargs_fr': slide_kwargs_fr}
 
     if not recompute:
-        print("Not implemented")
-        quit()
-        # TODO comparison based on the params used
-        # data_exists = load_data(event=align_event, norm=norm, smoothing=smoothing, exists_only=True)
-        # if data_exists:
-        #     df = load_dataframe()
-        #     pids = np.array([p['probe_insertion'] for p in insertions])
-        #     isin, _ = ismember(pids, df['pid'].unique())
-        #     if np.all(isin):
-        #         print('Already computed data for set of insertions. Will load in data. To recompute set recompute=True')
-        #         data = load_data()
-        #         return df, data
+
+        data_exists = load_neural_data(event=align_event, norm=norm, smoothing=smoothing, exists_only=True)
+        if data_exists:
+            df = load_dataframe(df_name='neural')
+            pids = np.array([p['probe_insertion'] for p in insertions])
+            isin, _ = ismember(pids, df['pid'].unique())
+            if np.all(isin):
+                print('Already computed data for set of insertions. Will load in data. To recompute set recompute=True')
+                data = load_neural_data()
+                return df, data
 
     all_df = []
     for iIns, ins in enumerate(insertions):
@@ -348,12 +346,12 @@ def prepare_neural_data(insertions, one, recompute=False, **kwargs):
             'time': t,
             'params': params}
 
-    save_path = save_data_path(figure='supp_figure_bilateral')
+    save_path = save_data_path(figure='fig_ephysfeatures')
     print(f'Saving data to {save_path}')
-    concat_df.to_csv(save_path.joinpath('supp_figure_bilateral_dataframe_neural.csv'))
+    concat_df.to_csv(save_path.joinpath('fig_ephysfeatures_bilateral_dataframe_neural.csv'))
     smoothing = smoothing or 'none'
     norm = norm or 'none'
-    np.savez(save_path.joinpath(f'supp_figure_bilateral_data_event_{align_event}_smoothing_{smoothing}_norm_{norm}.npz'), **data)
+    np.savez(save_path.joinpath(f'fig_ephysfeatures_bilateral_data_event_{align_event}_smoothing_{smoothing}_norm_{norm}.npz'), **data)
 
     return concat_df, data
 
