@@ -3,11 +3,12 @@ functions for getting/processing features for training MTNN
 """
 
 import numpy as np
+import pandas as pd
 from one.api import ONE
 from one.alf.exceptions import ALFObjectNotFound
 import sys 
 sys.path.append('..')
-from reproducible_ephys_functions import query#, eid_list
+from reproducible_ephys_functions import get_insertions, query, traj_list_to_dataframe#, eid_list
 from tqdm import notebook
 from collections import defaultdict
 import brainbox.behavior.wheel as wh
@@ -17,11 +18,13 @@ from scipy.interpolate import interp1d
 from ibllib.qc.camera import CameraQC
 import os
 
-# from models.expSmoothing_prevAction import expSmoothing_prevAction as exp_prevAction
-# from models import utils
+from models.expSmoothing_prevAction import expSmoothing_prevAction as exp_prevAction
+from models import utils as mutils
 
 from brainbox.population.decode import get_spike_counts_in_bins
 from brainbox.task.closed_loop import compute_comparison_statistics
+from brainbox.core import TimeSeries
+from brainbox.processing import sync
 
 from brainbox.io.one import SpikeSortingLoader
 from reproducible_ephys_functions import combine_regions, BRAIN_REGIONS, repo_path, save_data_path
@@ -57,7 +60,7 @@ static_idx = np.asarray([1,2,3,4,5,6,7,8,9,10,11,12,13,14,28,29,31,32,33,34,35,3
 static_bool = np.zeros(noise_offset).astype(bool)
 static_bool[static_idx] = True
 
-cov_idx_dict = {'lab': (lab_offset,session_offset),
+cov_idx_dict = {'lab': (lab_offset,xyz_offset), #(lab_offset,session_offset),
                'session': (session_offset,xyz_offset),
                'x': (xyz_offset,xyz_offset+1),
                'y': (xyz_offset+1,xyz_offset+2),
@@ -83,10 +86,14 @@ cov_idx_dict = {'lab': (lab_offset,session_offset),
 #                'all': (1,noise_offset+1)
                }
 
+#leave_out_covs_for_glm = ['lab','session','x','y','z',
+#                         'waveform amplitude','waveform width',
+#                         'paw speed','nose speed','pupil diameter',
+#                         'motion energy','go cue','choice','lick',
+#                         'decision strategy (GLM-HMM)','brain region','noise']
+
 leave_out_covs_for_glm = ['lab','session','x','y','z',
                          'waveform amplitude','waveform width',
-                         'paw speed','nose speed','pupil diameter',
-                         'motion energy','go cue','choice','lick',
                          'decision strategy (GLM-HMM)','brain region','noise']
 
 grouped_cov_idx_dict = {'ephys': ['x','y','z','waveform amplitude','waveform width','brain region'],
@@ -113,7 +120,9 @@ def check_mtnn_criteria(one=None):
         one = ONE()
     
     mtnn_criteria = defaultdict(dict)
-    repeated_site_eids = eid_list()
+    repeated_site_trajs = get_insertions(level=2, freeze='release_2022_11')
+    repeated_site_trajs = traj_list_to_dataframe(repeated_site_trajs)
+    repeated_site_eids = list(repeated_site_trajs.eid)
     print('total number of repeated site eids: {}'.format(len(repeated_site_eids)))
     
     for eid in repeated_site_eids:
@@ -165,16 +174,16 @@ def run_exp_prevAction(mtnn_eids, one=None):
 
         print('processing {}'.format(eid))
         stimuli_arr, actions_arr, stim_sides_arr, session_uuids = [], [], [], []
-        data = utils.load_session(eid)
+        data = mutils.load_session(eid)
         if data['choice'] is not None and data['probabilityLeft'][0]==0.5:
-            stim_side, stimuli, actions, pLeft_oracle = utils.format_data(data)
+            stim_side, stimuli, actions, pLeft_oracle = mutils.format_data(data)
             stimuli_arr.append(stimuli)
             actions_arr.append(actions)
             stim_sides_arr.append(stim_side)
             session_uuids.append(eid)
 
         # format data
-        stimuli, actions, stim_side = utils.format_input(stimuli_arr, actions_arr, stim_sides_arr)
+        stimuli, actions, stim_side = mutils.format_input(stimuli_arr, actions_arr, stim_sides_arr)
         session_uuids = np.array(session_uuids)
 
         model = exp_prevAction('./priors/', session_uuids, eid, actions.astype(np.float32), stimuli, stim_side)
@@ -186,7 +195,8 @@ def run_exp_prevAction(mtnn_eids, one=None):
 
 
 def get_lab_number_map():
-    lab_number_map = {'angelakilab': 0, 'hoferlab': 1, 'mrsicflogellab': 1, 'mainenlab': 2, 'churchlandlab': 3, 'danlab': 4}
+    #lab_number_map = {'angelakilab': 0, 'hoferlab': 1, 'mrsicflogellab': 1, 'mainenlab': 2, 'churchlandlab': 3, 'danlab': 4}
+    lab_number_map = {'hoferlab': 0, 'mrsicflogellab': 0, 'mainenlab': 1, 'churchlandlab': 2, 'cortexlab': 3, 'danlab': 4}
     return lab_number_map
 
 
@@ -230,32 +240,72 @@ def get_mtnn_eids():
 # #                 'd0ea3148-948d-4817-94f8-dcaf2342bbbe': 0,
 #                 'd23a44ef-1402-4ed7-97f5-47e9a7a504d9': 0}
 
-    mtnn_eids = {'51e53aff-1d5d-4182-a684-aba783d50ae5': 0,
-                 'c51f34d8-42f6-4c9c-bb5b-669fd9c42cd9': 0,
-                 '7af49c00-63dd-4fed-b2e0-1b3bd945b20b': 0,
-                 'f140a2ec-fd49-4814-994a-fe3476f14e66': 0,
-                 '56b57c38-2699-4091-90a8-aba35103155e': 0,
-                 'dac3a4c1-b666-4de0-87e8-8c514483cacf': 0,
-                 '6f09ba7e-e3ce-44b0-932b-c003fb44fb89': 0,
-                 '862ade13-53cd-4221-a3fa-dda8643641f2': 0,
-                 '72cb5550-43b4-4ef0-add5-e4adfdfb5e02': 0,
-                 'ee40aece-cffd-4edb-a4b6-155f158c666a': 3,
-                 '30c4e2ab-dffc-499d-aae4-e51d6b3218c2': 0,
-                 'c7248e09-8c0d-40f2-9eb4-700a8973d8c8': 1,
-                 'f312aaec-3b6f-44b3-86b4-3a0c119c0438': 3,
-                 'dda5fc59-f09a-4256-9fb5-66c67667a466': 2,
-                 'ecb5520d-1358-434c-95ec-93687ecd1396': 3,
-                 '4b00df29-3769-43be-bb40-128b1cba6d35': 0,
-                 '54238fd6-d2d0-4408-b1a9-d19d24fd29ce': 0,
-                 'db4df448-e449-4a6f-a0e7-288711e7a75a': 2,
-                 '4a45c8ba-db6f-4f11-9403-56e06a33dfa4': 0,
-                 'd23a44ef-1402-4ed7-97f5-47e9a7a504d9': 0,
+#    mtnn_eids = {'51e53aff-1d5d-4182-a684-aba783d50ae5': 0,
+#                 'c51f34d8-42f6-4c9c-bb5b-669fd9c42cd9': 0, # critical
+#                 '7af49c00-63dd-4fed-b2e0-1b3bd945b20b': 0,
+#                 'f140a2ec-fd49-4814-994a-fe3476f14e66': 0,
+#                 '56b57c38-2699-4091-90a8-aba35103155e': 0,
+#                 'dac3a4c1-b666-4de0-87e8-8c514483cacf': 0, # dlcLeft paw far nan
+#                 '6f09ba7e-e3ce-44b0-932b-c003fb44fb89': 0,
+#                 '862ade13-53cd-4221-a3fa-dda8643641f2': 0,
+#                 '72cb5550-43b4-4ef0-add5-e4adfdfb5e02': 0,
+#                 'ee40aece-cffd-4edb-a4b6-155f158c666a': 3, # dlc offset -> 0
+#                 '30c4e2ab-dffc-499d-aae4-e51d6b3218c2': 0,
+#                 'c7248e09-8c0d-40f2-9eb4-700a8973d8c8': 1,
+#                 'f312aaec-3b6f-44b3-86b4-3a0c119c0438': 3, # dlc offset -> 0
+#                 'dda5fc59-f09a-4256-9fb5-66c67667a466': 2, # dlc offset -> 0
+#                 'ecb5520d-1358-434c-95ec-93687ecd1396': 3, # dlc offset -> 0
+#                 '4b00df29-3769-43be-bb40-128b1cba6d35': 0,
+#                 '54238fd6-d2d0-4408-b1a9-d19d24fd29ce': 0,
+#                 'db4df448-e449-4a6f-a0e7-288711e7a75a': 2, # dlc offset -> 0
+#                 '4a45c8ba-db6f-4f11-9403-56e06a33dfa4': 0, # dlcLeft paw far nan
+#                 'd23a44ef-1402-4ed7-97f5-47e9a7a504d9': 0,
+#                }
+
+#     mtnn_eids = {'56b57c38-2699-4091-90a8-aba35103155e': 0, # SWC
+#                  '41872d7f-75cb-4445-bb1a-132b354c44f0': 3, # SWC, no passive
+#                  '6f09ba7e-e3ce-44b0-932b-c003fb44fb89': 0, # SWC
+#                  '862ade13-53cd-4221-a3fa-dda8643641f2': 0, # SWC
+#                  '72cb5550-43b4-4ef0-add5-e4adfdfb5e02': 0, # ZFM
+#                  'ee40aece-cffd-4edb-a4b6-155f158c666a': 0, # ZFM
+#                  '30c4e2ab-dffc-499d-aae4-e51d6b3218c2': 0, # ZFM
+#                  'c7248e09-8c0d-40f2-9eb4-700a8973d8c8': 1, # ZFM
+#                  'f312aaec-3b6f-44b3-86b4-3a0c119c0438': 0, # CSHL (C)
+#                  'dda5fc59-f09a-4256-9fb5-66c67667a466': 0, # CSHL (C)
+#                  'ecb5520d-1358-434c-95ec-93687ecd1396': 0, # CSHL (C)
+#                  '4b00df29-3769-43be-bb40-128b1cba6d35': 0, # CSHL (C)
+#                  '54238fd6-d2d0-4408-b1a9-d19d24fd29ce': 0, # DY
+#                  'db4df448-e449-4a6f-a0e7-288711e7a75a': 0, # DY
+#                  'b03fbc44-3d8e-4a6c-8a50-5ea3498568e0': 3, # DY # no passive
+#                  'd23a44ef-1402-4ed7-97f5-47e9a7a504d9': 0, # DY
+#                 }
+
+    mtnn_eids = {'56b57c38-2699-4091-90a8-aba35103155e': 0, # SWC
+                 'dac3a4c1-b666-4de0-87e8-8c514483cacf': 0, # SWC
+                 '41872d7f-75cb-4445-bb1a-132b354c44f0': 0, # SWC, no passive
+                 '3638d102-e8b6-4230-8742-e548cd87a949': 0, # SWC
+                 'a4a74102-2af5-45dc-9e41-ef7f5aed88be': 0, # ZFM
+                 '746d1902-fa59-4cab-b0aa-013be36060d5': 0, # ZFM
+                 '30c4e2ab-dffc-499d-aae4-e51d6b3218c2': 0, # ZFM
+                 'd0ea3148-948d-4817-94f8-dcaf2342bbbe': 0, # ZFM
+                 'f312aaec-3b6f-44b3-86b4-3a0c119c0438': 0, # CSHL (C)
+                 'dda5fc59-f09a-4256-9fb5-66c67667a466': 0, # CSHL (C)
+                 '4b7fbad4-f6de-43b4-9b15-c7c7ef44db4b': 0, # CSHL (C)
+                 'ecb5520d-1358-434c-95ec-93687ecd1396': 0, # CSHL (C)
+                 '0a018f12-ee06-4b11-97aa-bbbff5448e9f': 0, # UCL
+                 '3f859b5c-e73a-4044-b49e-34bb81e96715': 0, # UCL
+                 '781b35fd-e1f0-4d14-b2bb-95b7263082bb': 0, # UCL
+                 'b22f694e-4a34-4142-ab9d-2556c3487086': 0, # UCL
+                 '54238fd6-d2d0-4408-b1a9-d19d24fd29ce': 0, # DY
+                 'db4df448-e449-4a6f-a0e7-288711e7a75a': 0, # DY
+                 '4a45c8ba-db6f-4f11-9403-56e06a33dfa4': 0, # DY # no passive
+                 'd23a44ef-1402-4ed7-97f5-47e9a7a504d9': 0, # DY
                 }
     
     return mtnn_eids
 
 def get_traj(eids):
-    traj = query()
+    traj = get_insertions(level=2, freeze='release_2022_11')
     tmp = []
     for eid in eids:
         for t in traj:
@@ -355,10 +405,10 @@ def featurize(i, trajectory, one, session_counter, bin_size=0.05, align_event='m
     trial_numbers = np.arange(trials['stimOn_times'].shape[0])
 
     # load pLeft (Charles's model's output)
-    pLeft = np.load(save_data_path(figure='figure9_10').joinpath('priors', f'prior_{eid}.npy'))
+    pLeft = np.load(save_data_path(figure='figure9_10_resubmit').joinpath('priors', f'prior_{eid}.npy'))
 
     # load in GLM-HMM
-    glm_hmm = np.load(save_data_path(figure='figure9_10').joinpath('glm_hmm', 'k=4',
+    glm_hmm = np.load(save_data_path(figure='figure9_10_resubmit').joinpath('glm_hmm', 'k=4',
                                                                    f'posterior_probs_valuessession_{subject}-{date_number}.npz'))
     for item in glm_hmm.files:
         glm_hmm_states = glm_hmm[item]
@@ -427,7 +477,24 @@ def featurize(i, trajectory, one, session_counter, bin_size=0.05, align_event='m
     assert (left_dlc['times'].shape[0] == left_dlc['dlc'].shape[0])
 
     left_dlc['dlc'] = dlc.likelihood_threshold(left_dlc['dlc'], threshold=0)
-
+    
+    # override paw and pupil traces with lpks
+    lpks = pd.read_parquet(save_data_path(figure='figure9_10_resubmit').joinpath('lpks', f'{eid}._ibl_leftCamera.pose.pqt'))
+    left_dlc['dlc']['paw_l_x'] = lpks['paw_l_x']
+    left_dlc['dlc']['paw_l_y'] = lpks['paw_l_y']
+    left_dlc['dlc']['paw_r_x'] = lpks['paw_r_x']
+    left_dlc['dlc']['paw_r_y'] = lpks['paw_r_y']
+    
+    left_dlc['dlc']['pupil_top_r_x'] = lpks['pupil_top_r_x']
+    left_dlc['dlc']['pupil_top_r_y'] = lpks['pupil_top_r_y']
+    left_dlc['dlc']['pupil_bottom_r_x'] = lpks['pupil_bottom_r_x']
+    left_dlc['dlc']['pupil_bottom_r_y'] = lpks['pupil_bottom_r_y']
+    left_dlc['dlc']['pupil_left_r_x'] = lpks['pupil_left_r_x']
+    left_dlc['dlc']['pupil_left_r_y'] = lpks['pupil_left_r_y']
+    left_dlc['dlc']['pupil_right_r_x'] = lpks['pupil_right_r_x']
+    left_dlc['dlc']['pupil_right_r_y'] = lpks['pupil_right_r_y']
+    
+    
     # get licks
     # TO DO check if lick times ever nan
     try:
@@ -445,12 +512,13 @@ def featurize(i, trajectory, one, session_counter, bin_size=0.05, align_event='m
 
     # get pupil diameter
     # TODO check in pupil diameter ever nan
-    if 'features' in left_dlc.keys():
-        pupil_diameter = left_dlc.pop('features')['pupilDiameter_smooth']
-        if np.sum(np.isnan(pupil_diameter)) > 0:
-            pupil_diameter = dlc.get_smooth_pupil_diameter(dlc.get_pupil_diameter(left_dlc['dlc']), 'left')
-    else:
-        pupil_diameter = dlc.get_smooth_pupil_diameter(dlc.get_pupil_diameter(left_dlc['dlc']), 'left')
+#     if 'features' in left_dlc.keys():
+#         pupil_diameter = left_dlc.pop('features')['pupilDiameter_smooth']
+#         if np.sum(np.isnan(pupil_diameter)) > 0:
+#             pupil_diameter = dlc.get_smooth_pupil_diameter(dlc.get_pupil_diameter(left_dlc['dlc']), 'left')
+#     else:
+#         pupil_diameter = dlc.get_smooth_pupil_diameter(dlc.get_pupil_diameter(left_dlc['dlc']), 'left')
+    pupil_diameter = dlc.get_pupil_diameter(left_dlc['dlc'])
 
     # get wheel velocity
     wheel = one.load_object(eid, 'wheel')
@@ -694,3 +762,129 @@ def preprocess_feature(feature_concat):
     feature_concat[:, :, noise_offset] = noise
 
     return feature_concat
+
+def load_trials_df(eid, one=None, maxlen=None, t_before=0., t_after=0., ret_wheel=False,
+                   ret_abswheel=False, wheel_binsize=0.02, addtl_types=[], 
+                   align_event='stimOn_times', keeptrials=None):
+    """
+    Generate a pandas dataframe of per-trial timing information about a given session.
+    Each row in the frame will correspond to a single trial, with timing values indicating timing
+    session-wide (i.e. time in seconds since session start). Can optionally return a resampled
+    wheel velocity trace of either the signed or absolute wheel velocity.
+
+    The resulting dataframe will have a new set of columns, trial_start and trial_end, which define
+    via t_before and t_after the span of time assigned to a given trial.
+    (useful for bb.modeling.glm)
+
+    Parameters
+    ----------
+    eid : [str, UUID, Path, dict]
+        Experiment session identifier; may be a UUID, URL, experiment reference string
+        details dict or Path
+    one : oneibl.one.OneAlyx, optional
+        one object to use for loading. Will generate internal one if not used, by default None
+    maxlen : float, optional
+        Maximum trial length for inclusion in df. Trials where feedback - response is longer
+        than this value will not be included in the dataframe, by default None
+    t_before : float, optional
+        Time before stimulus onset to include for a given trial, as defined by the trial_start
+        column of the dataframe. If zero, trial_start will be identical to stimOn, by default 0.
+    t_after : float, optional
+        Time after feedback to include in the trail, as defined by the trial_end
+        column of the dataframe. If zero, trial_end will be identical to feedback, by default 0.
+    ret_wheel : bool, optional
+        Whether to return the time-resampled wheel velocity trace, by default False
+    ret_abswheel : bool, optional
+        Whether to return the time-resampled absolute wheel velocity trace, by default False
+    wheel_binsize : float, optional
+        Time bins to resample wheel velocity to, by default 0.02
+    addtl_types : list, optional
+        List of additional types from an ONE trials object to include in the dataframe. Must be
+        valid keys to the dict produced by one.load_object(eid, 'trials'), by default empty.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Dataframe with trial-wise information. Indices are the actual trial order in the original
+        data, preserved even if some trials do not meet the maxlen criterion. As a result will not
+        have a monotonic index. Has special columns trial_start and trial_end which define start
+        and end times via t_before and t_after
+    """
+    if not one:
+        one = ONE()
+
+    if ret_wheel and ret_abswheel:
+        raise ValueError('ret_wheel and ret_abswheel cannot both be true.')
+
+    # Define which datatypes we want to pull out
+    trialstypes = ['choice',
+                   'probabilityLeft',
+                   'feedbackType',
+                   'feedback_times',
+                   'contrastLeft',
+                   'contrastRight',
+                   'goCue_times',
+                   'stimOn_times']
+    trialstypes.extend(addtl_types)
+
+    # A quick function to remap probabilities in those sessions where it was not computed correctly
+    def remap_trialp(probs):
+        # Block probabilities in trial data aren't accurate and need to be remapped
+        validvals = np.array([0.2, 0.5, 0.8])
+        diffs = np.abs(np.array([x - validvals for x in probs]))
+        maps = diffs.argmin(axis=1)
+        return validvals[maps]
+
+    trials = one.load_object(eid, 'trials', collection='alf')
+    starttimes = trials.stimOn_times
+    endtimes = trials.feedback_times
+    tmp = {key: value for key, value in trials.items() if key in trialstypes}
+
+    if keeptrials is None:
+        if maxlen is not None:
+            with np.errstate(invalid='ignore'):
+                keeptrials = (endtimes - starttimes) <= maxlen
+        else:
+            keeptrials = range(len(starttimes))
+    trialdata = {x: tmp[x][keeptrials] for x in trialstypes}
+    trialdata['probabilityLeft'] = remap_trialp(trialdata['probabilityLeft'])
+    trialsdf = pd.DataFrame(trialdata)
+    if maxlen is not None:
+        trialsdf.set_index(np.nonzero(keeptrials)[0], inplace=True)
+    trialsdf['trial_start'] = trialsdf[align_event] - t_before
+    trialsdf['trial_end'] = trialsdf[align_event] + t_after
+    tdiffs = trialsdf['trial_end'] - np.roll(trialsdf['trial_start'], -1)
+    if np.any(tdiffs[:-1] > 0):
+        logging.warning(f'{sum(tdiffs[:-1] > 0)} trials overlapping due to t_before and t_after '
+                        'values. Try reducing one or both!')
+    if not ret_wheel and not ret_abswheel:
+        return trialsdf
+
+    wheel = one.load_object(eid, 'wheel', collection='alf')
+    whlpos, whlt = wheel.position, wheel.timestamps
+    starttimes = trialsdf['trial_start']
+    endtimes = trialsdf['trial_end']
+    wh_endlast = 0
+    trials = []
+    for (start, end) in np.vstack((starttimes, endtimes)).T:
+        wh_startind = np.searchsorted(whlt[wh_endlast:], start) + wh_endlast
+        wh_endind = np.searchsorted(whlt[wh_endlast:], end, side='right') + wh_endlast + 4
+        wh_endlast = wh_endind
+        tr_whlpos = whlpos[wh_startind - 1:wh_endind + 1]
+        tr_whlt = whlt[wh_startind - 1:wh_endind + 1] - start
+        tr_whlt[0] = 0.  # Manual previous-value interpolation
+        whlseries = TimeSeries(tr_whlt, tr_whlpos, columns=['whlpos'])
+        whlsync = sync(wheel_binsize, timeseries=whlseries, interp='previous')
+        trialstartind = np.searchsorted(whlsync.times, 0)
+        trialendind = np.ceil((end - start) / wheel_binsize).astype(int)
+        trpos = whlsync.values[trialstartind:trialendind + trialstartind]
+        whlvel = trpos[1:] - trpos[:-1]
+        whlvel = np.insert(whlvel, 0, 0)
+        if np.abs((trialendind - len(whlvel))) > 0:
+            raise IndexError('Mismatch between expected length of wheel data and actual.')
+        if ret_wheel:
+            trials.append(whlvel)
+        elif ret_abswheel:
+            trials.append(np.abs(whlvel))
+    trialsdf['wheel_velocity'] = trials
+    return trialsdf

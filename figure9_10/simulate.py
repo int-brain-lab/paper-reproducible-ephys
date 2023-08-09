@@ -5,7 +5,7 @@ Code to create simulated data
 
 import numpy as np
 import pandas as pd
-from brainbox.modeling.design_matrix import convbasis
+from modeling.design_matrix import convbasis
 from scipy.interpolate import interp1d
 from numpy.random import uniform, normal
 

@@ -17,8 +17,8 @@ from figure9_10.utils import (cov_idx_dict, get_acronym_dict_reverse, compute_me
                               session_offset, xyz_offset, stimulus_offset, leave_out_covs_for_glm, reshape_flattened)
 from figure9_10.mtnn import load_test_model
 
-data_load_path = save_data_path(figure='figure9_10').joinpath('mtnn_data')
-save_path = save_figure_path(figure='figure9_10')
+data_load_path = save_data_path(figure='figure9_10_resubmit').joinpath('mtnn_data')
+save_path = save_figure_path(figure='figure9_10_resubmit')
 
 rng = np.random.default_rng(seed=0b01101001 + 0b01100010 + 0b01101100)
 
@@ -449,7 +449,8 @@ def generate_figure9_supplement1(model_config,
     plt.show()
     
 def generate_figure9_supplement2(model_config, 
-                                 glm_score, 
+                                 glm_score,
+                                 glm_score_full_mtnn_cov,
                                  preds_shape,
                                  obs,
                                  test_feature,
@@ -473,29 +474,86 @@ def generate_figure9_supplement2(model_config,
     
     plt.figure(figsize=(10,10))
     
-    plt.scatter(mtnn_score[0], glm_score[0], color='blue', label='MTNN trained on MTNN covariates', alpha=0.65)
-    plt.scatter(mtnn_score_glm_cov[0], glm_score[0], color='red', label='MTNN trained on GLM covariates', alpha=0.65)
+    #plt.scatter(mtnn_score[0], glm_score_full_mtnn_cov[0], color='blue', label='MTNN: Full set of covariates\nGLM: GLM covariates + behavioral covariates', alpha=0.65)
+    #plt.scatter(mtnn_score_glm_cov[0], glm_score[0], color='red', label='GLM covariates', alpha=0.65)
     
-    plt.scatter(mtnn_score[1:], glm_score[1:], color='blue', alpha=0.65)
-    plt.scatter(mtnn_score_glm_cov[1:], glm_score[1:], color='red', alpha=0.65)
+    #plt.scatter(mtnn_score[1:], glm_score_full_mtnn_cov[1:], color='blue', alpha=0.65)
+    #plt.scatter(mtnn_score_glm_cov[1:], glm_score[1:], color='red', alpha=0.65)
+    
+    plt.scatter(mtnn_score_glm_cov, glm_score_full_mtnn_cov, color='blue', alpha=0.65)
     
     plt.xlabel('MTNN Performance (R2)', fontsize=24)
     plt.ylabel('GLM Performance (R2)', fontsize=24)
     
     plt.plot([-1,1],[-1,1], color='black')
-    plt.xlim(-0.05,0.6)
-    plt.ylim(-0.05,0.6)
+    plt.xlim(-0.02,0.52)
+    plt.ylim(-0.02,0.52)
     
-    plt.yticks(np.arange(0,0.7,0.1), fontsize=18)
-    plt.xticks(np.arange(0,0.7,0.1), fontsize=18)
+    plt.yticks(np.arange(0,0.6,0.1), fontsize=18)
+    plt.xticks(np.arange(0,0.6,0.1), fontsize=18)
     
-    plt.title('MTNN vs GLM Predictive Performance Comparison', fontsize=24, y=1.02)
+    plt.title('MTNN vs GLM Predictive Performance Comparison\nTrained on Movement/Task-related/Prior Covariates', fontsize=24, y=1.02)
     
     plt.legend(fontsize=20)
     
     
     if savefig:
         figname = save_path.joinpath(f'figure9_supplement2.png')
+        plt.savefig(figname,bbox_inches='tight', facecolor='white')
+    
+    plt.show()
+    
+def generate_figure9_supplement2_v2(model_config, 
+                                     glm_score,
+                                     glm_score_full_mtnn_cov,
+                                     preds_shape,
+                                     obs,
+                                     test_feature,
+                                     savefig=False):
+
+    obs_list = []
+    feature_list = []
+    idx = 0
+    for sh in preds_shape:
+        n = sh[0]*sh[1]
+        obs_list.append(obs[idx:idx+n].reshape(sh[:-1]))
+        feature_list.append(test_feature[idx:idx+n].reshape(sh))
+        idx += n
+
+    mtnn_score = load_test_model(model_config, None, None, 
+                                 obs_list, preds_shape, use_psth=False, 
+                                 data_dir='test', model_name_suffix=None)
+    mtnn_score_glm_cov = load_test_model(model_config, leave_out_covs_for_glm, None, 
+                                         obs_list, preds_shape, use_psth=False, 
+                                         data_dir='test', model_name_suffix=None)
+    
+    plt.figure(figsize=(10,10))
+    
+    #plt.scatter(mtnn_score[0], glm_score_full_mtnn_cov[0], color='blue', label='MTNN: Full set of covariates\nGLM: GLM covariates + behavioral covariates', alpha=0.65)
+    #plt.scatter(mtnn_score_glm_cov[0], glm_score[0], color='red', label='GLM covariates', alpha=0.65)
+    
+    #plt.scatter(mtnn_score[1:], glm_score_full_mtnn_cov[1:], color='blue', alpha=0.65)
+    #plt.scatter(mtnn_score_glm_cov[1:], glm_score[1:], color='red', alpha=0.65)
+    
+    plt.hist(100*(mtnn_score_glm_cov-glm_score_full_mtnn_cov)/glm_score_full_mtnn_cov, color='k')
+    
+    plt.xlabel('% Increase of MTNN Performance over GLM(R2)', fontsize=24)
+    plt.ylabel('count', fontsize=24)
+    
+    #plt.plot([-1,1],[-1,1], color='black')
+    #plt.xlim(-20,20)
+    #plt.ylim(-0.05,0.6)
+    
+    #plt.yticks(np.arange(0,0.7,0.1), fontsize=18)
+    #plt.xticks(np.arange(0,0.7,0.1), fontsize=18)
+    
+    plt.title('MTNN vs GLM Predictive Performance Comparison\nTrained on Movement/Task-related/Prior Covariates', fontsize=24, y=1.02)
+    
+    plt.legend(fontsize=20)
+    
+    
+    if savefig:
+        figname = save_path.joinpath(f'figure9_supplement2_v2.png')
         plt.savefig(figname,bbox_inches='tight', facecolor='white')
     
     plt.show()
@@ -571,7 +629,7 @@ def generate_figure9_supplement3(model_config,
                                            c='green', label='movement onset')
 
     session_boundary = np.cumsum(n_neurons_list)
-    for i in session_boundary[:-2]:
+    for i in session_boundary[:-1]:
         plt.axhline(y=[i-0.5], linewidth=2, linestyle='--', 
                                            c='red', label='session boundary')
     for idx, i in enumerate(session_boundary[:-1]):
@@ -588,11 +646,11 @@ def generate_figure9_supplement3(model_config,
     plt.text(10-5, 0.3*n_neurons, 'movement onset',rotation=90,color='green',fontsize=20)
     plt.text(trial_len*4-33, session_boundary[0]-1, 'session boundary', color='red',fontsize=20)
     plt.text(trial_len*4-25, session_boundary[3]-1, 'lab boundary', color='blue',fontsize=20)
-    plt.text(10-9, 0-2, 'CCU', color='k',fontsize=20)
-    plt.text(10-9, session_boundary[3]-2, 'CSHL (C)', color='k',fontsize=20)
-    plt.text(10-9, session_boundary[7]-2, 'SWC', color='k',fontsize=20)
-    plt.text(10-9, session_boundary[11]-2, 'Berkeley', color='k',fontsize=20)
-    plt.text(10-9, session_boundary[15]-2, 'NYU', color='k',fontsize=20)
+    plt.text(10-9, 0-2, 'SWC', color='k',fontsize=20)
+    plt.text(10-9, session_boundary[3]-2, 'CCU', color='k',fontsize=20)
+    plt.text(10-9, session_boundary[7]-2, 'CSHL (C)', color='k',fontsize=20)
+    plt.text(10-9, session_boundary[11]-2, 'UCL', color='k',fontsize=20)
+    plt.text(10-9, session_boundary[15]-2, 'Berkeley', color='k',fontsize=20)
     
     plt.ylabel('neurons', fontsize=18)
     plt.xlabel('time (sec)', fontsize=18)

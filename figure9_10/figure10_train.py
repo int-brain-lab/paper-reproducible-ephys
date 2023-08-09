@@ -5,8 +5,8 @@ from figure9_10.utils import static_idx, cov_idx_dict, sim_cov_idx_dict, grouped
 from figure9_10.mtnn import initialize_mtnn, run_train
 
 def train(do_train=True, sim_do_train=True):
-    data_load_path = save_data_path(figure='figure9_10').joinpath('mtnn_data')
-    sim_data_load_path = save_data_path(figure='figure9_10').joinpath('simulated_data')
+    data_load_path = save_data_path(figure='figure9_10_resubmit').joinpath('mtnn_data')
+    sim_data_load_path = save_data_path(figure='figure9_10_resubmit').joinpath('simulated_data')
 
     feature = np.load(data_load_path.joinpath('train/feature.npy'))
 
@@ -25,6 +25,7 @@ def train(do_train=True, sim_do_train=True):
     HIDDEN_SIZE_DYNAMIC = 64
     n_layers = 3
     n_epochs = 100
+    dropout = 0.15
     
     weight_decay = 1e-15
 
@@ -42,7 +43,7 @@ def train(do_train=True, sim_do_train=True):
                                     static_bias=True, dynamic_bias=True,
                                     hidden_dim_static=HIDDEN_SIZE_STATIC,
                                     hidden_dim_dynamic=HIDDEN_SIZE_DYNAMIC, n_layers=n_layers,
-                                    dropout=0.2)
+                                    dropout=dropout)
 
             best_epoch, loss_list, val_loss_list = run_train(model,
                                                              data_load_path.joinpath('train/feature.npy'),
@@ -73,7 +74,7 @@ def train(do_train=True, sim_do_train=True):
                                     static_bias=False, dynamic_bias=True,
                                     hidden_dim_static=HIDDEN_SIZE_STATIC,
                                     hidden_dim_dynamic=HIDDEN_SIZE_DYNAMIC, n_layers=n_layers,
-                                    dropout=0.2)
+                                    dropout=dropout)
 
             best_epoch, loss_list, val_loss_list = run_train(model,
                                                              data_load_path.joinpath('train/feature.npy'),
@@ -102,7 +103,7 @@ def train(do_train=True, sim_do_train=True):
                                     static_bias=True, dynamic_bias=False,
                                     hidden_dim_static=HIDDEN_SIZE_STATIC,
                                     hidden_dim_dynamic=HIDDEN_SIZE_DYNAMIC, n_layers=n_layers,
-                                    dropout=0.2)
+                                    dropout=dropout)
 
             best_epoch, loss_list, val_loss_list = run_train(model,
                                                              data_load_path.joinpath('train/feature.npy'),
@@ -127,7 +128,7 @@ def train(do_train=True, sim_do_train=True):
                                     static_bias=True, dynamic_bias=True,
                                     hidden_dim_static=HIDDEN_SIZE_STATIC,
                                     hidden_dim_dynamic=HIDDEN_SIZE_DYNAMIC, n_layers=n_layers,
-                                    dropout=0.2)
+                                    dropout=dropout)
 
             best_epoch, loss_list, val_loss_list = run_train(model,
                                                              data_load_path.joinpath('train/feature.npy'),
@@ -147,7 +148,7 @@ def train(do_train=True, sim_do_train=True):
                                 static_bias=True, dynamic_bias=True,
                                 hidden_dim_static=HIDDEN_SIZE_STATIC,
                                 hidden_dim_dynamic=HIDDEN_SIZE_DYNAMIC, n_layers=n_layers,
-                                dropout=0.2)
+                                dropout=dropout)
 
         best_epoch, loss_list, val_loss_list = run_train(model,
                                                          sim_data_load_path.joinpath('train/feature.npy'),
@@ -172,7 +173,7 @@ def train(do_train=True, sim_do_train=True):
                                     static_bias=True, dynamic_bias=True,
                                     hidden_dim_static=HIDDEN_SIZE_STATIC,
                                     hidden_dim_dynamic=HIDDEN_SIZE_DYNAMIC, n_layers=n_layers,
-                                    dropout=0.2)
+                                    dropout=dropout)
 
             best_epoch, loss_list, val_loss_list = run_train(model,
                                                              sim_data_load_path.joinpath('train/feature.npy'),
