@@ -3,7 +3,7 @@ from reproducible_ephys_functions import get_insertions, compute_metrics
 
 
 def run_repro_ephys_metrics(one):
-    insertions = get_insertions(level=0, one=one, freeze=None)
+    insertions = get_insertions(level=0, one=one, freeze='release_2022_11')
     metrics = compute_metrics(insertions, one)
 
 
