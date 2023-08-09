@@ -1,4 +1,4 @@
-from models import model, utils
+from fig_mtnn.models import model, utils
 import torch
 import numpy as np
 from torch.distributions.normal import Normal

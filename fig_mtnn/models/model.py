@@ -1,4 +1,4 @@
-from models import utils
+from fig_mtnn.models import utils
 import numpy as np
 from scipy.stats import truncnorm
 import os, pickle

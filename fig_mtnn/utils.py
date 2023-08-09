@@ -18,8 +18,8 @@ from scipy.interpolate import interp1d
 from ibllib.qc.camera import CameraQC
 import os
 
-from models.expSmoothing_prevAction import expSmoothing_prevAction as exp_prevAction
-from models import utils as mutils
+from fig_mtnn.models.expSmoothing_prevAction import expSmoothing_prevAction as exp_prevAction
+from fig_mtnn.models import utils as mutils
 
 from brainbox.population.decode import get_spike_counts_in_bins
 from brainbox.task.closed_loop import compute_comparison_statistics
@@ -405,10 +405,10 @@ def featurize(i, trajectory, one, session_counter, bin_size=0.05, align_event='m
     trial_numbers = np.arange(trials['stimOn_times'].shape[0])
 
     # load pLeft (Charles's model's output)
-    pLeft = np.load(save_data_path(figure='figure9_10_resubmit').joinpath('priors', f'prior_{eid}.npy'))
+    pLeft = np.load(save_data_path(figure='fig_mtnn').joinpath('priors', f'prior_{eid}.npy'))
 
     # load in GLM-HMM
-    glm_hmm = np.load(save_data_path(figure='figure9_10_resubmit').joinpath('glm_hmm', 'k=4',
+    glm_hmm = np.load(save_data_path(figure='fig_mtnn').joinpath('glm_hmm', 'k=4',
                                                                    f'posterior_probs_valuessession_{subject}-{date_number}.npz'))
     for item in glm_hmm.files:
         glm_hmm_states = glm_hmm[item]
@@ -419,7 +419,7 @@ def featurize(i, trajectory, one, session_counter, bin_size=0.05, align_event='m
     pLeft = pLeft[choice_filter]
     trial_numbers = trial_numbers[choice_filter]
 
-    # filter out trials with no contrast
+    # filter out trials with no contrastxf
     contrast_filter = ~np.logical_or(trials['contrastLeft'] == 0, trials['contrastRight'] == 0)
 
     trials = {key: trials[key][contrast_filter] for key in trials.keys()}
@@ -470,16 +470,16 @@ def featurize(i, trajectory, one, session_counter, bin_size=0.05, align_event='m
     print('number of trials found: {} (active: {})'.format(n_trials,n_active_trials))
 
     # Load in dlc
-    left_dlc = one.load_object(eid, 'leftCamera', attribute=['dlc', 'features', 'times', 'ROIMotionEnergy'], collection='alf')
+    left_dlc = one.load_object(eid, 'leftCamera', attribute=['dlc', 'features', 'times', 'ROIMotionEnergy'],
+                               collection='alf')
     if left_dlc['times'].shape[0] != left_dlc['dlc'].shape[0]:
         left_offset = mtnn_eids[eid]
         left_dlc['times'] = left_dlc['times'][abs(left_offset):abs(left_offset) + left_dlc.shape[0]]
     assert (left_dlc['times'].shape[0] == left_dlc['dlc'].shape[0])
 
     left_dlc['dlc'] = dlc.likelihood_threshold(left_dlc['dlc'], threshold=0)
-    
-    # override paw and pupil traces with lpks
-    lpks = pd.read_parquet(save_data_path(figure='figure9_10_resubmit').joinpath('lpks', f'{eid}._ibl_leftCamera.pose.pqt'))
+
+    lpks = one.load_object(eid, 'leftCamera', attribute=['lightningPose'])['lightningPose']
     left_dlc['dlc']['paw_l_x'] = lpks['paw_l_x']
     left_dlc['dlc']['paw_l_y'] = lpks['paw_l_y']
     left_dlc['dlc']['paw_r_x'] = lpks['paw_r_x']

@@ -87,7 +87,7 @@ def plot_neural_behav_raster(eid, probe, trial_idx, stim_dir='left', camera='lef
 
     dlc = one.load_object(eid, f'{camera}Camera', collection='alf', attribute=['dlc', 'times'])
     # override with lpks
-    lpks = pd.read_parquet(save_data_path(figure='figure9_10_resubmit').joinpath('lpks', f'{eid}._ibl_leftCamera.pose.pqt'))
+    lpks = pd.read_parquet(save_data_path(figure='fig_mtnn').joinpath('lpks', f'{eid}._ibl_leftCamera.pose.pqt'))
     dlc['dlc']['paw_l_x'] = lpks['paw_l_x']
     dlc['dlc']['paw_l_y'] = lpks['paw_l_y']
     dlc['dlc']['paw_r_x'] = lpks['paw_r_x']
