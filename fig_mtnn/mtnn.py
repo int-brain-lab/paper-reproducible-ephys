@@ -8,7 +8,7 @@ from sklearn.metrics import r2_score
 from scipy.stats import pearsonr
 from tqdm import notebook
 
-from figure9_10.utils import static_bool, cov_idx_dict, sim_static_bool, sim_cov_idx_dict
+from fig_mtnn.utils import static_bool, cov_idx_dict, sim_static_bool, sim_cov_idx_dict
 from reproducible_ephys_functions import save_data_path
 
 import random

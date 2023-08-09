@@ -6,13 +6,13 @@ import matplotlib
 import numpy as np
 from copy import deepcopy
 
-from figure9_10.utils import (reshape_flattened, get_acronym_dict, get_acronym_dict_reverse, get_region_colors, cov_idx_dict,
-                              grouped_cov_idx_dict, compute_mean_frs)
-from figure9_10.mtnn import load_test_model
+from fig_mtnn.utils import (reshape_flattened, get_acronym_dict, get_acronym_dict_reverse, get_region_colors, cov_idx_dict,
+                                         grouped_cov_idx_dict, compute_mean_frs)
+from fig_mtnn.mtnn import load_test_model
 from reproducible_ephys_functions import save_data_path, figure_style, save_figure_path
 
-data_load_path = save_data_path(figure='figure9_10_resubmit').joinpath('mtnn_data')
-save_path = save_figure_path(figure='figure9_10_resubmit')
+data_load_path = save_data_path(figure='fig_mtnn').joinpath('mtnn_data')
+save_path = save_figure_path(figure='fig_mtnn')
 
 
 regions = list(get_acronym_dict().keys())
@@ -82,7 +82,7 @@ def compute_scores_for_figure_10(model_config,
                                  leave_group_out,
                                  use_psth=False):
     
-    load_path = save_data_path(figure='figure9_10_resubmit').joinpath('mtnn_data')
+    load_path = save_data_path(figure='fig_mtnn').joinpath('mtnn_data')
     
     preds_shape = np.load(load_path.joinpath('test/shape.npy'))
     obs = np.load(load_path.joinpath('test/output.npy'))
@@ -349,7 +349,7 @@ def generate_figure_10_supplement1(model_config,
                                    down_lim=-0.05,
                                    up_lim=0.75):
     
-    load_path = save_data_path(figure='figure9_10_resubmit').joinpath('simulated_data')
+    load_path = save_data_path(figure='fig_mtnn').joinpath('simulated_data')
     
     data_dir = 'test'
     preds_shape = np.load(load_path.joinpath(f'{data_dir}/shape.npy'))

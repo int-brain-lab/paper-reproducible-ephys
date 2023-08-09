@@ -675,11 +675,11 @@ def reshape_flattened(flattened, shape, trim=0):
 def load_original(eids):
     feature_list, output_list, cluster_number_list, session_list, trial_number_list = [], [], [], [], []
     for eid in eids:
-        feature_list.append(np.load(save_data_path(figure='figure9_10').joinpath('original_data', f'{eid}_feature.npy')))
-        output_list.append(np.load(save_data_path(figure='figure9_10').joinpath('original_data', f'{eid}_output.npy')))
-        cluster_number_list.append(np.load(save_data_path(figure='figure9_10').joinpath('original_data', f'{eid}_clusters.npy')))
-        session_list.append(np.load(save_data_path(figure='figure9_10').joinpath('original_data', f'{eid}_session_info.npy'), allow_pickle=True))
-        trial_number_list.append(np.load(save_data_path(figure='figure9_10').joinpath('original_data', f'{eid}_trials.npy')))
+        feature_list.append(np.load(save_data_path(figure='fig_mtnn').joinpath('original_data', f'{eid}_feature.npy')))
+        output_list.append(np.load(save_data_path(figure='fig_mtnn').joinpath('original_data', f'{eid}_output.npy')))
+        cluster_number_list.append(np.load(save_data_path(figure='fig_mtnn').joinpath('original_data', f'{eid}_clusters.npy')))
+        session_list.append(np.load(save_data_path(figure='fig_mtnn').joinpath('original_data', f'{eid}_session_info.npy'), allow_pickle=True))
+        trial_number_list.append(np.load(save_data_path(figure='fig_mtnn').joinpath('original_data', f'{eid}_trials.npy')))
         
     return feature_list, output_list, cluster_number_list, session_list, trial_number_list
 

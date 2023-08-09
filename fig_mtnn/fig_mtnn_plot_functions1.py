@@ -12,13 +12,13 @@ from tqdm import notebook
 from sklearn.metrics import r2_score
 
 from reproducible_ephys_functions import save_data_path, save_figure_path, figure_style
-from figure9_10.neural_and_behav_rasters import plot_neural_behav_raster
-from figure9_10.utils import (cov_idx_dict, get_acronym_dict_reverse, compute_mean_frs, acronym_offset, noise_offset, lab_offset,
-                              session_offset, xyz_offset, stimulus_offset, leave_out_covs_for_glm, reshape_flattened)
-from figure9_10.mtnn import load_test_model
+from fig_mtnn.neural_and_behav_rasters import plot_neural_behav_raster
+from fig_mtnn.utils import (cov_idx_dict, get_acronym_dict_reverse, compute_mean_frs, acronym_offset, noise_offset, lab_offset,
+                                         session_offset, xyz_offset, stimulus_offset, leave_out_covs_for_glm, reshape_flattened)
+from fig_mtnn.mtnn import load_test_model
 
-data_load_path = save_data_path(figure='figure9_10_resubmit').joinpath('mtnn_data')
-save_path = save_figure_path(figure='figure9_10_resubmit')
+data_load_path = save_data_path(figure='fig_mtnn').joinpath('mtnn_data')
+save_path = save_figure_path(figure='fig_mtnn')
 
 rng = np.random.default_rng(seed=0b01101001 + 0b01100010 + 0b01101100)
 

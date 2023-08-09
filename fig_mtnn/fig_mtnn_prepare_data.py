@@ -11,15 +11,14 @@ import modeling.utils as mut
 import brainbox.io.one as bbone
 
 from reproducible_ephys_functions import save_data_path, save_dataset_info, repo_path
-#from figure9_10.utils import get_mtnn_eids, get_traj, featurize, select_high_fr_neurons, preprocess_feature, load_original, load_trials_df
-from figure9_10.utils import *
-from figure9_10.glm import generate_design, generate_design_full_mtnn_cov, bases, bases_full_mtnn_cov, binwidth, t_before, t_after, GLMPredictor
-from figure9_10.simulate import simulate_cell, concat_simcell_data, to_mtnn_form
-from figure9_10.figure9_10_load_data import download_priors, download_glm_hmm
+from fig_mtnn.utils import *
+from fig_mtnn.glm import generate_design, generate_design_full_mtnn_cov, bases, bases_full_mtnn_cov, binwidth, t_before, t_after, GLMPredictor
+from fig_mtnn.simulate import simulate_cell, concat_simcell_data, to_mtnn_form
+from fig_mtnn.fig_mtnn_load_data import download_priors, download_glm_hmm
 
 import matplotlib.pyplot as plt
 
-data_path = save_data_path(figure='figure9_10_resubmit')
+data_path = save_data_path(figure='fig_mtnn')
 
 # rng = np.random.default_rng(seed=0b01101001 + 0b01100010 + 0b01101100)
 rng = np.random.default_rng(seed=10234567)
@@ -255,7 +254,7 @@ def prepare_glm_and_simulated_data(insertions, one, brain_atlas=None):
         trialsdf = trialsdf.loc[trial_idx]
         trialsdf_list.append(trialsdf)
 
-        pLeft = np.load(save_data_path(figure='figure9_10_resubmit').joinpath('priors', f'prior_{eid}.npy'))
+        pLeft = np.load(save_data_path(figure='fig_mtnn').joinpath('priors', f'prior_{eid}.npy'))
         prior_list.append(pLeft[trial_idx])
 
         cluster_list.append(clusters[i])
@@ -667,7 +666,7 @@ def prepare_glm_data_full_mtnn_cov(insertions, one, brain_atlas=None):
 
         trialsdf_list.append(trialsdf)
 
-        pLeft = np.load(save_data_path(figure='figure9_10_resubmit').joinpath('priors', f'prior_{eid}.npy'))
+        pLeft = np.load(save_data_path(figure='fig_mtnn').joinpath('priors', f'prior_{eid}.npy'))
         prior_list.append(pLeft[trial_idx])
 
         cluster_list.append(clusters[i])
@@ -719,4 +718,4 @@ if __name__ == '__main__':
     one = ONE()
     one.record_loaded = True
     prepare_data(one)
-    save_dataset_info(one, figure='figure9_10_resubmit')
+    save_dataset_info(one, figure='fig_mtnn')
