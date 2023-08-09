@@ -414,7 +414,7 @@ def plot_panel_all_subjects(max_neurons, min_neurons, ax=None, save=True, plotte
             # this is a hack for the legend
             for lab in all_present_labs:
                 ax[iR].plot(data['time'], np.zeros_like(data['time']) - 100, c=lab_colors[lab], label=lab)
-            leg = ax[iR].legend(frameon=False, bbox_to_anchor=(1, 1.19), labelcolor='linecolor', handlelength=0, handletextpad=0, fancybox=True)
+            leg = ax[iR].legend(frameon=False, bbox_to_anchor=(1, 1.19), labelcolor=lab_colors[lab], handlelength=0, handletextpad=0, fancybox=True)
             for item in leg.legendHandles:
                 item.set_visible(False)
 
@@ -492,10 +492,6 @@ def plot_panel_permutation(ax=None, n_permut=20000, qc='pass', n_cores=8):
     shape = (len(tests.keys()), len(BRAIN_REGIONS))
     p_vals_perc_mod = pickle.load(open(save_data_path(figure='fig_taskmodulation').joinpath('p_values_percent_modulated'), 'rb'))
     p_vals = pickle.load(open(save_data_path(figure='fig_taskmodulation').joinpath('p_values'), 'rb'))
-    print(p_vals)
-    print(np.sort(p_vals))
-    print(p_vals_perc_mod)
-    print(np.sort(p_vals_perc_mod))
     # _, corrected_p_vals, _, _ = multipletests(results.p_value_permut.values, 0.05, method='fdr_bh')
     p_vals = p_vals.reshape(shape)
     p_vals_perc_mod = p_vals_perc_mod.reshape(shape)
@@ -513,6 +509,7 @@ def plot_panel_permutation(ax=None, n_permut=20000, qc='pass', n_cores=8):
 
     ax.set_yticks([0.5, 1.5, 2.5, 3.5, 4.5, 6.5, 7.5, 8.5, 9.5, 10.5])
     ax.set_yticklabels([region_rename[br] for br in BRAIN_REGIONS] + [region_rename[br] for br in BRAIN_REGIONS], va='center', rotation=0)
+    ax.set_xticks([0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5])
     ax.set_xticklabels(test_names, ha='center', rotation=90)  # rotation=30, ha='right')
     #ax.set_title('Task-driven activity: Comparison across labs', loc='left', pad=15)
 
@@ -684,9 +681,9 @@ def plot_panel_power_analysis(ax, ax2):
 
                 val = significant_disturbances[i, j, 0]
                 temp_color = lab_colors[lab] if val < 1000 else 'red'
-                if temp_color == 'red':
+                if isinstance(temp_color, str):
                     val = max_y - lab_mean
-                    print(ii + jj * 8 + 1)
+                    # print(ii + jj * 8 + 1)
                 ax.plot([lab_to_num[lab] + perturbation_shift, lab_to_num[lab] + perturbation_shift], [lab_mean, lab_mean + val], color=temp_color)
                 if lab == visualisation_plot:
                     ax2.plot([0 + perturbation_shift, 0 + perturbation_shift], [lab_mean, lab_mean + 1], color='grey')
@@ -696,9 +693,9 @@ def plot_panel_power_analysis(ax, ax2):
                 obs_max = max(obs_max, lab_mean + val)
                 val = significant_disturbances[i, j, 1]
                 temp_color = lab_colors[lab] if val > -1000 else 'red'
-                if temp_color == 'red':
+                if isinstance(temp_color, str):
                     val = min_y - lab_mean
-                    print(ii + jj * 8 + 1)
+                    # print(ii + jj * 8 + 1)
                 ax.plot([lab_to_num[lab] + perturbation_shift, lab_to_num[lab] + perturbation_shift], [lab_mean, lab_mean + val], color=temp_color)
                 if lab == visualisation_plot:
                     ax2.plot([0 + perturbation_shift, 0 + perturbation_shift], [lab_mean, lab_mean - 1], color='grey')
@@ -811,7 +808,7 @@ def plot_power_analysis():
                     plt.axhline(0, color='grey', alpha=1/3, zorder=0)
 
                 temp_color = lab_colors[lab] if val < 1000 else 'red'
-                if temp_color == 'red':
+                if isinstance(temp_color, str):
                     val = max_y - lab_mean
                     # print(ii + jj * 8 + 1)
                 plt.plot([lab_to_num[lab] + perturbation_shift, lab_to_num[lab] + perturbation_shift], [lab_mean, lab_mean + val], color=temp_color)
@@ -829,7 +826,7 @@ def plot_power_analysis():
                     perturb_in_std.append(val / np.std(data[labs == lab]))
 
                 temp_color = lab_colors[lab] if val > -1000 else 'red'
-                if temp_color == 'red':
+                if isinstance(temp_color, str):
                     val = min_y - lab_mean
                     # print(ii + jj * 8 + 1)
                 plt.plot([lab_to_num[lab] + perturbation_shift, lab_to_num[lab] + perturbation_shift], [lab_mean, lab_mean + val], color=temp_color)
@@ -904,10 +901,10 @@ def plot_power_analysis():
     plt.close()
 
     from scipy.stats import pearsonr
-    print(pearsonr(powers, vars))
-    print(pearsonr(powers_ff, vars_ff))
-
-    print(obs_min, obs_max)
+    # print(pearsonr(powers, vars))
+    # print(pearsonr(powers_ff, vars_ff))
+    #
+    # print(obs_min, obs_max)
     return powers, vars, powers_ff, vars_ff, perturb_in_std, all_powers, ns
 
 

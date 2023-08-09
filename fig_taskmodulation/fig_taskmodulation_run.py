@@ -13,7 +13,7 @@ def run_fig_taskmodulation(one, recompute=True):
     compute_power_analysis(n_permut=50000, n_cores=8)
 
     plot_main_figure()
-    plot_power_analysis()
+    _ = plot_power_analysis()
     plot_supp_figure()
 
 
