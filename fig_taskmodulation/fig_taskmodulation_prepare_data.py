@@ -4,7 +4,7 @@ import time
 import pickle
 
 from one.api import ONE
-from ibllib.atlas import AllenAtlas
+from iblatlas.atlas import AllenAtlas
 from brainbox.population.decode import get_spike_counts_in_bins
 from brainbox.task.closed_loop import compute_comparison_statistics
 from brainbox.io.one import SpikeSortingLoader

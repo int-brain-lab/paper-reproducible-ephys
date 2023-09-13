@@ -13,7 +13,7 @@ from ibllib.pipes.ephys_alignment import EphysAlignment
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
-import ibllib.atlas as atlas
+import iblatlas.atlas as atlas
 from pathlib import Path
 
 # Functions

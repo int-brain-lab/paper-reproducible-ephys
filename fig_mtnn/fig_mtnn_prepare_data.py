@@ -5,7 +5,7 @@ from tqdm import notebook
 from numpy.random import normal
 from sklearn.linear_model import RidgeCV
 
-from ibllib.atlas import AllenAtlas
+from iblatlas.atlas import AllenAtlas
 import modeling.linear as lm
 import modeling.utils as mut
 import brainbox.io.one as bbone

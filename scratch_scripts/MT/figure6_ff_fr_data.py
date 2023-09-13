@@ -20,7 +20,8 @@ from brainbox.plot import peri_event_time_histogram, firing_rate
 from brainbox.metrics.single_units import spike_sorting_metrics, quick_unit_metrics
 import pickle
 
-from ibllib.atlas import atlas, AllenAtlas
+from iblatlas import atlas
+from iblatlas.atlas import AllenAtlas
 from ibllib.pipes import histology
 from iblutil.util import Bunch
 from iblutil.numerical import ismember

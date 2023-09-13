@@ -9,7 +9,7 @@ Probe Geometry Data Collection
 '''
 
 from one.api import ONE
-from ibllib.atlas import Insertion, AllenAtlas
+from iblatlas.atlas import Insertion, AllenAtlas
 from iblutil.numerical import ismember
 from brainbox.io.one import load_channel_locations
 from reproducible_ephys_functions import save_data_path, save_dataset_info, get_insertions

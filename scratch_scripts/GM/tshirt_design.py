@@ -12,11 +12,11 @@ from scratch_scripts.MF.features_2D import rms_data, get_brain_boundaries, plot_
 from one.api import ONE
 import numpy as np
 from os.path import join
-from ibllib.atlas import BrainRegions
+from iblatlas.regions import BrainRegions
 from ibllib.ephys.neuropixel import SITES_COORDINATES
 from ibllib.pipes.ephys_alignment import EphysAlignment
 import matplotlib.pyplot as plt
-from ibllib.atlas import atlas
+from iblatlas import atlas
 brain_atlas = atlas.AllenAtlas(25)
 one = ONE()
 

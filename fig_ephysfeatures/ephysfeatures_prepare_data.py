@@ -12,7 +12,7 @@ from sklearn.utils import shuffle
 from sklearn.metrics import confusion_matrix
 
 from one.api import ONE
-from ibllib.atlas import AllenAtlas
+from iblatlas.atlas import AllenAtlas
 from ibllib.pipes.ephys_alignment import EphysAlignment
 from iblutil.numerical import ismember
 from brainbox.processing import compute_cluster_average

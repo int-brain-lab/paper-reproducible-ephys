@@ -17,7 +17,7 @@ from neurodsp import voltage
 from one.api import ONE
 from one.alf.exceptions import ALFObjectNotFound
 from iblutil.numerical import ismember
-from ibllib.atlas import AllenAtlas
+from iblatlas.atlas import AllenAtlas
 import brainbox.io.one as bbone
 from brainbox.behavior import training
 import yaml

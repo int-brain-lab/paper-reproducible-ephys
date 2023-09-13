@@ -5,7 +5,7 @@ import logging
 
 from fig_intro.fig_intro_prepare_data import prepare_data
 from fig_intro.fig_intro_plot_data import plot_main_figure, plot_supp2_figure
-from ibllib.atlas import AllenAtlas
+from iblatlas.atlas import AllenAtlas
 from one.api import ONE
 
 logger = logging.getLogger('paper_reproducible_ephys')

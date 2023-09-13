@@ -30,7 +30,7 @@ from brainbox.io.one import SpikeSortingLoader
 from reproducible_ephys_functions import combine_regions, BRAIN_REGIONS, repo_path, save_data_path
 import brainbox.behavior.dlc as dlc
 from reproducible_ephys_processing import bin_spikes, bin_spikes2D,  bin_norm, compute_new_label
-from ibllib.atlas import AllenAtlas
+from iblatlas.atlas import AllenAtlas
 
 rng = np.random.default_rng(seed=12345)
 

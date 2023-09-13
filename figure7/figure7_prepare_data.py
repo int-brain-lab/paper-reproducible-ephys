@@ -6,7 +6,7 @@ from one.api import ONE
 from reproducible_ephys_functions import (get_insertions, save_dataset_info, save_figure_path, BRAIN_REGIONS, combine_regions,
                                           save_data_path, filter_recordings)
 
-from ibllib.atlas import AllenAtlas, Insertion
+from iblatlas.atlas import AllenAtlas, Insertion
 from ibllib.pipes.histology import get_brain_regions
 import numpy as np
 import pandas as pd

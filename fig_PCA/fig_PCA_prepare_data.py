@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from brainbox.io.one import SpikeSortingLoader
-from ibllib.atlas import AllenAtlas
+from iblatlas.atlas import AllenAtlas
 from one.api import ONE
 from reproducible_ephys_functions import combine_regions, BRAIN_REGIONS, get_insertions, save_data_path, save_dataset_info
 from reproducible_ephys_processing import compute_psth, compute_new_label

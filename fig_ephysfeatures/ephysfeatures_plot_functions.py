@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from fig_ephysfeatures.ephysfeatures_functions import get_brain_boundaries, plot_probe
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
-from ibllib.atlas.regions import BrainRegions
+from iblatlas.regions import BrainRegions
 from fig_ephysfeatures.ephysfeatures_load_data import load_dataframe
 import seaborn as sns
 from matplotlib import cm

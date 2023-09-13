@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from ibllib.atlas import AllenAtlas, Trajectory
+from iblatlas.atlas import AllenAtlas, Trajectory
 
 from reproducible_ephys_functions import labs, figure_style, filter_recordings, save_figure_path
 from fig_ephysfeatures.ephysfeatures_load_data import load_dataframe

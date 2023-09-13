@@ -13,7 +13,7 @@ from brainbox.io.one import SpikeSortingLoader
 from brainbox.metrics.single_units import spike_sorting_metrics
 from reproducible_ephys_functions import query, save_data_path, combine_regions
 from one.api import ONE
-from ibllib.atlas import AllenAtlas
+from iblatlas.atlas import AllenAtlas
 ba = AllenAtlas()
 one = ONE()
 

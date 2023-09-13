@@ -8,7 +8,7 @@ By: Steven West & Guido Meijer
 from pathlib import Path
 
 from one.api import ONE
-import ibllib.atlas as atlas
+import iblatlas.atlas as atlas
 
 from mayavi import mlab
 from atlaselectrophysiology import rendering

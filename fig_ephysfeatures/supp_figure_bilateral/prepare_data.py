@@ -3,7 +3,7 @@ import pandas as pd
 from os.path import isfile
 
 from one.api import ONE
-from ibllib.atlas import AllenAtlas
+from iblatlas.atlas import AllenAtlas
 from ibllib.pipes.ephys_alignment import EphysAlignment
 from iblutil.numerical import ismember
 from brainbox.processing import compute_cluster_average

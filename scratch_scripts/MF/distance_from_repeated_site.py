@@ -2,7 +2,7 @@ from oneibl.one import ONE
 import numpy as np
 from ibllib.ephys.neuropixel import SITES_COORDINATES
 from ibllib.pipes.ephys_alignment import EphysAlignment
-from ibllib.atlas import atlas
+from iblatlas import atlas
 
 
 def sort_repeated_site_by_distance(subjects, dates, probes, reference='repeated', one=None,

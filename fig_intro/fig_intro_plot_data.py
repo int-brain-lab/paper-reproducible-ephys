@@ -1,5 +1,5 @@
 from reproducible_ephys_functions import save_figure_path, get_insertions, BRAIN_REGIONS, combine_regions
-from ibllib.atlas import AllenAtlas, Insertion
+from iblatlas.atlas import AllenAtlas, Insertion
 from ibllib.pipes import histology
 from neuropixel import SITES_COORDINATES, TIP_SIZE_UM
 import numpy as np

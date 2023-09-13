@@ -18,7 +18,7 @@ from brainbox.io.one import SpikeSortingLoader
 import matplotlib.pyplot as plt
 from reproducible_ephys_functions import query, save_figure_path, combine_regions
 from one.api import ONE
-from ibllib.atlas import AllenAtlas
+from iblatlas.atlas import AllenAtlas
 ba = AllenAtlas()
 one = ONE()
 

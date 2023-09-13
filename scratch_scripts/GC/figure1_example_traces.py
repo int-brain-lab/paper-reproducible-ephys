@@ -14,7 +14,7 @@ Repeated site plotted in red, other sites in black.
 
 from mayavi import mlab
 from atlaselectrophysiology import rendering
-import ibllib.atlas as atlas
+import iblatlas.atlas as atlas
 from oneibl.one import ONE
 import alf.io
 from brainbox.metrics import electrode_drift

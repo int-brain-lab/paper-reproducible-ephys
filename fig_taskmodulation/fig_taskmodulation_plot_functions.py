@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from one.api import ONE
-from ibllib.atlas import AllenAtlas
+from iblatlas.atlas import AllenAtlas
 from brainbox.io.one import SpikeSortingLoader
 from brainbox.task.trials import find_trial_ids
 from reproducible_ephys_processing import compute_psth,  compute_psth_rxn_time

@@ -1,5 +1,5 @@
 import numpy as np
-from ibllib.atlas.regions import BrainRegions
+from iblatlas.regions import BrainRegions
 from neuropixel import trace_header
 from matplotlib.image import NonUniformImage
 

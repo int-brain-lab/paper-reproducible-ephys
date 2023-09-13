@@ -1,8 +1,8 @@
 from one.api import ONE
 from brainbox.io.one import load_channel_locations,load_spike_sorting_fast
 from brainbox.processing import bincount2D
-from ibllib.atlas import regions_from_allen_csv, BrainRegions
-import ibllib.atlas as atlas
+from iblatlas.regions import regions_from_allen_csv, BrainRegions
+import iblatlas.atlas as atlas
 import gc
 
 import os

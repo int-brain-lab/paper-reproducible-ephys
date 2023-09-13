@@ -1,6 +1,6 @@
 from one.webclient import http_download_file
 from reproducible_ephys_functions import save_data_path
-from ibllib.atlas.regions import BrainRegions
+from iblatlas.regions import BrainRegions
 
 
 def download_meshes(atlas_id):
