@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 import matplotlib
 import seaborn as sns
 from iblatlas import atlas
-from iblatlas.regions import import regions_from_allen_csv
+from iblatlas.regions import regions_from_allen_csv
 import pandas as pd
 from pathlib import Path
 
