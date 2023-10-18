@@ -33,7 +33,8 @@ Install requirements and repo
 pip install -e .
 ```
 
-# Setting up ONE credentials
+# Configuration
+## Setting up ONE credentials
 Open an ipython terminal
 ```
 from one.api import ONE
@@ -41,7 +42,7 @@ pw = 'international'
 one = ONE(silent=True, password=pw)
 ```
 
-# Setting up saving scripts
+## Setting up saving scripts
 By default data and figures will be saved into a folder with the figure name e.g figure1. 
 To find this location on you computer (for example for figure 1) you can type the 
 ```
@@ -57,7 +58,9 @@ FIG_PATH = '/path/where/to/save/your/figures/'
 DATA_PATH = '/path/where/to/save/your/data/
 
 # Getting Started
-To get started you will need to execute the code reproducible_ephys_run.py which will download the data and compute
+
+## Download data and compute exclusion criteria
+The reproducible_ephys_run.py module will download the data and compute
 exclusion criteria for the insertions 
 ```
 python reproducible_ephys_run.py
@@ -72,6 +75,35 @@ one = ONE()
 run_repro_ephys_metrics(one)
 
 ```
+
+## Get the list of recordings from the reproducible site
+
+Find insertions used for analysis based on different exclusion levels
+
+| Level 	| Minimum Regions 	| Minumum trials 	| Exclude Critical 	|
+|:-----:	|-----------------	|----------------	|------------------	|
+|   0   	| 0               	| 0              	| True             	|
+|   1   	| 2               	| 400            	| True             	|
+|   2   	| 2               	| 400            	| True             	|
+
+```python
+from one.api import ONE
+from reproducible_ephys_functions import get_insertions, traj_list_to_dataframe
+LEVEL = 0
+one = ONE()
+df_trajs = traj_list_to_dataframe(get_insertions(one=one, level=LEVEL))
+print(df_trajs.shape[0], 'insertions')
+print(df_trajs.columns)
+
+```
+Will return
+```python
+60 insertions
+Index(['subjects', 'dates', 'probes', 'lab', 'eid', 'probe_insertion',
+       'institution'],
+      dtype='object')
+```
+
 
 # Running figures
 For instructions on how to run code for each figure please refer to README file in each figure sub-folder
