@@ -9,7 +9,7 @@ Probe Geometry Data Collection
 '''
 
 from one.api import ONE
-from ibllib.atlas import Insertion, AllenAtlas
+from iblatlas.atlas import Insertion, AllenAtlas
 from iblutil.numerical import ismember
 from brainbox.io.one import load_channel_locations
 from reproducible_ephys_functions import save_data_path, save_dataset_info, get_insertions
@@ -266,6 +266,6 @@ def prepare_data(insertions, one=None, brain_atlas=None, recompute=False):
 if __name__ == '__main__':
     one = ONE()
     one.record_loaded = True
-    insertions = get_insertions(level=-1, one=one, freeze='release_2022_11')
+    insertions = get_insertions(level=-1, one=one, freeze='release_2023_12')
     all_df_chns, all_df_traj = prepare_data(insertions, one=one)
     save_dataset_info(one, figure='fig_hist')

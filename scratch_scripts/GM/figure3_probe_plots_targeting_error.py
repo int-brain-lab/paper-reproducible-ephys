@@ -14,7 +14,7 @@ from os.path import join, isdir
 from os import mkdir
 from reproducible_ephys_paths import FIG_PATH
 import matplotlib.pyplot as plt
-from ibllib.atlas import atlas
+from iblatlas import atlas
 brain_atlas = atlas.AllenAtlas(25)
 one = ONE()
 

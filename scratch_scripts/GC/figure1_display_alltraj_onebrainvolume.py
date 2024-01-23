@@ -4,9 +4,9 @@ Author: Mayo, Gaelle
 """
 
 import numpy as np
-from ibllib.atlas.regions import BrainRegions
+from iblatlas.regions import BrainRegions
 from one.api import ONE
-import ibllib.atlas as atlas
+import iblatlas.atlas as atlas
 from mayavi import mlab
 from atlaselectrophysiology import rendering
 from ibllib.plots import color_cycle

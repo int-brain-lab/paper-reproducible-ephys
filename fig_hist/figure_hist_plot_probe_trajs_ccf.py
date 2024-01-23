@@ -13,7 +13,7 @@ trajectory.
 
 import matplotlib.pyplot as plt
 import numpy as np
-import ibllib.atlas as atlas
+import iblatlas.atlas as atlas
 from reproducible_ephys_functions import figure_style, labs, save_figure_path
 from fig_hist.fig_hist_load_data import load_dataframe
 from fig_hist.fig_hist_functions import df_to_traj_dict

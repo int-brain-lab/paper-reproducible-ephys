@@ -27,7 +27,7 @@ def plot_trajs(probe_data, output='figure_histology',
     import matplotlib.pyplot as plt
     from one.api import ONE
     import numpy as np
-    import ibllib.atlas as atlas
+    import iblatlas.atlas as atlas
     import reproducible_ephys_functions as ref
     
     # use repo-ephys figure style
@@ -227,10 +227,10 @@ def old_plot_trajs_cor_sag_hor(output='figure_histology'):
     from probe_geometry_analysis import probe_geometry_data as probe_geom_data
     import matplotlib.pyplot as plt
     from one.api import ONE
-    from ibllib.atlas import Insertion
+    from iblatlas.atlas import Insertion
     import numpy as np
     import atlaselectrophysiology.load_histology as hist
-    import ibllib.atlas as atlas
+    import iblatlas.atlas as atlas
     
     # output DIR
     OUTPUT = Path(output)

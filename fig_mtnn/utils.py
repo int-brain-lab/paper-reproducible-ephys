@@ -30,7 +30,7 @@ from brainbox.io.one import SpikeSortingLoader
 from reproducible_ephys_functions import combine_regions, BRAIN_REGIONS, repo_path, save_data_path
 import brainbox.behavior.dlc as dlc
 from reproducible_ephys_processing import bin_spikes, bin_spikes2D,  bin_norm, compute_new_label
-from ibllib.atlas import AllenAtlas
+from iblatlas.atlas import AllenAtlas
 
 rng = np.random.default_rng(seed=12345)
 
@@ -120,7 +120,7 @@ def check_mtnn_criteria(one=None):
         one = ONE()
     
     mtnn_criteria = defaultdict(dict)
-    repeated_site_trajs = get_insertions(level=2, freeze='release_2022_11')
+    repeated_site_trajs = get_insertions(level=2, freeze='release_2023_12')
     repeated_site_trajs = traj_list_to_dataframe(repeated_site_trajs)
     repeated_site_eids = list(repeated_site_trajs.eid)
     print('total number of repeated site eids: {}'.format(len(repeated_site_eids)))
@@ -305,7 +305,7 @@ def get_mtnn_eids():
     return mtnn_eids
 
 def get_traj(eids):
-    traj = get_insertions(level=2, freeze='release_2022_11')
+    traj = get_insertions(level=2, freeze='release_2023_12')
     tmp = []
     for eid in eids:
         for t in traj:
@@ -392,13 +392,13 @@ def featurize(i, trajectory, one, session_counter, bin_size=0.05, align_event='m
     clusters['rep_site_acronym'] = combine_regions(clusters['acronym'])
 
     # Find clusters that are in the repeated site brain regions and that have been labelled as good
-    cluster_idx = np.where(np.bitwise_and(np.isin(clusters['rep_site_acronym'], BRAIN_REGIONS), clusters['label'] == 1))[0]
+    cluster_idx = np.sort(np.where(np.bitwise_and(np.isin(clusters['rep_site_acronym'], BRAIN_REGIONS), clusters['label'] == 1))[0])
     cluster_id = clusters['cluster_id'][cluster_idx]
     # Find the index of spikes that belong to the chosen clusters
-    spike_idx = np.isin(spikes['clusters'], cluster_id)
+    spike_idx = np.isin(spikes['clusters'], cluster_idx)
 
     print("repeated site brain region counts: ", Counter(clusters['rep_site_acronym'][cluster_idx]))
-    print("number of good clusters: ", cluster_id.shape[0])
+    print("number of good clusters: ", cluster_idx.shape[0])
 
     # Load in trials
     trials = one.load_object(eid, 'trials')
@@ -541,18 +541,18 @@ def featurize(i, trajectory, one, session_counter, bin_size=0.05, align_event='m
     cluster_idx = cluster_idx[sig_units]
     good_clusters = cluster_id[sig_units]
     # Find the index of spikes that belong to the good clusters
-    spike_idx = np.isin(spikes['clusters'], good_clusters)
+    spike_idx = np.isin(spikes['clusters'], cluster_idx)
 
     print("(responsive) repeated site brain region counts: ", Counter(clusters['rep_site_acronym'][cluster_idx]))
-    print("(responsive) number of good clusters: ", good_clusters.shape[0])
+    print("(responsive) number of good clusters: ", cluster_idx.shape[0])
 
-    n_clusters = good_clusters.shape[0]
+    n_clusters = cluster_idx.shape[0]
     n_tbins = int((t_after + t_before) / bin_size)
     feature = np.zeros((n_clusters, n_trials, n_tbins, noise_offset + 1))
     print("feature tensor size: {}".format(feature.shape))
 
     # Create expected output array
-    output, _ = bin_spikes2D(spikes['times'][spike_idx], spikes['clusters'][spike_idx], good_clusters, ref_event,
+    output, _ = bin_spikes2D(spikes['times'][spike_idx], spikes['clusters'][spike_idx], cluster_idx, ref_event,
                              t_before, t_after, bin_size)
     output = output / bin_size
     output = np.swapaxes(output, 0, 1)

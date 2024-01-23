@@ -6,7 +6,7 @@ from one.api import ONE
 from reproducible_ephys_functions import (get_insertions, save_dataset_info, save_figure_path, BRAIN_REGIONS, combine_regions,
                                           save_data_path, filter_recordings)
 
-from ibllib.atlas import AllenAtlas, Insertion
+from iblatlas.atlas import AllenAtlas, Insertion
 from ibllib.pipes.histology import get_brain_regions
 import numpy as np
 import pandas as pd
@@ -77,6 +77,6 @@ def prepare_data(insertions, one, recompute=False, **kwargs):
 if __name__ == '__main__':
     one = ONE()
     one.record_loaded = True
-    insertions = get_insertions(level=0, recompute=True, one=one, freeze='release_2022_11')
+    insertions = get_insertions(level=0, recompute=True, one=one, freeze='release_2023_12')
     prepare_data(insertions, one=one, recompute=True, **default_params)
     save_dataset_info(one, figure='figure7')

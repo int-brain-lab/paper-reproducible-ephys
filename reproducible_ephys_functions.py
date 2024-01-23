@@ -17,7 +17,7 @@ from neurodsp import voltage
 from one.api import ONE
 from one.alf.exceptions import ALFObjectNotFound
 from iblutil.numerical import ismember
-from ibllib.atlas import AllenAtlas
+from iblatlas.atlas import AllenAtlas
 import brainbox.io.one as bbone
 from brainbox.behavior import training
 import yaml
@@ -501,7 +501,7 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
 def filter_recordings(df=None, by_anatomy_only=False, max_ap_rms=40, max_lfp_power=-150,
                       min_neurons_per_channel=0.1, min_channels_region=5, min_regions=0, min_neuron_region=4,
                       min_lab_region=3, min_rec_lab=4, n_trials=400, behavior=False,
-                      exclude_subjects=['ibl_witten_26'], recompute=True, freeze='release_2022_11', one=None):
+                      exclude_subjects=['ibl_witten_26'], recompute=True, freeze='release_2023_12', one=None):
     """
     Filter values in dataframe according to different exclusion criteria
     :param df: pandas dataframe

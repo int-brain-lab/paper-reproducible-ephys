@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from brainbox.io.one import SpikeSortingLoader
-from ibllib.atlas import AllenAtlas
+from iblatlas.atlas import AllenAtlas
 from one.api import ONE
 from reproducible_ephys_functions import combine_regions, BRAIN_REGIONS, get_insertions, save_data_path, save_dataset_info
 from reproducible_ephys_processing import compute_psth, compute_new_label
@@ -77,11 +77,10 @@ def prepare_data(insertions, one, recompute=False, **kwargs):
             cluster_idx = np.sort(np.where(np.bitwise_and(np.isin(clusters['rep_site_acronym'], BRAIN_REGIONS),
                                                           clusters['label'] == 1))[0])
             data['cluster_ids'] = clusters['cluster_id'][cluster_idx]
-
-            print(len(data['cluster_ids']))
+            data['cluster_idx'] = cluster_idx
 
             # Find spikes that are from the clusterIDs
-            spike_idx = np.isin(spikes['clusters'], data['cluster_ids'])
+            spike_idx = np.isin(spikes['clusters'], data['cluster_idx'])
             if np.sum(spike_idx) == 0:
                 continue
 
@@ -124,11 +123,11 @@ def prepare_data(insertions, one, recompute=False, **kwargs):
                 eventBase = eventStim
 
             # Compute firing rate
-            fr_l, _, t = compute_psth(spikes['times'][spike_idx], spikes['clusters'][spike_idx], data['cluster_ids'],
+            fr_l, _, t = compute_psth(spikes['times'][spike_idx], spikes['clusters'][spike_idx], data['cluster_idx'],
                                       eventTimes[trial_l_idx], align_epoch=event_epoch, bin_size=bin_size,
                                       baseline_events=eventBase[trial_l_idx], base_epoch=base_epoch,
                                       smoothing=smoothing, norm=norm)
-            fr_r, _, t = compute_psth(spikes['times'][spike_idx], spikes['clusters'][spike_idx], data['cluster_ids'],
+            fr_r, _, t = compute_psth(spikes['times'][spike_idx], spikes['clusters'][spike_idx], data['cluster_idx'],
                                       eventTimes[trial_r_idx], align_epoch=event_epoch, bin_size=bin_size,
                                       baseline_events=eventBase[trial_r_idx], base_epoch=base_epoch,
                                       smoothing=smoothing, norm=norm)
@@ -186,6 +185,6 @@ def prepare_data(insertions, one, recompute=False, **kwargs):
 if __name__ == '__main__':
     one = ONE()
     one.record_loaded = True
-    insertions = get_insertions(level=0, one=one, freeze='release_2022_11')
+    insertions = get_insertions(level=0, one=one, freeze='release_2023_12')
     prepare_data(insertions, one=one, **default_params)
     save_dataset_info(one, figure='fig_PCA')

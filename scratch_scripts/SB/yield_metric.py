@@ -6,7 +6,7 @@ import seaborn as sns
 import pickle
 from reproducible_ephys_paths import FIG_PATH
 from reproducible_ephys_functions import query
-from ibllib.atlas import BrainRegions
+from iblatlas.regions import BrainRegions
 from brainbox.metrics.single_units import quick_unit_metrics
 from brainbox.io.one import load_spike_sorting_fast
 

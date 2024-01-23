@@ -5,7 +5,7 @@ Created on Wed Dec 15 13:41:49 2021
 By: Guido Meijer
 """
 
-from ibllib.atlas import BrainRegions
+from iblatlas.atlas import BrainRegions
 from fig_ephysfeatures.ephysfeatures_functions import plot_probe, get_brain_boundaries
 from reproducible_ephys_functions import filter_recordings, BRAIN_REGIONS
 from fig_ephysfeatures.ephysfeatures_load_data import load_dataframe

@@ -12,7 +12,7 @@ from sklearn.utils import shuffle
 from sklearn.metrics import confusion_matrix
 
 from one.api import ONE
-from ibllib.atlas import AllenAtlas
+from iblatlas.atlas import AllenAtlas
 from ibllib.pipes.ephys_alignment import EphysAlignment
 from iblutil.numerical import ismember
 from brainbox.processing import compute_cluster_average
@@ -74,16 +74,17 @@ def prepare_data(insertions, one, recompute=False):
         clusters['rep_site_acronym'] = combine_regions(clusters['acronym'])
 
         # Data for cluster dataframe
-        cluster_idx = np.where(clusters['label'] == 1)
+        cluster_idx = np.where(clusters['label'] == 1)[0]
         data_clust['cluster_ids'] = clusters['cluster_id'][cluster_idx]
+        data_clust['cluster_idx'] = cluster_idx
         data_clust['region'] = clusters['rep_site_acronym'][cluster_idx]
         # Find spikes that are from the clusterIDs
-        spike_idx = np.isin(spikes['clusters'], data_clust['cluster_ids'])
+        spike_idx = np.isin(spikes['clusters'], data_clust['cluster_idx'])
 
         clu, data_clust['depths'], n_cluster = compute_cluster_average(spikes['clusters'][spike_idx], spikes['depths'][spike_idx])
-        assert np.array_equal(clu, data_clust['cluster_ids'])
+        assert np.array_equal(clu, data_clust['cluster_idx'])
         clu, data_clust['amps'], _ = compute_cluster_average(spikes['clusters'][spike_idx], spikes['amps'][spike_idx])
-        assert np.array_equal(clu, data_clust['cluster_ids'])
+        assert np.array_equal(clu, data_clust['cluster_idx'])
         data_clust['fr'] = n_cluster / np.max(spikes.times) - np.min(spikes.times)
 
         insertion = one.alyx.rest('insertions', 'list', id=pid)[0]
@@ -347,7 +348,7 @@ def run_decoding(metrics=['yield_per_channel', 'median_firing_rate', 'lfp_power'
 if __name__ == '__main__':
     one = ONE()
     one.record_loaded = True
-    #insertions = get_insertions(level=0, one=one, freeze='release_2022_11')
+    #insertions = get_insertions(level=0, one=one, freeze='release_2023_12')
     #all_df_chns, all_df_clust, metrics = prepare_data(insertions, recompute=True, one=one)
     #save_dataset_info(one, figure='fig_ephysfeatures')
     rerun_decoding = True

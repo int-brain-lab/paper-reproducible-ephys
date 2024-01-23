@@ -11,9 +11,9 @@ probe channels onto this histology data.
 """
 
 import matplotlib.pyplot as plt
-from ibllib.atlas import Insertion
+from iblatlas.atlas import Insertion
 import numpy as np
-import ibllib.atlas as atlas
+import iblatlas.atlas as atlas
 from fig_hist.fig_hist_load_data import load_dataframe
 from fig_hist.fig_hist_functions import df_to_traj_dict
 from reproducible_ephys_functions import save_figure_path, filter_recordings

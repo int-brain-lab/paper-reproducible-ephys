@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from ibllib.atlas import AllenAtlas, Trajectory
+from iblatlas.atlas import AllenAtlas, Trajectory
 
 from reproducible_ephys_functions import labs, figure_style, filter_recordings, save_figure_path
 from fig_ephysfeatures.ephysfeatures_load_data import load_dataframe
@@ -101,4 +101,4 @@ def plot_figure_supp2(freeze=None):
 
 
 if __name__ == '__main__':
-    plot_figure_supp2(freeze='release_2022_11')
+    plot_figure_supp2(freeze='release_2023_12')
