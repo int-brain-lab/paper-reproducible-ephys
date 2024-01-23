@@ -82,10 +82,11 @@ def prepare_data(insertions, one, figure='fig_taskmodulation', recompute=False, 
             clusters['rep_site_acronym'] = combine_regions(clusters['acronym'])
 
             # Find clusters that are in the regions we are interested in and are good
-            cluster_idx = np.bitwise_and(np.isin(clusters['rep_site_acronym'], BRAIN_REGIONS), clusters['label'] == 1)
+            cluster_idx = np.sort(np.where(np.bitwise_and(np.isin(clusters['rep_site_acronym'], BRAIN_REGIONS), clusters['label'] == 1))[0])
             data['cluster_ids'] = clusters['cluster_id'][cluster_idx]
+            data['cluster_idx'] = cluster_idx
             # Find spikes that are from the clusterIDs
-            spike_idx = np.isin(spikes['clusters'], data['cluster_ids'])
+            spike_idx = np.isin(spikes['clusters'], data['cluster_idx'])
             if np.sum(spike_idx) == 0:
                 continue
 
@@ -115,7 +116,7 @@ def prepare_data(insertions, one, figure='fig_taskmodulation', recompute=False, 
             # Baseline firing rate
             intervals = np.c_[eventStim - 0.2, eventStim]
             counts, cluster_ids = get_spike_counts_in_bins(spikes.times[spike_idx], spikes.clusters[spike_idx], intervals)
-            assert np.array_equal(cluster_ids, data['cluster_ids'])
+            assert np.array_equal(cluster_ids, data['cluster_idx'])
             fr_base = counts / (intervals[:, 1] - intervals[:, 0])
 
             data['avg_fr_base'] = np.nanmean(fr_base, axis=1)
@@ -123,42 +124,42 @@ def prepare_data(insertions, one, figure='fig_taskmodulation', recompute=False, 
             # Trial firing rate
             intervals = np.c_[eventStim, eventStim + 0.4]
             counts, cluster_ids = get_spike_counts_in_bins(spikes.times[spike_idx], spikes.clusters[spike_idx], intervals)
-            assert np.array_equal(cluster_ids, data['cluster_ids'])
+            assert np.array_equal(cluster_ids, data['cluster_idx'])
             fr_trial = counts / (intervals[:, 1] - intervals[:, 0])
             data['avg_fr_trial'] = np.nanmean(fr_trial, axis=1)
 
             # Reaction time firing rate
             intervals = np.c_[eventStim, eventMove]
             counts, cluster_ids = get_spike_counts_in_bins(spikes.times[spike_idx], spikes.clusters[spike_idx], intervals)
-            assert np.array_equal(cluster_ids, data['cluster_ids'])
+            assert np.array_equal(cluster_ids, data['cluster_idx'])
             fr_rxn = counts / (intervals[:, 1] - intervals[:, 0])
             data['avg_fr_rxn_time'] = np.nanmean(fr_rxn, axis=1)
 
             # Post-stimulus firing rate
             intervals = np.c_[eventStim + 0.05, eventStim + 0.15]
             counts, cluster_ids = get_spike_counts_in_bins(spikes.times[spike_idx], spikes.clusters[spike_idx], intervals)
-            assert np.array_equal(cluster_ids, data['cluster_ids'])
+            assert np.array_equal(cluster_ids, data['cluster_idx'])
             fr_post_stim = counts / (intervals[:, 1] - intervals[:, 0])
             data['avg_fr_post_stim'] = np.nanmean(fr_post_stim, axis=1)
 
             # Pre-move firing rate
             intervals = np.c_[eventMove - 0.1, eventMove + 0.05]
             counts, cluster_ids = get_spike_counts_in_bins(spikes.times[spike_idx], spikes.clusters[spike_idx], intervals)
-            assert np.array_equal(cluster_ids, data['cluster_ids'])
+            assert np.array_equal(cluster_ids, data['cluster_idx'])
             fr_pre_move = counts / (intervals[:, 1] - intervals[:, 0])
             data['avg_fr_pre_move'] = np.nanmean(fr_pre_move, axis=1)
 
             # Pre-move left firing rate
             intervals = np.c_[eventMoveL - 0.1, eventMoveL + 0.05]
             counts, cluster_ids = get_spike_counts_in_bins(spikes.times[spike_idx], spikes.clusters[spike_idx], intervals)
-            assert np.array_equal(cluster_ids, data['cluster_ids'])
+            assert np.array_equal(cluster_ids, data['cluster_idx'])
             fr_pre_moveL = counts / (intervals[:, 1] - intervals[:, 0])
             data['avg_fr_pre_moveL'] = np.nanmean(fr_pre_moveL, axis=1)
 
             # Pre-move right firing rate
             intervals = np.c_[eventMoveR - 0.1, eventMoveR + 0.05]
             counts, cluster_ids = get_spike_counts_in_bins(spikes.times[spike_idx], spikes.clusters[spike_idx], intervals)
-            assert np.array_equal(cluster_ids, data['cluster_ids'])
+            assert np.array_equal(cluster_ids, data['cluster_idx'])
             fr_pre_moveR = counts / (intervals[:, 1] - intervals[:, 0])
             data['avg_fr_pre_moveR'] = np.nanmean(fr_pre_moveR, axis=1)
 
@@ -170,7 +171,7 @@ def prepare_data(insertions, one, figure='fig_taskmodulation', recompute=False, 
             rxn_idx = rxn_times > 0.05
             intervals = np.c_[eventMove[rxn_idx] - rxn_times[rxn_idx], eventMove[rxn_idx]]
             counts, cluster_ids = get_spike_counts_in_bins(spikes.times[spike_idx], spikes.clusters[spike_idx], intervals)
-            assert np.array_equal(cluster_ids, data['cluster_ids'])
+            assert np.array_equal(cluster_ids, data['cluster_idx'])
             fr_pre_move_tw = counts / (intervals[:, 1] - intervals[:, 0])
             data['avg_fr_pre_move_tw'] = np.nanmean(fr_pre_move_tw, axis=1)
 
@@ -180,7 +181,7 @@ def prepare_data(insertions, one, figure='fig_taskmodulation', recompute=False, 
             if pid == '36362f75-96d8-4ed4-a728-5e72284d0995' and figure == 'figure5':
                 intervals = np.c_[eventStim[rxn_idx] - 0.2, eventStim[rxn_idx]]
                 counts, cluster_ids = get_spike_counts_in_bins(spikes.times[spike_idx], spikes.clusters[spike_idx], intervals)
-                assert np.array_equal(cluster_ids, data['cluster_ids'])
+                assert np.array_equal(cluster_ids, data['cluster_idx'])
                 fr_base_example = counts / (intervals[:, 1] - intervals[:, 0])
                 neuron_id = 265 #614
                 clu_idx = np.where(cluster_ids == neuron_id)[0]
@@ -191,14 +192,14 @@ def prepare_data(insertions, one, figure='fig_taskmodulation', recompute=False, 
             # Post-move firing rate
             intervals = np.c_[eventMove - 0.05, eventMove + 0.2]
             counts, cluster_ids = get_spike_counts_in_bins(spikes.times[spike_idx], spikes.clusters[spike_idx], intervals)
-            assert np.array_equal(cluster_ids, data['cluster_ids'])
+            assert np.array_equal(cluster_ids, data['cluster_idx'])
             fr_post_move = counts / (intervals[:, 1] - intervals[:, 0])
             data['avg_fr_post_move'] = np.nanmean(fr_post_move, axis=1)
 
             # Post-reward firing rate
             intervals = np.c_[eventFeedback, eventFeedback + 0.15]
             counts, cluster_ids = get_spike_counts_in_bins(spikes.times[spike_idx], spikes.clusters[spike_idx], intervals)
-            assert np.array_equal(cluster_ids, data['cluster_ids'])
+            assert np.array_equal(cluster_ids, data['cluster_idx'])
             fr_post_reward = counts / (intervals[:, 1] - intervals[:, 0])
             data['avg_fr_post_reward'] = np.nanmean(fr_post_reward, axis=1)
 
@@ -254,7 +255,7 @@ def prepare_data(insertions, one, figure='fig_taskmodulation', recompute=False, 
             elif base_event == 'stim':
                 eventBase = eventStim
 
-            _, _, ff_r, time_ff = compute_psth(spikes['times'][spike_idx], spikes['clusters'][spike_idx], data['cluster_ids'],
+            _, _, ff_r, time_ff = compute_psth(spikes['times'][spike_idx], spikes['clusters'][spike_idx], data['cluster_idx'],
                                                eventTimes, align_epoch=event_epoch, bin_size=ff_bin_size,
                                                baseline_events=eventBase, base_epoch=base_epoch, smoothing=smoothing, norm=norm,
                                                slide_kwargs=slide_kwargs_ff, return_ff=True)
@@ -264,7 +265,7 @@ def prepare_data(insertions, one, figure='fig_taskmodulation', recompute=False, 
             # Extra computations for figure 7 (now figure 6)
             if figure != 'fig_taskmodulation':
                 # Compute firing rate waveforms for right 100% contrast
-                fr_r, _, time_fr = compute_psth(spikes['times'][spike_idx], spikes['clusters'][spike_idx], data['cluster_ids'],
+                fr_r, _, time_fr = compute_psth(spikes['times'][spike_idx], spikes['clusters'][spike_idx], data['cluster_idx'],
                                                 eventTimes, align_epoch=event_epoch, bin_size=fr_bin_size,
                                                 baseline_events=eventBase, base_epoch=base_epoch, smoothing=smoothing, norm=norm,
                                                 slide_kwargs=slide_kwargs_fr)
@@ -285,13 +286,13 @@ def prepare_data(insertions, one, figure='fig_taskmodulation', recompute=False, 
                     eventBase = eventStim
 
                 # Compute fanofactor
-                _, _, ff_l, time_ff = compute_psth(spikes['times'][spike_idx], spikes['clusters'][spike_idx], data['cluster_ids'],
+                _, _, ff_l, time_ff = compute_psth(spikes['times'][spike_idx], spikes['clusters'][spike_idx], data['cluster_idx'],
                                                    eventTimes, align_epoch=event_epoch, bin_size=ff_bin_size,
                                                    baseline_events=eventBase, base_epoch=base_epoch, smoothing=smoothing,
                                                    norm=norm, slide_kwargs=slide_kwargs_ff, return_ff=True)
 
                 # Compute firing rate
-                fr_l, _, time_fr = compute_psth(spikes['times'][spike_idx], spikes['clusters'][spike_idx], data['cluster_ids'],
+                fr_l, _, time_fr = compute_psth(spikes['times'][spike_idx], spikes['clusters'][spike_idx], data['cluster_idx'],
                                                 eventTimes, align_epoch=event_epoch, bin_size=fr_bin_size,
                                                 baseline_events=eventBase, base_epoch=base_epoch, smoothing=smoothing,
                                                 norm=norm, slide_kwargs=slide_kwargs_fr)
@@ -345,14 +346,14 @@ def prepare_data(insertions, one, figure='fig_taskmodulation', recompute=False, 
                     eventBase = eventStim
 
                 # Compute firing rates for left side events
-                fr_l, fr_l_std, t = compute_psth(spikes['times'][spike_idx], spikes['clusters'][spike_idx], data['cluster_ids'],
+                fr_l, fr_l_std, t = compute_psth(spikes['times'][spike_idx], spikes['clusters'][spike_idx], data['cluster_idx'],
                                                  eventTimes[trial_l_idx], align_epoch=event_epoch, bin_size=fr_bin_size,
                                                  baseline_events=eventBase[trial_l_idx], base_epoch=base_epoch,
                                                  smoothing=smoothing, norm=norm)
                 fr_l_std = fr_l_std / np.sqrt(trial_l_idx.size)  # convert to standard error
 
                 # Compute firing rates for right side events
-                fr_r, fr_r_std, t = compute_psth(spikes['times'][spike_idx], spikes['clusters'][spike_idx], data['cluster_ids'],
+                fr_r, fr_r_std, t = compute_psth(spikes['times'][spike_idx], spikes['clusters'][spike_idx], data['cluster_idx'],
                                                  eventTimes[trial_r_idx], align_epoch=event_epoch, bin_size=fr_bin_size,
                                                  baseline_events=eventBase[trial_r_idx], base_epoch=base_epoch,
                                                  smoothing=smoothing, norm=norm)

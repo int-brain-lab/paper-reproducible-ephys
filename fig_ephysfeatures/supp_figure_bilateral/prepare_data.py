@@ -66,16 +66,17 @@ def prepare_data(insertions, one, recompute=False):
         clusters['rep_site_acronym'] = combine_regions(clusters['acronym'])
 
         # Data for cluster dataframe
-        cluster_idx = np.where(clusters['label'] == 1)
+        cluster_idx = np.where(clusters['label'] == 1)[0]
         data_clust['cluster_ids'] = clusters['cluster_id'][cluster_idx]
+        data_clust['cluster_idx'] = cluster_idx
         data_clust['region'] = clusters['rep_site_acronym'][cluster_idx]
         # Find spikes that are from the clusterIDs
-        spike_idx = np.isin(spikes['clusters'], data_clust['cluster_ids'])
+        spike_idx = np.isin(spikes['clusters'], data_clust['cluster_idx'])
 
         clu, data_clust['depths'], n_cluster = compute_cluster_average(spikes['clusters'][spike_idx], spikes['depths'][spike_idx])
-        assert np.array_equal(clu, data_clust['cluster_ids'])
+        assert np.array_equal(clu, data_clust['cluster_idx'])
         clu, data_clust['amps'], _ = compute_cluster_average(spikes['clusters'][spike_idx], spikes['amps'][spike_idx])
-        assert np.array_equal(clu, data_clust['cluster_ids'])
+        assert np.array_equal(clu, data_clust['cluster_idx'])
         data_clust['fr'] = n_cluster / np.max(spikes.times) - np.min(spikes.times)
 
         insertion = one.alyx.rest('insertions', 'list', id=pid)[0]
@@ -261,9 +262,10 @@ def prepare_neural_data(insertions, one, recompute=False, **kwargs):
             cluster_idx = np.sort(np.where(np.bitwise_and(np.isin(clusters['rep_site_acronym'], BRAIN_REGIONS),
                                                           clusters['label'] == 1))[0])
             data['cluster_ids'] = clusters['cluster_id'][cluster_idx]
+            data['cluster_idx'] = cluster_idx
 
             # Find spikes that are from the clusterIDs
-            spike_idx = np.isin(spikes['clusters'], data['cluster_ids'])
+            spike_idx = np.isin(spikes['clusters'], data['cluster_idx'])
             if np.sum(spike_idx) == 0:
                 continue
 
@@ -297,7 +299,7 @@ def prepare_neural_data(insertions, one, recompute=False, **kwargs):
                 eventBase = eventStim
 
             # Compute firing rates for left side events
-            fr, fr_std, t = compute_psth(spikes['times'][spike_idx], spikes['clusters'][spike_idx], data['cluster_ids'],
+            fr, fr_std, t = compute_psth(spikes['times'][spike_idx], spikes['clusters'][spike_idx], data['cluster_idx'],
                                          eventTimes[trial_idx], align_epoch=event_epoch, bin_size=bin_size,
                                          baseline_events=eventBase[trial_idx], base_epoch=base_epoch,
                                          smoothing=smoothing, norm=norm)
@@ -305,7 +307,7 @@ def prepare_neural_data(insertions, one, recompute=False, **kwargs):
             fr_std = fr_std / np.sqrt(trial_idx.size)  # convert to standard error
 
             # Compute firing rates for right side events
-            # fr_r, fr_r_std, t = compute_psth(spikes['times'][spike_idx], spikes['clusters'][spike_idx], data['cluster_ids'],
+            # fr_r, fr_r_std, t = compute_psth(spikes['times'][spike_idx], spikes['clusters'][spike_idx], data['cluster_idx'],
             #                                  eventTimes[trial_r_idx], align_epoch=event_epoch, bin_size=bin_size,
             #                                  baseline_events=eventBase[trial_r_idx], base_epoch=base_epoch,
             #                                  smoothing=smoothing, norm=norm)
