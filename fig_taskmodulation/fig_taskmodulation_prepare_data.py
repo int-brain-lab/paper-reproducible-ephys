@@ -578,7 +578,7 @@ if __name__ == '__main__':
     print("Filtering criteria: {}".format(filtering_criteria))
     one = ONE()
     one.record_loaded = True
-    # insertions = get_insertions(level=0, one=one, freeze='release_2022_11', recompute=True)
+    # insertions = get_insertions(level=0, one=one, freeze='release_2023_12', recompute=True)
     # prepare_data(insertions, one=one, recompute=True, **default_params)
     # save_dataset_info(one, figure='fig_taskmodulation')
     compute_permutation_test(n_permut=20000, n_cores=8)

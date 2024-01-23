@@ -348,7 +348,7 @@ def run_decoding(metrics=['yield_per_channel', 'median_firing_rate', 'lfp_power'
 if __name__ == '__main__':
     one = ONE()
     one.record_loaded = True
-    #insertions = get_insertions(level=0, one=one, freeze='release_2022_11')
+    #insertions = get_insertions(level=0, one=one, freeze='release_2023_12')
     #all_df_chns, all_df_clust, metrics = prepare_data(insertions, recompute=True, one=one)
     #save_dataset_info(one, figure='fig_ephysfeatures')
     rerun_decoding = True

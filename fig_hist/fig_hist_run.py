@@ -8,7 +8,7 @@ from reproducible_ephys_functions import get_insertions
 from one.api import ONE
 
 
-def run_fig_hist(one, recompute=False, supplementary=False, freeze='release_2022_11'):
+def run_fig_hist(one, recompute=False, supplementary=False, freeze='release_2023_12'):
     # download all repeated site insertions
     insertions = get_insertions(level=-1, one=one, freeze=freeze)
     concat_df_chns, concat_df_traj = prepare_data(insertions, one=one, recompute=recompute)
