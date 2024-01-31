@@ -77,6 +77,6 @@ def prepare_data(insertions, one, recompute=False, **kwargs):
 if __name__ == '__main__':
     one = ONE()
     one.record_loaded = True
-    insertions = get_insertions(level=0, recompute=True, one=one, freeze='release_2023_12')
+    insertions = get_insertions(level=0, recompute=True, one=one, freeze='freeze_2024_01')
     prepare_data(insertions, one=one, recompute=True, **default_params)
     save_dataset_info(one, figure='figure7')

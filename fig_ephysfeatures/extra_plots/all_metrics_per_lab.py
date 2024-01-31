@@ -22,7 +22,7 @@ for i, region in enumerate(REGIONS):
     for j, metric in enumerate(METRICS):
         panel_example(axs[i, j], n_rec_per_region=N_REC_PER_REGION, ylabel=LABELS[j],
                       example_metric=metric, example_region=region,
-                      despine=False, freeze='release_2023_12')
+                      despine=False, freeze='freeze_2024_01')
         if region == 'PPC':
             axs[i, j].set(title='VISa/am')
         else:
