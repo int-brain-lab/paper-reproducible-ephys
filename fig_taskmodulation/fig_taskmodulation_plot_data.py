@@ -952,39 +952,39 @@ def power_analysis_to_table():
 
 if __name__ == '__main__':
 
-    # plt.figure(figsize=(16 * 0.75, 9 * 0.75))
-    # ax = plt.gca()
-    # plt.figure(figsize=(16 * 0.75, 9 * 0.75))
-    # ax2 = plt.gca()
-    # plot_panel_power_analysis(ax=ax2, ax2=ax)
-    # plt.savefig("firing rates plus shifts")
-    # plt.show()
+    plt.figure(figsize=(16 * 0.75, 9 * 0.75))
+    ax = plt.gca()
+    plt.figure(figsize=(16 * 0.75, 9 * 0.75))
+    ax2 = plt.gca()
+    plot_panel_power_analysis(ax=ax2, ax2=ax)
+    plt.savefig("firing rates plus shifts")
+    plt.show()
 
-    # df = load_dataframe()
-    # df_filt = filter_recordings(df, **filtering_criteria)
-    # df_filt = df_filt[df_filt['permute_include'] == 1]
-    #
-    # results = pd.DataFrame()
-    #
-    # df_region = df_filt.groupby('region')
-    # names = tests.keys()
-    # ps = []
-    # for test in names:
-    #     for i, br in enumerate(BRAIN_REGIONS):
-    #         df_br = df_region.get_group(br)
-    #
-    #         vals = df_br.groupby(['subject', 'institute'])[test].mean()
-    #
-    #         labs = vals.index.get_level_values('institute')
-    #         subjects = vals.index.get_level_values('subject')
-    #         data = vals.values
-    #         p = permut_test(data, metric=permut_dist, labels1=labs,
-    #                         labels2=subjects, n_permut=20000, n_cores=5)
-    #         print(p)
-    #         results = pd.concat((results, pd.DataFrame(index=[results.shape[0] + 1],
-    #                                                    data={'test': test, 'region': br, 'p_value_permut': p})))
-    #
-    # pickle.dump(results.p_value_permut.values, open(save_data_path(figure='fig_taskmodulation').joinpath('p_values_percent_modulated'), 'wb'))
+    df = load_dataframe()
+    df_filt = filter_recordings(df, **filtering_criteria)
+    df_filt = df_filt[df_filt['permute_include'] == 1]
+    
+    results = pd.DataFrame()
+    
+    df_region = df_filt.groupby('region')
+    names = tests.keys()
+    ps = []
+    for test in names:
+        for i, br in enumerate(BRAIN_REGIONS):
+            df_br = df_region.get_group(br)
+    
+            vals = df_br.groupby(['subject', 'institute'])[test].mean()
+    
+            labs = vals.index.get_level_values('institute')
+            subjects = vals.index.get_level_values('subject')
+            data = vals.values
+            p = permut_test(data, metric=permut_dist, labels1=labs,
+                            labels2=subjects, n_permut=20000, n_cores=5)
+            print(p)
+            results = pd.concat((results, pd.DataFrame(index=[results.shape[0] + 1],
+                                                       data={'test': test, 'region': br, 'p_value_permut': p})))
+    
+    pickle.dump(results.p_value_permut.values, open(save_data_path(figure='fig_taskmodulation').joinpath('p_values_percent_modulated'), 'wb'))
 
     plot_main_figure()
     plot_power_analysis()
