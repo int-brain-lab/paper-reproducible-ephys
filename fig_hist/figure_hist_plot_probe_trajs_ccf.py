@@ -24,13 +24,13 @@ def plot_trajs(plan_colour='w', lab_colour=True):
     and add histology trajs projections onto this plot.
     '''
 
+    # get new atlas for plotting
+    brain_atlas = atlas.AllenAtlas(res_um=25)
+
     # load in data
     probe_data = load_dataframe(df_name='traj')
 
-    ins_plan = atlas.Insertion.from_dict(df_to_traj_dict(probe_data.iloc[0], provenance='planned'))
-
-    # get new atlas for plotting
-    brain_atlas = atlas.AllenAtlas(res_um=25)
+    ins_plan = atlas.Insertion.from_dict(df_to_traj_dict(probe_data.iloc[0], provenance='planned'), brain_atlas)
 
     # use repo-ephys figure style
     figure_style()
@@ -57,7 +57,7 @@ def plot_trajs(plan_colour='w', lab_colour=True):
         lab = row['lab']
 
         traj = df_to_traj_dict(row, provenance='hist')
-        ins = atlas.Insertion.from_dict(traj)
+        ins = atlas.Insertion.from_dict(traj, brain_atlas)
 
         all_ins_entry = np.vstack([all_ins_entry, ins.xyz[0, :]])
         all_ins_exit = np.vstack([all_ins_exit, ins.xyz[1, :]])
