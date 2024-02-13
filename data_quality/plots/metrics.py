@@ -165,5 +165,103 @@ def metrics_plot(dset, region="Isocortex", axes=None):
     axes[1, 3].bar(["IBL", dset], [mean_ibl, mean], yerr=[stdev_ibl], capsize=5, ecolor="gray", color=colors)
     axes[1, 3].set_title("Passing units per site", fontsize=8)
 
+def histograms(dset, region="Isocortex"):
 
+    assert dset in ["steinmetz", "allen"], "dset must be one of 'steinemtz', 'allen'"
+    if dset == "steinmetz":
+        ibl_dset = "bwm"
+    if dset == "allen":
+        ibl_dset = "re"
 
+    colors, colors_translucent = get_colors_region(region)
+
+    clusters = load_clusters(dset, filter_region=region)
+    ibl_clusters = load_clusters(ibl_dset, filter_region=region)
+
+    # convert from V to uV
+    clusters["amp_median"] *= 1e6
+    ibl_clusters["amp_median"] *= 1e6
+    
+    fig, axf = plt.subplot_mosaic([["upper left", "upper right"], ["bottom", "bottom"], ], figsize=(9, 6))
+    ibl_passing = ibl_clusters[(ibl_clusters.label==1.0)]
+    ibl_clusters.plot.scatter(x="firing_rate", y="amp_median", loglog=True, title=f"IBL", ax=axf["upper left"], color="grey", alpha=0.5, label="all")
+    ibl_passing.plot.scatter(x="firing_rate", y="amp_median", loglog=True, ax=axf["upper left"], color=colors[0], alpha=0.5, label="passing")
+    axf["upper left"].set_xlabel("log(FR) (Hz)", fontsize=8)
+    axf["upper left"].set_ylabel("log(amp_median) (uV)", fontsize=8)
+    
+    passing = clusters[(clusters.label==1.0)&(clusters.use==1.0)]
+    clusters.plot.scatter(x="firing_rate", y="amp_median", loglog=True, title=dset, ax=axf["upper right"], color="grey", alpha=0.5, label="all")
+    passing.plot.scatter(x="firing_rate", y="amp_median", loglog=True, ax=axf["upper right"], color=colors[1], alpha=0.5, label="passing")
+    axf["upper right"].set_xlabel("log(FR) (Hz)", fontsize=8)
+    axf["upper right"].set_ylabel("log(amp_median) (uV)", fontsize=8)
+    
+    fr_xmax = max(ibl_clusters.firing_rate.max(), ibl_clusters.firing_rate.max())
+    fr_xmin = min(ibl_clusters.firing_rate.min(), ibl_clusters.firing_rate.min())
+    amp_ymax = max(clusters.amp_median.max(), clusters.amp_median.max())
+    amp_ymin = min(clusters.amp_median.min(), clusters.amp_median.min())
+
+    axf["upper left"].set_xlim(fr_xmin, fr_xmax)
+    axf["upper left"].set_ylim(amp_ymin, amp_ymax)
+    axf["upper right"].set_xlim(fr_xmin, fr_xmax)
+    axf["upper right"].set_ylim(amp_ymin, amp_ymax)
+    
+    
+    bins = np.logspace(0, np.log10(2000), 50)
+    ampassing_ibl = ibl_clusters[["amp_median", "label"]][ibl_clusters.label==1.]
+    ampassing_ibl["binned"] = pd.cut(ampassing_ibl["amp_median"], bins=bins) 
+    ampassing_ibl["start"] = [interval.left if not isinstance(interval, float) else bins[-1] for interval in ampassing_ibl["binned"] ]
+    to_plot = ampassing_ibl.groupby("start").agg("count")
+    to_plot["cumu"] = to_plot.loc[::-1, "binned", ].cumsum()[::-1] / sum(sites_ibl.num_sites)
+    to_plot["cumu"].plot(drawstyle="steps", color=colors[0], ax=axf["bottom"])
+    
+    ampassing = clusters[["amp_median", "label"]][clusters.label==1.]
+    ampassing["binned"] = pd.cut(ampassing["amp_median"], bins=bins) 
+    ampassing["start"] = [interval.left for interval in ampassing["binned"]]
+    to_plot = ampassing.groupby("start").agg("count")
+    to_plot["cumu"] = to_plot.loc[::-1, "binned", ].cumsum()[::-1] / sum(sites.num_sites)
+    to_plot["cumu"].plot(drawstyle="steps", color=colors[1], ax=axf["bottom"])
+    axf["bottom"].set_title("Passing units per site >= amplitude", fontsize=10)
+    axf["bottom"].set_xscale("log")
+    axf["bottom"].set_xlabel("log(amp_median) (uV)", fontsize=8)
+    axf["bottom"].set_ylabel("Passing units per site\n>=amp", fontsize=8)
+    
+    fig.suptitle(f"Firing rate vs Amplitude {region}")
+    fig.tight_layout()
+    
+    fig, axh = plt.subplots(1, 2, figsize=(10, 4))
+    num_units_ibl = ibl_clusters.index.get_level_values(0).nunique()
+    num_units_ste = clusters.index.get_level_values(0).nunique()
+    nbins = int((num_units_ibl + num_units_ste))
+    bins = np.logspace(0, np.log10(2000), num=nbins)
+    hist_kwargs = {"bins":bins, "histtype":"step"}
+    ibl_clusters["amp_median"].hist(ax=axh[0], linestyle="dashed", edgecolor="grey", label="IBL-all", **hist_kwargs)
+    ibl_passing["amp_median"].hist(ax=axh[0], edgecolor="grey", label="IBL-passing",**hist_kwargs)
+    clusters["amp_median"].hist(ax=axh[0], linestyle="dashed", edgecolor=colors[1], label=f"{dset}-all", **hist_kwargs)
+    passing["amp_median"].hist(ax=axh[0], edgecolor=colors[1], label=f"{dset}-passing", **hist_kwargs)
+    axh[0].set_xlim(1, 2000)
+    axh[0].set_xlabel("log(amp_median) (uV)", fontsize=8)
+    axh[0].set_ylabel("# units")
+    axh[0].set_title(f"Amplitude histogram {region}", fontsize=10)
+    axh[0].set_xscale("log")
+    axh[0].grid(False)
+    axh[0].vlines(50,
+        axh[0].get_ylim()[0],
+        axh[0].get_ylim()[1],
+        linestyles="dashed",
+        label="50 uV",
+        color="black",
+        linewidths=2.0,)
+        
+    bins = np.logspace(-3, 3, nbins)
+    hist_kwargs = {"bins":bins, "histtype":"step"}
+    ibl_clusters["firing_rate"].hist(ax=axh[1], linestyle="dashed", edgecolor="grey", label="IBL-all", **hist_kwargs)
+    ibl_passing["firing_rate"].hist(ax=axh[1], edgecolor="grey", label="IBL-passing",**hist_kwargs)
+    clusters["firing_rate"].hist(ax=axh[1], linestyle="dashed", edgecolor=colors[1], label=f"{dset}-all", **hist_kwargs)
+    passing["firing_rate"].hist(ax=axh[1], edgecolor=colors[1], label=f"{dset}-passing", **hist_kwargs)
+    axh[1].set_xscale("log")
+    axh[1].set_xlabel("log(FR) (Hz)", fontsize=8)
+    axh[1].set_ylabel("")
+    axh[1].legend()
+    axh[1].grid(False)
+    axh[1].set_title(f"FR histogram {region}", fontsize=12)
+    fig.tight_layout()    
