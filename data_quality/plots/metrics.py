@@ -30,7 +30,7 @@ def metrics_plot(dset, region="Isocortex", axes=None):
     clusters = load_clusters(dset, filter_region=region)
     ibl_clusters = load_clusters(ibl_dset, filter_region=region)
     channels = load_channels(dset, filter_region=region)
-    ibl_channels = load_channels(dset, filter_region=region)
+    ibl_channels = load_channels(ibl_dset, filter_region=region)
 
     ## num insertions
     num_ins = len(clusters.index.levels[0])
@@ -138,8 +138,32 @@ def metrics_plot(dset, region="Isocortex", axes=None):
     inset_amp.patch.set_alpha(0.2)
     inset_amp.set_frame_on(False)
 
+    ## passing units per site
+    passing_ibl = ibl_clusters.groupby("insertion").agg(
+        passing_units = pd.NamedAgg(column="label", aggfunc=lambda x: len(x[x==1.])), 
+        lab = pd.NamedAgg(column="lab", aggfunc="first")
+        )
+    sites_ibl = ibl_channels.groupby("insertion").agg(num_sites=pd.NamedAgg(column="cosmos_acronym", aggfunc="count"))
+    passing_per_site_ibl = passing_ibl.merge(sites_ibl, on="insertion")
 
+    passing = clusters.groupby("insertion").agg(passing_units = pd.NamedAgg(column="label", aggfunc=lambda x: len(x[x==1.])))
+    sites = channels.groupby("insertion").agg(num_sites=pd.NamedAgg(column="cosmos_acronym", aggfunc="count"))
+    passing_per_site = passing.merge(sites, on="insertion")
 
+    passing_per_site_ibl["passing_per_site"] = passing_per_site_ibl["passing_units"]/passing_per_site_ibl["num_sites"]
+
+    passing_per_site["passing_per_site"] = passing_per_site["passing_units"]/passing_per_site["num_sites"]
+
+    passing_per_site_all = dict(zip(["IBL", "Allen"], [passing_per_site_ibl["passing_per_site"].to_numpy(), passing_per_site["passing_per_site"].to_numpy()]))
+    passing_per_site_all = pd.DataFrame.from_dict(passing_per_site_all, orient="index")
+
+    mean_ibl = passing_per_site_ibl["passing_per_site"].mean()
+    mean = passing_per_site["passing_per_site"].mean()
+    stdev_ibl = passing_per_site_ibl["passing_per_site"].std() / np.sqrt(len(passing_per_site_ibl))
+    stdev = passing_per_site["passing_per_site"].std() / np.sqrt(len(passing_per_site))
+
+    axes[1, 3].bar(["IBL", dset], [mean_ibl, mean], yerr=[stdev_ibl], capsize=5, ecolor="gray", color=colors)
+    axes[1, 3].set_title("Passing units per site", fontsize=8)
 
 
 
