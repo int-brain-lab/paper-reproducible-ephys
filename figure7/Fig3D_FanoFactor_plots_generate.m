@@ -191,7 +191,7 @@ for regionN = 1:size(BrainRegions,2)
             xlabel('\DeltaY (P-A)')
         elseif spHist==3
             xlabel('\DeltaZ (V-D)')
-            legend('Regular Units', 'Outlier Units');
+            legend('FF > 1','FF < 1')%('Regular Units', 'Outlier Units');
         end
         
         set(gca, 'fontsize', 12, 'box', 'off')
@@ -246,7 +246,7 @@ for regionN = 1:size(BrainRegions,2)
                 num2str(size(dXYZ,1)), ' Total'], 'Interpreter', 'None');
         elseif spHist==5
             xlabel('WF duration')
-            legend('Regular Units', 'Outlier Units');
+            legend('FF > 1','FF < 1')%('Regular Units', 'Outlier Units');
         end
         
         set(gca, 'fontsize', 12, 'box', 'off')
@@ -294,6 +294,46 @@ for regionN = 1:size(BrainRegions,2)
     %figure;plot(mdl.Residuals.Raw, 'ok')
     %figure;plot(Covariates(:,1), mdl.Residuals.Raw, 'ok')
     
+    
+    %% Scatter plot of FF vs. width with marker size from avg FR
+    %Get rid of nan FFs and negative spike widths/durations:
+    x_dur = SpikeWF(~isnan(FFvalues),2);
+    y_FF = FFvalues(~isnan(FFvalues));
+    z_FR = AvgFR(Neur_idx);
+    z_FR = z_FR(~isnan(FFvalues));
+    y_FF = y_FF(x_dur>0);
+    z_FR = z_FR(x_dur>0);
+    x_dur = x_dur(x_dur>0);
+    %Get rid of very high FFs:
+    x_dur = x_dur(y_FF<=3);
+    z_FR = z_FR(y_FF<=3);
+    y_FF = y_FF(y_FF<=3);
+    
+    figure
+    scatter(x_dur, y_FF, z_FR*2, 'o')
+
+    %Fit line to data using polyfit
+    c = polyfit(x_dur, y_FF, 1);%(x,y,1);
+    %%Display evaluated equation y = m*x + b
+    %disp(['Equation is y = ' num2str(c(1)) '*x + ' num2str(c(2))])
+
+    % Evaluate fit equation using polyval
+    y_est = polyval(c, x_dur);
+    % Add trend line to plot
+    hold on
+    plot(x_dur, y_est,'r','LineWidth',1)
+    
+    [Rcc,Pcc] = corrcoef(x_dur, y_FF);
+    disp([Rcc(1,2)^2, Pcc(1,2)])
+    
+    set(gca, 'fontsize', 15)
+    xlabel('Spike width (ms)')
+    ylabel('Fano Factor post-movement')
+    title(char(BrainRegion))
+    
+%     scatter(SpikeWF(:,2), FFvalues)
+%     hold on
+%     scatter(SpikeWF(UnitsLowFF,2), FFvalues(UnitsLowFF))
 end
 
 %% Display signif. difference in x, y, z, WF amp, and WF p2t duration:

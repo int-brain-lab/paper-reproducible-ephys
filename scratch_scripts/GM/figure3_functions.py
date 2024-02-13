@@ -9,7 +9,8 @@ from one.api import ONE
 from os.path import join
 from ibllib.ephys.neuropixel import SITES_COORDINATES
 from ibllib.pipes.ephys_alignment import EphysAlignment
-from ibllib.atlas import atlas, BrainRegions
+from iblatlas import atlas
+from iblatlas.regions import BrainRegions
 from permutation_test import permut_test
 from statsmodels.stats.multitest import multipletests
 from scratch_scripts.MF.features_2D import (psd_data, get_brain_boundaries, plot_probe, spike_amp_data,

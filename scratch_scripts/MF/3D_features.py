@@ -3,7 +3,7 @@ from ibllib.ephys.neuropixel import TIP_SIZE_UM, SITES_COORDINATES
 from ibllib.pipes import histology
 from ibllib.pipes.ephys_alignment import EphysAlignment
 from allensdk.core.mouse_connectivity_cache import MouseConnectivityCache
-import ibllib.atlas as atlas
+import iblatlas.atlas as atlas
 import numpy as np
 from mayavi import mlab
 import alf.io

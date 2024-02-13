@@ -109,4 +109,19 @@ title({TM_test; [num2str(sum(p_logic_neur)),...
 
 %percSignig = sum(p_logic_neur)/size(Neur_idx,1);
 
+%--------------------------------------------------------------------------
+%To find a Task-Modulated neuron, for selecting/plotting an example neuron 
+% from the brain region:
+
+DeltaFR_thresh = 5; %10; %select based on histogram plotted above
+N_NeurOverThresh = sum(DeltaFR_of_TM>DeltaFR_thresh);
+Neur_idx_TM = Neur_idx(p_logic_neur); %indices of all Task-Modulated neurons
+idx = Neur_idx_TM(DeltaFR_of_TM>DeltaFR_thresh); %indices of very (>Threshold) TM neurons
+Ex_clusterID = T.cluster_ids(idx);
+Ex_eid = T.eid(idx);
+Ex_pid = T.pid(idx);
+Ex_subj = T.subject(idx);
+T(idx,[2, 14:2:26]) %All TM test results for the particular neuron(s)
+%one where post stim is false: T(2813,14:2:26), DeltaFR_of_TM(Neur_idx_TM==2813)
+T(idx, [2,35:37])
 

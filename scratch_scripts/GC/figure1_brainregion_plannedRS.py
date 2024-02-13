@@ -10,7 +10,7 @@ Aug. 2021
 """
 
 from one.api import ONE
-from ibllib.atlas import atlas
+from iblatlas import atlas
 import numpy as np
 from ibllib.pipes import histology
 from ibllib.ephys.neuropixel import SITES_COORDINATES, TIP_SIZE_UM

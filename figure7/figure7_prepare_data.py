@@ -1,11 +1,12 @@
-from figure5.figure5_prepare_data import prepare_data as prepare_data_fig5
+from fig_taskmodulation.fig_taskmodulation_prepare_data import prepare_data as prepare_data_fig_taskmodulation
+#from figure5.figure5_prepare_data import prepare_data as prepare_data_fig5
 from figure7.figure7_load_data import load_dataframe, load_data
 from iblutil.numerical import ismember
 from one.api import ONE
 from reproducible_ephys_functions import (get_insertions, save_dataset_info, save_figure_path, BRAIN_REGIONS, combine_regions,
-                                          save_data_path)
+                                          save_data_path, filter_recordings)
 
-from ibllib.atlas import AllenAtlas, Insertion
+from iblatlas.atlas import AllenAtlas, Insertion
 from ibllib.pipes.histology import get_brain_regions
 import numpy as np
 import pandas as pd
@@ -22,7 +23,7 @@ default_params = {'fr_bin_size': 0.04,
                   'slide_kwargs_fr': {'n_win': 2, 'causal': 1}}
 
 
-def prepare_data(insertions, one, recompute=False, new_metrics=True, **kwargs):
+def prepare_data(insertions, one, recompute=False, **kwargs):
 
     align_event = kwargs.get('align_event', default_params['align_event'])
     norm = kwargs.get('norm', default_params['norm'])
@@ -39,7 +40,14 @@ def prepare_data(insertions, one, recompute=False, new_metrics=True, **kwargs):
                 data = load_data()
                 return df, data
 
-    df, data = prepare_data_fig5(insertions, one, figure='figure7', recompute=True, new_metrics=new_metrics, **kwargs)
+#    df, data = prepare_data_fig5(insertions, one, figure='figure7', recompute=True, **kwargs)
+    df, data = prepare_data_fig_taskmodulation(insertions, one, figure='figure7', recompute=True, **kwargs)
+
+    df_filt = filter_recordings(df, min_regions=0, min_neuron_region=-1, min_lab_region=0, min_rec_lab=0)
+    df_filt = df_filt[df_filt['include'] == 1]
+
+    df_filt.to_csv(save_data_path(figure='figure7').joinpath('figure7_dataframe_filt.csv'))
+
     save_figure_path(figure='figure7')
 
     # Compute the centre of mass of the different regions
@@ -69,6 +77,6 @@ def prepare_data(insertions, one, recompute=False, new_metrics=True, **kwargs):
 if __name__ == '__main__':
     one = ONE()
     one.record_loaded = True
-    insertions = get_insertions(level=2, one=one, freeze='biorxiv_2022_05')
-    prepare_data(insertions, one=one, **default_params)
+    insertions = get_insertions(level=0, recompute=True, one=one, freeze='freeze_2024_01')
+    prepare_data(insertions, one=one, recompute=True, **default_params)
     save_dataset_info(one, figure='figure7')

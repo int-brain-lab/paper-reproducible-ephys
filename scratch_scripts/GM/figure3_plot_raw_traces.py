@@ -16,7 +16,8 @@ from brainbox.lfp import butter_filter
 from ibllib.pipes.ephys_alignment import EphysAlignment
 from scratch_scripts.MF.features_2D import get_brain_boundaries
 from ibllib.io import spikeglx
-from ibllib.atlas import atlas, BrainRegions
+from iblatlas import atlas
+from iblatlas.regions import BrainRegions
 from ibllib.ephys.neuropixel import SITES_COORDINATES
 from reproducible_ephys_paths import FIG_PATH
 from oneibl.one import ONE

@@ -133,6 +133,63 @@ def compute_psth(spike_times, spike_clusters, cluster_ids, align_events, align_e
         return fr_mean, fr_std, t
 
 
+# Added by MT:
+def compute_psth_rxn_time(spike_times, spike_clusters, cluster_ids,
+                          align_events, eventsStim, eventsMove,
+                          align_epoch=(-0.2, 0.2), bin_size=0.01, smoothing='sliding', baseline_events=None,
+                          base_epoch=(-0.5, 0), norm=None, return_ff=False, slide_kwargs={}, kernel_kwargs={}):
+
+    #For now, only smoothing = sliding is considered:
+    bins, t = smoothing_sliding(spike_times, spike_clusters, cluster_ids, align_events, align_epoch=align_epoch,
+                                bin_size=bin_size, **slide_kwargs)
+
+    rxntimes = eventsMove - eventsStim
+    #First, remove trials with short (<50 ms) rxn times:
+    bins[rxntimes<0.05] = np.nan
+    #Second, if rxn time is <200 ms, then limit bins to ~rxn time:
+    loc = np.where(np.all([rxntimes>=0.05, rxntimes<0.2], axis=0))
+    loc = loc[0]
+    for i in loc:
+        bin_index = np.where(t >= -rxntimes[i])
+        start_index = bin_index[0][0] #- 1
+        bins[i][0][0:start_index] = np.nan #set all values prior to rxn time window to nan; Is this accurate enough?
+
+
+    bins_mean = np.nanmean(bins, axis=0)
+    fr_std = np.nanstd(bins, axis=0) / bin_size
+    if return_ff:
+        ff = np.nanvar(bins, axis=0) / bins_mean
+    if norm is not None:
+        baseline_events = baseline_events if any(baseline_events) else align_events
+        bins_base, t_base = smoothing_sliding(spike_times, spike_clusters, cluster_ids, baseline_events,
+                                              align_epoch=base_epoch, bin_size=bin_size, **slide_kwargs)
+        fr_mean = normalise_fr(bins_mean, np.nanmean(bins_base, axis=0), bin_size, method=norm)
+    else:
+        fr_mean = bins_mean / bin_size
+
+    if return_ff:
+        return fr_mean, fr_std, ff, t
+    else:
+        return fr_mean, fr_std, t
+
+
+    # #compute_psth_rxn_time(eid):
+    # # COMPUTE FIRING RATES DURING RXN TIME
+    # # For this computation we use correct, non zero contrast trials
+    # #trials = one.load_object(eid, 'trials')
+    # trial_idx = np.bitwise_and(trials['feedbackType'] == 1,
+    #                            np.bitwise_or(trials['contrastLeft'] > 0, trials['contrastRight'] > 0))
+
+    # # Trials with nan values in stimOn_times or firstMovement_times
+    # nanStimMove = np.bitwise_or(np.isnan(trials['stimOn_times']), np.isnan(trials['firstMovement_times']))
+
+    # # Find event times of interest and remove nan values
+    # eventStim = trials['stimOn_times'][np.bitwise_and(trial_idx, ~nanStimMove)]
+    # eventMove = trials['firstMovement_times'][np.bitwise_and(trial_idx, ~nanStimMove)]
+    # return eventStim, eventMove
+
+
+
 def smoothing_kernel(values, t, kernel=None):
 
     if kernel is not None:
