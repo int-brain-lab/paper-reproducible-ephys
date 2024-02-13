@@ -734,7 +734,7 @@ def plot_power_analysis():
 
     p_values = pickle.load(open(save_data_path(figure='fig_taskmodulation').joinpath('p_values'), 'rb'))
     df = load_dataframe()
-    df_filt = filter_recordings(df, **filtering_criteria)
+    df_filt = filter_recordings(df, **filtering_criteria, recompute=False)
     df_filt = df_filt[df_filt['permute_include'] == 1]
     df_filt_reg = df_filt.groupby('region')
 
@@ -831,7 +831,7 @@ def plot_power_analysis():
                     # print(ii + jj * 8 + 1)
                 plt.plot([lab_to_num[lab] + perturbation_shift, lab_to_num[lab] + perturbation_shift], [lab_mean, lab_mean + val], color=temp_color)
                 obs_min = min(obs_min, lab_mean + val)
-            plt.xlim(-0.3, 8 * dist_between_violins + .36)
+            plt.xlim(-0.3, (len(lab_to_num) - 1) * dist_between_violins + .36)
             sns.despine()
             if jj == 6:
                 if ii == 0:
@@ -963,18 +963,18 @@ if __name__ == '__main__':
     # df = load_dataframe()
     # df_filt = filter_recordings(df, **filtering_criteria)
     # df_filt = df_filt[df_filt['permute_include'] == 1]
-    #
+    
     # results = pd.DataFrame()
-    #
+    
     # df_region = df_filt.groupby('region')
     # names = tests.keys()
     # ps = []
     # for test in names:
     #     for i, br in enumerate(BRAIN_REGIONS):
     #         df_br = df_region.get_group(br)
-    #
+    
     #         vals = df_br.groupby(['subject', 'institute'])[test].mean()
-    #
+    
     #         labs = vals.index.get_level_values('institute')
     #         subjects = vals.index.get_level_values('subject')
     #         data = vals.values
@@ -983,7 +983,7 @@ if __name__ == '__main__':
     #         print(p)
     #         results = pd.concat((results, pd.DataFrame(index=[results.shape[0] + 1],
     #                                                    data={'test': test, 'region': br, 'p_value_permut': p})))
-    #
+    
     # pickle.dump(results.p_value_permut.values, open(save_data_path(figure='fig_taskmodulation').joinpath('p_values_percent_modulated'), 'wb'))
 
     plot_main_figure()

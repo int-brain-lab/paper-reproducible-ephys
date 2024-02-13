@@ -468,7 +468,7 @@ def compute_permutation_test(n_permut=20000, qc='pass', n_cores=8):
                 string += ', '
             print(string)
             # print(".", end='')
-            p = permut_test(data, metric=distribution_dist_approx_max, labels1=labs, plot=False,
+            p = permut_test(data, metric=distribution_dist_approx_max, labels1=labs,
                             labels2=subjects, shuffling='labels1_based_on_2', n_cores=n_cores, n_permut=n_permut)
 
             print("p-value = {}".format(p))
@@ -578,8 +578,8 @@ if __name__ == '__main__':
     print("Filtering criteria: {}".format(filtering_criteria))
     one = ONE()
     one.record_loaded = True
-    # insertions = get_insertions(level=0, one=one, freeze='freeze_2024_01', recompute=True)
-    # prepare_data(insertions, one=one, recompute=True, **default_params)
-    # save_dataset_info(one, figure='fig_taskmodulation')
-    compute_permutation_test(n_permut=20000, n_cores=8)
-    # compute_power_analysis(n_permut=50000, n_cores=8)
+    insertions = get_insertions(level=0, one=one, freeze='freeze_2024_01', recompute=True)
+    prepare_data(insertions, one=one, recompute=True, **default_params)
+    save_dataset_info(one, figure='fig_taskmodulation')
+    compute_permutation_test(n_permut=30000, n_cores=8)
+    compute_power_analysis(n_permut=50000, n_cores=8)
