@@ -8,7 +8,7 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from scipy.ndimage import gaussian_filter1d
 
 
-def metrics_plot(dset, region="Isocortex", axes=None):
+def metrics_plot(dset, region="Isocortex", axes=None, ibl_clusters=None, ibl_channels=None, clusters=None, channels=None):
     """
     :param dset: one of "steinmetz", "allen"
     :param region: Cosmos acronym of region
@@ -27,10 +27,14 @@ def metrics_plot(dset, region="Isocortex", axes=None):
 
     colors, colors_translucent = get_colors_region(region)
 
-    clusters = load_clusters(dset, filter_region=region)
-    ibl_clusters = load_clusters(ibl_dset, filter_region=region)
-    channels = load_channels(dset, filter_region=region)
-    ibl_channels = load_channels(ibl_dset, filter_region=region)
+    if clusters is None:
+        clusters = load_clusters(dset, filter_region=region)
+    if ibl_clusters is None:
+        ibl_clusters = load_clusters(ibl_dset, filter_region=region)
+    if channels is None:
+        channels = load_channels(dset, filter_region=region)
+    if ibl_channels is None:
+        ibl_channels = load_channels(ibl_dset, filter_region=region)
 
     ## num insertions
     num_ins = len(clusters.index.levels[0])
@@ -139,20 +143,7 @@ def metrics_plot(dset, region="Isocortex", axes=None):
     inset_amp.set_frame_on(False)
 
     ## passing units per site
-    passing_ibl = ibl_clusters.groupby("insertion").agg(
-        passing_units = pd.NamedAgg(column="label", aggfunc=lambda x: len(x[x==1.])), 
-        lab = pd.NamedAgg(column="lab", aggfunc="first")
-        )
-    sites_ibl = ibl_channels.groupby("insertion").agg(num_sites=pd.NamedAgg(column="cosmos_acronym", aggfunc="count"))
-    passing_per_site_ibl = passing_ibl.merge(sites_ibl, on="insertion")
-
-    passing = clusters.groupby("insertion").agg(passing_units = pd.NamedAgg(column="label", aggfunc=lambda x: len(x[x==1.])))
-    sites = channels.groupby("insertion").agg(num_sites=pd.NamedAgg(column="cosmos_acronym", aggfunc="count"))
-    passing_per_site = passing.merge(sites, on="insertion")
-
-    passing_per_site_ibl["passing_per_site"] = passing_per_site_ibl["passing_units"]/passing_per_site_ibl["num_sites"]
-
-    passing_per_site["passing_per_site"] = passing_per_site["passing_units"]/passing_per_site["num_sites"]
+    passing_per_site_ibl, passing_per_site = compute_yield(ibl_clusters, ibl_channels, clusters, channels, dset)
 
     passing_per_site_all = dict(zip(["IBL", "Allen"], [passing_per_site_ibl["passing_per_site"].to_numpy(), passing_per_site["passing_per_site"].to_numpy()]))
     passing_per_site_all = pd.DataFrame.from_dict(passing_per_site_all, orient="index")
@@ -165,7 +156,7 @@ def metrics_plot(dset, region="Isocortex", axes=None):
     axes[1, 3].bar(["IBL", dset], [mean_ibl, mean], yerr=[stdev_ibl], capsize=5, ecolor="gray", color=colors)
     axes[1, 3].set_title("Passing units per site", fontsize=8)
 
-def histograms(dset, region="Isocortex"):
+def histograms(dset, region="Isocortex", ibl_clusters=None, ibl_channels=None, clusters=None, channels=None):
 
     assert dset in ["steinmetz", "allen"], "dset must be one of 'steinemtz', 'allen'"
     if dset == "steinmetz":
@@ -175,8 +166,18 @@ def histograms(dset, region="Isocortex"):
 
     colors, colors_translucent = get_colors_region(region)
 
-    clusters = load_clusters(dset, filter_region=region)
-    ibl_clusters = load_clusters(ibl_dset, filter_region=region)
+    if clusters is None:
+        clusters = load_clusters(dset, filter_region=region)
+    if ibl_clusters is None:
+        ibl_clusters = load_clusters(ibl_dset, filter_region=region)
+    if channels is None:
+        channels = load_channels(dset, filter_region=region)
+    if ibl_channels is None:
+        ibl_channels = load_channels(ibl_dset, filter_region=region)
+
+    # used for yield computation below
+    sites_ibl = ibl_channels.groupby(["insertion"]).count()["cosmos_acronym"].to_numpy()
+    sites = channels.groupby(["insertion"]).count()["cosmos_acronym"].to_numpy()
 
     # convert from V to uV
     clusters["amp_median"] *= 1e6
@@ -211,14 +212,14 @@ def histograms(dset, region="Isocortex"):
     ampassing_ibl["binned"] = pd.cut(ampassing_ibl["amp_median"], bins=bins) 
     ampassing_ibl["start"] = [interval.left if not isinstance(interval, float) else bins[-1] for interval in ampassing_ibl["binned"] ]
     to_plot = ampassing_ibl.groupby("start").agg("count")
-    to_plot["cumu"] = to_plot.loc[::-1, "binned", ].cumsum()[::-1] / sum(sites_ibl.num_sites)
+    to_plot["cumu"] = to_plot.loc[::-1, "binned", ].cumsum()[::-1] / sum(sites_ibl)
     to_plot["cumu"].plot(drawstyle="steps", color=colors[0], ax=axf["bottom"])
     
     ampassing = clusters[["amp_median", "label"]][clusters.label==1.]
     ampassing["binned"] = pd.cut(ampassing["amp_median"], bins=bins) 
     ampassing["start"] = [interval.left for interval in ampassing["binned"]]
     to_plot = ampassing.groupby("start").agg("count")
-    to_plot["cumu"] = to_plot.loc[::-1, "binned", ].cumsum()[::-1] / sum(sites.num_sites)
+    to_plot["cumu"] = to_plot.loc[::-1, "binned", ].cumsum()[::-1] / sum(sites)
     to_plot["cumu"].plot(drawstyle="steps", color=colors[1], ax=axf["bottom"])
     axf["bottom"].set_title("Passing units per site >= amplitude", fontsize=10)
     axf["bottom"].set_xscale("log")
@@ -265,3 +266,125 @@ def histograms(dset, region="Isocortex"):
     axh[1].grid(False)
     axh[1].set_title(f"FR histogram {region}", fontsize=12)
     fig.tight_layout()    
+
+def yield_detail(dset, region="Isocortex",ibl_clusters=None, ibl_channels=None, clusters=None, channels=None):
+    assert dset in ["steinmetz", "allen"], "dset must be one of 'steinemtz', 'allen'"
+
+    if dset == "steinmetz":
+        ibl_dset = "bwm"
+    if dset == "allen":
+        ibl_dset = "re"
+
+    colors, colors_translucent = get_colors_region(region)
+
+    if clusters is None:
+        clusters = load_clusters(dset, filter_region=region)
+    if ibl_clusters is None:
+        ibl_clusters = load_clusters(ibl_dset, filter_region=region)
+    if channels is None:
+        channels = load_channels(dset, filter_region=region)
+    if ibl_channels is None:
+        ibl_channels = load_channels(ibl_dset, filter_region=region)
+
+    lab_hue_order = sorted(list(ibl_clusters.lab.unique()))
+
+    sites_ibl = ibl_channels.groupby(["insertion"]).count()["cosmos_acronym"]
+    sites = channels.groupby(["insertion"]).count()["cosmos_acronym"]
+
+    fig, axd = plt.subplot_mosaic([['left', 'upper right'],
+                                   ['left', 'lower right']])
+
+    ## passing units per site
+    passing_per_site_ibl, passing_per_site = compute_yield(ibl_clusters, ibl_channels, clusters, channels, dset)
+    passing_per_site_all = dict(zip(["IBL", dset], [passing_per_site_ibl["passing_per_site"].to_numpy(), passing_per_site["passing_per_site"].to_numpy()]))
+    passing_per_site_all = pd.DataFrame.from_dict(passing_per_site_all, orient="index")
+
+    mean_ibl = passing_per_site_ibl["passing_per_site"].mean()  
+    mean = passing_per_site["passing_per_site"].mean()
+    stdev_ibl = passing_per_site_ibl["passing_per_site"].std() / np.sqrt(len(passing_per_site_ibl))
+    stdev = passing_per_site["passing_per_site"].std() / np.sqrt(len(passing_per_site))
+
+    sns.stripplot(x="source", y="passing_per_site", data=passing_per_site_ibl, hue="lab", hue_order=lab_hue_order, ax=axd["left"])
+    sns.stripplot(x="source", y="passing_per_site", data=passing_per_site, color=colors[1], ax=axd["left"])
+    
+    err_kws = {"markersize":20, 
+               "linewidth":1.5}
+    sns.pointplot(x="source", y="passing_per_site", data=passing_per_site_ibl, ax=axd["left"], join=False, markersize=10, markers="_", capsize=None, errorbar=("se", 2), color="gray", err_kws=err_kws)
+    sns.pointplot(x="source", y="passing_per_site", data=passing_per_site, ax=axd["left"], join=False, markersize=10, markers="_", capsize=None, errorbar=("se", 2), color="gray", err_kws=err_kws)
+    axd["left"].set_ylabel("passing units per site")
+    axd["left"].legend(loc='upper center', bbox_to_anchor=(0.5, -.05), ncol=3)
+    axd["left"].set_xlabel("")
+
+    sns.kdeplot(passing_per_site_all.loc["IBL"], ax=axd["upper right"], color=colors[0])
+    # ibl mean and se
+    datax = axd["upper right"].lines[0].get_xdata()
+    datay = axd["upper right"].lines[0].get_ydata()
+    left = mean_ibl - stdev_ibl
+    right = mean_ibl + stdev_ibl
+    axd["upper right"].vlines(mean_ibl, 0, np.interp(mean_ibl, datax, datay), ls=":", color="black")
+    axd["upper right"].fill_between(datax, 0, datay, where=(left <= datax) & (datax <= right), interpolate=True, alpha=0.5, color=colors[0])
+    axd["upper right"].set_ylabel(None)
+    axd["upper right"].set_xlabel("passing units per site")
+    axd["upper right"].set_title("IBL")
+    axd["upper right"].text(0.6, 0.8, f"Mean: {round(mean_ibl, 3)}", transform=axd["upper right"].transAxes, fontsize=14)
+    axd["upper right"].set_xlim(0., 0.8)
+
+    sns.kdeplot(passing_per_site_all.loc[dset], ax=axd["lower right"], color=colors[0])
+    # alleninmetz mean and se
+    datax = axd["lower right"].lines[0].get_xdata()
+    datay = axd["lower right"].lines[0].get_ydata()
+    left = mean - stdev
+    right = mean + stdev
+    axd["lower right"].vlines(mean, 0, np.interp(mean, datax, datay), ls=":", color="black")
+    axd["lower right"].fill_between(datax, 0, datay, where=(left <= datax) & (datax <= right), interpolate=True, alpha=0.5, color=colors[0])
+    axd["lower right"].set_ylabel(None)
+    axd["lower right"].set_xlabel("passing units per site")
+    axd["lower right"].set_title("Allen")
+    axd["lower right"].text(0.6, 0.8, f"Mean: {round(mean, 3)}", transform=axd["lower right"].transAxes, fontsize=14)
+    axd["lower right"].set_xlim(0., 0.8)
+
+    # statistical tests
+    from scipy import stats
+
+    tt = stats.ttest_ind(passing_per_site_all.loc["IBL"].dropna().to_list(), passing_per_site_all.loc[dset].dropna().to_list())
+
+    ks = stats.kstest(passing_per_site_all.loc["IBL"].dropna().to_list(), passing_per_site_all.loc[dset].dropna().to_list())
+
+    box_str = f"T-test:\nStatistic: {round(tt.statistic, 5)}\np-Value: {round(tt.pvalue, 5)}\n"
+    box_str += f"\nKS-test:\nStatistic: {round(ks.statistic, 5)}\np-Value: {round(ks.pvalue, 5)}"
+
+    box = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+    axd["left"].text(0.6, 0.95, box_str, transform=axd["left"].transAxes, fontsize=10, verticalalignment='top', bbox=box)
+
+def compute_yield(ibl_clusters, ibl_channels, clusters, channels, dset=None):
+    """
+    Given cluster and channel tables (assumed to be ALREADY FILTERED) return
+    yield computations per insertion.
+
+    :param clusters: Clusters table
+    :param channels: Channels table
+    :param dset: Option name of dset (will set "source" column to this value for seaborn plots)
+
+    :returns: yield table with columns 
+    """
+    passing_ibl = ibl_clusters.groupby("insertion").agg(
+        passing_units = pd.NamedAgg(column="label", aggfunc=lambda x: len(x[x==1.])), 
+        lab = pd.NamedAgg(column="lab", aggfunc="first")
+        )
+    sites_ibl = ibl_channels.groupby("insertion").agg(num_sites=pd.NamedAgg(column="cosmos_acronym", aggfunc="count"))
+    passing_per_site_ibl = passing_ibl.merge(sites_ibl, on="insertion")
+
+    passing = clusters.groupby("insertion").agg(passing_units = pd.NamedAgg(column="label", aggfunc=lambda x: len(x[x==1.])))
+    sites = channels.groupby("insertion").agg(num_sites=pd.NamedAgg(column="cosmos_acronym", aggfunc="count"))
+    passing_per_site = passing.merge(sites, on="insertion")
+
+    passing_per_site_ibl["passing_per_site"] = passing_per_site_ibl["passing_units"]/passing_per_site_ibl["num_sites"]
+    passing_per_site["passing_per_site"] = passing_per_site["passing_units"]/passing_per_site["num_sites"]
+
+    if dset:
+        passing_per_site_ibl["source"] = "IBL"
+        passing_per_site["source"] = dset
+
+    return passing_per_site_ibl, passing_per_site
+    
+

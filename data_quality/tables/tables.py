@@ -19,7 +19,7 @@ def load_clusters(dset, filter_region=None):
         pqt = pqt[pqt.cosmos_acronym == filter_region]
     pqt.index = pqt.index.remove_unused_levels()
     pqt.index.set_names(["insertion", "unit_id"], inplace=True)
-    return pqt
+    return pqt.copy()
 
 def load_channels(dset, filter_region=None):
     _check_dset(dset)
@@ -29,4 +29,4 @@ def load_channels(dset, filter_region=None):
         pqt = pqt[pqt.cosmos_acronym == filter_region]
     pqt.index = pqt.index.remove_unused_levels()
     pqt.index.set_names(["insertion", "channel_id"], inplace=True)
-    return pqt
+    return pqt.copy()
