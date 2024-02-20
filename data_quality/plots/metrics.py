@@ -14,11 +14,7 @@ def metrics_plot(dset, region="Isocortex", axes=None, ibl_clusters=None, ibl_cha
     :param region: Cosmos acronym of region
     :param axes: 
     """
-
     assert dset in ["steinmetz", "allen"], "dset must be one of 'steinemtz', 'allen'"
-
-    if axes is None:
-        fig, axes = plt.subplots(2, 4)
         
     if dset == "steinmetz":
         ibl_dset = "bwm"
@@ -35,6 +31,19 @@ def metrics_plot(dset, region="Isocortex", axes=None, ibl_clusters=None, ibl_cha
         channels = load_channels(dset, filter_region=region)
     if ibl_channels is None:
         ibl_channels = load_channels(ibl_dset, filter_region=region)
+
+    if len(ibl_clusters) == len(clusters) == 0:
+        print(f"[metrics_plot] No IBL or {dset} clusters in {region}")
+        return
+    elif len(ibl_clusters) == 0:
+        print(f"[metrics_plot] No IBL clusters in {region}")
+        return
+    elif len(clusters) == 0:
+        print(f"[metrics_plot] No {dset} clusters in {region}")
+        return
+
+    if axes is None:
+        fig, axes = plt.subplots(2, 4)
 
     ## num insertions
     num_ins = len(clusters.index.levels[0])
@@ -145,7 +154,7 @@ def metrics_plot(dset, region="Isocortex", axes=None, ibl_clusters=None, ibl_cha
     ## passing units per site
     passing_per_site_ibl, passing_per_site = compute_yield(ibl_clusters, ibl_channels, clusters, channels, dset)
 
-    passing_per_site_all = dict(zip(["IBL", "Allen"], [passing_per_site_ibl["passing_per_site"].to_numpy(), passing_per_site["passing_per_site"].to_numpy()]))
+    passing_per_site_all = dict(zip(["IBL", dset], [passing_per_site_ibl["passing_per_site"].to_numpy(), passing_per_site["passing_per_site"].to_numpy()]))
     passing_per_site_all = pd.DataFrame.from_dict(passing_per_site_all, orient="index")
 
     mean_ibl = passing_per_site_ibl["passing_per_site"].mean()
@@ -155,6 +164,8 @@ def metrics_plot(dset, region="Isocortex", axes=None, ibl_clusters=None, ibl_cha
 
     axes[1, 3].bar(["IBL", dset], [mean_ibl, mean], yerr=[stdev_ibl], capsize=5, ecolor="gray", color=colors)
     axes[1, 3].set_title("Passing units per site", fontsize=8)
+
+    fig.tight_layout()
 
 def histograms(dset, region="Isocortex", ibl_clusters=None, ibl_channels=None, clusters=None, channels=None):
 
@@ -174,6 +185,16 @@ def histograms(dset, region="Isocortex", ibl_clusters=None, ibl_channels=None, c
         channels = load_channels(dset, filter_region=region)
     if ibl_channels is None:
         ibl_channels = load_channels(ibl_dset, filter_region=region)
+
+    if len(ibl_clusters) == len(clusters) == 0:
+        print(f"[histograms] No IBL or {dset} clusters in {region}")
+        return
+    elif len(ibl_clusters) == 0:
+        print(f"[histograms] No IBL clusters in {region}")
+        return
+    elif len(clusters) == 0:
+        print(f"[histograms] No {dset} clusters in {region}")
+        return
 
     # used for yield computation below
     sites_ibl = ibl_channels.groupby(["insertion"]).count()["cosmos_acronym"].to_numpy()
@@ -286,6 +307,16 @@ def yield_detail(dset, region="Isocortex",ibl_clusters=None, ibl_channels=None, 
     if ibl_channels is None:
         ibl_channels = load_channels(ibl_dset, filter_region=region)
 
+    if len(ibl_clusters) == len(clusters) == 0:
+        print(f"[yield_detail] No IBL or {dset} clusters in {region}")
+        return
+    elif len(ibl_clusters) == 0:
+        print(f"[yield_detail] No IBL clusters in {region}")
+        return
+    elif len(clusters) == 0:
+        print(f"[yield_detail] No {dset} clusters in {region}")
+        return
+        
     lab_hue_order = sorted(list(ibl_clusters.lab.unique()))
 
     sites_ibl = ibl_channels.groupby(["insertion"]).count()["cosmos_acronym"]
@@ -339,7 +370,7 @@ def yield_detail(dset, region="Isocortex",ibl_clusters=None, ibl_channels=None, 
     axd["lower right"].fill_between(datax, 0, datay, where=(left <= datax) & (datax <= right), interpolate=True, alpha=0.5, color=colors[0])
     axd["lower right"].set_ylabel(None)
     axd["lower right"].set_xlabel("passing units per site")
-    axd["lower right"].set_title("Allen")
+    axd["lower right"].set_title(dset)
     axd["lower right"].text(0.6, 0.8, f"Mean: {round(mean, 3)}", transform=axd["lower right"].transAxes, fontsize=14)
     axd["lower right"].set_xlim(0., 0.8)
 
@@ -355,6 +386,8 @@ def yield_detail(dset, region="Isocortex",ibl_clusters=None, ibl_channels=None, 
 
     box = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
     axd["left"].text(0.6, 0.95, box_str, transform=axd["left"].transAxes, fontsize=10, verticalalignment='top', bbox=box)
+
+    #fig.tight_layout()
 
 def compute_yield(ibl_clusters, ibl_channels, clusters, channels, dset=None):
     """
