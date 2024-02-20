@@ -3,7 +3,7 @@ from pathlib import Path
 
 tables_dir = Path(__file__).parent
 
-dsets = ["allen", "steinmetz", "re", "bwm"]
+dsets = ["allen", "steinmetz", "re", "bwm", "IBL_like_steinmetz", "IBL_like_allen"]
 
 def _check_dset(dset):
     if dset not in dsets:
