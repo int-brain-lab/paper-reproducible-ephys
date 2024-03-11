@@ -167,6 +167,8 @@ def metrics_plot(dset, region="Isocortex", axes=None, ibl_clusters=None, ibl_cha
 
     fig.tight_layout()
 
+    return mean_ibl, mean
+
 def histograms(dset, region="Isocortex", ibl_clusters=None, ibl_channels=None, clusters=None, channels=None):
 
     assert dset in ["steinmetz", "allen"], "dset must be one of 'steinemtz', 'allen'"
