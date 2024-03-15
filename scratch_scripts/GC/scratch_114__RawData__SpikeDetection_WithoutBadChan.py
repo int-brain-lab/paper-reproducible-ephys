@@ -82,14 +82,14 @@ pids_rs = [item['probe_insertion'] for item in q]
 
 # Get pis used in Brainwide map
 # PATH_FIG_SAVE = '/Users/gaelle/Desktop/Overview_plot_BWM/Brainwide/Raw_Data/'
-django_strg = ['session__project__name__icontains,ibl_neuropixel_brainwide_01',
+django_strg = ['session__projects__name__icontains,ibl_neuropixel_brainwide_01',
                'session__qc__lt,50',
                '~json__qc,CRITICAL',
                'json__extended_qc__tracing_exists,True',  # TODO remove ?
                'session__extended_qc__behavior,1,'
                'session__json__IS_MOCK,False']
 
-django_strg = ['session__project__name__icontains,ibl_neuropixel_brainwide_01',
+django_strg = ['session__projects__name__icontains,ibl_neuropixel_brainwide_01',
                'session__qc__lt,50',
                '~json__qc,CRITICAL',
                'session__extended_qc__behavior,1,'

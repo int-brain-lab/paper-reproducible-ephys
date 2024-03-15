@@ -34,7 +34,7 @@ sites_bounds = crawl_up_from_tip(
 
 
 insertions = one.alyx.rest('insertions', 'list',
-                           django='session__project__name,ibl_neuropixel_brainwide_01,'
+                           django='session__projects__name,ibl_neuropixel_brainwide_01,'
                            'json__extended_qc__tracing_exists,True')
 
 distance = []

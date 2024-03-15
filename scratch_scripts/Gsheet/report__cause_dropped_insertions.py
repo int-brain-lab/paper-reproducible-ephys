@@ -52,14 +52,14 @@ del q
 
 '''
 DECOMPOSE STR QUERY into many sub-queries
-STR_QUERY = 'probe_insertion__session__project__name__icontains,ibl_neuropixel_brainwide_01,' \
+STR_QUERY = 'probe_insertion__session__projects__name__icontains,ibl_neuropixel_brainwide_01,' \
             'probe_insertion__session__qc__lt,50,' \
             '~probe_insertion__json__qc,CRITICAL,' \
             'probe_insertion__session__n_trials__gte,400'
 '''
 
 # get insertions with project code
-q = one.alyx.rest('insertions', 'list', django='session__project__name__icontains,ibl_neuropixel_brainwide_01')
+q = one.alyx.rest('insertions', 'list', django='session__projects__name__icontains,ibl_neuropixel_brainwide_01')
 q_ins_project = [item['id'] for item in q]
 del q
 

@@ -26,7 +26,7 @@ subject = 'CSHL045'
 
 ba = atlas.AllenAtlas(25)
 
-str_query = 'probe_insertion__session__project__name__icontains,ibl_neuropixel_brainwide_01,' \
+str_query = 'probe_insertion__session__projects__name__icontains,ibl_neuropixel_brainwide_01,' \
             'probe_insertion__session__qc__lt,50,' \
             'probe_insertion__session__extended_qc__behavior,1'
 
