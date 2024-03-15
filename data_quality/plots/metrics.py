@@ -165,7 +165,9 @@ def metrics_plot(dset, region="Isocortex", axes=None, ibl_clusters=None, ibl_cha
     axes[1, 3].bar(["IBL", dset], [mean_ibl, mean], yerr=[stdev_ibl], capsize=5, ecolor="gray", color=colors)
     axes[1, 3].set_title("Passing units per site", fontsize=8)
 
+    fig.suptitle(f"IBL metrics: {region}")
     fig.tight_layout()
+    
 
     return mean_ibl, mean
 
@@ -288,7 +290,9 @@ def histograms(dset, region="Isocortex", ibl_clusters=None, ibl_channels=None, c
     axh[1].legend()
     axh[1].grid(False)
     axh[1].set_title(f"FR histogram {region}", fontsize=12)
-    fig.tight_layout()    
+    fig.tight_layout()
+
+    fig.suptitle(f"Histograms: {region}")
 
 def yield_detail(dset, region="Isocortex",ibl_clusters=None, ibl_channels=None, clusters=None, channels=None):
     assert dset in ["steinmetz", "allen"], "dset must be one of 'steinemtz', 'allen'"
@@ -376,6 +380,8 @@ def yield_detail(dset, region="Isocortex",ibl_clusters=None, ibl_channels=None, 
     axd["lower right"].text(0.6, 0.8, f"Mean: {round(mean, 3)}", transform=axd["lower right"].transAxes, fontsize=14)
     axd["lower right"].set_xlim(0., 0.8)
 
+    
+
     # statistical tests
     from scipy import stats
 
@@ -388,7 +394,7 @@ def yield_detail(dset, region="Isocortex",ibl_clusters=None, ibl_channels=None, 
 
     box = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
     axd["left"].text(0.6, 0.95, box_str, transform=axd["left"].transAxes, fontsize=10, verticalalignment='top', bbox=box)
-
+    fig.suptitle(f"Yield detail: {region}")
     #fig.tight_layout()
 
 def compute_yield(ibl_clusters, ibl_channels, clusters, channels, dset=None):

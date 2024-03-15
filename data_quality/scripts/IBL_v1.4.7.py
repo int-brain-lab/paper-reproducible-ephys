@@ -1,5 +1,5 @@
 from data_quality.tables import load_channels, load_clusters
-from data_quality.plots.metrics import metrics_plot, histograms, yield_detail
+from data_quality.plots.metrics import metrics_plot, histograms, yield_detail, compute_yield
 import pandas as pd
 
 regions  = ['Isocortex', 'OLF', 'HPF', 'CTXsp', 'CNU', 'TH','HY', 'MB',]
@@ -22,16 +22,16 @@ for region in regions:
     histograms(dset, region, ibl_clusters=ibl_clusters, ibl_channels=ibl_channels)
     yield_detail(dset, region, ibl_clusters=ibl_clusters, ibl_channels=ibl_channels)
 
-    out2 = metrics_plot(dset, region)
+    #out2 = metrics_plot(dset, region)
 
     if out is not None:
         mean_ibl147, mean_allen = out
         re147_yields[region] = mean_ibl147
         al_yields[region] = mean_allen
 
-    if out2 is not None:
-        mean_ibl, _ = out2
-        re_yields[region] = mean_ibl
+    # if out2 is not None:
+    #     mean_ibl, _ = out2
+    #     re_yields[region] = mean_ibl
 
 yield_df = pd.DataFrame({"Allen": al_yields, "RE": re_yields, "RE_1.4.7": re147_yields})
 ax = yield_df.plot.bar(color=["green", "pink", "red"])
@@ -60,16 +60,16 @@ for region in regions:
     histograms(dset, region, ibl_clusters=ibl_clusters, ibl_channels=ibl_channels)
     yield_detail(dset, region, ibl_clusters=ibl_clusters, ibl_channels=ibl_channels)
 
-    out2 = metrics_plot(dset, region)
+    #out2 = metrics_plot(dset, region)
 
     if out is not None:
         mean_ibl147, mean_ste = out
         bwm147_yields[region] = mean_ibl147
         st_yields[region] = mean_ste
 
-    if out2 is not None:
-        mean_ibl, _ = out2
-        bwm_yields[region] = mean_ibl
+    # if out2 is not None:
+    #     mean_ibl, _ = out2
+    #     bwm_yields[region] = mean_ibl
 
 yield_df = pd.DataFrame({"Steinmetz": st_yields, "BWM": bwm_yields, "BWM_1.4.7": bwm147_yields})
 ax = yield_df.plot.bar(color=["green", "pink", "red"])

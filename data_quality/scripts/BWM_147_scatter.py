@@ -66,3 +66,25 @@ for region, df in dfs.items():
     ax.scatter(0.025, df["rerun_yield"].mean(), marker="<", s=64)
     fig.tight_layout()
     fig.savefig(f"/Users/chris/Downloads/147_yield_scatters/BWM_{region}.png")
+
+# change in yield
+alldf = pd.concat(dfs.values())
+alldf["yield_change"] = (alldf["rerun_yield"] - alldf["og_yield"])/(alldf["og_yield"])*100
+from data_quality.tables import tables_dir
+bwm_wm = pd.read_csv(tables_dir.joinpath("wm_cond_rerun_BWM.csv"))
+bwm_wm["cond_change"] = (bwm_wm["cond_no_rerun"] - bwm_wm["cond_no_original"]) / bwm_wm["cond_no_original"] * 100
+bwm_wm.rename(columns={"Unnamed: 0":"pid"}, inplace=True)
+alldf["pid"] = alldf.index
+comb_df = pd.merge(alldf, bwm_wm)
+
+fig, ax = plt.subplots()
+sns.scatterplot(x="cond_change", y="yield_change", data=comb_df, ax=ax, hue="region", alpha=0.5)
+ax.set_xlabel("condition # change (%)")
+ax.set_ylabel("yield change (%)")
+fig.suptitle("BWM Condition No. change vs yield change")
+
+fig, ax = plt.subplots()
+sns.scatterplot(x="cond_change", y="yield_change", data=comb_df[comb_df.cond_change < 5000], ax=ax, hue="region", alpha=0.5)
+ax.set_xlabel("condition # change (%)")
+ax.set_ylabel("yield change (%)")
+fig.suptitle("BWM Condition No. change vs yield change\nExcl. outliers")
