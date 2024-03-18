@@ -691,6 +691,18 @@ def compute_lfp_insertion(one, pid, recompute=False):
     return df_lfp
 
 
+def get_fixed_lfp_streamer(pid, one):
+    sr_lf = Streamer(pid=pid, one=one, typ="lf", remove_cached=True)
+    sr_ap = Streamer(pid=pid, one=one, typ="ap", remove_cached=True)
+
+    if "snsShankMap" not in sr_lf.meta.keys():
+        sr_lf.meta["snsShankMap"] = sr_ap.meta["snsShankMap"]
+
+    assert sr_lf.shape[1] - sr_lf.nsync == sr_lf.geometry["sample_shift"].shape[0]
+
+    return sr_lf
+
+
 def lfp_destripe(pid, one=None, typ='ap', prefix="", destination=None, remove_cached=True, clobber=False):
     """
     Stream chunks of data from a given probe insertion
@@ -723,10 +735,11 @@ def lfp_destripe(pid, one=None, typ='ap', prefix="", destination=None, remove_ca
         sample_duration, sample_spacings, skip_start_end = (10 * 30_000, 1_000 * 30_000, 500 * 30_000)
     elif typ == 'lf':
         sample_duration, sample_spacings, skip_start_end = (20 * 2_500, 1_000 * 2_500, 500 * 2_500)
-    sr = Streamer(pid=pid, one=one, remove_cached=remove_cached, typ=typ)
+    sr = get_fixed_lfp_streamer(pid, one)
     chunk_size = sr.chunks['chunk_bounds'][1]
     nsamples = np.ceil((sr.shape[0] - sample_duration - skip_start_end * 2) / sample_spacings)
     t0_samples = np.round((np.arange(nsamples) * sample_spacings + skip_start_end) / chunk_size) * chunk_size
+    h = sr.geometry
 
     for s0 in t0_samples:
         t0 = int(s0 / chunk_size)
@@ -742,7 +755,7 @@ def lfp_destripe(pid, one=None, typ='ap', prefix="", destination=None, remove_ca
             butt = scipy.signal.sosfiltfilt(sos, raw)[:, int(sr.fs * 0.5):int(sr.fs * 0.55)]
             fs_out = sr.fs
         elif typ == 'lf':
-            destripe = voltage.destripe_lfp(raw, fs=sr.fs, neuropixel_version=1, channel_labels=True)
+            destripe = voltage.destripe_lfp(raw, fs=sr.fs, h=h, channel_labels=True)
             destripe = scipy.signal.decimate(destripe, LFP_RESAMPLE_FACTOR, axis=1, ftype='fir')
             fs_out = sr.fs / LFP_RESAMPLE_FACTOR
         file_destripe.parent.mkdir(exist_ok=True, parents=True)
