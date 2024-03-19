@@ -305,12 +305,12 @@ def plot_probe_angle_histology_all_lab(traj='hist', min_rec_per_lab=4, perform_p
     axr1c0.set_xlim(0, max_distance)
     axr1c0.set_xlabel(None)
     axr1c0.xaxis.set_major_locator(plt.MaxNLocator(5))
-    axr1c0.tick_params(axis='x', labelrotation=90)
+    #axr1c0.tick_params(axis='x', labelrotation=90)
     #axr1c0.get_legend().remove()
 
     fig.suptitle('Histology-to-planned angle', fontsize=7)
-    fig.supxlabel('Histology angle (degrees)', fontsize=7)
-
+    #fig.supxlabel('\nHistology angle (degrees)', fontsize=7)
+    axr1c0.set_xlabel('Histology angle (degrees)')
 
     plt.tight_layout()  # tighten layout around xlabel & ylabel
     fig.set_size_inches(2.15, 2.8)

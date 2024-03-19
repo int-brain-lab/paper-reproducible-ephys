@@ -17,6 +17,7 @@ import iblatlas.atlas as atlas
 from fig_hist.fig_hist_load_data import load_dataframe
 from fig_hist.fig_hist_functions import df_to_traj_dict
 from reproducible_ephys_functions import save_figure_path, filter_recordings
+from reproducible_ephys_functions import figure_style
 from iblutil.numerical import ismember
 
 
@@ -26,6 +27,9 @@ def plot_channels(figcor=None, figsag=None, subjects=None, n_cols=None, remove_a
     # Load data
     probe_data = load_dataframe(df_name='traj')
     chn_data = load_dataframe(df_name='chns')
+
+    # get new atlas for plotting
+    brain_atlas = atlas.AllenAtlas(res_um=25)
 
     if subjects is not None:
         # If specific list of subjects is specified filter the dataframe
@@ -58,7 +62,11 @@ def plot_channels(figcor=None, figsag=None, subjects=None, n_cols=None, remove_a
         axs = figsag.add_subplot(n_rows, n_cols, i + 1)
 
         traj = df_to_traj_dict(row, provenance='hist')
-        ins = Insertion.from_dict(traj)
+        ins = atlas.Insertion.from_dict(traj, brain_atlas)
+
+        # traj and insertion of planned
+        trajP = df_to_traj_dict(row, provenance='planned')
+        insP = atlas.Insertion.from_dict(trajP, brain_atlas)
 
         # Download the histology data
         hist_paths = hist.download_histology_data(row['subject'], row['lab'])
@@ -96,6 +104,8 @@ def plot_channels(figcor=None, figsag=None, subjects=None, n_cols=None, remove_a
         axc.plot(locX * 1e6, locZ * 1e6, marker='o', ms=mscor, mew=0, color='w', linestyle="", lw=0)
         axs.plot(locY * 1e6, locZ * 1e6, marker='o', ms=mssag, mew=0, color='w', linestyle="", lw=0)
 
+        # plot planned trajectory
+
         # remove all axis
         if remove_axes:
             axc.set_axis_off()
@@ -118,7 +128,7 @@ def plot_channels(figcor=None, figsag=None, subjects=None, n_cols=None, remove_a
 
         if show_scalebar:
             if i == 0:
-                axc.plot([-500, -1500], [-7250, -7250], color='w', linewidth=2)
+                axc.plot([-500, -1000], [-7250, -7250], color='w', linewidth=1)
 
     return figcor, figsag
 
@@ -247,11 +257,83 @@ def plot_all_channels(subjects=None, remove_exclusions=True):
 
 
 
+def plot_channels_n2():
+    """
+    Plot two subjects (one close and one far form planned traj), CORONAL & SAGITTAL histology and channels for repeated site
+    Plots all coronal and all sagittal data in one figure.
+    :return:
+    """
+    subjects = ['KS045', 'CSHL054']
+
+    figcor = plt.figure()
+    figsag = plt.figure()
+
+    # reset the sizes
+    figcor.set_size_inches(3, 2.15)
+    figsag.set_size_inches(3, 2.15)
+
+    figcor, figsag = plot_channels(figcor, figsag, subjects=subjects, remove_axes=True, show_scalebar=True, marker_size=0.3)
+
+    # adjust spacing
+    wspace = 0.3
+    hspace = 0.1
+    figcor.subplots_adjust(wspace, hspace)
+    figsag.subplots_adjust(wspace, hspace)
+
+    figcor.tight_layout()
+    figsag.tight_layout()
+
+    # save to output
+    fig_path = save_figure_path(figure='fig_hist')
+    figcor.savefig(fig_path.joinpath('B_channels_subj2_hist_coronal.svg'), bbox_inches="tight")
+    figsag.savefig(fig_path.joinpath('B_channels_subj2_hist_sagittal.svg'), bbox_inches="tight")
+
+
+def plot_channels_n1():
+    """
+    Plot one subject (one closest to planned traj: KS045), CORONAL & SAGITTAL histology and channels for repeated site
+    Plots all coronal and all sagittal data in one figure.
+    :return:
+    """
+
+    # use repo-ephys figure style
+    figure_style()
+
+    subjects = ['KS045']
+
+    figcor = plt.figure()
+    figsag = plt.figure()
+
+    # reset the sizes
+    figcor.set_size_inches(1.5, 2.15)
+    figsag.set_size_inches(1.5, 2.15)
+
+    figcor, figsag = plot_channels(figcor, figsag, subjects=subjects, remove_axes=True, show_scalebar=True, marker_size=0.3)
+
+    # adjust spacing
+    #wspace = 0.3
+    #hspace = 0.1
+    #figcor.subplots_adjust(wspace, hspace)
+    #figsag.subplots_adjust(wspace, hspace)
+    axcor = figcor.axes[0]
+    axcor.text(-3000, -7500, 'Coronal', style='italic', color='w')
+
+    axsag = figsag.axes[0]
+    axsag.text(-3750, -7500, 'Sagittal', style='italic', color='w')
+
+    figcor.tight_layout()
+    figsag.tight_layout()
+
+    # save to output
+    fig_path = save_figure_path(figure='fig_hist')
+    figcor.savefig(fig_path.joinpath('B_channels_subj1_hist_coronal.svg'), bbox_inches="tight")
+    figsag.savefig(fig_path.joinpath('B_channels_subj1_hist_sagittal.svg'), bbox_inches="tight")
+
 
 
 def plot_channels_n3():
     """
-    Plot three subject, CORONAL & SAGITTAL histology and channels for repeated site
+    Plot three subjects, CORONAL & SAGITTAL histology and channels for repeated site
     Plots all coronal and all sagittal data in one large figure.
     :return:
     """

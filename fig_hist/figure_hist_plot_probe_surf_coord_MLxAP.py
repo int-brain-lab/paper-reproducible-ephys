@@ -401,7 +401,7 @@ def plot_probe_distance_all_lab(traj='micro', min_rec_per_lab=4, perform_permuta
     axr1c0.set_xlim(0, max_distance)
     axr1c0.set_xlabel(None)
     axr1c0.xaxis.set_major_locator(plt.MaxNLocator(5))
-    axr1c0.tick_params(axis='x', labelrotation=90)
+    #axr1c0.tick_params(axis='x', labelrotation=90)
     #axr1c0.get_legend().remove()
 
     if traj == 'micro':
@@ -410,11 +410,12 @@ def plot_probe_distance_all_lab(traj='micro', min_rec_per_lab=4, perform_permuta
         #axr1c0.legend(handles[0:2], labels[0:2], bbox_to_anchor=(0.98, 0.05), loc=4, 
         #       borderaxespad=0., prop={'size': 4}, markerscale=0.2)
         fig.suptitle('Micromanipulator-to-planned distance', fontsize=7)
-        fig.supxlabel('Micromanipulator distance (µm)', fontsize=7)
+        #fig.supxlabel('\nMicromanipulator distance (µm)', fontsize=7)
+        axr1c0.set_xlabel('Micromanipulator distance (µm)')
     else:
         fig.suptitle('Histology-to-planned distance', fontsize=7)
-        fig.supxlabel('Histology distance (µm)', fontsize=7)
-
+        #fig.supxlabel('\nHistology distance (µm)', fontsize=7)
+        axr1c0.set_xlabel('Histology distance (µm)')
 
     plt.tight_layout()  # tighten layout around xlabel & ylabel
     fig.set_size_inches(2.15, 2.8)
