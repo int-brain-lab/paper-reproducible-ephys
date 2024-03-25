@@ -59,7 +59,8 @@ def prepare_data(insertions, one, recompute=False):
 
         sl = SpikeSortingLoader(eid=eid, pname=probe, one=one, atlas=ba)
         try:
-            spikes, clusters, channels = sl.load_spike_sorting(dataset_types=['clusters.amps', 'clusters.peakToTrough'])
+            spikes, clusters, channels = sl.load_spike_sorting(dataset_types=['clusters.amps', 'clusters.peakToTrough'],
+                                                               revision='2024-03-22')
         except Exception:
             print(traceback.format_exc())
             continue

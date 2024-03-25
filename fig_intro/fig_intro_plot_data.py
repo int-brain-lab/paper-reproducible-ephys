@@ -220,7 +220,7 @@ def plot_multiple_raster_with_regions(one, pids=None, ba=None):
 def plot_raster_with_regions(pid, one, ax_raster, ax_regions, ba, mapping='Allen', restrict_labels=True, labels='left'):
 
     sl = SpikeSortingLoader(pid=pid, one=one, atlas=ba)
-    spikes, clusters, channels = sl.load_spike_sorting()
+    spikes, clusters, channels = sl.load_spike_sorting(revision='2024-03-22')
 
     driftmap(spikes['times'], spikes['depths'], ax=ax_raster, plot_style='bincount')
     ax_raster.set_xlim([0, 60 * 60])  # display 1 hour

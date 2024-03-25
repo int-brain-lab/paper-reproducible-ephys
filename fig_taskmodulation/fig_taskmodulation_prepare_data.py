@@ -76,7 +76,8 @@ def prepare_data(insertions, one, figure='fig_taskmodulation', recompute=False, 
             eid = ins['session']['id']
             probe = ins['probe_name']
             sl = SpikeSortingLoader(eid=eid, pname=probe, one=one, atlas=ba)
-            spikes, clusters, channels = sl.load_spike_sorting(dataset_types=['clusters.amps', 'clusters.peakToTrough'])
+            spikes, clusters, channels = sl.load_spike_sorting(dataset_types=['clusters.amps', 'clusters.peakToTrough'],
+                                                               revision='2024-03-22')
             clusters = sl.merge_clusters(spikes, clusters, channels)
 
             clusters['rep_site_acronym'] = combine_regions(clusters['acronym'])

@@ -261,7 +261,7 @@ def prepare_glm_and_simulated_data(insertions, one, brain_atlas=None):
 
         ba = brain_atlas or AllenAtlas()
         sl = bbone.SpikeSortingLoader(eid=eid, pname=probe, one=one, atlas=ba)
-        spikes, _, _ = sl.load_spike_sorting()
+        spikes, _, _ = sl.load_spike_sorting(revision='2024-03-22')
 
         clu_idx = np.isin(spikes.clusters, clusters[i])
         spk_times = spikes.times[clu_idx]
@@ -673,7 +673,7 @@ def prepare_glm_data_full_mtnn_cov(insertions, one, brain_atlas=None):
 
         ba = brain_atlas or AllenAtlas()
         sl = bbone.SpikeSortingLoader(eid=eid, pname=probe, one=one, atlas=ba)
-        spikes, _, _ = sl.load_spike_sorting()
+        spikes, _, _ = sl.load_spike_sorting(revision='2024-03-22')
 
         clu_idx = np.isin(spikes.clusters, clusters[i])
         spk_times = spikes.times[clu_idx]

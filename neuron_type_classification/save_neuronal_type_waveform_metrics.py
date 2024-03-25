@@ -46,7 +46,7 @@ for i in range(len(traj)):
     # Load in spikes
     try:
         sl = SpikeSortingLoader(eid=eid, pname=probe, one=one, atlas=ba)
-        spikes, clusters, channels = sl.load_spike_sorting()
+        spikes, clusters, channels = sl.load_spike_sorting(revision='2024-03-22')
         clusters = sl.merge_clusters(spikes, clusters, channels)
     except Exception as err:
         print(err)

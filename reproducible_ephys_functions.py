@@ -393,16 +393,20 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
 
         try:
             df_lfp = compute_lfp_insertion(one=one, pid=ins['probe_insertion'])
-            clusters = one.load_object(eid, 'clusters', collection=collection, attribute=['metrics', 'channels'])
-            if 'metrics' not in clusters.keys():
-                sl = bbone.SpikeSortingLoader(eid=eid, pname=probe, one=one, atlas=ba)
-                spikes, clusters, channels = sl.load_spike_sorting()
-                clusters = sl.merge_clusters(spikes, clusters, channels)
-            else:
-                clusters['label'] = clusters['metrics']['label']
-                channels = bbone.load_channel_locations(eid, probe=probe, one=one, aligned=True, brain_atlas=ba)[probe]
-                clusters['acronym'] = channels['acronym'][clusters['channels']]
-                clusters['atlas_id'] = channels['atlas_id'][clusters['channels']]
+            clusters = one.load_object(eid, 'clusters', collection=collection, attribute=['metrics', 'channels'],
+                                       revision='2024-03-22')
+            sl = bbone.SpikeSortingLoader(eid=eid, pname=probe, one=one, atlas=ba)
+            spikes, clusters, channels = sl.load_spike_sorting(revision='2024-03-22')
+            clusters = sl.merge_clusters(spikes, clusters, channels)
+            # if 'metrics' not in clusters.keys():
+            #     sl = bbone.SpikeSortingLoader(eid=eid, pname=probe, one=one, atlas=ba)
+            #     spikes, clusters, channels = sl.load_spike_sorting(revision='2024-03-22')
+            #     clusters = sl.merge_clusters(spikes, clusters, channels)
+            # else:
+            #     clusters['label'] = clusters['metrics']['label']
+            #     channels = bbone.load_channel_locations(eid, probe=probe, one=one, aligned=True, brain_atlas=ba)[probe]
+            #     clusters['acronym'] = channels['acronym'][clusters['channels']]
+            #     clusters['atlas_id'] = channels['atlas_id'][clusters['channels']]
 
             channels['rawInd'] = one.load_dataset(eid, dataset='channels.rawInd.npy', collection=collection)
             channels['rep_site_acronym'] = combine_regions(channels['acronym'])
