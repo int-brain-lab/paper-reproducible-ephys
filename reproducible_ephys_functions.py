@@ -456,8 +456,8 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
                     lfp_theta_region_raw = np.mean(10 * np.log(chan_power[freqs]))  # convert to dB
                 else:
                     # TO DO SEE IF THIS IS LEGIT
-                    lfp_region = np.nan
-                    lfp_theta_region = np.nan
+                    lfp_region_raw = np.nan
+                    lfp_theta_region_raw = np.nan
                 if 'apRMS' in ap.keys() and region_chan.shape[0] > 0:
                     ap_rms = np.percentile(ap['apRMS'][1, region_chan], 90) * 1e6
                 elif region_chan.shape[0] > 0:
@@ -477,6 +477,7 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
                                                         'lfp_theta_power': lfp_theta_region,
                                                         'lfp_power_raw': lfp_region_raw,
                                                         'lfp_theta_power_raw': lfp_theta_region_raw,
+                                                        'lfp_whole_probe': np.mean(df_lfp['lfp_power']),
                                                         'rms_ap_p90': ap_rms,
                                                         'n_trials': n_trials,
                                                         'behavior': behav,
@@ -495,7 +496,7 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
 def filter_recordings(df=None, by_anatomy_only=False, max_ap_rms=40, max_lfp_power=-150,
                       min_neurons_per_channel=0.1, min_channels_region=5, min_regions=0, min_neuron_region=4,
                       min_lab_region=3, min_rec_lab=4, n_trials=400, behavior=False,
-                      exclude_subjects=['ibl_witten_26'], recompute=True, freeze='freeze_2024_03', one=None):
+                      exclude_subjects=[], recompute=True, freeze='freeze_2024_01', one=None):
     """
     Filter values in dataframe according to different exclusion criteria
     :param df: pandas dataframe
@@ -528,6 +529,15 @@ def filter_recordings(df=None, by_anatomy_only=False, max_ap_rms=40, max_lfp_pow
     # Region Level
     # no. of channels per region
     metrics['region_hit'] = metrics['n_channels'] > min_channels_region
+    
+    # Set -inf lfp power to nan
+    metrics.loc[metrics['lfp_power_raw'] == float('-inf'), 'lfp_power_raw'] = np.nan
+    
+    # Calculate lfp power ratio between CA1 and cortex
+    for i, pid in enumerate(np.unique(metrics['pid'])):
+        metrics.loc[metrics['pid'] == pid, 'lfp_ratio'] = (
+            metrics.loc[(metrics['pid'] == pid) & (metrics['region'] == 'LP'), 'lfp_power_raw'].values[0]
+            / metrics.loc[(metrics['pid'] == pid) & (metrics['region'] == 'DG'), 'lfp_power_raw'].values[0])
 
     # PID level
     metrics = metrics.groupby('pid', group_keys=False).apply(lambda m: m.assign(high_noise=lambda m: m['rms_ap_p90'].median() > max_ap_rms))
@@ -564,7 +574,7 @@ def filter_recordings(df=None, by_anatomy_only=False, max_ap_rms=40, max_lfp_pow
     #institutes = [key for key, val in inst_count.items()]
 
     for lab in institutes:
-        idx = metrics.loc[(metrics['institute'] == lab) & metrics['include'] == 1].index
+        idx = metrics.loc[(metrics['institute'] == lab) & (metrics['include'] == 1)].index
         metrics.loc[idx, 'lab_include'] = True
 
     # Now for permutation test
