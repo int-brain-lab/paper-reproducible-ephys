@@ -13,7 +13,7 @@ from datetime import datetime
 import scipy
 import traceback
 
-from neurodsp import voltage
+from ibldsp import voltage
 from one.api import ONE
 from one.alf.exceptions import ALFObjectNotFound
 from iblutil.numerical import ismember
@@ -393,20 +393,10 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
 
         try:
             df_lfp = compute_lfp_insertion(one=one, pid=ins['probe_insertion'])
-            clusters = one.load_object(eid, 'clusters', collection=collection, attribute=['metrics', 'channels'],
-                                       revision='2024-03-22')
+
             sl = bbone.SpikeSortingLoader(eid=eid, pname=probe, one=one, atlas=ba)
             spikes, clusters, channels = sl.load_spike_sorting(revision='2024-03-22')
             clusters = sl.merge_clusters(spikes, clusters, channels)
-            # if 'metrics' not in clusters.keys():
-            #     sl = bbone.SpikeSortingLoader(eid=eid, pname=probe, one=one, atlas=ba)
-            #     spikes, clusters, channels = sl.load_spike_sorting(revision='2024-03-22')
-            #     clusters = sl.merge_clusters(spikes, clusters, channels)
-            # else:
-            #     clusters['label'] = clusters['metrics']['label']
-            #     channels = bbone.load_channel_locations(eid, probe=probe, one=one, aligned=True, brain_atlas=ba)[probe]
-            #     clusters['acronym'] = channels['acronym'][clusters['channels']]
-            #     clusters['atlas_id'] = channels['atlas_id'][clusters['channels']]
 
             channels['rawInd'] = one.load_dataset(eid, dataset='channels.rawInd.npy', collection=collection)
             channels['rep_site_acronym'] = combine_regions(channels['acronym'])
@@ -505,7 +495,7 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
 def filter_recordings(df=None, by_anatomy_only=False, max_ap_rms=40, max_lfp_power=-150,
                       min_neurons_per_channel=0.1, min_channels_region=5, min_regions=0, min_neuron_region=4,
                       min_lab_region=3, min_rec_lab=4, n_trials=400, behavior=False,
-                      exclude_subjects=['ibl_witten_26'], recompute=True, freeze='freeze_2024_01', one=None):
+                      exclude_subjects=['ibl_witten_26'], recompute=True, freeze='freeze_2024_03', one=None):
     """
     Filter values in dataframe according to different exclusion criteria
     :param df: pandas dataframe

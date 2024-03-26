@@ -24,7 +24,7 @@ def plot_figure_supp4():
         for j, metric in enumerate(METRICS):
             panel_example(axs[i, j], n_rec_per_region=N_REC_PER_REGION, ylabel=LABELS[j],
                           example_metric=metric, example_region=region,
-                          despine=False, freeze='freeze_2024_01')
+                          despine=False, freeze='freeze_2024_03')
             if region == 'PPC':
                 axs[i, j].set(title='VISa/am')
             else:

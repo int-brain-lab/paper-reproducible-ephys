@@ -120,7 +120,7 @@ def check_mtnn_criteria(one=None):
         one = ONE()
     
     mtnn_criteria = defaultdict(dict)
-    repeated_site_trajs = get_insertions(level=2, freeze='freeze_2024_01')
+    repeated_site_trajs = get_insertions(level=2, freeze='freeze_2024_03')
     repeated_site_trajs = traj_list_to_dataframe(repeated_site_trajs)
     repeated_site_eids = list(repeated_site_trajs.eid)
     print('total number of repeated site eids: {}'.format(len(repeated_site_eids)))
@@ -305,7 +305,7 @@ def get_mtnn_eids():
     return mtnn_eids
 
 def get_traj(eids):
-    traj = get_insertions(level=2, freeze='freeze_2024_01')
+    traj = get_insertions(level=2, freeze='freeze_2024_03')
     tmp = []
     for eid in eids:
         for t in traj:

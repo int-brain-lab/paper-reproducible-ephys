@@ -7,7 +7,7 @@ from one.api import ONE
 
 def run_fig_taskmodulation(one, recompute=True):
 
-    insertions = get_insertions(level=0, one=one, freeze='freeze_2024_01', recompute=recompute)
+    insertions = get_insertions(level=0, one=one, freeze='freeze_2024_03', recompute=recompute)
     prepare_data(insertions, one=one, **default_params, recompute=recompute)
     compute_permutation_test(n_permut=20000, n_cores=8)
     compute_power_analysis(n_permut=50000, n_cores=8)

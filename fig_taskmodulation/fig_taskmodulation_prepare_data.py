@@ -579,7 +579,7 @@ if __name__ == '__main__':
     print("Filtering criteria: {}".format(filtering_criteria))
     one = ONE()
     one.record_loaded = True
-    insertions = get_insertions(level=0, one=one, freeze='freeze_2024_01', recompute=True)
+    insertions = get_insertions(level=0, one=one, freeze='freeze_2024_03', recompute=True)
     prepare_data(insertions, one=one, recompute=True, **default_params)
     save_dataset_info(one, figure='fig_taskmodulation')
     compute_permutation_test(n_permut=30000, n_cores=8)
