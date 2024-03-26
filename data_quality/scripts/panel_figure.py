@@ -51,19 +51,19 @@ ctx_mean = {}
 ctx_std = {}
 for d in dsets:
     ctx_mean[d] = by_region["Isocortex"][d]["yield"].mean()
-    ctx_std[d] = by_region["Isocortex"][d]["yield"].std()
+    ctx_std[d] = by_region["Isocortex"][d]["yield"].std() / np.sqrt(len(by_region["Isocortex"][d]))
 
 th_mean = {}
 th_std = {}
 for d in dsets:
     th_mean[d] = by_region["TH"][d]["yield"].mean()
-    th_std[d] = by_region["TH"][d]["yield"].std()
+    th_std[d] = by_region["TH"][d]["yield"].std() / np.sqrt(len(by_region["TH"][d]))
     
 hpf_mean = {}
 hpf_std = {}
 for d in dsets:
     hpf_mean[d] = by_region["HPF"][d]["yield"].mean()
-    hpf_std[d] = by_region["HPF"][d]["yield"].std()
+    hpf_std[d] = by_region["HPF"][d]["yield"].std() / np.sqrt(len(by_region["HPF"][d]))
 
 # bar plot
 
@@ -80,10 +80,11 @@ plt.bar(x_axis + .2, [ctx_mean["steinmetz"], th_mean["steinmetz"], hpf_mean["ste
 
 plt.bar(x_axis + .4, [ctx_mean["re"], th_mean["re"], hpf_mean["re"]], 0.2, 
         yerr=[ctx_std["re"], th_std["re"], hpf_std["re"]], 
-        label="RE", error_kw=error_kw)
+        label="IBL", error_kw=error_kw)
 plt.xticks(x_axis + .2, regions)
 
 plt.legend()
-plt.title("Mean yield per region add N insertions to bar?")
-plt.xlabel("mean yield")
+plt.title("Mean yield per region")
+plt.ylabel("mean yield")
+plt.xlabel("Brain region")
 

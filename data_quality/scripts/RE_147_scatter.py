@@ -10,6 +10,7 @@ dfs = {}
 for region in regions:
     print(region)
     og_clusters = load_clusters("re", region)
+    og_clusters = og_clusters[og_clusters.firing_rate > 0.1]
     ibl_channels = load_channels("re", region)
 
     al_clusters = load_clusters("allen", region)
@@ -22,6 +23,7 @@ for region in regions:
                      "passing_per_site": "og_yield"}, inplace=True)
 
     rerun_clusters = load_clusters("re_147", region)
+    rerun_clusters = rerun_clusters[rerun_clusters.firing_rate > 0.1]
     
     # make sure we only include insertions listed in the clusters table
     ibl_channels = ibl_channels.loc[list(rerun_clusters.index.get_level_values(0).unique())]
@@ -49,7 +51,7 @@ ax.plot([0,1.6], [0, 1.6], linestyle="dashed", color="gray")
 ax.scatter(alldf["og_yield"].mean(), 0.03, marker="v", s=64)
 ax.scatter(0.025, alldf["rerun_yield"].mean(), marker="<", s=64)
 fig.tight_layout()
-fig.savefig("/Users/chris/Downloads/147_yield_scatters/RE_allregions.png")
+fig.savefig("/Users/chris/Downloads/147_yield_scatters/RE_spikecount_allregions.png")
 
 for region, df in dfs.items():
     if len(df) == 0:

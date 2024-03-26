@@ -22,6 +22,13 @@ def get_colors_region(region):
     colors_translucent = [np.array(list(colors[0]) + [0.75]), np.array(list(colors[1]) + [0.75])]
     return colors, colors_translucent
 
+def get_3colors_region(region):
+    region_idx = br.acronym2index([region])[1][0]
+    region_rgb = br.rgb[region_idx][0]
+    colors = [region_rgb / 255., scale_lightness(region_rgb/255., 1.15), scale_lightness(region_rgb/255., 1.3)]
+    colors_translucent = [np.array(list(colors[0]) + [0.75]), np.array(list(colors[1]) + [0.75]), np.array(list(colors[2]) + [0.75])]
+    return colors, colors_translucent
+
 
 
 
