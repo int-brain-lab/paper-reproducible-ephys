@@ -162,9 +162,9 @@ for region in ["Isocortex", "TH", "HPF"]:
 
     err_kws = {"markersize":20, 
                 "linewidth":1.5}
-    sns.pointplot(x="source", y="passing_per_site", data=passing_per_site_ibl, ax=axes[1, 3], join=False, markersize=2, markers=".", capsize=.2, errorbar=("se", 2), color="gray", err_kws=err_kws, zorder=100)
-    sns.pointplot(x="source", y="passing_per_site", data=passing_per_site_ste, ax=axes[1, 3], join=False, markersize=2, markers=".", capsize=.2, errorbar=("se", 2), color="gray", err_kws=err_kws, zorder=100)
-    sns.pointplot(x="source", y="passing_per_site", data=passing_per_site_aln, ax=axes[1, 3], join=False, markersize=2, markers=".", capsize=.2, errorbar=("se", 2), color="gray", err_kws=err_kws, zorder=100)
+    sns.pointplot(x="source", y="passing_per_site", data=passing_per_site_ibl, ax=axes[1, 3], join=False, markersize=2, marker="none", capsize=.2, errorbar=("se", 1), color="black", err_kws=err_kws, zorder=100)
+    sns.pointplot(x="source", y="passing_per_site", data=passing_per_site_ste, ax=axes[1, 3], join=False, markersize=2, marker="none", capsize=.2, errorbar=("se", 1), color="black", err_kws=err_kws, zorder=100)
+    sns.pointplot(x="source", y="passing_per_site", data=passing_per_site_aln, ax=axes[1, 3], join=False, markersize=2, marker="none", capsize=.2, errorbar=("se", 1), color="black", err_kws=err_kws, zorder=100)
     sns.stripplot(passing_per_site_all.T, ax=axes[1, 3], palette=colors_translucent)
     axes[1, 3].set_title("Passing units per site", fontsize=8)
     axes[1, 3].set_xticklabels(["IBL", "STE", "ALN"], fontsize=8, rotation=90)

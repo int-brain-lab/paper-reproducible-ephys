@@ -8,10 +8,8 @@ import numpy as np
 
 regions  = ['Isocortex', 'TH', 'HPF']
 
-by_region = {}
+dfs = []
 for region in regions:
-    by_region[region] = {}
-
     ibl_channels = load_channels("re", region)
     ibl_clusters = load_clusters("re_147", region)
     # make sure we only include insertions listed in the clusters table
@@ -31,60 +29,57 @@ for region in regions:
     re_yield.rename(columns={"passing_units":"nunits", 
                      "num_sites": "nsites",
                      "passing_per_site": "yield"}, inplace=True)
+    re_yield["dataset"] = "IBL"
     
     al_yield["region"] = region
     al_yield.rename(columns={"passing_units":"nunits", 
                      "num_sites": "nsites",
                      "passing_per_site": "yield"}, inplace=True)
+    al_yield["dataset"] = "Allen"
     
     st_yield["region"] = region
     st_yield.rename(columns={"passing_units":"nunits", 
                      "num_sites": "nsites",
                      "passing_per_site": "yield"}, inplace=True)
-    
-    by_region[region]["re"] = re_yield
-    by_region[region]["allen"] = al_yield
-    by_region[region]["steinmetz"] = st_yield
+    st_yield["dataset"] = "Steinmetz"
 
-dsets = ["allen", "steinmetz", "re"]
-ctx_mean = {}
-ctx_std = {}
-for d in dsets:
-    ctx_mean[d] = by_region["Isocortex"][d]["yield"].mean()
-    ctx_std[d] = by_region["Isocortex"][d]["yield"].std() / np.sqrt(len(by_region["Isocortex"][d]))
+    dfs.append(re_yield)
+    dfs.append(al_yield)
+    dfs.append(st_yield)
 
-th_mean = {}
-th_std = {}
-for d in dsets:
-    th_mean[d] = by_region["TH"][d]["yield"].mean()
-    th_std[d] = by_region["TH"][d]["yield"].std() / np.sqrt(len(by_region["TH"][d]))
-    
-hpf_mean = {}
-hpf_std = {}
-for d in dsets:
-    hpf_mean[d] = by_region["HPF"][d]["yield"].mean()
-    hpf_std[d] = by_region["HPF"][d]["yield"].std() / np.sqrt(len(by_region["HPF"][d]))
+df = pd.concat(dfs)
 
-# bar plot
+# the below code is nice but does not play nice with error bars
+# fig = sns.catplot(data=df, 
+#             x="dataset", order=["Allen", "Steinmetz", "IBL"],
+#             col_order=["Isocortex", "TH", "HPF"],
+#             y="yield", col="region",
+#             height=4, aspect=.6, hue="dataset",
+#             errorbar=("ci", "se"),
+#             units="yield",
+#             legend=False,
+#             zorder=-1
+# )
+# fig.set_axis_labels("", "mean passing units per site")
+# fig.set_titles("{col_name}")
+# fig.map(plt.errorbar, "dataset", "yield", "std",
+#         linestyle='none', marker="o")
 
-x_axis = np.arange(len(regions))
+fig, ax = plt.subplots(1, 3)
+for i, region in enumerate(regions):
+    sns.stripplot(data=df[df.region==region], x="dataset", 
+                y="yield", ax = ax[i], hue="dataset", zorder=-1,
+                alpha=0.6, order=["IBL", "Steinmetz", "Allen"])
 
-error_kw=dict(ecolor='gray', lw=2, capsize=5, capthick=2)
-plt.bar(x_axis, [ctx_mean["allen"], th_mean["allen"], hpf_mean["allen"]], 0.2, 
-        yerr=[ctx_std["allen"], th_std["allen"], hpf_std["allen"]], 
-        label="Allen", error_kw=error_kw)
+    err_kws = {"markersize":20, 
+                "linewidth":1.5}
+    sns.pointplot(data=df[df.region==region],x="dataset", y="yield", 
+                ax=ax[i], markersize=2, markers="none", capsize=.2, 
+                errorbar=("se", 1), color="black", err_kws=err_kws,
+                linestyle="none", order=["IBL", "Steinmetz", "Allen"])
+    ax[i].set_title(region)
+    if i != 0:
+        ax[i].set_ylabel(None)
+        ax[i].set_yticks([])
 
-plt.bar(x_axis + .2, [ctx_mean["steinmetz"], th_mean["steinmetz"], hpf_mean["steinmetz"]], 0.2, 
-        yerr=[ctx_std["steinmetz"], th_std["steinmetz"], hpf_std["steinmetz"]], 
-        label= "Steinmetz", error_kw=error_kw)
-
-plt.bar(x_axis + .4, [ctx_mean["re"], th_mean["re"], hpf_mean["re"]], 0.2, 
-        yerr=[ctx_std["re"], th_std["re"], hpf_std["re"]], 
-        label="IBL", error_kw=error_kw)
-plt.xticks(x_axis + .2, regions)
-
-plt.legend()
-plt.title("Mean yield per region")
-plt.ylabel("mean yield")
-plt.xlabel("Brain region")
-
+fig.tight_layout()
