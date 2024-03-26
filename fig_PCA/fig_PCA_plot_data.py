@@ -640,8 +640,8 @@ def perm_test(inclu=False, print_=False,
     ax.set_xticklabels(list(regs_) + ['all'], rotation=90)
     
     # separate 'all' from others via lines
-    ax.axvline(x=5,c='k', linewidth=2)
-    ax.axhline(y=7,c='k', linewidth=2)
+    ax.axvline(x=len(regs_),c='k', linewidth=2)
+    ax.axhline(y=len(labs_),c='k', linewidth=2)
 
     fig = plt.gcf()
     fig.tight_layout()
