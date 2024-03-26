@@ -19,17 +19,10 @@ br = BrainRegions()
 lab_number_map, institution_map, lab_colors = labs()
 
 
-def panel_probe_lfp(fig, ax, n_rec_per_lab=0, boundary_align='DG-TH', ylim=[-2000, 2000],
+def panel_probe_lfp(fig, ax, df_filt, boundary_align='DG-TH', ylim=[-2000, 2000],
                     normalize=False, clim=[-190, -150], freeze=None):
 
     df_chns = load_dataframe(df_name='chns')
-    df_filt = filter_recordings(min_rec_lab=n_rec_per_lab, freeze=freeze)
-    df_filt = df_filt[df_filt['lab_include'] == 1]
-    df_filt['lab_number'] = df_filt['lab'].map(lab_number_map)
-    df_filt = df_filt.sort_values(by=['institute', 'subject']).reset_index(drop=True)
-    df_filt = df_filt.drop_duplicates(subset='subject').reset_index()
-    rec_per_lab = df_filt.groupby('institute', group_keys=False).size()
-    df_filt['recording'] = np.concatenate([np.arange(i) for i in rec_per_lab.values])
 
     for iR, data in df_filt.iterrows():
         df = df_chns[df_chns['pid'] == data['pid']]
@@ -47,11 +40,10 @@ def panel_probe_lfp(fig, ax, n_rec_per_lab=0, boundary_align='DG-TH', ylim=[-200
             z = z - z_subtract
 
         # Plot
-        im = plot_probe(df['lfp'].values, z, ax[iR], clim=clim, normalize=normalize,
+        im = plot_probe(df['lfp_destriped'].values, z, ax[iR], clim=clim, normalize=normalize,
                         cmap='viridis')
 
-        ax[iR].set_title(data['recording'] + 1,
-                         color=lab_colors[data['institute']])
+        ax[iR].set_title(data['recording'] + 1, color=lab_colors[data['institute']], size=6.5)
         if iR == 0:
             ax[iR].set(yticks=np.arange(ylim[0], ylim[1] + 1, 500),
                        yticklabels=np.arange(ylim[0], ylim[1] + 1, 500) / 1000,
@@ -72,17 +64,16 @@ def panel_probe_lfp(fig, ax, n_rec_per_lab=0, boundary_align='DG-TH', ylim=[-200
     ax[-1].set_axis_off()
 
     # Add lab names
-    plt.figtext(0.24, 0.715, 'Berkeley', va="center", ha="center", size=7, color=lab_colors['Berkeley'])
-    plt.figtext(0.34, 0.715, 'Champalimaud', va="center", ha="center", size=7, color=lab_colors['CCU'])
-    plt.figtext(0.42, 0.715, 'CSHL (C)', va="center", ha="center", size=7, color=lab_colors['CSHL (C)'])
-    plt.figtext(0.46, 0.715, '(Z)', va="center", ha="center", size=7, color=lab_colors['CSHL (Z)'])
-    plt.figtext(0.5, 0.715, 'NYU', va="center", ha="center", size=7, color=lab_colors['NYU'])
-    plt.figtext(0.57, 0.715, 'Princeton', va="center", ha="center", size=7, color=lab_colors['Princeton'])
-    plt.figtext(0.63, 0.715, 'SWC', va="center", ha="center", size=7, color=lab_colors['SWC'])
-    plt.figtext(0.71, 0.715, 'UCL', va="center", ha="center", size=7, color=lab_colors['UCL'])
+    plt.figtext(0.235, 0.715, 'Berkeley', va="center", ha="center", size=7, color=lab_colors['Berkeley'])
+    plt.figtext(0.32, 0.715, 'Champalimaud', va="center", ha="center", size=7, color=lab_colors['CCU'])
+    plt.figtext(0.4, 0.715, 'CSHL', va="center", ha="center", size=7, color=lab_colors['CSHL (C)'])
+    plt.figtext(0.455, 0.715, 'NYU', va="center", ha="center", size=7, color=lab_colors['NYU'])
+    plt.figtext(0.52, 0.715, 'Princeton', va="center", ha="center", size=7, color=lab_colors['Princeton'])
+    plt.figtext(0.57, 0.715, 'SWC', va="center", ha="center", size=7, color=lab_colors['SWC'])
+    plt.figtext(0.645, 0.715, 'UCL', va="center", ha="center", size=7, color=lab_colors['UCL'])
     #plt.figtext(0.805, 0.715, '(H)', va="center", ha="center", size=7, color=lab_colors['UCL (H)'])
-    plt.figtext(0.82, 0.715, 'UCLA', va="center", ha="center", size=7, color=lab_colors['UCLA'])
-    plt.figtext(0.875, 0.715, 'UW', va="center", ha="center", size=7, color=lab_colors['UW'])
+    plt.figtext(0.78, 0.715, 'UCLA', va="center", ha="center", size=7, color=lab_colors['UCLA'])
+    plt.figtext(0.87, 0.715, 'UW', va="center", ha="center", size=7, color=lab_colors['UW'])
 
     # Add colorbar
     axin = inset_axes(ax[-1], width="50%", height="90%", loc='lower right', borderpad=0,
@@ -98,19 +89,10 @@ def panel_probe_lfp(fig, ax, n_rec_per_lab=0, boundary_align='DG-TH', ylim=[-200
     return np.unique(df_filt['pid'])
 
 
-def panel_probe_neurons(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[-2000, 2000],
-                        freeze=None):
+def panel_probe_neurons(fig, ax, df_filt, boundary_align='DG-TH', ylim=[-2000, 2000], freeze=None):
 
     df_chns = load_dataframe(df_name='chns')
     df_clust = load_dataframe(df_name='clust')
-
-    df_filt = filter_recordings(min_rec_lab=n_rec_per_lab, freeze=freeze)
-    df_filt = df_filt[df_filt['lab_include'] == 1]
-    df_filt['lab_number'] = df_filt['lab'].map(lab_number_map)
-    df_filt = df_filt.sort_values(by=['institute', 'subject']).reset_index(drop=True)
-    df_filt = df_filt.drop_duplicates(subset='subject').reset_index()
-    rec_per_lab = df_filt.groupby('institute').size()
-    df_filt['recording'] = np.concatenate([np.arange(i) for i in rec_per_lab.values])
 
     for iR, data in df_filt.iterrows():
 
@@ -205,11 +187,16 @@ def panel_probe_neurons(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[
                bottom=-950, edgecolor='k', linewidth=0)
     ax[-1].bar(x=width / 2, height=950, width=width, color=np.array([255, 144, 159]) / 255,
                bottom=-2000, edgecolor='k', linewidth=0)
-    ax[-1].text(width / 2 + 0.1, 1600, 'PPC', rotation=90, va='center', color='w', fontweight='bold', ha='center')
-    ax[-1].text(width / 2 + 0.1, 900, 'CA1', rotation=90, va='center', color='w', fontweight='bold', ha='center')
-    ax[-1].text(width / 2 + 0.1, 300, 'DG', rotation=90, va='center', color='w', fontweight='bold', ha='center')
-    ax[-1].text(width / 2 + 0.1, -500, 'LP', rotation=90, va='center', color='w', fontweight='bold', ha='center')
-    ax[-1].text(width / 2 + 0.1, -1500, 'PO', rotation=90, va='center', color='w', fontweight='bold', ha='center')
+    ax[-1].text(width / 2 + 0.1, 1600, 'VISa/am', rotation=90, va='center', color='w',
+                fontweight='bold', ha='center', size=5)
+    ax[-1].text(width / 2 + 0.1, 900, 'CA1', rotation=90, va='center', color='w',
+                fontweight='bold', ha='center', size=5)
+    ax[-1].text(width / 2 + 0.1, 300, 'DG', rotation=90, va='center', color='w',
+                fontweight='bold', ha='center', size=5)
+    ax[-1].text(width / 2 + 0.1, -500, 'LP', rotation=90, va='center', color='w',
+                fontweight='bold', ha='center', size=5)
+    ax[-1].text(width / 2 + 0.1, -1500, 'PO', rotation=90, va='center', color='w',
+                fontweight='bold', ha='center', size=5)
     ax[-1].set_axis_off()
 
     # Add colorbar

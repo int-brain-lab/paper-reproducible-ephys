@@ -59,7 +59,8 @@ def prepare_data(insertions, one, recompute=False):
 
         sl = SpikeSortingLoader(eid=eid, pname=probe, one=one, atlas=ba)
         try:
-            spikes, clusters, channels = sl.load_spike_sorting(dataset_types=['clusters.amps', 'clusters.peakToTrough'])
+            spikes, clusters, channels = sl.load_spike_sorting(dataset_types=['clusters.amps', 'clusters.peakToTrough'],
+                                                               revision='2024-03-22')
         except Exception:
             print(traceback.format_exc())
             continue
@@ -124,7 +125,7 @@ def prepare_data(insertions, one, recompute=False):
         data_chns['z'] = channels['z']
         data_chns['axial_um'] = channels['axial_um']
         data_chns['lateral_um'] = channels['lateral_um']
-        data_chns['lfp'] = lfp_psd['lfp_power'].values
+        data_chns['lfp_destriped'] = lfp_psd['lfp_power'].values
         data_chns['lfp_theta'] = lfp_psd['lfp_theta'].values
         data_chns['lfp_raw'] = lfp_power_raw
         data_chns['lfp_theta_raw'] = lfp_theta_raw
@@ -348,9 +349,9 @@ def run_decoding(metrics=['yield_per_channel', 'median_firing_rate', 'lfp_power'
 if __name__ == '__main__':
     one = ONE()
     one.record_loaded = True
-    #insertions = get_insertions(level=0, one=one, freeze='freeze_2024_01')
-    #all_df_chns, all_df_clust, metrics = prepare_data(insertions, recompute=True, one=one)
-    #save_dataset_info(one, figure='fig_ephysfeatures')
-    rerun_decoding = True
+    insertions = get_insertions(level=0, one=one, freeze='freeze_2024_01')
+    all_df_chns, all_df_clust, metrics = prepare_data(insertions, recompute=True, one=one)
+    save_dataset_info(one, figure='fig_ephysfeatures')
+    rerun_decoding = False
     run_decoding(n_shuffle=500, qc='pass', recompute=rerun_decoding)
     run_decoding(n_shuffle=500, qc='all', recompute=rerun_decoding)

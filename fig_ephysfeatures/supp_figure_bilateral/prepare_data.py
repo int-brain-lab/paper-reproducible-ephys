@@ -54,7 +54,8 @@ def prepare_data(insertions, one, recompute=False):
         probe = ins['probe_name']
 
         sl = SpikeSortingLoader(eid=eid, pname=probe, one=one, atlas=ba)
-        spikes, clusters, channels = sl.load_spike_sorting(dataset_types=['clusters.amps', 'clusters.peakToTrough'])
+        spikes, clusters, channels = sl.load_spike_sorting(dataset_types=['clusters.amps', 'clusters.peakToTrough'],
+                                                           revision='2024-03-22')
 
         channels['rawInd'] = one.load_dataset(eid, dataset='channels.rawInd.npy', collection=sl.collection)
         clusters = sl.merge_clusters(spikes, clusters, channels)
@@ -254,7 +255,7 @@ def prepare_neural_data(insertions, one, recompute=False, **kwargs):
 
             # Load in spikesorting
             sl = SpikeSortingLoader(eid=eid, pname=probe, one=one, atlas=ba)
-            spikes, clusters, channels = sl.load_spike_sorting()
+            spikes, clusters, channels = sl.load_spike_sorting(revision='2024-03-22')
             clusters = sl.merge_clusters(spikes, clusters, channels)
 
             clusters['rep_site_acronym'] = combine_regions(clusters['acronym'])
