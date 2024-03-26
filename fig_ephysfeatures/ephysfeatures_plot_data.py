@@ -106,4 +106,4 @@ def plot_main_figure(freeze=None, one=None):
 
 if __name__ == '__main__':
     one = ONE()
-    p_decoding, p_permut = plot_main_figure(freeze='freeze_2024_01', one=one)
+    p_decoding, p_permut = plot_main_figure(freeze='freeze_2024_03', one=one)

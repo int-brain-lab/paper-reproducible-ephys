@@ -116,7 +116,8 @@ def plot_neural_behav_raster(eid, probe, trial_idx, stim_dir='left', camera='lef
     else:
         collection = f'alf/{probe}'
 
-    spikes = one.load_object(eid, 'spikes', collection=collection, attribute=['times','clusters'])
+    spikes = one.load_object(eid, 'spikes', collection=collection, attribute=['times','clusters'],
+                             revision='2024-03-22')
 
     if axs is None:
         fig, axs = plt.subplots(2, 6, figsize=(18, 8), constrained_layout=True)

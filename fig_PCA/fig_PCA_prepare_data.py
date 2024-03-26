@@ -69,7 +69,7 @@ def prepare_data(insertions, one, recompute=False, **kwargs):
 
             # Load in spikesorting
             sl = SpikeSortingLoader(eid=eid, pname=probe, one=one, atlas=ba)
-            spikes, clusters, channels = sl.load_spike_sorting()
+            spikes, clusters, channels = sl.load_spike_sorting(revision='2024-03-22')
             clusters = sl.merge_clusters(spikes, clusters, channels)
 
             clusters['rep_site_acronym'] = combine_regions(clusters['acronym'])
@@ -185,6 +185,6 @@ def prepare_data(insertions, one, recompute=False, **kwargs):
 if __name__ == '__main__':
     one = ONE()
     one.record_loaded = True
-    insertions = get_insertions(level=0, one=one, freeze='freeze_2024_01')
+    insertions = get_insertions(level=0, one=one, freeze='freeze_2024_03')
     prepare_data(insertions, one=one, **default_params)
     save_dataset_info(one, figure='fig_PCA')

@@ -50,7 +50,7 @@ def plot_raster_and_psth_LvsR(pid, neuron, contrasts=(1, 0.25, 0.125, 0.0625, 0)
 
     eid, probe = one.pid2eid(pid)
     sl = SpikeSortingLoader(eid=eid, pname=probe, one=one, atlas=ba)
-    spikes, clusters, channels = sl.load_spike_sorting()
+    spikes, clusters, channels = sl.load_spike_sorting(revision='2024-03-22')
 
     spike_idx = np.isin(spikes['clusters'], neuron)
     if np.sum(spike_idx) == 0:
@@ -224,7 +224,7 @@ def plot_raster_and_psth(pid, neuron, contrasts=(1, 0.25, 0.125, 0.0625, 0), sid
 
     eid, probe = one.pid2eid(pid)
     sl = SpikeSortingLoader(eid=eid, pname=probe, one=one, atlas=ba)
-    spikes, clusters, channels = sl.load_spike_sorting()
+    spikes, clusters, channels = sl.load_spike_sorting(revision='2024-03-22')
 
     spike_idx = np.isin(spikes['clusters'], neuron)
     if np.sum(spike_idx) == 0:
