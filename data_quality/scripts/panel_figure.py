@@ -78,8 +78,29 @@ for i, region in enumerate(regions):
                 errorbar=("se", 1), color="black", err_kws=err_kws,
                 linestyle="none", order=["IBL", "Steinmetz", "Allen"])
     ax[i].set_title(region)
+    ax[i].set_xlabel(None)
     if i != 0:
         ax[i].set_ylabel(None)
         ax[i].set_yticks([])
+    else:
+        ax[i].set_ylabel("mean passing units per site")
 
 fig.tight_layout()
+
+# 2-way ANOVA on region and dataset
+df = df.drop(columns=["nunits", "nsites"])
+dataset_map = {"IBL":1, "Steinmetz":2, "Allen":3}
+region_map = {"Isocortex":1, "TH":2, "HPF":3}
+df = df.replace({"region":region_map,
+                 "dataset":dataset_map})
+
+import statsmodels.api as sm
+from statsmodels.formula.api import ols
+import scikit_posthocs as sp
+
+model = ols('Q("yield") ~ C(Q("dataset")) + C(Q("region")) + C(Q("dataset")):C(Q("region"))',
+            df).fit()
+sm.stats.anova_lm(model, typ=2)
+
+dataset_effect = sp.posthoc_conover(df, val_col="yield", group_col="dataset", p_adjust="holm")
+region_effect = sp.posthoc_conover(df, val_col="yield", group_col="dataset", p_adjust="holm")
