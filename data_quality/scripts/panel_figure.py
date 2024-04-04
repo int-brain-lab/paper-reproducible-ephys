@@ -49,43 +49,45 @@ for region in regions:
 
 df = pd.concat(dfs)
 
-# the below code is nice but does not play nice with error bars
-# fig = sns.catplot(data=df, 
-#             x="dataset", order=["Allen", "Steinmetz", "IBL"],
-#             col_order=["Isocortex", "TH", "HPF"],
-#             y="yield", col="region",
-#             height=4, aspect=.6, hue="dataset",
-#             errorbar=("ci", "se"),
-#             units="yield",
-#             legend=False,
-#             zorder=-1
-# )
-# fig.set_axis_labels("", "mean passing units per site")
-# fig.set_titles("{col_name}")
-# fig.map(plt.errorbar, "dataset", "yield", "std",
-#         linestyle='none', marker="o")
-
-fig, ax = plt.subplots(1, 3)
+fontsize = 7.
+plt.rcParams["axes.labelsize"] = fontsize
+fig, ax = plt.subplots(1, 3, figsize=(3, 2))
+region_fullname = {
+    "Isocortex": "Cortex",
+    "TH": "Thalamus",
+    "HPF": "Hippocampus"
+}
+err_kws = {
+    "markersize": 20, 
+    "linewidth": 1.0
+}
 for i, region in enumerate(regions):
-    sns.stripplot(data=df[df.region==region], x="dataset", 
+    b = sns.stripplot(data=df[df.region==region], x="dataset", 
                 y="yield", ax = ax[i], hue="dataset", zorder=-1,
                 alpha=0.6, order=["IBL", "Steinmetz", "Allen"])
 
-    err_kws = {"markersize":20, 
-                "linewidth":1.5}
     sns.pointplot(data=df[df.region==region],x="dataset", y="yield", 
                 ax=ax[i], markersize=2, markers="none", capsize=.2, 
                 errorbar=("se", 1), color="black", err_kws=err_kws,
-                linestyle="none", order=["IBL", "Steinmetz", "Allen"])
-    ax[i].set_title(region)
+                linestyle="none", order=["IBL", "Steinmetz", "Allen"],
+                )
+    ax[i].set_title(region_fullname[region], fontsize=fontsize)
     ax[i].set_xlabel(None)
+    tx = ax[i].get_xticks()
+    ax[i].set_xticks(tx, ["IBL", "STE", "ALN"], fontsize=fontsize)
+
     if i != 0:
         ax[i].set_ylabel(None)
         ax[i].set_yticks([])
+        sns.despine(ax=ax[i], left=True) 
+        
     else:
-        ax[i].set_ylabel("mean passing units per site")
-
-fig.tight_layout()
+        ax[i].set_ylabel("QC passing neurons per electrode site", fontsize=fontsize)
+        sns.despine(ax=ax[i], trim=True) 
+        ty = ax[i].get_yticks()
+        ly = ax[i].get_yticklabels()
+        ax[i].set_yticks(ty, ly, fontsize=fontsize)
+        
 
 # 2-way ANOVA on region and dataset
 df = df.drop(columns=["nunits", "nsites"])
@@ -96,11 +98,7 @@ df = df.replace({"region":region_map,
 
 import statsmodels.api as sm
 from statsmodels.formula.api import ols
-import scikit_posthocs as sp
 
 model = ols('Q("yield") ~ C(Q("dataset")) + C(Q("region")) + C(Q("dataset")):C(Q("region"))',
             df).fit()
 sm.stats.anova_lm(model, typ=2)
-
-dataset_effect = sp.posthoc_conover(df, val_col="yield", group_col="dataset", p_adjust="holm")
-region_effect = sp.posthoc_conover(df, val_col="yield", group_col="dataset", p_adjust="holm")
