@@ -63,7 +63,7 @@ err_kws = {
 }
 for i, region in enumerate(regions):
     b = sns.stripplot(data=df[df.region==region], x="dataset", 
-                y="yield", ax = ax[i], hue="dataset", zorder=-1,
+                y="yield", ax = ax[i], zorder=-1,
                 alpha=0.6, order=["IBL", "Steinmetz", "Allen"])
 
     sns.pointplot(data=df[df.region==region],x="dataset", y="yield", 
