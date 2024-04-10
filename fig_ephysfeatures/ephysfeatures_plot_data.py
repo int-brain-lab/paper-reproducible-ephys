@@ -37,7 +37,7 @@ def plot_main_figure(freeze=None, one=None):
 
     # Get filtered dataframe 
     lab_number_map, institution_map, lab_colors = labs()
-    df_filt = filter_recordings(min_rec_lab=MIN_REC_PER_LAB, min_regions=MIN_REGIONS, max_lfp_power=0)
+    df_filt = filter_recordings(min_rec_lab=MIN_REC_PER_LAB, min_regions=MIN_REGIONS)
     df_filt = df_filt[df_filt['lab_include'] == 1]
     df_filt['lab_number'] = df_filt['lab'].map(lab_number_map)
     df_filt = df_filt.sort_values(by=['institute', 'subject']).reset_index(drop=True)
@@ -78,7 +78,7 @@ def plot_main_figure(freeze=None, one=None):
     pids_b = panel_probe_lfp(fig, ax['panel_B'], df_filt, boundary_align=BOUNDARY, freeze=freeze)
     
     pids_c = panel_probe_neurons(fig, ax['panel_C'], df_filt, boundary_align=BOUNDARY, freeze=freeze)
-    """
+    
     p_permut, pids_d = panel_permutation(ax['panel_D'], METRICS, REGIONS, LABELS,
                                          n_permut=N_PERMUT,
                                          n_rec_per_lab=MIN_REC_PER_LAB,
@@ -86,11 +86,11 @@ def plot_main_figure(freeze=None, one=None):
                                          bh_correction=BH_CORRECTION,
                                          freeze=freeze)
     
-    p_decoding = panel_decoding(ax['panel_E'], qc='pass', bh_correction=BH_CORRECTION)
+    p_decoding = panel_decoding(ax['panel_E'], qc='pass', bh_correction=True)
     ax['panel_E'].set(title='QC pass')
     _ = panel_decoding(ax['panel_F'], qc='all')
     ax['panel_F'].set(title='All recordings')
-    """
+    
     # Save figure
     save_path = save_figure_path(figure='fig_ephysfeatures')
     print(f'Saving figures to {save_path}')
