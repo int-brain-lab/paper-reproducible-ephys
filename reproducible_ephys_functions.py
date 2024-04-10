@@ -427,6 +427,8 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
                                                                                   clusters['acronym'] != 'root'))
             total_yield = np.sum(good_clusters) / np.sum(good_channels)
 
+            lfp_derivative = np.median(np.abs(np.gradient(df_lfp['lfp_power'])))
+
         except Exception as err:
             logger.error(f'{pid}: {err}')
 
@@ -473,6 +475,7 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
                                                         'n_channels': region_chan.shape[0],
                                                         'neuron_yield': region_clusters.shape[0],
                                                         'total_yield': total_yield,
+                                                        'lfp_derivative': lfp_derivative,
                                                         'lfp_power': lfp_region,
                                                         'lfp_theta_power': lfp_theta_region,
                                                         'lfp_power_raw': lfp_region_raw,
@@ -493,10 +496,10 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
     return metrics
 
 
-def filter_recordings(df=None, by_anatomy_only=False, max_ap_rms=40, max_lfp_power=-150,
-                      min_neurons_per_channel=0.1, min_channels_region=5, min_regions=0, min_neuron_region=4,
+def filter_recordings(df=None, by_anatomy_only=False, max_ap_rms=40, max_lfp_derivative=1,
+                      min_neurons_per_channel=0.1, min_channels_region=5, min_regions=2, min_neuron_region=4,
                       min_lab_region=3, min_rec_lab=4, n_trials=400, behavior=False,
-                      exclude_subjects=[], recompute=True, freeze='freeze_2024_01', one=None):
+                      exclude_subjects=[], recompute=True, freeze='freeze_2024_03', one=None):
     """
     Filter values in dataframe according to different exclusion criteria
     :param df: pandas dataframe
@@ -541,7 +544,7 @@ def filter_recordings(df=None, by_anatomy_only=False, max_ap_rms=40, max_lfp_pow
 
     # PID level
     metrics = metrics.groupby('pid', group_keys=False).apply(lambda m: m.assign(high_noise=lambda m: m['rms_ap_p90'].median() > max_ap_rms))
-    metrics = metrics.groupby('pid', group_keys=False).apply(lambda m: m.assign(high_lfp=lambda m: m['lfp_power_raw'].median() > max_lfp_power))
+    metrics = metrics.groupby('pid', group_keys=False).apply(lambda m: m.assign(high_lfp=lambda m: m['lfp_derivative'].median() > max_lfp_derivative))
     metrics = metrics.groupby('pid', group_keys=False).apply(lambda m: m.assign(low_yield=lambda m: m['total_yield'] < min_neurons_per_channel))
     metrics = metrics.groupby('pid', group_keys=False).apply(lambda m: m.assign(missed_target=lambda m: m['region_hit'].sum() < min_regions))
     metrics = metrics.groupby('pid', group_keys=False).apply(lambda m: m.assign(low_trials=lambda m: m['n_trials'] < n_trials))
