@@ -22,6 +22,7 @@ from reproducible_ephys_functions import (get_insertions, combine_regions, BRAIN
                                           save_dataset_info, filter_recordings, compute_lfp_insertion,
                                           LFP_BAND, THETA_BAND, save_figure_path)
 from fig_ephysfeatures.ephysfeatures_load_data import load_dataframe
+from reproducible_ephys_run import run_repro_ephys_metrics
 
 
 ba = AllenAtlas()
@@ -349,9 +350,10 @@ def run_decoding(metrics=['yield_per_channel', 'median_firing_rate', 'lfp_power'
 if __name__ == '__main__':
     one = ONE()
     one.record_loaded = True
-    insertions = get_insertions(level=0, one=one, freeze='freeze_2024_01')
+    run_repro_ephys_metrics(one)
+    insertions = get_insertions(level=0, one=one, freeze='freeze_2024_03')
     all_df_chns, all_df_clust, metrics = prepare_data(insertions, recompute=True, one=one)
     save_dataset_info(one, figure='fig_ephysfeatures')
-    rerun_decoding = False
+    rerun_decoding = True
     run_decoding(n_shuffle=500, qc='pass', recompute=rerun_decoding)
     run_decoding(n_shuffle=500, qc='all', recompute=rerun_decoding)
