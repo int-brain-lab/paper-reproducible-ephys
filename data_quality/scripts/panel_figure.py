@@ -83,6 +83,7 @@ for i, region in enumerate(regions):
         
     else:
         ax[i].set_ylabel("QC passing neurons per electrode site", fontsize=fontsize)
+        ax[i].set_yticks([0., 0.5, 1., 1.5])
         sns.despine(ax=ax[i], trim=True) 
         ty = ax[i].get_yticks()
         ly = ax[i].get_yticklabels()
