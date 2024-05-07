@@ -76,6 +76,8 @@ for i, region in enumerate(regions):
     tx = ax[i].get_xticks()
     ax[i].set_xticks(tx, ["IBL", "STE", "ALN"], fontsize=fontsize)
 
+    ax[i].set_ylim(0, 1.5)
+
     if i != 0:
         ax[i].set_ylabel(None)
         ax[i].set_yticks([])
@@ -89,6 +91,7 @@ for i, region in enumerate(regions):
         ly = ax[i].get_yticklabels()
         ax[i].set_yticks(ty, ly, fontsize=fontsize)
         
+fig.savefig("panel_fig_samescale.pdf", bbox_inches='tight')
 
 # 2-way ANOVA on region and dataset
 df = df.drop(columns=["nunits", "nsites"])
