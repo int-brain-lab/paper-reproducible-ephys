@@ -428,4 +428,50 @@ def compute_yield(ibl_clusters, ibl_channels, clusters, channels, dset=None):
 
     return passing_per_site_ibl, passing_per_site
     
+def compute_yield_threeway(ibl_clusters, ibl_channels, 
+                  ste_clusters, ste_channels, 
+                  aln_clusters, aln_channels
+                ):
+    """
+    Given cluster and channel tables (assumed to be ALREADY FILTERED) return
+    yield computations per insertion.
 
+    :param clusters: Clusters table
+    :param channels: Channels table
+    :param dset: Option name of dset (will set "source" column to this value for seaborn plots)
+
+    :returns: yield table with columns 
+    """
+    passing_ibl = ibl_clusters.groupby("insertion").agg(
+        passing_units = pd.NamedAgg(column="label", aggfunc=lambda x: len(x[x==1.])), 
+        lab = pd.NamedAgg(column="lab", aggfunc="first")
+        )
+    sites_ibl = ibl_channels.groupby("insertion").agg(num_sites=pd.NamedAgg(column="cosmos_acronym", aggfunc="count"))
+    passing_per_site_ibl = passing_ibl.merge(sites_ibl, on="insertion")
+
+    all_ibl = ibl_clusters.groupby("insertion").count()["label"].to_numpy()
+    all_ste = ste_clusters.groupby("insertion").count()["label"].to_numpy()
+    all_aln = aln_clusters.groupby("insertion").count()["label"].to_numpy()
+
+    passing_ste = ste_clusters.groupby("insertion").agg(passing_units = pd.NamedAgg(column="label", aggfunc=lambda x: len(x[x==1.])))
+    sites_ste = ste_channels.groupby("insertion").agg(num_sites=pd.NamedAgg(column="cosmos_acronym", aggfunc="count"))
+    passing_per_site_ste = passing_ste.merge(sites_ste, on="insertion")
+
+    passing_aln = aln_clusters.groupby("insertion").agg(passing_units = pd.NamedAgg(column="label", aggfunc=lambda x: len(x[x==1.])))
+    sites_aln = aln_channels.groupby("insertion").agg(num_sites=pd.NamedAgg(column="cosmos_acronym", aggfunc="count"))
+    passing_per_site_aln = passing_aln.merge(sites_aln, on="insertion")
+
+    passing_per_site_ibl["passing_per_site"] = passing_per_site_ibl["passing_units"]/passing_per_site_ibl["num_sites"]
+    passing_per_site_ste["passing_per_site"] = passing_per_site_ste["passing_units"]/passing_per_site_ste["num_sites"]
+    passing_per_site_aln["passing_per_site"] = passing_per_site_aln["passing_units"]/passing_per_site_aln["num_sites"]
+
+    passing_per_site_ibl["all_units"] = all_ibl
+    passing_per_site_ste["all_units"] = all_ste
+    passing_per_site_aln["all_units"] = all_aln
+
+
+    passing_per_site_ibl["source"] = "IBL"
+    passing_per_site_ste["source"] = "Steinmetz"
+    passing_per_site_aln["source"] = "Allen"
+
+    return passing_per_site_ibl, passing_per_site_ste, passing_per_site_aln

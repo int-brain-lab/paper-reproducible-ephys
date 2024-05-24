@@ -91,7 +91,7 @@ for i, region in enumerate(regions):
         ly = ax[i].get_yticklabels()
         ax[i].set_yticks(ty, ly, fontsize=fontsize)
         
-fig.savefig("panel_fig_samescale.pdf", bbox_inches='tight')
+fig.savefig("/Users/chris/Downloads/panel_fig_vector_3_2.svg", bbox_inches='tight')
 
 # 2-way ANOVA on region and dataset
 df = df.drop(columns=["nunits", "nsites"])

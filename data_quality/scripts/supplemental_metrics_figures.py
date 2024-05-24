@@ -81,7 +81,7 @@ for region in ["Isocortex", "TH", "HPF"]:
 
     colors, colors_translucent = get_3colors_region(region)
 
-    fig, axes = plt.subplots(2, 4)
+    fig, axes = plt.subplots(2, 4, figsize=(8, 5))
 
     passing_per_site_ibl, passing_per_site_ste, passing_per_site_aln = compute_yield_threeway(ibl_clusters, ibl_channels, 
                                                                                             ste_clusters, ste_channels,
@@ -195,9 +195,11 @@ for region in ["Isocortex", "TH", "HPF"]:
     axes[1, 3].set_xlabel(None)
     axes[1, 3].set_ylabel(None)
 
-    if region=="TH":
-        for i, ax in enumerate(axes.flat):
-            label_with_letter(ax, string.ascii_uppercase[i])
+    # if region=="TH":
+    #     for i, ax in enumerate(axes.flat):
+    #         label_with_letter(ax, string.ascii_uppercase[i])
 
     fig.suptitle(f"IBL metrics: {region_fullname[region]}")
     fig.tight_layout()
+
+    fig.savefig(f"/Users/chris/Downloads/supp_{region}.svg")

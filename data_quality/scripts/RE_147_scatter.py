@@ -40,16 +40,19 @@ for region in regions:
 
 alldf = pd.concat(dfs.values(), ignore_index=True)
 
-fig, ax = plt.subplots()
-sns.scatterplot(x="og_yield", y="rerun_yield", hue="region", data=alldf, alpha=0.4, ax=ax)
+fig, ax = plt.subplots(figsize=(8, 6))
+sns.scatterplot(x="og_yield", y="rerun_yield", hue="region", data=alldf, alpha=0.4, ax=ax,
+)
 ax.set_xlabel("Original yield")
 ax.set_ylabel("1.4.7 yield")
-ax.set_xlim(0.0, 1.75)
-ax.set_ylim(0.0, 1.75)
-ax.set_title("RE rerun yield comparison\nAll regions")
+# ax.set_xlim(0.0, 1.5)
+# ax.set_ylim(0.0, 1.5)
+ax.set_title("RE yield comparison")
 ax.plot([0,1.6], [0, 1.6], linestyle="dashed", color="gray")
 ax.scatter(alldf["og_yield"].mean(), 0.03, marker="v", s=64)
 ax.scatter(0.025, alldf["rerun_yield"].mean(), marker="<", s=64)
+ax.margins(x=0, y=0)
+ax.axis("square")
 fig.tight_layout()
 fig.savefig("/Users/chris/Downloads/147_yield_scatters/RE_spikecount_allregions.png")
 
@@ -68,3 +71,5 @@ for region, df in dfs.items():
     ax.scatter(0.025, df["rerun_yield"].mean(), marker="<", s=64)
     fig.tight_layout()
     fig.savefig(f"/Users/chris/Downloads/147_yield_scatters/RE_{region}.png")
+
+ax.axis("equal")
