@@ -658,6 +658,10 @@ def all_panels(rm_unre=True, align='move', split='rt',
     See mosaic for panels
     incl = True --> include lab in pack for tests
     '''
+
+    # panel letter fontsize
+    plfs = 10
+
                
     # load metainfo df, row per cell
     concat_df = load_dataframe()
@@ -824,7 +828,7 @@ def all_panels(rm_unre=True, align='move', split='rt',
         for pan in ['KS', 'KSmean']:              
             axs[pan].text(-0.1, 1.3, panel_n[pan],
                             transform=axs[pan].transAxes,
-                            fontsize=16, va='top',
+                            fontsize=plfs, va='top',
                             ha='right', weight='bold')    
 
     '''
@@ -867,7 +871,7 @@ def all_panels(rm_unre=True, align='move', split='rt',
     axs['B'].set_xlabel('embedding dim 1')
     axs['B'].set_ylabel('embedding dim 2')
     axs['B'].text(-0.1, 1.30, panel_n['B'], 
-                  transform=axs['B'].transAxes, fontsize=16, 
+                  transform=axs['B'].transAxes, fontsize=plfs, 
                   va='top', ha='right', weight='bold')
 
     axs['B'].sharex(axss['H'])
@@ -909,7 +913,7 @@ def all_panels(rm_unre=True, align='move', split='rt',
     axs['c_labs'].set_xlabel('embedding dim 1')
     axs['c_labs'].set_ylabel('embedding dim 2')
     axs['c_labs'].text(-0.1, 1.30, panel_n['c_labs'], 
-                  transform=axs['c_labs'].transAxes, fontsize=16, 
+                  transform=axs['c_labs'].transAxes, fontsize=plfs, 
                   va='top', ha='right', weight='bold')
 
     axs['c_labs'].sharex(axs['B'])
@@ -947,7 +951,7 @@ def all_panels(rm_unre=True, align='move', split='rt',
     axs['D'].set_xlabel('time from \n movement onset (s)')
     axs['D'].set_ylabel('Firing rate \n (spikes/s)')
     axs['D'].text(-0.1, 1.30, panel_n['D'], 
-                  transform=axs['D'].transAxes, fontsize=16, 
+                  transform=axs['D'].transAxes, fontsize=plfs, 
                   va='top', ha='right', weight='bold')
 
     '''
@@ -979,7 +983,7 @@ def all_panels(rm_unre=True, align='move', split='rt',
     axs['m_labs'].set_xlabel('time from \n movement onset (s)')
     axs['m_labs'].set_ylabel('Firing rate \n (spikes/s)')
     axs['m_labs'].text(-0.1, 1.30, panel_n['m_labs'], 
-                  transform=axs['m_labs'].transAxes, fontsize=16, 
+                  transform=axs['m_labs'].transAxes, fontsize=plfs, 
                   va='top', ha='right', weight='bold')
 
 
@@ -1032,7 +1036,7 @@ def all_panels(rm_unre=True, align='move', split='rt',
         if k == 0:
             axs[ms[k]].text(-0.1, 1.6, panel_n[ms[k]],
                             transform=axs[ms[k]].transAxes,
-                            fontsize=16, va='top',
+                            fontsize=plfs, va='top',
                             ha='right', weight='bold')
                               
         k += 1
@@ -1050,7 +1054,7 @@ def all_panels(rm_unre=True, align='move', split='rt',
     axs['F'].set_xlabel(r'$r^2$')
     axs['F'].set_ylabel('number of neurons')
     axs['F'].text(-0.1, 1.30, panel_n['F'], 
-                  transform=axs['F'].transAxes, fontsize=16, 
+                  transform=axs['F'].transAxes, fontsize=plfs, 
                   va='top', ha='right', weight='bold')
 
 
@@ -1096,7 +1100,7 @@ def all_panels(rm_unre=True, align='move', split='rt',
     axs['KSlabs'].set_ylabel('P(PC1 < x)')
     axs['KSlabs'].text(-0.1, 1.30, panel_n['KSlabs'],
                      transform=axs['KSlabs'].transAxes,
-                     fontsize=16, va='top',
+                     fontsize=plfs, va='top',
                      ha='right', weight='bold')            
 
     # plot ks scores as bar plot inset with asterics for small p 
@@ -1161,7 +1165,7 @@ def all_panels(rm_unre=True, align='move', split='rt',
     axs['KSregs'].set_ylabel('P(PC1 < x)')
     axs['KSregs'].text(-0.1, 1.30, panel_n['KSregs'],
                      transform=axs['KSregs'].transAxes,
-                     fontsize=16, va='top',
+                     fontsize=plfs, va='top',
                      ha='right', weight='bold')            
 
     # plot ks scores as bar plot inset with asterics for small p 
@@ -1293,7 +1297,7 @@ def all_panels(rm_unre=True, align='move', split='rt',
         axs3[ms3[k]].set_ylabel('P(PC1 < x)')
         axs3[ms3[k]].text(-0.1, 1.30, panel_n3[ms3[k]],
                          transform=axs3[ms3[k]].transAxes,
-                         fontsize=16, va='top',
+                         fontsize=plfs, va='top',
                          ha='right', weight='bold')            
         
         if k == 1:
@@ -1339,7 +1343,7 @@ def all_panels(rm_unre=True, align='move', split='rt',
         axs3[ms[k]].set_ylabel('embedding dim 2')
         axs3[ms[k]].text(-0.1, 1.30, panel_n3[ms[k]],
                          transform=axs3[ms[k]].transAxes,
-                         fontsize=16, va='top',
+                         fontsize=plfs, va='top',
                          ha='right', weight='bold')
 
         if ms2[k] == 'Ha':
@@ -1373,7 +1377,7 @@ def all_panels(rm_unre=True, align='move', split='rt',
 
         axs3[ms2[k]].text(-0.1, 1.30, panel_n3[ms2[k]],
                           transform=axs3[ms2[k]].transAxes, 
-                          fontsize=16, va='top', ha='right', weight='bold')
+                          fontsize=plfs, va='top', ha='right', weight='bold')
 
         le = [Line2D([0], [0], color='g', lw=0.5, ls='--', 
               label='movement onset')]
