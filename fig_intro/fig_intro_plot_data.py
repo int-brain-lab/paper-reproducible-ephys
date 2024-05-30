@@ -34,7 +34,7 @@ def plot_repeated_site_slice(one, ba=None):
     ba.regions.rgb[0] = [255, 255, 255]
     insertions = get_insertions(level=0, one=one, freeze=None)
     traj = insertions[0]
-    ins = Insertion.from_dict(traj)
+    ins = Insertion.from_dict(traj, brain_atlas=ba)
     depths = SITES_COORDINATES[:, 1]
     xyz = np.c_[ins.tip, ins.entry].T
     xyz_channels = histology.interpolate_along_track(xyz, (depths + TIP_SIZE_UM) / 1e6)
@@ -105,7 +105,7 @@ def plot_3D_repeated_site_trajectories(one, ba=None):
         traj = one.alyx.rest('trajectories', 'list', provenance='Ephys aligned histology track',
                              probe_insertion=ins['probe_insertion'])[0]
 
-        ins = Insertion.from_dict(traj)
+        ins = Insertion.from_dict(traj, brain_atlas=ba)
         mlapdv = ba.xyz2ccf(ins.xyz)
         # display the trajectories
         color = (0., 0., 0.)
@@ -164,7 +164,7 @@ def plot_3D_select_pids(one, ba=None):
         traj = one.alyx.rest('trajectories', 'list', provenance='Ephys aligned histology track',
                              probe_insertion=ins)[0]
 
-        ins = Insertion.from_dict(traj)
+        ins = Insertion.from_dict(traj, brain_atlas=ba)
         mlapdv = ba.xyz2ccf(ins.xyz)
         # display the trajectories
         mlab.plot3d(mlapdv[:, 1], mlapdv[:, 2], mlapdv[:, 0], line_width=3, tube_radius=20, color=col)
