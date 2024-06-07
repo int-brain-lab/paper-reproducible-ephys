@@ -32,3 +32,16 @@ print(f'AGE RANGE: {min(age_weeks)}-{max(age_weeks)} weeks')
 # WEIGHT RANGE
 ref_weight = [item['reference_weight'] for item in sub_list]
 print(f'WEIGHT RANGE: {min(ref_weight)}-{max(ref_weight)} g')
+
+##
+# TODO the below should not be necessary,
+#  but there is 1 mouse where age range is 0
+import numpy as np
+age_weeks = np.array(age_weeks)
+indx = np.where(age_weeks > 0)[0]
+print(f'AGE RANGE: {min(age_weeks[indx])}-{max(age_weeks)} weeks')
+
+# Find mouse with age 0
+nicknames = np.array([item['nickname'] for item in sub_list])
+indx = np.where(np.array(age_weeks) == 0)[0]
+print(f'Mouse with 0 age: {nicknames[indx]}')
