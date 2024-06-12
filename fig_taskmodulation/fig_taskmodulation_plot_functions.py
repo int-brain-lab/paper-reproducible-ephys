@@ -56,6 +56,9 @@ def plot_raster_and_psth_LvsR(pid, neuron, contrasts=(1, 0.25, 0.125, 0.0625, 0)
     if np.sum(spike_idx) == 0:
         print('warning, warning')
 
+    # find all neurons in LP:
+    # print(np.where(channels['acronym'][clusters.channels] == 'LP'))
+
     trials = one.load_object(eid, 'trials', collection='alf')
     # Remove trials with nans in the stimOn_times or the firstMovement_times
     nanStimMove = np.bitwise_or(np.isnan(trials['stimOn_times']), np.isnan(trials['firstMovement_times']))
