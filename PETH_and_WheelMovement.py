@@ -62,8 +62,8 @@ for event in ['move']: #['stim', 'move']:
         plt.xlabel("Time from {} onset (s)".format(event))
         plt.ylim(-0.2, 2.5)
         plt.title("Average activity in {}".format(inst))
-        plt.savefig("total {} {}".format(event, inst))
-        plt.close()
+        # plt.savefig("total {} {}".format(event, inst))
+        plt.show()
         
         #split by those with FR more than the median of all neurons summed over time:
         med = np.median(frs_inst_r.sum(1))
@@ -73,8 +73,8 @@ for event in ['move']: #['stim', 'move']:
         plt.xlabel("Time from {} onset (s)".format(event))
         plt.ylim(-1, 5)
         plt.title("Average activity - median split - in {}".format(inst))
-        plt.savefig("total med split {} {}".format(event, inst))
-        plt.close()
+        # plt.savefig("total med split {} {}".format(event, inst))
+        plt.show()
         
         # Avg trace for each subject of the specified institute:
         subs, counts = np.unique(df_inst.subject, return_counts=True)
@@ -135,7 +135,7 @@ for event in ['move']: #['stim', 'move']:
         #plt.savefig("indiv split {} {}".format(event, inst))
         ##plt.close()
         plt.show()
-        fig.savefig("indiv split {} {}".format(event, inst))
+        # fig.savefig("indiv split {} {}".format(event, inst))
         
         
         # Avg trace for each subject of institute split into higher and lower than median:
@@ -149,7 +149,7 @@ for event in ['move']: #['stim', 'move']:
         plt.ylim(-4, 16)
         plt.legend()
         plt.title("Average activity - individuals median split - in {}".format(inst))
-        plt.savefig("indiv med split {} {}".format(event, inst))
-        #plt.show()
+        # plt.savefig("indiv med split {} {}".format(event, inst))
+        plt.show()
         plt.close()
         
