@@ -9,7 +9,7 @@ import pandas as pd
 import pickle
 from matplotlib.transforms import Bbox
 import json
-from permutation_test import permut_test, permut_dist
+from permutation_test import permut_test, distribution_dist_approx_max, permut_dist
 from matplotlib import cm
 from matplotlib.colors import ListedColormap, to_rgb
 from scipy.stats import sem
@@ -52,7 +52,7 @@ PRINT_PIDS = False
 
 shortened_tests = {#'trial': 'Trial (first 400 ms)',
                    'post_stim': 'Stimulus',
-                   'post_move': 'Movevement',
+                   'post_move': 'Movement',
                    'start_to_move': 'Reaction period',
                    'pre_move': 'Move. initiation',
                    'post_reward': 'Reward',
@@ -97,15 +97,15 @@ def plot_main_figure():
                                              wspace=0.3),
           'panel_D_4': fg.place_axes_on_grid(fig, xspan=[0.70125, .9], yspan=[0.29, 0.44],
                                              wspace=0.3),
-          'panel_E_1': fg.place_axes_on_grid(fig, xspan=[0.075, 0.55], yspan=[0.66, 0.72],
+          'panel_E_1': fg.place_axes_on_grid(fig, xspan=[0.075, 0.55], yspan=[0.6, 0.68],
                                              wspace=0.3),
-          'panel_E_2': fg.place_axes_on_grid(fig, xspan=[0.075, 0.55], yspan=[0.73, 0.79],
+          'panel_E_2': fg.place_axes_on_grid(fig, xspan=[0.075, 0.55], yspan=[0.69, 0.76],
                                              wspace=0.3),
-          'panel_E_3': fg.place_axes_on_grid(fig, xspan=[0.075, 0.55], yspan=[0.8, 0.86],
+          'panel_E_3': fg.place_axes_on_grid(fig, xspan=[0.075, 0.55], yspan=[0.77, 0.84],
                                              wspace=0.3),
-          'panel_E_4': fg.place_axes_on_grid(fig, xspan=[0.075, 0.55], yspan=[0.87, .93],
+          'panel_E_4': fg.place_axes_on_grid(fig, xspan=[0.075, 0.55], yspan=[0.85, .92],
                                              wspace=0.3),
-          'panel_E_5': fg.place_axes_on_grid(fig, xspan=[0.075, 0.55], yspan=[0.94, 1.],
+          'panel_E_5': fg.place_axes_on_grid(fig, xspan=[0.075, 0.55], yspan=[0.93, 1.],
                                              wspace=0.3),
           'panel_F_1': fg.place_axes_on_grid(fig, xspan=[0.64, 0.71], yspan=[0.51, .69],
                                              wspace=0.3),
@@ -180,12 +180,12 @@ def plot_supp_figure():
     DPI = 400  # if the figure is too big on your screen, lower this number
     figure_style()
     fig = plt.figure(figsize=(7, 10.5), dpi=500)  # full width figure is 7 inches
-    panel_a = task_mod_panel_helper(fig, 'panel_A_', [0.075, 0.45], 0.17, 0.32)
-    panel_b = task_mod_panel_helper(fig, 'panel_B_', [0.55, 1.], 0.17, 0.32)
-    panel_c = task_mod_panel_helper(fig, 'panel_C_', [0.075, 0.45], 0.5, 0.65)
-    panel_d = task_mod_panel_helper(fig, 'panel_D_', [0.55, 1.], 0.5, 0.65)
-    panel_e = task_mod_panel_helper(fig, 'panel_E_', [0.075, 0.45], 0.83, 1)
-    panel_f = task_mod_panel_helper(fig, 'panel_F_', [0.55, 1.], 0.83, 1)
+    panel_a = task_mod_panel_helper(fig, 'panel_A_', [0.075, 0.45], 0.11, 0.32)
+    panel_b = task_mod_panel_helper(fig, 'panel_B_', [0.55, 1.], 0.11, 0.32)
+    panel_c = task_mod_panel_helper(fig, 'panel_C_', [0.075, 0.45], 0.44, 0.65)
+    panel_d = task_mod_panel_helper(fig, 'panel_D_', [0.55, 1.], 0.44, 0.65)
+    panel_e = task_mod_panel_helper(fig, 'panel_E_', [0.075, 0.45], 0.77, 1)
+    panel_f = task_mod_panel_helper(fig, 'panel_F_', [0.55, 1.], 0.77, 1)
 
     plot_panel_task_modulated_neurons(specific_tests=['post_stim'],
                                       ax=[panel_a['panel_A_{}'.format(x)] for x in range(1, 6)],
@@ -430,7 +430,7 @@ def plot_panel_task_modulated_neurons(specific_tests=None, ax=None, save=True):
     # load dataframe from prev fig. 5 (To be combined with new Fig 4)
     df = load_dataframe()
     df_filt = filter_recordings(df, **filtering_criteria)
-    df_filt = df_filt[df_filt['include'] == 1]
+    df_filt = df_filt[df_filt['permute_include'] == 1]
 
     if PRINT_PIDS:
         json.dump(list(np.unique(df_filt['pid'])), open("panel e", 'w'))
@@ -477,8 +477,8 @@ def plot_panel_task_modulated_neurons(specific_tests=None, ax=None, save=True):
                 ax[i].set_yticks([])
                 sns.despine()
                 
-                if i == 0:
-                    ax[i].set_title('{} test'.format(shortened_tests[test]))
+                # if i == 0:
+                #     ax[i].set_title('{} test'.format(shortened_tests[test]))
                 if i == 4:
                     ax[i].set_xticks([0, 1], [0, 1])
                     ax[i].set_xlabel('% modulated neurons ({} test)'.format(shortened_tests[test]))
@@ -992,9 +992,10 @@ if __name__ == '__main__':
     #         labs = vals.index.get_level_values('institute')
     #         subjects = vals.index.get_level_values('subject')
     #         data = vals.values
-    #         p = permut_test(data, metric=permut_dist, labels1=np.array(labs),
-    #                         labels2=np.array(subjects), n_permut=40000, n_cores=8)
-    #         print(p)
+    #         p = permut_test(data, metric=distribution_dist_approx_max, labels1=np.array(labs), labels2=np.array(subjects), n_permut=10000, n_cores=8)
+
+    #         if p == 0.:
+    #             p = 1e-8
     #         results = pd.concat((results, pd.DataFrame(index=[results.shape[0] + 1],
     #                                                    data={'test': test, 'region': br, 'p_value_permut': p})))
     
