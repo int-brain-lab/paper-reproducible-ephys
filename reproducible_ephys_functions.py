@@ -75,7 +75,7 @@ def query(behavior=False, n_trials=400, resolved=True, min_regions=2, exclude_cr
     else:
         django_queries = []
 
-    django_queries.append('probe_insertion__session__project__name,ibl_neuropixel_brainwide_01')
+    django_queries.append('probe_insertion__session__projects__name,ibl_neuropixel_brainwide_01')
 
     if exclude_critical:
         django_queries.append('probe_insertion__session__qc__lt,50,~probe_insertion__json__qc,CRITICAL')
@@ -180,7 +180,7 @@ def get_insertions(level=0, recompute=False, as_dataframe=False, one=None, freez
 
     if level == -1:
         insertions = one.alyx.rest('trajectories', 'list', provenance='Planned', x=-2243, y=-2000, theta=15,
-                                   django='probe_insertion__session__project__name,ibl_neuropixel_brainwide_01')
+                                   django='probe_insertion__session__projects__name,ibl_neuropixel_brainwide_01')
         return insertions
 
     if level == 0:

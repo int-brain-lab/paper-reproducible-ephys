@@ -6,6 +6,7 @@ Created on Tue Apr  9 12:19:57 2024
 @author: Sebastian and Marsa
 """
 
+from scipy.stats import pearsonr
 import matplotlib.pyplot as plt
 import numpy as np
 import figrid as fg
@@ -27,6 +28,8 @@ from brainbox.behavior.dlc import get_dlc_everything
 from brainbox.task.trials import get_event_aligned_raster, filter_trials
 one = ONE()
 
+lab_number_map, institution_map, lab_colors = labs()
+
 df = load_dataframe()
 for event in ['move']: #['stim', 'move']:
     data = load_data(event=event, norm='subtract', smoothing='sliding')
@@ -45,36 +48,38 @@ for event in ['move']: #['stim', 'move']:
     reg = 'PO'
     df_reg = df_filt_reg.get_group(reg)
     df_reg_inst = df_reg.groupby('institute')
-    inst = 'UCLA'
-    for inst in ['UCLA', 'CCU']:
+    
+    WheelAndPETH = pd.DataFrame()
+    #inst = 'UCLA'
+    for inst in list(np.unique(df_reg['institute'])): #['UCLA', 'CCU']: # For all IBL institutes, use: list(institution_map.values()) 
         df_inst = df_reg_inst.get_group(inst)
         inst_idx = df_reg_inst.groups[inst]
         # Select L vs R side:
-        frs_inst_r = all_frs_r[inst_idx, :]
+        frs_inst_r = all_frs_l[inst_idx, :]
         print(frs_inst_r.shape)
-        plt.plot(data['time'], frs_inst_r.T)
-        plt.ylabel("Baselined firing rate (sp/s)")
-        plt.xlabel("Time from {} onset (s)".format(event))
-        plt.close()
+        # plt.plot(data['time'], frs_inst_r.T)
+        # plt.ylabel("Baselined firing rate (sp/s)")
+        # plt.xlabel("Time from {} onset (s)".format(event))
+        # plt.close()
         
-        plt.plot(data['time'], np.mean(frs_inst_r, axis=0))
-        plt.ylabel("Baselined firing rate (sp/s)")
-        plt.xlabel("Time from {} onset (s)".format(event))
-        plt.ylim(-0.2, 2.5)
-        plt.title("Average activity in {}".format(inst))
+        # plt.plot(data['time'], np.mean(frs_inst_r, axis=0))
+        # plt.ylabel("Baselined firing rate (sp/s)")
+        # plt.xlabel("Time from {} onset (s)".format(event))
+        # plt.ylim(-0.2, 2.5)
+        # plt.title("Average activity in {}".format(inst))
         # plt.savefig("total {} {}".format(event, inst))
-        plt.show()
+        # plt.close()
         
-        #split by those with FR more than the median of all neurons summed over time:
-        med = np.median(frs_inst_r.sum(1))
-        plt.plot(data['time'], np.mean(frs_inst_r[frs_inst_r.sum(1) < med], axis=0))
-        plt.plot(data['time'], np.mean(frs_inst_r[frs_inst_r.sum(1) > med], axis=0))
-        plt.ylabel("Baselined firing rate (sp/s)")
-        plt.xlabel("Time from {} onset (s)".format(event))
-        plt.ylim(-1, 5)
-        plt.title("Average activity - median split - in {}".format(inst))
+        # #split by those with FR more than the median of all neurons summed over time:
+        # med = np.median(frs_inst_r.sum(1))
+        # plt.plot(data['time'], np.mean(frs_inst_r[frs_inst_r.sum(1) < med], axis=0))
+        # plt.plot(data['time'], np.mean(frs_inst_r[frs_inst_r.sum(1) > med], axis=0))
+        # plt.ylabel("Baselined firing rate (sp/s)")
+        # plt.xlabel("Time from {} onset (s)".format(event))
+        # plt.ylim(-1, 5)
+        # plt.title("Average activity - median split - in {}".format(inst))
         # plt.savefig("total med split {} {}".format(event, inst))
-        plt.show()
+        # plt.close()
         
         # Avg trace for each subject of the specified institute:
         subs, counts = np.unique(df_inst.subject, return_counts=True)
@@ -82,8 +87,10 @@ for event in ['move']: #['stim', 'move']:
         for s, c in zip(subs, counts):
             axs[0].plot(data['time'], np.mean(frs_inst_r[df_inst.subject == s], axis=0), label=s + " (n={})".format(c))
             
+            
             #Get eid and wheel data:
             eid = np.unique(df_inst.eid[df_inst.subject == s])
+            pid = np.unique(df_inst.pid[df_inst.subject == s])
             if event == 'move':
                 align_event='firstMovement_times'
             elif event == 'stim':
@@ -102,7 +109,7 @@ for event in ['move']: #['stim', 'move']:
                                                        values=wheel_velocity, tbin=tbin, epoch=epoch)  
             wheel_raster_sorted, wheel_psth = filter_trials(trials, wheel_raster, align_event, contrast, order, sort)
             psth_lines=[]
-            include_trials = 'right_correct' #right side stim, correct trials only
+            include_trials = 'left_correct' #right side stim, correct trials only
             for ps in wheel_psth.keys():
                 if ps == include_trials:
                     psth_lines.append(axs[1].plot(wheel_t, wheel_psth[ps]['vals']/tbin2))
@@ -110,6 +117,46 @@ for event in ['move']: #['stim', 'move']:
                                     wheel_psth[ps]['vals'] / tbin2 - wheel_psth[ps]['err'] / tbin2,
                                     alpha=0.3) #, **wheel_psth[ps]['linestyle'])
 
+            
+            # Get behavior & other info & save in dataframe:
+            wheel_vel = wheel_psth['left_correct']['vals']/tbin2 
+            #wheel_vel = wheel_psth[include_trials]['vals']/tbin2
+            t_0 = np.where(wheel_t>0)[0][0] #first index of time>0
+            t_end = np.where(wheel_t > 0.25)[0][0] #OR: np.where(wheel_t>(wheel_t[t_0] + 0.25))[0][0] # index of time>0.25 s from start
+            
+            behav_pass = np.unique(df_inst.behavior[df_inst.subject == s])
+            wheel_max = max(wheel_vel[t_0:]) #over entire time course after event
+            wheel_min = min(wheel_vel[t_0:]) #over entire time course after event
+            wheel_AUC_short = np.cumsum(wheel_vel[t_0:t_end+1])[-1] #over ~0.25 s
+            wheel_AUC_long = np.cumsum(wheel_vel[t_0:])[-1] #over entire time course after event
+            wheel_med_short = np.median(wheel_vel[t_0:t_end+1]) #over ~0.25 s
+            wheel_med_long = np.median(wheel_vel[t_0:]) #over entire time course after event
+            
+            # Neuron firing rate averaged over recording for specified brain region:
+            neur_avgFR = np.mean(frs_inst_r[df_inst.subject == s], axis=0)
+            t_0_neur = np.where(data['time']>0)[0][0] 
+            t_end_neur = np.where(data['time'] > 0.25)[0][0] 
+            neur_med = np.median(neur_avgFR[t_0_neur:t_end_neur+1]) #over ~0.25 s
+            neur_avg = np.mean(neur_avgFR[t_0_neur:t_end_neur+1]) #over ~0.25 s
+            
+            # Individual neuron FRs:
+            #neur_indiv_avg = np.mean(frs_inst_r[df_inst.subject == s][:,t_0_neur:t_end_neur+1],axis=1) #avg over time of each recorded neuron
+
+            # Save into dataframe:
+            data_Wheel_PETH = np.array([inst, s, eid, pid, behav_pass, include_trials,
+                                        wheel_max, wheel_min, 
+                                        wheel_AUC_short, wheel_AUC_long, wheel_med_short, 
+                                        reg, neur_med, neur_avg], dtype=object)
+            #data_Wheel_PETH = np.transpose(data_Wheel_PETH);
+            df_toAppend = pd.DataFrame(data_Wheel_PETH.reshape(1,14), 
+                                       columns=['instit', 'subj', 'eid', 'pid', 'behav_pass', 'include_trials',
+                                                'wheel_max','wheel_min', 
+                                                'wheel_AUC_short', 'wheel_AUC_long', 'wheel_med_short', 
+                                                'brain_reg', 'neur_med', 'neur_avg'],
+                                       index=np.arange(len(WheelAndPETH), len(WheelAndPETH)+1))
+            
+            WheelAndPETH = pd.concat([WheelAndPETH, df_toAppend], ignore_index=True) #new method: instead of 'append' use 'concat'
+        
         
         ax=axs[0]
         ax.set_ylabel("Baselined firing rate (sp/s)")
@@ -122,7 +169,7 @@ for event in ['move']: #['stim', 'move']:
 
         ax=axs[1]
         ax.set_ylabel("Wheel Velocity (rad/s)")
-        ax.set_ylim(-2, 3) #For Left side: ax.set_ylim(-7.3, 0.88), #For Right side: ax.set_ylim(-2, 3)
+        ax.set_ylim(-7.3, 0.88) #For Left side: ax.set_ylim(-7.3, 0.88), #For Right side: ax.set_ylim(-2, 3)
         ax.set_xlabel("Time from {} onset (s)".format(event))
         ax.set_xlim(epoch[0], epoch[1])
         ax.vlines(0, *ax.get_ylim(), color='k', linestyle='dashed')
@@ -138,18 +185,57 @@ for event in ['move']: #['stim', 'move']:
         # fig.savefig("indiv split {} {}".format(event, inst))
         
         
-        # Avg trace for each subject of institute split into higher and lower than median:
-        subs, counts = np.unique(df_inst.subject, return_counts=True)
-        for s, c in zip(subs, counts):
-            med = np.median(frs_inst_r[df_inst.subject == s].sum(1))
-            p = plt.plot(data['time'], np.mean(frs_inst_r[np.logical_and(frs_inst_r.sum(1) > med, df_inst.subject == s)], axis=0), label=s)
-            plt.plot(data['time'], np.mean(frs_inst_r[np.logical_and(frs_inst_r.sum(1) < med, df_inst.subject == s)], axis=0), '--', color=p[0].get_color())
-        plt.ylabel("Baselined firing rate (sp/s)")
-        plt.xlabel("Time from {} onset (s)".format(event))
-        plt.ylim(-4, 16)
-        plt.legend()
-        plt.title("Average activity - individuals median split - in {}".format(inst))
-        # plt.savefig("indiv med split {} {}".format(event, inst))
-        plt.show()
-        plt.close()
+   #      # Avg trace for each subject of institute split into higher and lower than median:
+   #      subs, counts = np.unique(df_inst.subject, return_counts=True)
+   #      for s, c in zip(subs, counts):
+   #          med = np.median(frs_inst_r[df_inst.subject == s].sum(1))
+   #          p = plt.plot(data['time'], np.mean(frs_inst_r[np.logical_and(frs_inst_r.sum(1) > med, df_inst.subject == s)], axis=0), label=s)
+   #          plt.plot(data['time'], np.mean(frs_inst_r[np.logical_and(frs_inst_r.sum(1) < med, df_inst.subject == s)], axis=0), '--', color=p[0].get_color())
+   #      plt.ylabel("Baselined firing rate (sp/s)")
+   #      plt.xlabel("Time from {} onset (s)".format(event))
+   #      plt.ylim(-4, 16)
+   #      plt.legend()
+   #      plt.title("Average activity - individuals median split - in {}".format(inst))
+   #      plt.savefig("indiv med split {} {}".format(event, inst))
+   #      #plt.show()
+   #      plt.close()
         
+        
+   #      # #Plot individual neurons:
+   #      # subs, counts = np.unique(df_inst.subject, return_counts=True)
+   #      # for s, c in zip(subs, counts):
+   #      #     plt.plot(data['time'],frs_inst_r[df_inst.subject == s].T)
+   #      #     plt.ylabel("Baselined firing rate (sp/s)")
+   #      #     plt.xlabel("Time from {} onset (s)".format(event))
+   #      #     #plt.xlim(epoch[0], epoch[1])
+   #      #     plt.vlines(0, *plt.ylim(), color='k', linestyle='dashed')
+   #      #     plt.title("Indiv. neuron activity {} in ({})".format(s, include_trials))
+   #      #     plt.plot(data['time'], np.mean(frs_inst_r[df_inst.subject == s], axis=0), 'k', linewidth=1.2)
+   #      #     plt.show()
+   #      #     #fig.savefig("indiv neurons of subj {} in {} {}".format(s, inst, event))        
+
+
+   # # Plot correlations:
+   #      #fig2, axs2 = plt.subplots(2, 1, figsize=(5, 6), constrained_layout=True)
+   #      #axs2[0].scatter(np.array(WheelAndPETH['wheel_max']), np.array(WheelAndPETH['neur_avg']), c=np.array(WheelAndPETH.index))#.format(c))
+   #      #axs2[0].scatter(np.array(WheelAndPETH['wheel_max']), np.array(WheelAndPETH['neur_avg']), label=inst)
+    
+    Xvar = 'wheel_min' #'wheel_AUC_short' #
+    Yvar = 'neur_avg'
+    dataX = np.array(WheelAndPETH[Xvar])
+    dataY = np.array(WheelAndPETH[Yvar])
+    labs = WheelAndPETH['instit'].values
+    plt.scatter(dataX, dataY, c = [lab_colors[x] for x in labs])#, c=lab_colors[WheelAndPETH['instit']])
+    #plt.legend()
+    plt.xlabel(Xvar) 
+    plt.xlabel("Min wheel velocity over 0.7 s (rad/s)") #("Total displacement over ~0.25 s") #
+    plt.ylabel(Yvar) 
+    plt.ylabel("Avg FR of subj neurons over 0.25 s (sp/s)")
+    corr, pvalue = pearsonr(dataX, dataY)
+    print('Pearsons correlation: %.3f' % corr)
+    print('Pearsons corr pval = %.3f' % pvalue)
+    #print("Pearsons correlation: {} (p={})".format(corr, pvalue))
+    #plt.title("Post {}, {}".format(event, include_trials))
+    plt.title("{}: Post {}, left correct trials".format(reg, event))
+
+

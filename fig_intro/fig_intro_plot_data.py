@@ -32,9 +32,9 @@ def plot_supp2_figure(one, ba=None):
 def plot_repeated_site_slice(one, ba=None):
     ba = ba or AllenAtlas()
     ba.regions.rgb[0] = [255, 255, 255]
-    insertions = get_insertions(level=0, one=one, freeze=None)
+    insertions = get_insertions(level=0, one=one, freeze='freeze_2024_03')
     traj = insertions[0]
-    ins = Insertion.from_dict(traj)
+    ins = Insertion.from_dict(traj, brain_atlas=ba)
     depths = SITES_COORDINATES[:, 1]
     xyz = np.c_[ins.tip, ins.entry].T
     xyz_channels = histology.interpolate_along_track(xyz, (depths + TIP_SIZE_UM) / 1e6)
@@ -100,12 +100,14 @@ def plot_3D_repeated_site_trajectories(one, ba=None):
     ba = ba or AllenAtlas()
     fig = mlab.figure(bgcolor=(1, 1, 1))
 
-    insertions = get_insertions(level=0, one=one, freeze=None)
+    insertions = get_insertions(level=0, one=one, freeze='freeze_2024_03')
     for ins in insertions:
         traj = one.alyx.rest('trajectories', 'list', provenance='Ephys aligned histology track',
                              probe_insertion=ins['probe_insertion'])[0]
+        if traj['x'] > 0:
+            break
 
-        ins = Insertion.from_dict(traj)
+        ins = Insertion.from_dict(traj, brain_atlas=ba)
         mlapdv = ba.xyz2ccf(ins.xyz)
         # display the trajectories
         color = (0., 0., 0.)
@@ -114,7 +116,7 @@ def plot_3D_repeated_site_trajectories(one, ba=None):
     mlab.view(azimuth=180, elevation=0)
     mlab.view(azimuth=-160, elevation=111, reset_roll=False)
     fig_path = save_figure_path(figure='fig_intro')
-    mlab.savefig(filename=str(fig_path.joinpath('fig_intro_panelD.png')))
+    mlab.savefig(filename=str(fig_path.joinpath('fig_intro_panelD.png')), size=(1024, 1024))
     mlab.close()
 
 
@@ -164,7 +166,7 @@ def plot_3D_select_pids(one, ba=None):
         traj = one.alyx.rest('trajectories', 'list', provenance='Ephys aligned histology track',
                              probe_insertion=ins)[0]
 
-        ins = Insertion.from_dict(traj)
+        ins = Insertion.from_dict(traj, brain_atlas=ba)
         mlapdv = ba.xyz2ccf(ins.xyz)
         # display the trajectories
         mlab.plot3d(mlapdv[:, 1], mlapdv[:, 2], mlapdv[:, 0], line_width=3, tube_radius=20, color=col)
