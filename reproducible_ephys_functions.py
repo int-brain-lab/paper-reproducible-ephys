@@ -499,7 +499,7 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
 def filter_recordings(df=None, by_anatomy_only=False, max_ap_rms=40, max_lfp_derivative=1,
                       min_neurons_per_channel=0.1, min_channels_region=5, min_regions=2, min_neuron_region=4,
                       min_lab_region=3, min_rec_lab=4, n_trials=400, behavior=False,
-                      exclude_subjects=[], recompute=True, freeze='freeze_2024_03', one=None):
+                      exclude_subjects=['NR_0031'], recompute=True, freeze='freeze_2024_03', one=None):
     """
     Filter values in dataframe according to different exclusion criteria
     :param df: pandas dataframe
