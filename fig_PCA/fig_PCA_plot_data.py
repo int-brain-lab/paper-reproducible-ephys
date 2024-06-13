@@ -1177,7 +1177,7 @@ def all_panels(rm_unre=True, align='move', split='rt',
     bars = axsir.bar(range(len(ksr)), [ksr[reg][0] for reg in ksr], 
                   color = [Dc[reg] for reg in ksr])
                   
-    axsir.set_xlabel('regs')
+    axsir.set_xlabel('regions')
     axsir.set_xticks([])
     axsir.set_xticklabels([])
     axsir.set_ylabel('KS')
