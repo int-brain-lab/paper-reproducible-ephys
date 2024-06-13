@@ -648,7 +648,7 @@ def perm_test(inclu=False, print_=False,
 
 
 def all_panels(rm_unre=True, align='move', split='rt', 
-               xyz_res=False, re_rank=2, fdr=True, permute_include=True,
+               xyz_res=False, re_rank=2, fdr=False, permute_include=True,
                nrand = 2000, sig_lev = 0.01, inclu = False, 
                perm_tests=True, get_dat=False, freeze='freeze_2024_03',
                get_info=False):
