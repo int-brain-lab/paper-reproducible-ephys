@@ -17,7 +17,8 @@ def plot_fr_ff():
     df = load_dataframe()
     data = load_data(event='move', smoothing='sliding', norm=None)
 
-    df_filt = filter_recordings(df)
+    #df_filt = filter_recordings(df)
+    df_filt = filter_recordings(df, min_regions=0, min_rec_lab=0, min_lab_region=0)
     all_frs_l = data['all_frs_l'][df_filt['include'] == 1]
     all_frs_r = data['all_frs_r'][df_filt['include'] == 1]
     all_ffs_l = data['all_ffs_l'][df_filt['include'] == 1]
@@ -25,8 +26,12 @@ def plot_fr_ff():
     df_filt = df_filt[df_filt['include'] == 1].reset_index()
 
     df_filt_reg = df_filt.groupby('region')
+    
+    # For setting y limits for the firing rate each brain region; May need to change:
+    ylow = [3.35, 5.65, 5.65, 5.35, 6.3]
+    yhigh = [7.4, 12, 13.1, 9.1, 11.3]
 
-    for reg in BRAIN_REGIONS:
+    for reg, regIdx in zip(BRAIN_REGIONS, np.arange(5)):
         fig, axs = plt.subplots(2, 2)
         reg_idx = df_filt_reg.groups[reg]
 
@@ -52,26 +57,42 @@ def plot_fr_ff():
         ax.errorbar(data['time_fr'], frs_l_mean, frs_l_std, color='k', capsize=2, elinewidth=1, ecolor='gray')
         ax.set_ylabel('Firing Rate (Sp/s)')
         ax.set_xticks([-0.4, -0.2, 0, 0.2, 0.4, 0.6, 0.8])
-        ax.set_title('CW movement post Left Stim')
-
+        ax.set_title('CW Movement Post Left Stim', fontsize = 11)
+        #print(ax.get_ylim())
+        ax.set_ylim(ylow[regIdx], yhigh[regIdx]) # May need to change
+        ax.vlines(0, *ax.get_ylim(), color='g', linestyle='dashed')
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        
         ax = axs[1][0]
         ax.fill_between(data['time_ff'], ffs_l_mean - ffs_l_std, ffs_l_mean + ffs_l_std, color='k', alpha=0.25)
         ax.errorbar(data['time_ff'], ffs_l_mean, ffs_l_std, color='k', capsize=2, elinewidth=1, ecolor='gray')
         ax.set_ylabel('Fano Factor')
         ax.set_xlabel('Time from movement onset (s)')
         ax.set_xticks([-0.4, -0.2, 0, 0.2, 0.4, 0.6, 0.8])
-
+        ax.vlines(0, *ax.get_ylim(), color='g', linestyle='dashed')
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        
         ax = axs[0][1]
         ax.fill_between(data['time_fr'], frs_r_mean - frs_r_std, frs_r_mean + frs_r_std, color='k', alpha=0.25)
         ax.errorbar(data['time_fr'], frs_r_mean, frs_r_std, color='k', capsize=2, elinewidth=1, ecolor='gray')
         ax.set_xticks([-0.4, -0.2, 0, 0.2, 0.4, 0.6, 0.8])
-        ax.set_title('CW movement Post Right Stim')
+        ax.set_title('CCW Movement Post Right Stim', fontsize = 11)
+        #print(ax.get_ylim())
+        ax.set_ylim(ylow[regIdx], yhigh[regIdx]) # May need to change
+        ax.vlines(0, *ax.get_ylim(), color='g', linestyle='dashed')
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
 
         ax = axs[1][1]
         ax.fill_between(data['time_ff'], ffs_r_mean - ffs_r_std, ffs_r_mean + ffs_r_std, color='k', alpha=0.25)
         ax.errorbar(data['time_ff'], ffs_r_mean, ffs_r_std, color='k', capsize=2, elinewidth=1, ecolor='gray')
         ax.set_xlabel('Time from movement onset (s)')
         ax.set_xticks([-0.4, -0.2, 0, 0.2, 0.4, 0.6, 0.8])
+        ax.vlines(0, *ax.get_ylim(), color='g', linestyle='dashed')
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
 
         plt.savefig(fig_path.joinpath(f'figure7SuppFF_TimeCourse_{reg}.png'))
 
@@ -79,7 +100,8 @@ def plot_fr_ff():
 def plot_fr_3D():
 
     df = load_dataframe()
-    df_filt = filter_recordings(df)
+    #df_filt = filter_recordings(df)
+    df_filt = filter_recordings(df, min_regions=0, min_rec_lab=0, min_lab_region=0)
     df_filt = df_filt[df_filt['include'] == 1].reset_index()
 
     reg_cent_of_mass = load_regions()

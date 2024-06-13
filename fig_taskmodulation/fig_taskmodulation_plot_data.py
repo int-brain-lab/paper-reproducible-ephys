@@ -9,9 +9,10 @@ import pandas as pd
 import pickle
 from matplotlib.transforms import Bbox
 import json
-from permutation_test import permut_test, permut_dist
+from permutation_test import permut_test, distribution_dist_approx_max, permut_dist
 from matplotlib import cm
 from matplotlib.colors import ListedColormap, to_rgb
+from scipy.stats import sem
 
 
 np.set_printoptions(suppress=True)
@@ -51,7 +52,7 @@ PRINT_PIDS = False
 
 shortened_tests = {#'trial': 'Trial (first 400 ms)',
                    'post_stim': 'Stimulus',
-                   'post_move': 'Movevement',
+                   'post_move': 'Movement',
                    'start_to_move': 'Reaction period',
                    'pre_move': 'Move. initiation',
                    'post_reward': 'Reward',
@@ -80,37 +81,37 @@ def plot_main_figure():
     #                                          wspace=0.3),
     #       'panel_D_4': fg.place_axes_on_grid(fig, xspan=[0.70125, 0.9], yspan=[0.38, 0.65],
     #                                          wspace=0.3)}
-    ax = {'panel_A_1': fg.place_axes_on_grid(fig, xspan=[0.08, 0.288], yspan=[0.045, 0.125],
+    ax = {'panel_A_1': fg.place_axes_on_grid(fig, xspan=[0.08, 0.288], yspan=[0.045, 0.1],
                                              wspace=0.3),
-          'panel_A_2': fg.place_axes_on_grid(fig, xspan=[0.08, 0.288], yspan=[0.13, 0.23],
+          'panel_A_2': fg.place_axes_on_grid(fig, xspan=[0.08, 0.288], yspan=[0.13, 0.2],
                                              wspace=0.3),
-          'panel_B': fg.place_axes_on_grid(fig, xspan=[0.388, 0.631], yspan=[0.045, 0.23],
+          'panel_B': fg.place_axes_on_grid(fig, xspan=[0.388, 0.631], yspan=[0.045, 0.2],
                                            wspace=0.3),
-          'panel_C': fg.place_axes_on_grid(fig, xspan=[0.741, 1.], yspan=[0.045, 0.23],
+          'panel_C': fg.place_axes_on_grid(fig, xspan=[0.741, 1.], yspan=[0.045, 0.2],
                                            wspace=0.3),
-          'panel_D_1': fg.place_axes_on_grid(fig, xspan=[0.075,  0.27375], yspan=[0.32, 0.5],
+          'panel_D_1': fg.place_axes_on_grid(fig, xspan=[0.075,  0.27375], yspan=[0.29, 0.44],
                                              wspace=0.3),
-          'panel_D_2': fg.place_axes_on_grid(fig, xspan=[0.28375, 0.4825], yspan=[0.32, 0.5],
+          'panel_D_2': fg.place_axes_on_grid(fig, xspan=[0.28375, 0.4825], yspan=[0.29, 0.44],
                                              wspace=0.3),
-          'panel_D_3': fg.place_axes_on_grid(fig, xspan=[0.4925, 0.69125], yspan=[0.32, 0.5],
+          'panel_D_3': fg.place_axes_on_grid(fig, xspan=[0.4925, 0.69125], yspan=[0.29, 0.44],
                                              wspace=0.3),
-          'panel_D_4': fg.place_axes_on_grid(fig, xspan=[0.70125, .9], yspan=[0.32, 0.5],
+          'panel_D_4': fg.place_axes_on_grid(fig, xspan=[0.70125, .9], yspan=[0.29, 0.44],
                                              wspace=0.3),
-          'panel_E_1': fg.place_axes_on_grid(fig, xspan=[0.075, 0.55], yspan=[0.71, 0.76],
+          'panel_E_1': fg.place_axes_on_grid(fig, xspan=[0.075, 0.55], yspan=[0.6, 0.68],
                                              wspace=0.3),
-          'panel_E_2': fg.place_axes_on_grid(fig, xspan=[0.075, 0.55], yspan=[0.77, 0.82],
+          'panel_E_2': fg.place_axes_on_grid(fig, xspan=[0.075, 0.55], yspan=[0.69, 0.76],
                                              wspace=0.3),
-          'panel_E_3': fg.place_axes_on_grid(fig, xspan=[0.075, 0.55], yspan=[0.83, 0.88],
+          'panel_E_3': fg.place_axes_on_grid(fig, xspan=[0.075, 0.55], yspan=[0.77, 0.84],
                                              wspace=0.3),
-          'panel_E_4': fg.place_axes_on_grid(fig, xspan=[0.075, 0.55], yspan=[0.89, .94],
+          'panel_E_4': fg.place_axes_on_grid(fig, xspan=[0.075, 0.55], yspan=[0.85, .92],
                                              wspace=0.3),
-          'panel_E_5': fg.place_axes_on_grid(fig, xspan=[0.075, 0.55], yspan=[0.95, 1.],
+          'panel_E_5': fg.place_axes_on_grid(fig, xspan=[0.075, 0.55], yspan=[0.93, 1.],
                                              wspace=0.3),
-          'panel_F_1': fg.place_axes_on_grid(fig, xspan=[0.64, 0.71], yspan=[0.57, .73],
+          'panel_F_1': fg.place_axes_on_grid(fig, xspan=[0.64, 0.71], yspan=[0.51, .69],
                                              wspace=0.3),
-          'panel_F_3': fg.place_axes_on_grid(fig, xspan=[0.73, 1.], yspan=[0.57, .73],
+          'panel_F_3': fg.place_axes_on_grid(fig, xspan=[0.73, 1.], yspan=[0.51, .69],
                                              wspace=0.3),
-          'panel_F_2': fg.place_axes_on_grid(fig, xspan=[0.64, 1.], yspan=[0.74, .98],
+          'panel_F_2': fg.place_axes_on_grid(fig, xspan=[0.64, 1.], yspan=[0.7, .98],
                                              wspace=0.3)}
           # 'panel_F': fg.place_axes_on_grid(fig, xspan=[0.08, .99], yspan=[0.75, .91],
           #                                  wspace=0.3)}
@@ -127,17 +128,17 @@ def plot_main_figure():
     # we have to find out max and min neurons here now, because plots are split
     df = load_dataframe()
     df_filt = filter_recordings(df, **filtering_criteria)
-    df_filt = df_filt[df_filt['include'] == 1].reset_index()
+    df_filt = df_filt[df_filt['permute_include'] == 1].reset_index()
     df_filt_reg = df_filt.groupby('region')
     max_neurons = 0
     min_neurons = 1000000
     for iR, reg in enumerate(BRAIN_REGIONS):
         df_reg = df_filt_reg.get_group(reg)
-        df_reg_subj = df_reg.groupby('subject')
-        for subj in df_reg_subj.groups.keys():
-            subj_idx = df_reg_subj.groups[subj]
-            max_neurons = max(max_neurons, subj_idx.shape[0])
-            min_neurons = min(min_neurons, subj_idx.shape[0])
+        df_reg_inst = df_reg.groupby('institute')
+        for inst in df_reg_inst.groups.keys():
+            inst_idx = df_reg_inst.groups[inst]
+            max_neurons = max(max_neurons, inst_idx.shape[0])
+            min_neurons = min(min_neurons, inst_idx.shape[0])
     D_regions = [reg for reg in BRAIN_REGIONS if reg != 'LP']
     plot_panel_all_subjects(max_neurons=max_neurons, min_neurons=min_neurons, ax=[ax['panel_C']], save=False, plotted_regions=['LP'])
     plot_panel_all_subjects(max_neurons=max_neurons, min_neurons=min_neurons, ax=[ax['panel_D_1'], ax['panel_D_2'], ax['panel_D_3'], ax['panel_D_4']], save=False, plotted_regions=D_regions)
@@ -145,17 +146,17 @@ def plot_main_figure():
     labels = [{'label_text': 'a', 'xpos': 0, 'ypos': 0.007, 'fontsize': 10, 'weight': 'bold'},
               {'label_text': 'b', 'xpos': 0.305, 'ypos': 0.007, 'fontsize': 10, 'weight': 'bold'},
               {'label_text': 'c', 'xpos': 0.66, 'ypos': 0.007, 'fontsize': 10, 'weight': 'bold'},
-              {'label_text': 'd', 'xpos': 0, 'ypos': 0.29, 'fontsize': 10, 'weight': 'bold'},
-              {'label_text': 'e', 'xpos': 0, 'ypos': 0.57, 'fontsize': 10, 'weight': 'bold'},
-              {'label_text': 'f', 'xpos': 0.59, 'ypos': 0.57, 'fontsize': 10, 'weight': 'bold'},
-              {'label_text': 'g', 'xpos': 0.708, 'ypos': 0.57, 'fontsize': 10, 'weight': 'bold'},
-              {'label_text': 'h', 'xpos': 0.59, 'ypos': 0.75, 'fontsize': 10, 'weight': 'bold'}]
+              {'label_text': 'd', 'xpos': 0, 'ypos': 0.26, 'fontsize': 10, 'weight': 'bold'},
+              {'label_text': 'e', 'xpos': 0, 'ypos': 0.51, 'fontsize': 10, 'weight': 'bold'},
+              {'label_text': 'f', 'xpos': 0.59, 'ypos': 0.51, 'fontsize': 10, 'weight': 'bold'},
+              {'label_text': 'g', 'xpos': 0.708, 'ypos': 0.51, 'fontsize': 10, 'weight': 'bold'},
+              {'label_text': 'h', 'xpos': 0.59, 'ypos': 0.69, 'fontsize': 10, 'weight': 'bold'}]
 
     fg.add_labels(fig, labels)
     print(f'Saving figures to {fig_path}')
     plt.savefig(fig_path.joinpath('fig_taskmodulation_combined.png'), bbox_inches='tight', pad_inches=0)
     plt.savefig(fig_path.joinpath('fig_taskmodulation_combined.pdf'), bbox_inches='tight', pad_inches=0)
-    plt.close()
+    plt.show()
 
 
 
@@ -179,12 +180,12 @@ def plot_supp_figure():
     DPI = 400  # if the figure is too big on your screen, lower this number
     figure_style()
     fig = plt.figure(figsize=(7, 10.5), dpi=500)  # full width figure is 7 inches
-    panel_a = task_mod_panel_helper(fig, 'panel_A_', [0.075, 0.45], 0.17, 0.32)
-    panel_b = task_mod_panel_helper(fig, 'panel_B_', [0.55, 1.], 0.17, 0.32)
-    panel_c = task_mod_panel_helper(fig, 'panel_C_', [0.075, 0.45], 0.5, 0.65)
-    panel_d = task_mod_panel_helper(fig, 'panel_D_', [0.55, 1.], 0.5, 0.65)
-    panel_e = task_mod_panel_helper(fig, 'panel_E_', [0.075, 0.45], 0.83, 1)
-    panel_f = task_mod_panel_helper(fig, 'panel_F_', [0.55, 1.], 0.83, 1)
+    panel_a = task_mod_panel_helper(fig, 'panel_A_', [0.075, 0.45], 0.11, 0.32)
+    panel_b = task_mod_panel_helper(fig, 'panel_B_', [0.55, 1.], 0.11, 0.32)
+    panel_c = task_mod_panel_helper(fig, 'panel_C_', [0.075, 0.45], 0.44, 0.65)
+    panel_d = task_mod_panel_helper(fig, 'panel_D_', [0.55, 1.], 0.44, 0.65)
+    panel_e = task_mod_panel_helper(fig, 'panel_E_', [0.075, 0.45], 0.77, 1)
+    panel_f = task_mod_panel_helper(fig, 'panel_F_', [0.55, 1.], 0.77, 1)
 
     plot_panel_task_modulated_neurons(specific_tests=['post_stim'],
                                       ax=[panel_a['panel_A_{}'.format(x)] for x in range(1, 6)],
@@ -245,11 +246,10 @@ def plot_panel_single_neuron(ax=None, save=True):
     # Need to put legend for colorbar/side
 
 
-def plot_panel_single_neuron_LvsR(ax=None, save=True):
+def plot_panel_single_neuron_LvsR(ax=None, save=True, neuron=650):
     # Does not distinguish between contrasts, but distinguishes by side
 
     pid = 'f26a6ab1-7e37-4f8d-bb50-295c056e1062'
-    neuron = 241  # 386
     align_event = 'move'
     params = {'smoothing': 'sliding',
               'fr_bin_size': 0.06,
@@ -275,7 +275,6 @@ def plot_panel_single_neuron_LvsR(ax=None, save=True):
     #ax[0].set_title(f'{side} stim., {feedback} choices', loc='left')
     ax[0].set_title('Example LP neuron', loc='left')
     #Need to put legend for colorbar/contrasts
-
 
 def plot_panel_single_subject(event='move', norm='subtract', smoothing='sliding', ax=None, save=True):
     # Code to plot figure similar to figure 4b
@@ -346,11 +345,11 @@ def plot_panel_all_subjects(max_neurons, min_neurons, ax=None, save=True, plotte
     data = load_data(event='move', norm='subtract', smoothing='sliding')
 
     df_filt = filter_recordings(df, **filtering_criteria)
-    all_frs_l = data['all_frs_l'][df_filt['include'] == 1]
-    all_frs_r = data['all_frs_r'][df_filt['include'] == 1]
-    all_frs_l_std = data['all_frs_l_std'][df_filt['include'] == 1]
-    all_frs_r_std = data['all_frs_r_std'][df_filt['include'] == 1]
-    df_filt = df_filt[df_filt['include'] == 1].reset_index()
+    all_frs_l = data['all_frs_l'][df_filt['permute_include'] == 1]
+    all_frs_r = data['all_frs_r'][df_filt['permute_include'] == 1]
+    all_frs_l_std = data['all_frs_l_std'][df_filt['permute_include'] == 1]
+    all_frs_r_std = data['all_frs_r_std'][df_filt['permute_include'] == 1]
+    df_filt = df_filt[df_filt['permute_include'] == 1].reset_index()
 
     if PRINT_PIDS:
         json.dump(list(np.unique(df_filt['pid'])), open("panel d", 'w'))
@@ -361,30 +360,32 @@ def plot_panel_all_subjects(max_neurons, min_neurons, ax=None, save=True, plotte
         fig, ax = plt.subplots(1, len(plotted_regions))
     df_filt_reg = df_filt.groupby('region')
 
-    min_lw = 0.5
-    max_lw = 2
+    min_lw = 0.25
+    max_lw = 2.5
 
     print("max neurons: {}; min neurons: {}".format(max_neurons, min_neurons))
 
+    from scipy.stats import sem
     all_present_labs = []
     for iR, reg in enumerate(plotted_regions):
         df_reg = df_filt_reg.get_group(reg)
-        df_reg_subj = df_reg.groupby('subject')
-        for subj in df_reg_subj.groups.keys():
-            df_subj = df_reg_subj.get_group(subj)
-            subj_idx = df_reg_subj.groups[subj]
+        df_reg_inst = df_reg.groupby('institute')
+        for inst in df_reg_inst.groups.keys():
+            df_inst = df_reg_inst.get_group(inst)
+            inst_idx = df_reg_inst.groups[inst]
 
             # Select L vs R side:
-            # frs_subj = all_frs_l[subj_idx, :]
-            frs_subj = all_frs_r[subj_idx, :]
+            # frs_inst = all_frs_l[inst_idx, :]
+            frs_inst = all_frs_r[inst_idx, :]
 
-            if df_subj.iloc[0]['institute'] not in all_present_labs:
-                all_present_labs.append(df_subj.iloc[0]['institute'])
-            ax[iR].plot(data['time'], np.mean(frs_subj, axis=0), c=lab_colors[df_subj.iloc[0]['institute']],
-                        lw=min_lw + ((subj_idx.shape[0] - min_neurons) / (max_neurons - min_neurons)) * max_lw,
+            if inst not in all_present_labs:
+                all_present_labs.append(df_inst.iloc[0]['institute'])
+            print(inst, reg, inst_idx.shape[0])
+            ax[iR].errorbar(data['time'], np.mean(frs_inst, axis=0), yerr=sem(frs_inst, axis=0) / 2, c=lab_colors[inst],
+                        lw=min_lw + ((inst_idx.shape[0] - min_neurons) / (max_neurons - min_neurons)) * max_lw,
                         alpha=0.8)
-        ax[iR].set_ylim(bottom=-9, top=21.5)
-        ax[iR].set_yticks([-5, 0, 5, 10, 15, 20])
+        ax[iR].set_ylim(bottom=-4, top=8)
+        ax[iR].set_yticks([-4, 0, 4, 8])
         ax[iR].axvline(0, color='k', ls='--')
         ax[iR].spines["right"].set_visible(False)
         ax[iR].spines["top"].set_visible(False)
@@ -410,11 +411,13 @@ def plot_panel_all_subjects(max_neurons, min_neurons, ax=None, save=True, plotte
         if iR == 1 or len(plotted_regions) == 1:
             ax[iR].set_xlabel("Time from movement onset (s)")
 
+        print(all_present_labs)
         if iR == len(plotted_regions) - 1 and len(plotted_regions) != 1:
             # this is a hack for the legend
             for lab in all_present_labs:
+                print(lab, lab_colors[lab])
                 ax[iR].plot(data['time'], np.zeros_like(data['time']) - 100, c=lab_colors[lab], label=lab)
-            leg = ax[iR].legend(frameon=False, bbox_to_anchor=(1, 1.19), labelcolor=lab_colors[lab], handlelength=0, handletextpad=0, fancybox=True)
+                leg = ax[iR].legend(frameon=False, bbox_to_anchor=(1, 1.19), labelcolor='linecolor', handlelength=0, handletextpad=0, fancybox=True)
             for item in leg.legendHandles:
                 item.set_visible(False)
 
@@ -427,7 +430,7 @@ def plot_panel_task_modulated_neurons(specific_tests=None, ax=None, save=True):
     # load dataframe from prev fig. 5 (To be combined with new Fig 4)
     df = load_dataframe()
     df_filt = filter_recordings(df, **filtering_criteria)
-    df_filt = df_filt[df_filt['include'] == 1]
+    df_filt = df_filt[df_filt['permute_include'] == 1]
 
     if PRINT_PIDS:
         json.dump(list(np.unique(df_filt['pid'])), open("panel e", 'w'))
@@ -435,6 +438,7 @@ def plot_panel_task_modulated_neurons(specific_tests=None, ax=None, save=True):
 
     # Group data frame by region
     df_region = df_filt.groupby('region')
+    lab_to_num = dict(zip(['Berkeley', 'CCU', 'CSHL (C)', 'CSHL (Z)', 'NYU', 'Princeton', 'SWC', 'UCL', 'UCLA', 'UW'], list(range(10))))
 
     names = tests.keys() if specific_tests is None else specific_tests
     # FIGURE 5c and supplementary figures
@@ -445,6 +449,8 @@ def plot_panel_task_modulated_neurons(specific_tests=None, ax=None, save=True):
             df_inst = df_br.groupby(['subject', 'institute'], as_index=False)
             vals = df_inst[test].mean().sort_values('institute')
             colors = [lab_colors[col] for col in vals['institute'].values]
+            positions = [lab_to_num[lab] + np.random.rand() * 0.1 - 0.05 for lab in vals['institute'].values]
+
             if ax is None:
                 plt.subplot(len(BRAIN_REGIONS), 1, i + 1)
                 plt.bar(np.arange(vals[test].values.shape[0]), vals[test].values, color=colors)
@@ -458,16 +464,24 @@ def plot_panel_task_modulated_neurons(specific_tests=None, ax=None, save=True):
                 elif i == 0:
                     plt.title('% modulated neurons', loc='left')
             else:
-                ax[i].bar(np.arange(vals[test].values.shape[0]), vals[test].values, color=colors)
-                ax[i].set_ylim(bottom=0, top=1)
+                for lab in vals['institute'].values:
+                    mean = vals[test].values[vals['institute'].values == lab].mean()
+                    stan_err = sem(vals[test].values[vals['institute'].values == lab])
+                    ax[i].plot([mean, mean], [lab_to_num[lab]-0.2, lab_to_num[lab]+0.2], color=lab_colors[lab], lw=1)
+                    ax[i].plot([mean-stan_err / 2, mean+stan_err / 2], [lab_to_num[lab], lab_to_num[lab]], lw=0.5, color=lab_colors[lab])
+                ax[i].scatter(vals[test].values, positions, color=colors, s=1)
+                # ax[i].bar(np.arange(vals[test].values.shape[0]), vals[test].values, color=colors)
+                ax[i].set_xlim(-0.05, 1.05)
                 ax[i].set_ylabel(region_rename[br], labelpad=0)
-                ax[i].set_yticks([0, 1], [0, 1])
                 ax[i].set_xticks([])
+                ax[i].set_yticks([])
                 sns.despine()
+                
+                # if i == 0:
+                #     ax[i].set_title('{} test'.format(shortened_tests[test]))
                 if i == 4:
-                    ax[i].set_xlabel('Mice')
-                elif i == 0:
-                    ax[i].set_title('% modulated neurons ({})'.format(shortened_tests[test]), loc='left')
+                    ax[i].set_xticks([0, 1], [0, 1])
+                    ax[i].set_xlabel('% modulated neurons ({} test)'.format(shortened_tests[test]))
         if specific_tests is None:
             plt.suptitle(tests[test], size=22)
         if save:
@@ -526,7 +540,7 @@ def plot_panel_power_analysis(ax, ax2):
     i = -1
     perturbation_shift = 0.3
     dist_between_violins = 0.8
-    lab_to_num = dict(zip(['Berkeley', 'CCU', 'CSHL (C)', 'CSHL (Z)', 'NYU', 'Princeton', 'SWC', 'UCL', 'UCLA'], list(np.arange(9) * dist_between_violins)))
+    lab_to_num = dict(zip(['Berkeley', 'CCU', 'CSHL (C)', 'CSHL (Z)', 'NYU', 'Princeton', 'SWC', 'UCL', 'UCLA', 'UW'], list(np.arange(10) * dist_between_violins)))
     visualisation_plot = 'CSHL (C)'
 
     df = load_dataframe()
@@ -702,7 +716,7 @@ def plot_panel_power_analysis(ax, ax2):
                     ax2.plot([dist_between_violins + perturbation_shift, dist_between_violins + perturbation_shift], [lab_mean, lab_mean - 3], color='grey')
 
                 obs_min = min(obs_min, lab_mean + val)
-            ax.set_xlim(-0.3, 8 * dist_between_violins + .36)
+            ax.set_xlim(-0.3, (len(lab_to_num) - 1) * dist_between_violins + .36)
             sns.despine(ax=ax)
             ax2.set_xlim(-0.3, dist_between_violins + .36)
             sns.despine()
@@ -978,9 +992,10 @@ if __name__ == '__main__':
     #         labs = vals.index.get_level_values('institute')
     #         subjects = vals.index.get_level_values('subject')
     #         data = vals.values
-    #         p = permut_test(data, metric=permut_dist, labels1=labs,
-    #                         labels2=subjects, n_permut=20000, n_cores=5)
-    #         print(p)
+    #         p = permut_test(data, metric=distribution_dist_approx_max, labels1=np.array(labs), labels2=np.array(subjects), n_permut=10000, n_cores=8)
+
+    #         if p == 0.:
+    #             p = 1e-8
     #         results = pd.concat((results, pd.DataFrame(index=[results.shape[0] + 1],
     #                                                    data={'test': test, 'region': br, 'p_value_permut': p})))
     
