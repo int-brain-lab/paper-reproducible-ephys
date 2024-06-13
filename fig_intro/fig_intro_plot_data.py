@@ -112,6 +112,16 @@ def plot_3D_repeated_site_trajectories(one, ba=None):
         # display the trajectories
         color = (0., 0., 0.)
         mlab.plot3d(mlapdv[:, 1], mlapdv[:, 2], mlapdv[:, 0], line_width=3, tube_radius=20, color=color)
+
+    # Add the planned location
+    traj = one.alyx.rest('trajectories', 'list', provenance='Planned',
+                         probe_insertion=insertions[0]['probe_insertion'])[0]
+    ins = Insertion.from_dict(traj, brain_atlas=ba)
+    mlapdv = ba.xyz2ccf(ins.xyz)
+    # display the trajectories
+    color = (1., 0., 0.)
+    mlab.plot3d(mlapdv[:, 1], mlapdv[:, 2], mlapdv[:, 0], line_width=5, tube_radius=40, color=color)
+
     add_br_meshes(fig, opacity=0.4)
     mlab.view(azimuth=180, elevation=0)
     mlab.view(azimuth=-160, elevation=111, reset_roll=False)
