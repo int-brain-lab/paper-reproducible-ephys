@@ -310,6 +310,10 @@ def plot_channels_n1():
 
     figcor, figsag = plot_channels(figcor, figsag, subjects=subjects, remove_axes=True, show_scalebar=True, marker_size=0.3)
 
+    # flip sagittal axes in X to fit panel C sagittal layout
+    axsag = figsag.get_axes()[0]
+    axsag.invert_xaxis()
+
     # adjust spacing
     #wspace = 0.3
     #hspace = 0.1
@@ -318,8 +322,8 @@ def plot_channels_n1():
     axcor = figcor.axes[0]
     axcor.text(-3000, -7500, 'Coronal', style='italic', color='w')
 
-    axsag = figsag.axes[0]
-    axsag.text(-3750, -7500, 'Sagittal', style='italic', color='w')
+    #axsag = figsag.axes[0]
+    axsag.text(-1750, -7500, 'Sagittal', style='italic', color='w')
 
     figcor.tight_layout()
     figsag.tight_layout()

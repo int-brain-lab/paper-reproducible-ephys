@@ -84,6 +84,18 @@ def plot_probe_angle_histology(traj='hist', min_rec_per_lab=4):
     for p in pids:
         probe_data = probe_data[ probe_data['pid'] != p]
 
+    # map labs to institutions
+    probe_data['institute'] = probe_data['lab'].map(institution_map)
+
+    # remove any institutes which have N less than min_rec_per_lab
+    pd_inst_counts = probe_data['institute'].value_counts()
+    # keys returns the value counts names (ie. institute strings!)
+    inst_ex = pd_inst_counts.keys()[pd_inst_counts < min_rec_per_lab]
+    # remove each institute that has too few n
+    for ie in inst_ex:
+        print('\n\nexcluding institute from ALL-PROBE analysis (below min_rec_per_lab): ', ie)
+        probe_data = probe_data[probe_data['institute'] != ie].reset_index()
+    
     figure_style()
     fig1, ax1 = plt.subplots()
 
@@ -141,7 +153,7 @@ def plot_probe_angle_histology(traj='hist', min_rec_per_lab=4):
     ax1.yaxis.set_major_locator(plt.MaxNLocator(7))
 
     ax1.set_ylim(-20, 10)
-    ax1.set_xlim(-20, 10)
+    ax1.set_xlim(-15, 15)
 
     # plt.tight_layout()  # tighten layout around xlabel & ylabel
 
@@ -328,6 +340,6 @@ def plot_probe_angle_histology_all_lab(traj='hist', min_rec_per_lab=4, perform_p
                           n_cores=8, n_permut=500000)
     
         print('\nHistology probe angle')
-        print("PERMUTATION TEST ALL : ", p_m)
+        print("\n\n\nPERMUTATION TEST ALL : ", p_m, " \n\n\n")
 
 

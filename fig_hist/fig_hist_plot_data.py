@@ -26,7 +26,7 @@ def plot_hist_figure(raw_histology=False, perform_permutation_test=False):
         plot_channels_n1()
     else:
         print(f'Raw histology not yet available, will use pregenerated figure '
-              f'{repo_path().joinpath("fig_hist", "fig_hist_schematics", "B_channels_subj3_hist_coronal.svg")}')
+              f'{repo_path().joinpath("fig_hist", "fig_hist_schematics", "B_channels_subj1_hist_coronal.svg")}')
 
     plot_trajs()
 
