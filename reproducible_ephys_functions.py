@@ -13,7 +13,7 @@ from datetime import datetime
 import scipy
 import traceback
 
-from neurodsp import voltage
+from ibldsp import voltage
 from one.api import ONE
 from one.alf.exceptions import ALFObjectNotFound
 from iblutil.numerical import ismember
@@ -75,7 +75,7 @@ def query(behavior=False, n_trials=400, resolved=True, min_regions=2, exclude_cr
     else:
         django_queries = []
 
-    django_queries.append('probe_insertion__session__project__name,ibl_neuropixel_brainwide_01')
+    django_queries.append('probe_insertion__session__projects__name,ibl_neuropixel_brainwide_01')
 
     if exclude_critical:
         django_queries.append('probe_insertion__session__qc__lt,50,~probe_insertion__json__qc,CRITICAL')
@@ -180,7 +180,7 @@ def get_insertions(level=0, recompute=False, as_dataframe=False, one=None, freez
 
     if level == -1:
         insertions = one.alyx.rest('trajectories', 'list', provenance='Planned', x=-2243, y=-2000, theta=15,
-                                   django='probe_insertion__session__project__name,ibl_neuropixel_brainwide_01')
+                                   django='probe_insertion__session__projects__name,ibl_neuropixel_brainwide_01')
         return insertions
 
     if level == 0:
@@ -393,16 +393,10 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
 
         try:
             df_lfp = compute_lfp_insertion(one=one, pid=ins['probe_insertion'])
-            clusters = one.load_object(eid, 'clusters', collection=collection, attribute=['metrics', 'channels'])
-            if 'metrics' not in clusters.keys():
-                sl = bbone.SpikeSortingLoader(eid=eid, pname=probe, one=one, atlas=ba)
-                spikes, clusters, channels = sl.load_spike_sorting()
-                clusters = sl.merge_clusters(spikes, clusters, channels)
-            else:
-                clusters['label'] = clusters['metrics']['label']
-                channels = bbone.load_channel_locations(eid, probe=probe, one=one, aligned=True, brain_atlas=ba)[probe]
-                clusters['acronym'] = channels['acronym'][clusters['channels']]
-                clusters['atlas_id'] = channels['atlas_id'][clusters['channels']]
+
+            sl = bbone.SpikeSortingLoader(eid=eid, pname=probe, one=one, atlas=ba)
+            spikes, clusters, channels = sl.load_spike_sorting(revision='2024-03-22')
+            clusters = sl.merge_clusters(spikes, clusters, channels)
 
             channels['rawInd'] = one.load_dataset(eid, dataset='channels.rawInd.npy', collection=collection)
             channels['rep_site_acronym'] = combine_regions(channels['acronym'])
@@ -433,6 +427,8 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
                                                                                   clusters['acronym'] != 'root'))
             total_yield = np.sum(good_clusters) / np.sum(good_channels)
 
+            lfp_derivative = np.median(np.abs(np.gradient(df_lfp['lfp_power'])))
+
         except Exception as err:
             logger.error(f'{pid}: {err}')
 
@@ -462,8 +458,8 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
                     lfp_theta_region_raw = np.mean(10 * np.log(chan_power[freqs]))  # convert to dB
                 else:
                     # TO DO SEE IF THIS IS LEGIT
-                    lfp_region = np.nan
-                    lfp_theta_region = np.nan
+                    lfp_region_raw = np.nan
+                    lfp_theta_region_raw = np.nan
                 if 'apRMS' in ap.keys() and region_chan.shape[0] > 0:
                     ap_rms = np.percentile(ap['apRMS'][1, region_chan], 90) * 1e6
                 elif region_chan.shape[0] > 0:
@@ -479,10 +475,12 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
                                                         'n_channels': region_chan.shape[0],
                                                         'neuron_yield': region_clusters.shape[0],
                                                         'total_yield': total_yield,
+                                                        'lfp_derivative': lfp_derivative,
                                                         'lfp_power': lfp_region,
                                                         'lfp_theta_power': lfp_theta_region,
                                                         'lfp_power_raw': lfp_region_raw,
                                                         'lfp_theta_power_raw': lfp_theta_region_raw,
+                                                        'lfp_whole_probe': np.mean(df_lfp['lfp_power']),
                                                         'rms_ap_p90': ap_rms,
                                                         'n_trials': n_trials,
                                                         'behavior': behav,
@@ -498,10 +496,10 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
     return metrics
 
 
-def filter_recordings(df=None, by_anatomy_only=False, max_ap_rms=40, max_lfp_power=-150,
-                      min_neurons_per_channel=0.1, min_channels_region=5, min_regions=0, min_neuron_region=4,
+def filter_recordings(df=None, by_anatomy_only=False, max_ap_rms=40, max_lfp_derivative=1,
+                      min_neurons_per_channel=0.1, min_channels_region=5, min_regions=2, min_neuron_region=4,
                       min_lab_region=3, min_rec_lab=4, n_trials=400, behavior=False,
-                      exclude_subjects=['ibl_witten_26'], recompute=True, freeze='freeze_2024_01', one=None):
+                      exclude_subjects=['NR_0031'], recompute=True, freeze='freeze_2024_03', one=None):
     """
     Filter values in dataframe according to different exclusion criteria
     :param df: pandas dataframe
@@ -534,10 +532,19 @@ def filter_recordings(df=None, by_anatomy_only=False, max_ap_rms=40, max_lfp_pow
     # Region Level
     # no. of channels per region
     metrics['region_hit'] = metrics['n_channels'] > min_channels_region
+    
+    # Set -inf lfp power to nan
+    metrics.loc[metrics['lfp_power_raw'] == float('-inf'), 'lfp_power_raw'] = np.nan
+    
+    # Calculate lfp power ratio between CA1 and cortex
+    for i, pid in enumerate(np.unique(metrics['pid'])):
+        metrics.loc[metrics['pid'] == pid, 'lfp_ratio'] = (
+            metrics.loc[(metrics['pid'] == pid) & (metrics['region'] == 'LP'), 'lfp_power_raw'].values[0]
+            / metrics.loc[(metrics['pid'] == pid) & (metrics['region'] == 'DG'), 'lfp_power_raw'].values[0])
 
     # PID level
     metrics = metrics.groupby('pid', group_keys=False).apply(lambda m: m.assign(high_noise=lambda m: m['rms_ap_p90'].median() > max_ap_rms))
-    metrics = metrics.groupby('pid', group_keys=False).apply(lambda m: m.assign(high_lfp=lambda m: m['lfp_power_raw'].median() > max_lfp_power))
+    metrics = metrics.groupby('pid', group_keys=False).apply(lambda m: m.assign(high_lfp=lambda m: m['lfp_derivative'].median() > max_lfp_derivative))
     metrics = metrics.groupby('pid', group_keys=False).apply(lambda m: m.assign(low_yield=lambda m: m['total_yield'] < min_neurons_per_channel))
     metrics = metrics.groupby('pid', group_keys=False).apply(lambda m: m.assign(missed_target=lambda m: m['region_hit'].sum() < min_regions))
     metrics = metrics.groupby('pid', group_keys=False).apply(lambda m: m.assign(low_trials=lambda m: m['n_trials'] < n_trials))
@@ -570,7 +577,7 @@ def filter_recordings(df=None, by_anatomy_only=False, max_ap_rms=40, max_lfp_pow
     #institutes = [key for key, val in inst_count.items()]
 
     for lab in institutes:
-        idx = metrics.loc[(metrics['institute'] == lab) & metrics['include'] == 1].index
+        idx = metrics.loc[(metrics['institute'] == lab) & (metrics['include'] == 1)].index
         metrics.loc[idx, 'lab_include'] = True
 
     # Now for permutation test

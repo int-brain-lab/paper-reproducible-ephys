@@ -101,4 +101,4 @@ def plot_figure_supp2(freeze=None):
 
 
 if __name__ == '__main__':
-    plot_figure_supp2(freeze='freeze_2024_01')
+    plot_figure_supp2(freeze='freeze_2024_03')

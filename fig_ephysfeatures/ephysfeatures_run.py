@@ -11,7 +11,7 @@ from one.api import ONE
 logger = logging.getLogger('paper_reproducible_ephys')
 
 
-def run_fig_ephysfeatures(one, recompute=False, supplementary=True, freeze='freeze_2024_01'):
+def run_fig_ephysfeatures(one, recompute=False, supplementary=True, freeze='freeze_2024_03'):
     insertions = reproducible_ephys_functions.get_insertions(level=0, one=one, freeze=freeze)
     prepare_data(insertions, one=one, recompute=recompute)
     run_decoding(n_shuffle=500, qc='pass', recompute=recompute)
@@ -46,4 +46,4 @@ if __name__ == '__main__':
     # one = ONE(base_url='https://openalyx.internationalbrainlab.org')
     one = ONE(base_url='https://alyx.internationalbrainlab.org')
     # Create figure
-    run_fig_ephysfeatures(one=one, recompute=False, supplementary=True, freeze='freeze_2024_01')
+    run_fig_ephysfeatures(one=one, recompute=False, supplementary=False, freeze='freeze_2024_03')

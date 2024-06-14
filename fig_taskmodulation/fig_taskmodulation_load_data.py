@@ -2,7 +2,8 @@ import pandas as pd
 import numpy as np
 from reproducible_ephys_functions import save_data_path
 
-filtering_criteria = {'min_regions': 0, 'min_lab_region': 3, 'min_rec_lab': 0, 'min_neuron_region': 4, 'freeze': 'freeze_2024_01'}
+filtering_criteria = {'min_regions': 0, 'min_lab_region': 3, 'min_rec_lab': 0, 'min_neuron_region': 4, 'freeze': 'freeze_2024_03',
+                      'exclude_subjects': ['NR_0031']}
 
 
 #Renamed & remove 'Trial':

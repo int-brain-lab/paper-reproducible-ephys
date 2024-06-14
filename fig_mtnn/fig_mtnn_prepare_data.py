@@ -42,9 +42,10 @@ def prepare_mtnn_data(eids, insertions, one, brain_atlas=None):
     cluster_number_list = []
     trial_number_list = []
     session_list = []
-    session_count = {'mainenlab': 0, 'churchlandlab': 0,
-                     ('hoferlab', 'mrsicflogellab'): 0,
-                     'danlab': 0, 'cortexlab': 0}
+    session_count = {('hoferlab', 'mrsicflogellab'): 0,
+                     'mainenlab': 0, 'churchlandlab': 0,
+                     'cortexlab': 0, 'danlab': 0,
+                     'angelakilab': 0, 'churchlandlab_ucla': 0, 'steinmetzlab': 0}
 
     for i, ins in enumerate(insertions):
         feature, output, cluster_numbers, trial_numbers = featurize(i, ins, one, session_count, brain_atlas=brain_atlas)
@@ -92,8 +93,8 @@ def prepare_mtnn_data(eids, insertions, one, brain_atlas=None):
                                                                                 output_list[i],
                                                                                 cluster_number_list[i],
                                                                                 neuron_id_start=total_n_neurons,
-                                                                                threshold=5.0,
-                                                                                max_n_neurons=15)
+                                                                                threshold=3.0,#5.0,
+                                                                                max_n_neurons=30)#15)
         total_n_neurons += feature_subset.shape[0]
         print('{}/{} remaining'.format(feature_subset.shape[0], feature_list[i].shape[0]))
         print('{}/{} removed'.format(feature_list[i].shape[0] - feature_subset.shape[0], feature_list[i].shape[0]))
@@ -261,7 +262,7 @@ def prepare_glm_and_simulated_data(insertions, one, brain_atlas=None):
 
         ba = brain_atlas or AllenAtlas()
         sl = bbone.SpikeSortingLoader(eid=eid, pname=probe, one=one, atlas=ba)
-        spikes, _, _ = sl.load_spike_sorting()
+        spikes, _, _ = sl.load_spike_sorting(revision='2024-03-22')
 
         clu_idx = np.isin(spikes.clusters, clusters[i])
         spk_times = spikes.times[clu_idx]
@@ -660,7 +661,7 @@ def prepare_glm_data_full_mtnn_cov(insertions, one, brain_atlas=None):
 
         # add lick
         x = feature[0,:,:,lick_offset]
-        x = (x - x.min()) / (x.max() - x.min())
+        x = (x - x.min()) / (x.max() - x.min() + 1e-6)
         lick_pd = pd.Series(list(x), index = trialsdf.index)
         trialsdf['lick'] = lick_pd.values
 
@@ -673,7 +674,7 @@ def prepare_glm_data_full_mtnn_cov(insertions, one, brain_atlas=None):
 
         ba = brain_atlas or AllenAtlas()
         sl = bbone.SpikeSortingLoader(eid=eid, pname=probe, one=one, atlas=ba)
-        spikes, _, _ = sl.load_spike_sorting()
+        spikes, _, _ = sl.load_spike_sorting(revision='2024-03-22')
 
         clu_idx = np.isin(spikes.clusters, clusters[i])
         spk_times = spikes.times[clu_idx]

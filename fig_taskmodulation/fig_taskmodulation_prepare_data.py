@@ -76,7 +76,8 @@ def prepare_data(insertions, one, figure='fig_taskmodulation', recompute=False, 
             eid = ins['session']['id']
             probe = ins['probe_name']
             sl = SpikeSortingLoader(eid=eid, pname=probe, one=one, atlas=ba)
-            spikes, clusters, channels = sl.load_spike_sorting(dataset_types=['clusters.amps', 'clusters.peakToTrough'])
+            spikes, clusters, channels = sl.load_spike_sorting(dataset_types=['clusters.amps', 'clusters.peakToTrough'],
+                                                               revision='2024-03-22')
             clusters = sl.merge_clusters(spikes, clusters, channels)
 
             clusters['rep_site_acronym'] = combine_regions(clusters['acronym'])
@@ -578,8 +579,8 @@ if __name__ == '__main__':
     print("Filtering criteria: {}".format(filtering_criteria))
     one = ONE()
     one.record_loaded = True
-    insertions = get_insertions(level=0, one=one, freeze='freeze_2024_01', recompute=True)
+    insertions = get_insertions(level=0, one=one, freeze='freeze_2024_03', recompute=True)
     prepare_data(insertions, one=one, recompute=True, **default_params)
     save_dataset_info(one, figure='fig_taskmodulation')
-    compute_permutation_test(n_permut=30000, n_cores=8)
-    compute_power_analysis(n_permut=50000, n_cores=8)
+    # compute_permutation_test(n_permut=40000, n_cores=8)
+    # compute_power_analysis(n_permut=40000, n_cores=8)
