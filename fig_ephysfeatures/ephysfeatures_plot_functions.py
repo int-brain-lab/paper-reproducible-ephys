@@ -64,16 +64,17 @@ def panel_probe_lfp(fig, ax, df_filt, boundary_align='DG-TH', ylim=[-2000, 2000]
     ax[-1].set_axis_off()
 
     # Add lab names
-    plt.figtext(0.235, 0.715, 'Berkeley', va="center", ha="center", size=7, color=lab_colors['Berkeley'])
-    plt.figtext(0.32, 0.715, 'Champalimaud', va="center", ha="center", size=7, color=lab_colors['CCU'])
-    plt.figtext(0.4, 0.715, 'CSHL', va="center", ha="center", size=7, color=lab_colors['CSHL (C)'])
-    plt.figtext(0.455, 0.715, 'NYU', va="center", ha="center", size=7, color=lab_colors['NYU'])
+    plt.figtext(0.22, 0.715, 'Berkeley', va="center", ha="center", size=7, color=lab_colors['Berkeley'])
+    plt.figtext(0.305, 0.715, 'Champalimaud', va="center", ha="center", size=7, color=lab_colors['CCU'])
+    plt.figtext(0.385, 0.715, 'CSHL (C)', va="center", ha="center", size=7, color=lab_colors['CSHL (C)'])
+    plt.figtext(0.425, 0.715, '(Z)', va="center", ha="center", size=7, color=lab_colors['CSHL (Z)'])
+    plt.figtext(0.46, 0.715, 'NYU', va="center", ha="center", size=7, color=lab_colors['NYU'])
     plt.figtext(0.52, 0.715, 'Princeton', va="center", ha="center", size=7, color=lab_colors['Princeton'])
     plt.figtext(0.57, 0.715, 'SWC', va="center", ha="center", size=7, color=lab_colors['SWC'])
     plt.figtext(0.645, 0.715, 'UCL', va="center", ha="center", size=7, color=lab_colors['UCL'])
     #plt.figtext(0.805, 0.715, '(H)', va="center", ha="center", size=7, color=lab_colors['UCL (H)'])
-    plt.figtext(0.78, 0.715, 'UCLA', va="center", ha="center", size=7, color=lab_colors['UCLA'])
-    plt.figtext(0.87, 0.715, 'UW', va="center", ha="center", size=7, color=lab_colors['UW'])
+    plt.figtext(0.77, 0.715, 'UCLA', va="center", ha="center", size=7, color=lab_colors['UCLA'])
+    plt.figtext(0.86, 0.715, 'UW', va="center", ha="center", size=7, color=lab_colors['UW'])
 
     # Add colorbar
     axin = inset_axes(ax[-1], width="50%", height="90%", loc='lower right', borderpad=0,
@@ -154,8 +155,7 @@ def panel_probe_neurons(fig, ax, df_filt, boundary_align='DG-TH', ylim=[-2000, 2
             ax[iR].bar(x=width / 2, height=height, width=width, color=color, bottom=reg[0],
                        edgecolor='k', alpha=alpha, zorder=1)
 
-        ax[iR].set_title(data['recording'] + 1,
-                         color=lab_colors[data['institute']])
+        ax[iR].set_title(data['recording'] + 1, color=lab_colors[data['institute']], size=6.5)
 
         if iR == 0:
             ax[iR].set(yticks=np.arange(ylim[0], ylim[1] + 1, 500),
@@ -346,7 +346,7 @@ def panel_decoding(ax, qc='pass', region_decoding=True, bh_correction=False):
 
 
 def panel_example(ax, n_rec_per_lab=0, n_rec_per_region=3,
-                  example_region='CA1', example_metric='lfp_power', ylabel='LFP power in CA1 (db)',
+                  example_region='DG', example_metric='lfp_power', ylabel='LFP power in DG (db)',
                   ylim=None, yticks=None, despine=True, freeze=None):
 
     df_ins = load_dataframe(df_name='ins')
