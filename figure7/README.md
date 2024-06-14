@@ -2,7 +2,7 @@
 
 The data for Figure 7 can be reproduced by executing figure7_run.py file 
 ```
-python figure6_run.py
+python figure7_run.py
 ```
 
 or by using the following code snippet in an ipython terminal

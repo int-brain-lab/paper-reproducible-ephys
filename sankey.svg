@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg height="252pt" version="1.1" viewBox="0 0 432 252" width="432pt" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+ <metadata>
+  <rdf:RDF xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2021-12-23T19:10:18.193130</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.4.2, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linecap:butt;stroke-linejoin:round;}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 252 
+L 432 252 
+L 432 0 
+L 0 0 
+z
+" style="fill:#ffffff;"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path clip-path="url(#p9607b44590)" d="M 115.215496 70.584125 
+L 125.750833 70.584125 
+C 133.652336 70.584125 138.920005 67.634231 146.821508 67.634231 
+L 157.356845 67.634231 
+L 169.99925 67.634231 
+C 172.233709 67.634231 174.378936 66.745649 175.958937 65.165647 
+C 177.538938 63.585646 178.42752 61.44042 178.42752 59.205961 
+L 178.42752 46.563556 
+L 175.899039 46.563556 
+L 181.377415 41.08518 
+L 186.85579 46.563556 
+L 184.327309 46.563556 
+L 184.327309 59.205961 
+C 184.327309 63.004541 182.81672 66.651427 180.130718 69.337428 
+C 177.444716 72.02343 173.79783 73.53402 169.99925 73.53402 
+L 184.327309 73.53402 
+L 292.209165 73.53402 
+L 309.065704 73.53402 
+L 309.065704 71.005539 
+L 325.079417 87.019251 
+L 309.065704 103.032964 
+L 309.065704 100.504483 
+L 287.99503 100.504483 
+L 292.209165 100.504483 
+L 270.295663 100.504483 
+C 276.105256 100.504483 281.682846 102.814797 285.790848 106.9228 
+C 289.898851 111.030802 292.209165 116.608392 292.209165 122.417985 
+L 292.209165 122.417985 
+L 294.737645 122.417985 
+L 285.466549 131.689082 
+L 276.195452 122.417985 
+L 278.723933 122.417985 
+L 278.723933 122.417985 
+C 278.723933 120.183526 277.835351 118.038299 276.255349 116.458298 
+C 274.675348 114.878297 272.530122 113.989715 270.295663 113.989715 
+L 257.653258 113.989715 
+L 231.525621 113.989715 
+C 238.452443 113.989715 245.102647 116.74432 250.00065 121.642323 
+C 254.898653 126.540326 257.653258 133.19053 257.653258 140.117352 
+L 257.653258 152.759757 
+L 260.181739 152.759757 
+L 248.803574 164.137922 
+L 237.42541 152.759757 
+L 239.953891 152.759757 
+L 239.953891 140.117352 
+C 239.953891 137.882893 239.065309 135.737666 237.485308 134.157665 
+C 235.905307 132.577664 233.76008 131.689082 231.525621 131.689082 
+L 218.883216 131.689082 
+L 204.555157 131.689082 
+C 208.353737 131.689082 212.000623 133.199672 214.686625 135.885674 
+C 217.372626 138.571675 218.883216 142.218561 218.883216 146.017141 
+L 218.883216 171.301951 
+L 221.411697 171.301951 
+L 215.933321 176.780326 
+L 210.454946 171.301951 
+L 212.983427 171.301951 
+L 212.983427 146.017141 
+C 212.983427 143.782682 212.094845 141.637455 210.514844 140.057454 
+C 208.934843 138.477453 206.789616 137.588871 204.555157 137.588871 
+L 191.912752 137.588871 
+L 169.99925 137.588871 
+C 175.808843 137.588871 181.386433 139.899185 185.494436 144.007187 
+C 189.602439 148.11519 191.912752 153.69278 191.912752 159.502373 
+L 191.912752 201.643723 
+L 194.441233 201.643723 
+L 185.170136 210.91482 
+L 175.899039 201.643723 
+L 178.42752 201.643723 
+L 178.42752 159.502373 
+C 178.42752 157.267914 177.538938 155.122687 175.958937 153.542686 
+C 174.378936 151.962685 172.233709 151.074103 169.99925 151.074103 
+L 157.356845 151.074103 
+L 157.356845 151.074103 
+L 146.821508 151.074103 
+C 138.920005 151.074103 133.652336 148.124209 125.750833 148.124209 
+L 115.215496 148.124209 
+L 94.144821 148.124209 
+L 132.914862 109.354167 
+L 94.144821 70.584125 
+L 115.215496 70.584125 
+L 115.215496 70.584125 
+z
+" style="fill:#808080;stroke:#000000;stroke-linejoin:miter;"/>
+   </g>
+   <g id="text_1">
+    <text style="font-family:DejaVu Sans;font-size:10px;font-stretch:normal;font-style:normal;font-weight:normal;" transform="translate(28.160433 106.514636)">All sessions</text>
+    <text style="font-family:DejaVu Sans;font-size:10px;font-stretch:normal;font-style:normal;font-weight:normal;" transform="translate(50.697933 117.712448)">92</text>
+   </g>
+   <g id="text_2">
+    <text style="font-family:DejaVu Sans;font-size:8px;font-stretch:normal;font-style:normal;font-weight:normal;" transform="translate(145.08304 21.957015)">Histology damage</text>
+    <text style="font-family:DejaVu Sans;font-size:8px;font-stretch:normal;font-style:normal;font-weight:normal;" transform="translate(178.832415 30.915265)">7</text>
+   </g>
+   <g id="text_3">
+    <text style="font-family:DejaVu Sans;font-size:8px;font-stretch:normal;font-style:normal;font-weight:normal;" transform="translate(269.688088 142.059862)">Sessions per lab</text>
+    <text style="font-family:DejaVu Sans;font-size:8px;font-stretch:normal;font-style:normal;font-weight:normal;" transform="translate(297.233088 151.018112)">16</text>
+   </g>
+   <g id="text_4">
+    <text style="font-family:DejaVu Sans;font-size:8px;font-stretch:normal;font-style:normal;font-weight:normal;" transform="translate(231.826161 177.037182)">Noise/yield</text>
+    <text style="font-family:DejaVu Sans;font-size:8px;font-stretch:normal;font-style:normal;font-weight:normal;" transform="translate(248.770536 185.995432)">21</text>
+   </g>
+   <g id="text_5">
+    <text style="font-family:DejaVu Sans;font-size:8px;font-stretch:normal;font-style:normal;font-weight:normal;" transform="translate(197.370196 191.365241)">Targeting</text>
+    <text style="font-family:DejaVu Sans;font-size:8px;font-stretch:normal;font-style:normal;font-weight:normal;" transform="translate(213.388321 200.323491)">7</text>
+   </g>
+   <g id="text_6">
+    <text style="font-family:DejaVu Sans;font-size:8px;font-stretch:normal;font-style:normal;font-weight:normal;" transform="translate(167.407636 225.499735)">Behavior</text>
+    <text style="font-family:DejaVu Sans;font-size:8px;font-stretch:normal;font-style:normal;font-weight:normal;" transform="translate(180.080136 234.457985)">16</text>
+   </g>
+   <g id="text_7">
+    <text style="font-family:DejaVu Sans;font-size:10px;font-stretch:normal;font-style:normal;font-weight:normal;" transform="translate(336.820981 84.17972)">Data analysis</text>
+    <text style="font-family:DejaVu Sans;font-size:10px;font-stretch:normal;font-style:normal;font-weight:normal;" transform="translate(364.229575 95.377533)">32</text>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="p9607b44590">
+   <rect height="179.131549" width="340.879281" x="47.600749" y="36.434225"/>
+  </clipPath>
+ </defs>
+</svg>
