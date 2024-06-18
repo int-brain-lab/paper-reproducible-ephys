@@ -1,10 +1,10 @@
-from fig_data_quality.tables import load_channels, load_clusters
-from fig_data_quality.plot import compute_yield
-from fig_data_quality.plot import get_colors_region
+import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-import numpy as np
+
+from fig_data_quality.tables import load_channels, load_clusters
+from fig_data_quality.plot import compute_yield
 
 """
 Generates Figure 1f

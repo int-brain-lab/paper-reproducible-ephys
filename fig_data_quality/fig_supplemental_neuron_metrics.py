@@ -1,9 +1,10 @@
 import numpy as np
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+
 from fig_data_quality.plot import get_3colors_region
 from fig_data_quality.tables import load_channels, load_clusters
-import matplotlib.pyplot as plt
-import seaborn as sns
-import pandas as pd
 
 """
 Generates Fig. 1 Supp. 4
