@@ -1,13 +1,14 @@
 import numpy as np
-from fig_data_quality.tables import load_channels, load_clusters
-import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
+import matplotlib.pyplot as plt
+import colorsys
+
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from scipy.ndimage import gaussian_filter1d
-import colorsys
 from iblatlas.regions import BrainRegions
-import numpy as np
+
+from fig_data_quality.tables import load_channels, load_clusters
 
 ## Utilities
 
