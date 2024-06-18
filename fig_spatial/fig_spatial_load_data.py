@@ -4,7 +4,7 @@ from reproducible_ephys_functions import save_data_path
 
 
 def load_dataframe(exists_only=False):
-    df_path = save_data_path(figure='figure_spatial').joinpath('figure_spatial_dataframe.csv')
+    df_path = save_data_path(figure='fig_spatial').joinpath('fig_spatial_dataframe.csv')
     if exists_only:
         return df_path.exists()
     else:
@@ -19,8 +19,8 @@ def load_data(event='move', norm=None, smoothing='sliding', exists_only=False):
     smoothing = smoothing or 'none'
     norm = norm or 'none'
 
-    df_path = save_data_path(figure='figure_spatial').joinpath(
-        f'figure_spatial_data_event_{event}_smoothing_{smoothing}_norm_{norm}.npz')
+    df_path = save_data_path(figure='fig_spatial').joinpath(
+        f'fig_spatial_data_event_{event}_smoothing_{smoothing}_norm_{norm}.npz')
     if exists_only:
         return df_path.exists()
     else:
@@ -31,7 +31,7 @@ def load_data(event='move', norm=None, smoothing='sliding', exists_only=False):
 
 
 def load_regions(exists_only=False):
-    df_path = save_data_path(figure='figure_spatial').joinpath('figure_spatial_cent_of_mass.csv')
+    df_path = save_data_path(figure='fig_spatial').joinpath('fig_spatial_cent_of_mass.csv')
     if exists_only:
         return df_path.exists()
     else:

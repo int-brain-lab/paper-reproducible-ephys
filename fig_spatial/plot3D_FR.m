@@ -13,8 +13,6 @@ function [hCB, jitt, FRthresh, pMWU_corrected,...
 %plots of the same brain region, this value is an output.
 
 T = readtable(CSVfile);
-%T2 = readtable('/Users/mt/Downloads/FlatIron/paper_repro_ephys_data/fig_taskmodulation/FigTM_PermutInc_dataframe.csv');
-
 
 %AvgFR_col = find(strcmp(T.Properties.VariableNames, 'avg_fr')); 
 X_col = find(strcmp(T.Properties.VariableNames, 'x')); 
@@ -54,21 +52,21 @@ Neur_idx = find(strcmp(T.region, BrainRegion) & strcmp(T.permute_include, 'True'
 
 
 
-%New (June 2023): include subject sex for regression model:
-load('subject_sex_Jan2024.mat', 'subj_sex');
-subj_names = unique(T.subject);
-for i=1:length(T.cluster_ids)
-    
-    indx_SubjSex = find(strcmp(T.subject(i), subj_names));
-
-    sex = subj_sex{indx_SubjSex,:}{:};
-    if strcmp(sex, 'M')
-        sex_logic(i,1) = 0;
-    elseif strcmp(sex, 'F')
-        sex_logic(i,1) = 1; %female is 1, male is 0
-    end
-    
-end
+% %(June 2023): if needed, can include subject sex for regression model:
+% load('subject_sex_Jan2024.mat', 'subj_sex');
+% subj_names = unique(T.subject);
+% for i=1:length(T.cluster_ids)
+%     
+%     indx_SubjSex = find(strcmp(T.subject(i), subj_names));
+% 
+%     sex = subj_sex{indx_SubjSex,:}{:};
+%     if strcmp(sex, 'M')
+%         sex_logic(i,1) = 0;
+%     elseif strcmp(sex, 'F')
+%         sex_logic(i,1) = 1; %female is 1, male is 0
+%     end
+%     
+% end
 
 
 
@@ -268,9 +266,6 @@ for spHist=1:3
     Sample1(:,spHist) = dXYZ(UnitsRegular, spHist);
     Sample2(:,spHist) = dXYZ(UnitsOutliers, spHist);
     
-%     h1=histogram(Sample1(:,spHist),...
-%         'binwidth',100, 'edgecolor', [0.02, 0.31, 0.51],...
-%         'normalization', 'probability', 'DisplayStyle', 'stairs', 'linewidth',2, 'edgealpha', 0.8); hold on;
     h1=histogram(Sample1(:,spHist),...
         'binwidth',100, 'edgecolor', [0.02, 0.51, 0.51],...
         'normalization', 'probability', 'DisplayStyle', 'stairs', 'linewidth',2, 'edgealpha', 0.8); hold on;
@@ -319,7 +314,7 @@ region_p2t = T.p2t(Neur_idx);
 
 SpikeWF = [region_amps, region_p2t];
 
-fig = figure;%(3)
+fig = figure;
 for spHist=4:5
     subplot(1,2,spHist-3)
     Sample1(:,spHist) = SpikeWF(UnitsRegular, spHist-3);
@@ -333,11 +328,6 @@ for spHist=4:5
         'normalization', 'probability',...
         'binwidth', get(h1, 'binwidth'), 'edgecolor', [1, 0.53, 0],...
         'facealpha', 0.4, 'edgealpha', 0.6, 'DisplayStyle', 'stairs', 'linewidth',3);
-  
-%     if max(Sample1(:,spHist)) < max(Sample2(:,spHist))
-%         disp('error: fix plotting axes') %if 'error', fix plotting
-%         break
-%     end
     
     if spHist==4
         xlabel('WF Amp.')
@@ -351,9 +341,7 @@ for spHist=4:5
     
     set(gca, 'fontsize', 12, 'box', 'off')
     ylabel('Probability')
-    
-    %TO DO: ADD UNITS ABOVE AND MAYBE LOG HORIZONTAL AXIS!
-    
+        
 end
 saveas(fig, append(save_path, 'FR_', BrainRegion, '_amp_dur_hist.png'));
 
@@ -363,17 +351,8 @@ for st = 1:size(Sample1,2)
 end
 %disp({'x','y','z','amp', 'dur'})
 pMWU_corrected = pMWU*size(Sample1,2);
-%disp(pMWU_corrected) %Bonferroni correction (since 5 features are being compared: x,y,x,amp,duration)
 
 %% Linear Regression Model: quantify the level of Avg FR variability explained by x,y,z,amp,p2t dur
-
-
-% %Generate Lab number to use instead of Firing Rate as the output, or to use as a covariate:
-% labNum_char = T.lab_number(Neur_idx);
-% for c=1:length(labNum_char)
-%     labNum(c) = str2num(labNum_char{c}(end));
-% end
-
 
 % Covariates:
 Covariates = [dXYZ(:,1), dXYZ(:,2), dXYZ(:,3), region_amps, region_p2t];%, sex_logic(Neur_idx), labNum'];

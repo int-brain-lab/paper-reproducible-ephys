@@ -1,7 +1,7 @@
 % Code for generating Fano Factor 3D plots
 % Code written by: Marsa Taheri
 
-function [] = Fig3D_FanoFactor_plots_generate(CSVfile, BrainRegions, save_path)
+function [] = fig_spatial_FanoFactor_generate(CSVfile, BrainRegions, save_path)
 
 pMWU_corrFR_all = nan(5, 5); %5 brain regions possible & 5features being compared (x,y,z,amp,dur)
 f = figure(1);
@@ -343,4 +343,4 @@ end
 disp({'x','y','z','amp','p2t dur'})
 disp(pMWU_corrFR_all)
 disp(pMWU_corrFR_all<0.05)
-saveas(f, append(save_path, 'figure7_FFsupp.png'))
+saveas(f, append(save_path, 'figure_spatial_FFsupp.png'))

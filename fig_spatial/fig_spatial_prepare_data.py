@@ -1,5 +1,5 @@
 from fig_taskmodulation.fig_taskmodulation_prepare_data import prepare_data as prepare_data_fig_taskmodulation
-from figure_spatial.figure_spatial_load_data import load_dataframe, load_data
+from fig_spatial.fig_spatial_load_data import load_dataframe, load_data
 from iblutil.numerical import ismember
 from one.api import ONE
 from reproducible_ephys_functions import (get_insertions, save_dataset_info, save_figure_path, BRAIN_REGIONS, combine_regions,
@@ -39,14 +39,14 @@ def prepare_data(insertions, one, recompute=False, **kwargs):
                 data = load_data()
                 return df, data
 
-    df, data = prepare_data_fig_taskmodulation(insertions, one, figure='figure_spatial', recompute=True, **kwargs)
+    df, data = prepare_data_fig_taskmodulation(insertions, one, figure='fig_spatial', recompute=True, **kwargs)
 
     df_filt = filter_recordings(df, min_regions=0, min_neuron_region=-1, min_lab_region=0, min_rec_lab=0)
     df_filt = df_filt[df_filt['include'] == 1]
 
-    df_filt.to_csv(save_data_path(figure='figure_spatial').joinpath('figure_spatial_dataframe_filt.csv'))
+    df_filt.to_csv(save_data_path(figure='fig_spatial').joinpath('fig_spatial_dataframe_filt.csv'))
 
-    save_figure_path(figure='figure_spatial')
+    save_figure_path(figure='fig_spatial')
 
     # Compute the centre of mass of the different regions
     planned_ins = one.alyx.rest('trajectories', 'list', probe_insertion=insertions[0]['probe_insertion'], provenance='Planned')[0]
@@ -67,7 +67,7 @@ def prepare_data(insertions, one, recompute=False, **kwargs):
         data['z'].append(cent_of_mass_ref[2])
 
     df_reg = pd.DataFrame.from_dict(data)
-    df_reg.to_csv(save_data_path(figure='figure_spatial').joinpath('figure_spatial_cent_of_mass.csv'))
+    df_reg.to_csv(save_data_path(figure='fig_spatial').joinpath('fig_spatial_cent_of_mass.csv'))
 
     return df, data
 
@@ -77,4 +77,4 @@ if __name__ == '__main__':
     one.record_loaded = True
     insertions = get_insertions(level=0, recompute=True, one=one, freeze='freeze_2024_03')
     prepare_data(insertions, one=one, recompute=True, **default_params)
-    save_dataset_info(one, figure='figure_spatial')
+    save_dataset_info(one, figure='fig_spatial')

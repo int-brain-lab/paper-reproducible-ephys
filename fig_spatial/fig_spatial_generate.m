@@ -1,4 +1,4 @@
-function [] = Fig3Dplots_generate(CSVfile, BrainRegion, save_path)
+function [] = fig_spatial_generate(CSVfile, BrainRegion, save_path)
 
 TM_test1 = 'pre_move'; %'start_to_move'; %'post_move'; %'post_stim'; %'trial'; %
 TM_test2 = 'pre_move_lr'; %'start_to_move'; %'post_reward';%'post_stim';%
@@ -90,22 +90,10 @@ R2 = mdlFR.Rsquared;
 %Coefficient of determination and adjusted coefficient of determination, respectively.
 disp(R2)
 
-% % Linear regression model for TM data:
-% disp(['Linear Regression Model of TM ', TM_test1, ' Test'])
-% mdlTM1.Coefficients
-% R2 = mdlTM1.Rsquared; 
-% disp(R2)
-% 
-% disp(['Linear Regression Model of TM ', TM_test2, ' Test'])
-% mdlTM2.Coefficients
-% R2 = mdlTM2.Rsquared; 
-% disp(R2)
-
 
 %% Display signif. difference in x, y, z, WF amp, and WF p2t duration:
 disp({'x','y','z','amp','p2t dur'})
 disp([pMWU_corrFR; pMWU_corrTM1; pMWU_corrTM2])
 disp([pMWU_corrFR<0.05; pMWU_corrTM1<0.05; pMWU_corrTM2<0.05])
-
 
 %saveas(f, append(save_path, 'figureSpatial_', BrainRegion, '.png'))

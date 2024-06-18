@@ -241,27 +241,11 @@ for spHist=4:5
         'edgecolor', [1, 0.41, 0.16],...
         'normalization', 'probability', 'DisplayStyle', 'stairs', 'linewidth',2, 'edgealpha', 0.8); hold on;
     hold on
-    %     h2=histogram(Sample2(:,spHist),...
-    %         'normalization', 'probability',...
-    %         'binedges', get(h1, 'binedges'), 'edgecolor', [0.5, 0.5, 0.5],...
-    %         'facealpha', 0.4, 'edgealpha', 0.6, 'DisplayStyle', 'stairs', 'linewidth',4);
     h2=histogram(Sample2(:,spHist),...
         'normalization', 'probability',...
         'binwidth', get(h1, 'binwidth'), 'edgecolor', [0.5, 0.5, 0.5],...
         'facealpha', 0.4, 'edgealpha', 0.6, 'DisplayStyle', 'stairs', 'linewidth',3);
-    
-    %Note for hist colors:
-    %Task modulated:  'edgecolor', [1, 0.41, 0.16]
-    %Non-modulated:  'edgecolor', [0.5, 0.5, 0.5]
-    %Outlier firing: 'edgecolor', [1, 0.53, 0]
-    %Normal firing: 'edgecolor', [0.02, 0.31, 0.51]
-    
-    
-    %     if max(Sample1(:,spHist)) < max(Sample2(:,spHist))
-    %         disp('error: Fix plotting axes') %if 'error', fix plotting:
-    %         %i.e., 'binwidth' vs 'binedges'
-    %         break
-    %     end
+
     
     if spHist==4
         xlabel('WF Amp.')
@@ -284,7 +268,6 @@ for st = 1:size(Sample1,2)
     [pMWU(st),hMWU(st)] = ranksum(Sample1(:,st), Sample2(:,st));
 end
 %disp({'x','y','z','amp', 'dur'})
-%disp(pMWU*size(Sample1,2)) %Bonferroni correction (since 5 features are being compared: x,y,x,amp,duration)
 pMWU_corrected = pMWU*size(Sample1,2);
 
 

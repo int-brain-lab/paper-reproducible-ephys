@@ -1,17 +1,12 @@
 clear, close all, clc
-%data_path = '/Users/mt/Downloads/FlatIron/paper_repro_ephys_data/fig_taskmodulation/';
-data_path = '/Users/mt/Downloads/FlatIron/paper_repro_ephys_data/figure7/';
+data_path = '/Users/mt/Downloads/FlatIron/paper_repro_ephys_data/figure_spatial/';
 
-save_path = '/Users/mt/Downloads/FlatIron/paper_repro_ephys_data/figure7/figures_2023/';
+save_path = '/Users/mt/Downloads/FlatIron/paper_repro_ephys_data/figure_spatial/figures/';
 
-%%%CSVfile = [data_path, 'fig_taskmodulation_dataframe.csv'];
-%%%%%CSVfile = [data_path, 'figure7_dataframe.csv']; %'figure5_dataframe.csv'];
-%CSVfile = [data_path, 'figure7_dataframe_filtForFig5Permut.csv']; %'figure6_dataframe.csv'];
-CSVfile = [data_path, 'figure7_dataframe_filt.csv']; 
+CSVfile = [data_path, 'figure_spatial_dataframe_filt.csv']; 
 
 
 BrainRegions = ["PPC", "CA1", "DG", "LP", "PO"];
-%BrainRegions = ["LP"];%["PPC", "LP", "PO"];
 ThreshRegion = [0.35, 0.35, 0.35, 0.35, 0.35];
 
 countBR = 0;
