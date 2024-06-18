@@ -18,10 +18,13 @@ from fig_mtnn.fig_mtnn_load_data import download_priors, download_glm_hmm
 
 import matplotlib.pyplot as plt
 
+from collections import defaultdict
+
 data_path = save_data_path(figure='fig_mtnn')
 
 # rng = np.random.default_rng(seed=0b01101001 + 0b01100010 + 0b01101100)
-rng = np.random.default_rng(seed=10234567)
+# rng = np.random.default_rng(seed=10234567)
+rng = np.random.default_rng(seed=6671015)
 alphas = (0.1, 0.5, 1.0, 3.0, 5.0, 7.0, 10.0)
 
 def prepare_data(one):
@@ -43,9 +46,9 @@ def prepare_mtnn_data(eids, insertions, one, brain_atlas=None):
     trial_number_list = []
     session_list = []
     session_count = {('hoferlab', 'mrsicflogellab'): 0,
-                     'mainenlab': 0, 'churchlandlab': 0,
-                     'cortexlab': 0, 'danlab': 0,
-                     'angelakilab': 0, 'churchlandlab_ucla': 0, 'steinmetzlab': 0}
+                     ('mainenlab',): 0, ('churchlandlab',): 0,
+                     ('cortexlab',): 0, ('danlab',): 0,
+                     ('angelakilab',): 0, ('churchlandlab_ucla',): 0, ('steinmetzlab',): 0}
 
     for i, ins in enumerate(insertions):
         feature, output, cluster_numbers, trial_numbers = featurize(i, ins, one, session_count, brain_atlas=brain_atlas)
@@ -93,8 +96,8 @@ def prepare_mtnn_data(eids, insertions, one, brain_atlas=None):
                                                                                 output_list[i],
                                                                                 cluster_number_list[i],
                                                                                 neuron_id_start=total_n_neurons,
-                                                                                threshold=3.0,#5.0,
-                                                                                max_n_neurons=30)#15)
+                                                                                threshold=5.0,
+                                                                                max_n_neurons=500)#15)
         total_n_neurons += feature_subset.shape[0]
         print('{}/{} remaining'.format(feature_subset.shape[0], feature_list[i].shape[0]))
         print('{}/{} removed'.format(feature_list[i].shape[0] - feature_subset.shape[0], feature_list[i].shape[0]))
@@ -109,14 +112,21 @@ def prepare_mtnn_data(eids, insertions, one, brain_atlas=None):
     print('feature_concat shape: {}'.format(feature_concat.shape))
     print(f'number of neurons left: {total_n_neurons}')
 
-    preprocessed_feature = preprocess_feature(feature_concat)
-    print(preprocessed_feature.shape)
+#     preprocessed_feature = preprocess_feature(feature_concat)
+#     print(preprocessed_feature.shape)
 
-    preprocessed_feature_list = []
+#     preprocessed_feature_list = []
+#     idx = 0
+#     for sh in shape_list:
+#         n = sh[0] * sh[1]
+#         preprocessed_feature_list.append(preprocessed_feature[idx:idx + n].reshape(sh))
+#         idx += n
+
+    feature_list = []
     idx = 0
     for sh in shape_list:
         n = sh[0] * sh[1]
-        preprocessed_feature_list.append(preprocessed_feature[idx:idx + n].reshape(sh))
+        feature_list.append(feature_concat[idx:idx + n].reshape(sh))
         idx += n
 
     train_shape_list = []
@@ -145,7 +155,7 @@ def prepare_mtnn_data(eids, insertions, one, brain_atlas=None):
         except:
             print(session_list[i].tolist()['session']['id'])
 
-        n_trials = preprocessed_feature_list[i].shape[1]
+        n_trials = feature_list[i].shape[1]
         n_test = int(n_trials * 0.2)
         n_train = int((n_trials - n_test) * 0.8)
         n_val = n_trials - n_train - n_test
@@ -174,13 +184,25 @@ def prepare_mtnn_data(eids, insertions, one, brain_atlas=None):
         val_trial_list.append(trial_number_list[i][val_bool])
         test_trial_list.append(trial_number_list[i][test_bool])
 
-        train_feature.append(preprocessed_feature_list[i][:, train_bool].reshape((-1,) + sh[-2:]))
-        val_feature.append(preprocessed_feature_list[i][:, val_bool].reshape((-1,) + sh[-2:]))
-        test_feature.append(preprocessed_feature_list[i][:, test_bool].reshape((-1,) + sh[-2:]))
+#         train_feature.append(preprocessed_feature_list[i][:, train_bool].reshape((-1,) + sh[-2:]))
+#         val_feature.append(preprocessed_feature_list[i][:, val_bool].reshape((-1,) + sh[-2:]))
+#         test_feature.append(preprocessed_feature_list[i][:, test_bool].reshape((-1,) + sh[-2:]))
+        train_feature.append(feature_list[i][:, train_bool].reshape((-1,) + sh[-2:]))
+        val_feature.append(feature_list[i][:, val_bool].reshape((-1,) + sh[-2:]))
+        test_feature.append(feature_list[i][:, test_bool].reshape((-1,) + sh[-2:]))
 
         train_output.append(output_subset_list[i][:, train_bool].reshape(-1, sh[-2]))
         val_output.append(output_subset_list[i][:, val_bool].reshape(-1, sh[-2]))
         test_output.append(output_subset_list[i][:, test_bool].reshape(-1, sh[-2]))
+        
+        
+    # standardize data
+    train_feature = np.concatenate(train_feature)
+    val_feature = np.concatenate(val_feature)
+    test_feature = np.concatenate(test_feature)
+    train_feature, xyz_stat, dlc_stat, wheel_stat, max_ptp_stat, wf_width_stat = preprocess_feature(train_feature)
+    val_feature, _, _, _, _, _ = preprocess_feature(val_feature, xyz_stat, dlc_stat, wheel_stat, max_ptp_stat, wf_width_stat)
+    test_feature, _, _, _, _, _ = preprocess_feature(test_feature, xyz_stat, dlc_stat, wheel_stat, max_ptp_stat, wf_width_stat)
 
     save_path = data_path.joinpath('mtnn_data')
     save_path.mkdir(exist_ok=True, parents=True)
@@ -206,9 +228,9 @@ def prepare_mtnn_data(eids, insertions, one, brain_atlas=None):
     np.save(save_path_val.joinpath('trials.npy'), np.asarray(val_trial_list, dtype=object))
     np.save(save_path_test.joinpath('trials.npy'), np.asarray(test_trial_list, dtype=object))
 
-    np.save(save_path_train.joinpath('feature.npy'), np.concatenate(train_feature))
-    np.save(save_path_val.joinpath('feature.npy'), np.concatenate(val_feature))
-    np.save(save_path_test.joinpath('feature.npy'), np.concatenate(test_feature))
+    np.save(save_path_train.joinpath('feature.npy'), train_feature)
+    np.save(save_path_val.joinpath('feature.npy'), val_feature)
+    np.save(save_path_test.joinpath('feature.npy'), test_feature)
 
     np.save(save_path_train.joinpath('output.npy'), np.concatenate(train_output))
     np.save(save_path_val.joinpath('output.npy'), np.concatenate(val_output))
@@ -253,6 +275,7 @@ def prepare_glm_and_simulated_data(insertions, one, brain_atlas=None):
         trial_idx = np.concatenate([train_trial_ids[i], val_trial_ids[i], test_trial_ids[i]])
         trial_idx = np.sort(trial_idx)
         trialsdf = trialsdf.loc[trial_idx]
+#         print(keeptrials.sum(), len(trialsdf))
         trialsdf_list.append(trialsdf)
 
         pLeft = np.load(save_data_path(figure='fig_mtnn').joinpath('priors', f'prior_{eid}.npy'))
@@ -270,6 +293,8 @@ def prepare_glm_and_simulated_data(insertions, one, brain_atlas=None):
 
         spk_times_list.append(spk_times)
         clus_list.append(selected_clus)
+#         print(eid, clusters[i])
+#         print(eid, np.unique(selected_clus))
 
     design_list = []
     for i, trialsdf in enumerate(trialsdf_list):
@@ -317,6 +342,7 @@ def prepare_glm_and_simulated_data(insertions, one, brain_atlas=None):
     for i in range(len(test_score_list)):
         scores.append(test_score_list[i].loc[cluster_list[i]].to_numpy())
     scores = np.concatenate(scores)
+    
     # plt.figure(figsize=(5,5))
     # plt.scatter(scores, scores)
     # plt.axvline(np.median(scores))
@@ -325,9 +351,9 @@ def prepare_glm_and_simulated_data(insertions, one, brain_atlas=None):
     glm_score_save_path = data_path.joinpath('glm_data')
     glm_score_save_path.mkdir(exist_ok=True, parents=True)
     np.save(glm_score_save_path.joinpath('glm_scores.npy'), scores)
-
+    
     # Now prepare simulated data
-    num_trials = 400 #170 #330
+    num_trials = 500 #170 #330
     n_test = int(num_trials*0.2)
     n_train = int((num_trials-n_test)*0.8)
     n_val = num_trials - n_train - n_test
@@ -368,10 +394,10 @@ def prepare_glm_and_simulated_data(insertions, one, brain_atlas=None):
 
     scales_dict = {}
 
-    for i, ins in notebook.tqdm(enumerate(insertions)):
-        print('processing session {}'.format(eid))
-
+    clus_to_remove = defaultdict(list)
+    for i, ins in enumerate(insertions):
         eid = ins['session']['id']
+        print('processing session {}'.format(eid))
 
         trialsdf = trialsdf_list[i]
         nglm = fit_glm_lists[i]
@@ -417,15 +443,19 @@ def prepare_glm_and_simulated_data(insertions, one, brain_atlas=None):
 
         print(f'total number of units: {len(clus)}')
 
-        for j, clu in notebook.tqdm(enumerate(clus)):
-
-            stimkernL = weights['stimonL'].loc[clu].to_numpy() * (1/binwidth)
-            stimkernR = weights['stimonR'].loc[clu].to_numpy() * (1/binwidth)
-            fdbkkern1 = weights['correct'].loc[clu].to_numpy() * (1/binwidth)
-            fdbkkern2 = weights['incorrect'].loc[clu].to_numpy() * (1/binwidth)
-            fmovekern = weights['fmove'].loc[clu].to_numpy() * (1/binwidth)
-            wheelkern = weights['wheel'].loc[clu].to_numpy() * (1/binwidth)
-            intercept = intercepts.loc[clu] * (1/binwidth) 
+        for j, clu in enumerate(clus):
+            
+            try:
+                stimkernL = weights['stimonL'].loc[clu].to_numpy() * (1/binwidth)
+                stimkernR = weights['stimonR'].loc[clu].to_numpy() * (1/binwidth)
+                fdbkkern1 = weights['correct'].loc[clu].to_numpy() * (1/binwidth)
+                fdbkkern2 = weights['incorrect'].loc[clu].to_numpy() * (1/binwidth)
+                fmovekern = weights['fmove'].loc[clu].to_numpy() * (1/binwidth)
+                wheelkern = weights['wheel'].loc[clu].to_numpy() * (1/binwidth)
+                intercept = intercepts.loc[clu] * (1/binwidth) 
+            except:
+                clus_to_remove[eid].append(clu)
+                continue
 
             ret = simulate_cell((stimkernL,stimkernR), (fdbkkern1,fdbkkern2),
                                 fmovekern, wheelkern,
@@ -488,6 +518,8 @@ def prepare_glm_and_simulated_data(insertions, one, brain_atlas=None):
             session_simulated_spkidx_list.append(raster[None])
         simulated_output_list.append(np.concatenate(session_simulated_spkidx_list, axis=0))
         simulated_feature_list.append(np.concatenate(session_simulated_feature_list, axis=0))
+    print(clus_to_remove)
+    
     simulated_glm_leave_one_out = np.concatenate(simulated_glm_leave_one_out, axis=0)
     simulated_glm_scores = pd.concat(simulated_glm_scores)
 
@@ -712,8 +744,6 @@ def prepare_glm_data_full_mtnn_cov(insertions, one, brain_atlas=None):
     glm_score_save_path = data_path.joinpath('glm_data')
     glm_score_save_path.mkdir(exist_ok=True, parents=True)
     np.save(glm_score_save_path.joinpath('glm_scores_full_mtnn_cov.npy'), scores)
-    
-    
 
 if __name__ == '__main__':
     one = ONE()

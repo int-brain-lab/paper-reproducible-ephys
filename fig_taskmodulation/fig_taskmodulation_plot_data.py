@@ -111,7 +111,7 @@ def plot_main_figure():
                                              wspace=0.3),
           'panel_F_3': fg.place_axes_on_grid(fig, xspan=[0.73, 1.], yspan=[0.51, .69],
                                              wspace=0.3),
-          'panel_F_2': fg.place_axes_on_grid(fig, xspan=[0.64, 1.], yspan=[0.7, .98],
+          'panel_F_2': fg.place_axes_on_grid(fig, xspan=[0.64, 1.], yspan=[0.735, .98],
                                              wspace=0.3)}
           # 'panel_F': fg.place_axes_on_grid(fig, xspan=[0.08, .99], yspan=[0.75, .91],
           #                                  wspace=0.3)}
@@ -156,7 +156,7 @@ def plot_main_figure():
     print(f'Saving figures to {fig_path}')
     plt.savefig(fig_path.joinpath('fig_taskmodulation_combined.png'), bbox_inches='tight', pad_inches=0)
     plt.savefig(fig_path.joinpath('fig_taskmodulation_combined.pdf'), bbox_inches='tight', pad_inches=0)
-    plt.show()
+    plt.close()
 
 
 
@@ -480,7 +480,7 @@ def plot_panel_task_modulated_neurons(specific_tests=None, ax=None, save=True):
                 # if i == 0:
                 #     ax[i].set_title('{} test'.format(shortened_tests[test]))
                 if i == 4:
-                    ax[i].set_xticks([0, 1], [0, 1])
+                    ax[i].set_xticks([0, 1], [0, 100])  # we are plotting percentages
                     ax[i].set_xlabel('% modulated neurons ({} test)'.format(shortened_tests[test]))
         if specific_tests is None:
             plt.suptitle(tests[test], size=22)
@@ -526,6 +526,9 @@ def plot_panel_permutation(ax=None, n_permut=20000, qc='pass', n_cores=8):
     ax.set_xticks([0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5])
     ax.set_xticklabels(test_names, ha='center', rotation=90)  # rotation=30, ha='right')
     #ax.set_title('Task-driven activity: Comparison across labs', loc='left', pad=15)
+
+    ax.set_title("% modulated neurons", size='small')
+    ax.annotate("Distribution of F.R. modulations", (0.5, 0.485), horizontalalignment='center', xycoords='axes fraction', size='small')
 
     return p_vals
 
@@ -993,9 +996,8 @@ if __name__ == '__main__':
     #         subjects = vals.index.get_level_values('subject')
     #         data = vals.values
     #         p = permut_test(data, metric=distribution_dist_approx_max, labels1=np.array(labs), labels2=np.array(subjects), n_permut=10000, n_cores=8)
-
     #         if p == 0.:
-    #             p = 1e-8
+    #             p = 1e-12
     #         results = pd.concat((results, pd.DataFrame(index=[results.shape[0] + 1],
     #                                                    data={'test': test, 'region': br, 'p_value_permut': p})))
     
