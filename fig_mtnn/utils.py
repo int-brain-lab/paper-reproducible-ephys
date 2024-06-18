@@ -212,55 +212,74 @@ def get_region_colors():
     region_colors = {'LP': 'k', 'CA1': 'b', 'DG': 'r', 'PPC': 'g', 'PO': 'y'}
     return region_colors
 
+def clusters_to_skip_dict():
+    skip_dict = {'6f09ba7e-e3ce-44b0-932b-c003fb44fb89': [298, 736], 
+                 'dac3a4c1-b666-4de0-87e8-8c514483cacf': [482, 530], 
+                 '56b57c38-2699-4091-90a8-aba35103155e': [1580], 
+                 '3638d102-e8b6-4230-8742-e548cd87a949': [457, 508, 531, 591, 593], 
+                 'a4a74102-2af5-45dc-9e41-ef7f5aed88be': [509, 1256], 
+                 '88224abb-5746-431f-9c17-17d7ef806e6a': [1353], 
+                 'c7248e09-8c0d-40f2-9eb4-700a8973d8c8': [1222, 1291, 1314, 1605, 1697], 
+                 '4b7fbad4-f6de-43b4-9b15-c7c7ef44db4b': [1561], 
+                 'f312aaec-3b6f-44b3-86b4-3a0c119c0438': [1181], 
+                 'd04feec7-d0b7-4f35-af89-0232dd975bf0': [472, 808, 822, 854, 1190, 1481], 
+                 '8928f98a-b411-497e-aa4b-aa752434686d': [1118, 1364, 1458, 1579, 1584, 1585, 1620], 
+                 'db4df448-e449-4a6f-a0e7-288711e7a75a': [1217, 1533], 
+                 '54238fd6-d2d0-4408-b1a9-d19d24fd29ce': [1192], 
+                 'b03fbc44-3d8e-4a6c-8a50-5ea3498568e0': [843, 1305, 1325, 1445, 1568], 
+                 '51e53aff-1d5d-4182-a684-aba783d50ae5': [1557], 
+                 'a8a8af78-16de-4841-ab07-fde4b5281a03': [1375], 
+                 '61e11a11-ab65-48fb-ae08-3cb80662e5d6': [254, 1558, 1566], 
+                 'ebce500b-c530-47de-8cb1-963c552703ea': [544, 1593], 
+                 '6899a67d-2e53-4215-a52a-c7021b5da5d4': [399], 
+                 '15b69921-d471-4ded-8814-2adad954bcd8': [1353], 
+                 '3bcb81b4-d9ca-4fc9-a1cd-353a966239ca': [1350], 
+                 'f115196e-8dfe-4d2a-8af3-8206d93c1729': [1086, 1380, 1530]}
+    
+    return skip_dict
 
 def get_mtnn_eids():
 
     eids = [
+        '6f09ba7e-e3ce-44b0-932b-c003fb44fb89',  # SWC(H) *
         'dac3a4c1-b666-4de0-87e8-8c514483cacf',  # SWC(H) *
         '56b57c38-2699-4091-90a8-aba35103155e',  # SWC(M) *
-        '3638d102-e8b6-4230-8742-e548cd87a949',  # SWC(M) *
-        '7cb81727-2097-4b52-b480-c89867b5b34c',  # SWC(M) *
+        '3638d102-e8b6-4230-8742-e548cd87a949',  # SWC(M)
         
         'a4a74102-2af5-45dc-9e41-ef7f5aed88be',  # CCU *
-#         '746d1902-fa59-4cab-b0aa-013be36060d5',  # CCU
         '88224abb-5746-431f-9c17-17d7ef806e6a',  # CCU *
-#         'ee40aece-cffd-4edb-a4b6-155f158c666a',  # CCU
         '72cb5550-43b4-4ef0-add5-e4adfdfb5e02',  # CCU *
         'c7248e09-8c0d-40f2-9eb4-700a8973d8c8',  # CCU *
         
-        'dda5fc59-f09a-4256-9fb5-66c67667a466',  # CSHL(C) *
-        '4b7fbad4-f6de-43b4-9b15-c7c7ef44db4b',  # CSHL(C) *
-        'f312aaec-3b6f-44b3-86b4-3a0c119c0438',  # CSHL(C) *
-        '4b00df29-3769-43be-bb40-128b1cba6d35',  # CSHL(C) *
+        'dda5fc59-f09a-4256-9fb5-66c67667a466',  # CSHL(C)
+        '4b7fbad4-f6de-43b4-9b15-c7c7ef44db4b',  # CSHL(C)
+        'f312aaec-3b6f-44b3-86b4-3a0c119c0438',  # CSHL(C)
+        '4b00df29-3769-43be-bb40-128b1cba6d35',  # CSHL(C)
 
-        '781b35fd-e1f0-4d14-b2bb-95b7263082bb',  # UCL *
-        '0a018f12-ee06-4b11-97aa-bbbff5448e9f',  # UCL *
-#         'aad23144-0e52-4eac-80c5-c4ee2decb198',  # UCL
-        'e45481fa-be22-4365-972c-e7404ed8ab5a',  # UCL *
-#         'd04feec7-d0b7-4f35-af89-0232dd975bf0',  # UCL
-#         '1b715600-0cbc-442c-bd00-5b0ac2865de1',  # UCL
-#         'c7bf2d49-4937-4597-b307-9f39cb1c7b16',  # UCL
+        '3f859b5c-e73a-4044-b49e-34bb81e96715',  # UCL *
+        'd04feec7-d0b7-4f35-af89-0232dd975bf0',  # UCL *
+        'c7bf2d49-4937-4597-b307-9f39cb1c7b16',  # UCL *
         '8928f98a-b411-497e-aa4b-aa752434686d',  # UCL *
 
-        'db4df448-e449-4a6f-a0e7-288711e7a75a',  # Berkeley *
-        'd23a44ef-1402-4ed7-97f5-47e9a7a504d9',  # Berkeley *
-        '54238fd6-d2d0-4408-b1a9-d19d24fd29ce',  # Berkeley *
-        'b03fbc44-3d8e-4a6c-8a50-5ea3498568e0',  # Berkeley *
+        'db4df448-e449-4a6f-a0e7-288711e7a75a',  # Berkeley
+        'd23a44ef-1402-4ed7-97f5-47e9a7a504d9',  # Berkeley
+        '54238fd6-d2d0-4408-b1a9-d19d24fd29ce',  # Berkeley
+        'b03fbc44-3d8e-4a6c-8a50-5ea3498568e0',  # Berkeley
         
         '51e53aff-1d5d-4182-a684-aba783d50ae5',  # NYU *
-        'f140a2ec-fd49-4814-994a-fe3476f14e66',  # NYU *
-        'a8a8af78-16de-4841-ab07-fde4b5281a03',  # NYU *
+        'f140a2ec-fd49-4814-994a-fe3476f14e66',  # NYU
+        'a8a8af78-16de-4841-ab07-fde4b5281a03',  # NYU
         '61e11a11-ab65-48fb-ae08-3cb80662e5d6',  # NYU *
 
-        'dc962048-89bb-4e6a-96a9-b062a2be1426',  # UCLA *
+        'ebce500b-c530-47de-8cb1-963c552703ea',  # UCLA *
         '6899a67d-2e53-4215-a52a-c7021b5da5d4',  # UCLA *
         '15b69921-d471-4ded-8814-2adad954bcd8',  # UCLA *
         '824cf03d-4012-4ab1-b499-c83a92c5589e',  # UCLA *
         
-        '3bcb81b4-d9ca-4fc9-a1cd-353a966239ca',  # UW *
-        'f115196e-8dfe-4d2a-8af3-8206d93c1729',  # UW *
-        '9b528ad0-4599-4a55-9148-96cc1d93fb24',  # UW *
-        '3e6a97d3-3991-49e2-b346-6948cb4580fb',  # UW *
+        '3bcb81b4-d9ca-4fc9-a1cd-353a966239ca',  # UW
+        'f115196e-8dfe-4d2a-8af3-8206d93c1729',  # UW
+        '9b528ad0-4599-4a55-9148-96cc1d93fb24',  # UW
+        '3e6a97d3-3991-49e2-b346-6948cb4580fb',  # UW
     ]
     
     return eids
@@ -333,8 +352,13 @@ def featurize(i, trajectory, one, session_counter, bin_size=0.05, align_event='m
     lab_number_map = get_lab_number_map()
     acronym_dict = get_acronym_dict()
     mtnn_eids = get_mtnn_eids()
-
+    clusters_to_skip_dict_all = clusters_to_skip_dict()
+ 
     eid = trajectory['session']['id']
+    try:
+        clusters_to_skip = clusters_to_skip_dict_all[eid]
+    except:
+        clusters_to_skip = []
     subject = trajectory['session']['subject']
     probe = trajectory['probe_name']
     date_number = trajectory['session']['start_time'].split('T')[0]+'-00'+str(trajectory['session']['number'])
@@ -355,6 +379,7 @@ def featurize(i, trajectory, one, session_counter, bin_size=0.05, align_event='m
 
     # Find clusters that are in the repeated site brain regions and that have been labelled as good
     cluster_idx = np.sort(np.where(np.bitwise_and(np.isin(clusters['rep_site_acronym'], BRAIN_REGIONS), clusters['label'] == 1))[0])
+    cluster_idx = cluster_idx[~np.isin(cluster_idx, clusters_to_skip)]
     cluster_id = clusters['cluster_id'][cluster_idx]
     # Find the index of spikes that belong to the chosen clusters
     spike_idx = np.isin(spikes['clusters'], cluster_idx)
@@ -681,45 +706,74 @@ def select_high_fr_neurons(feature, output, clusters,
     return feature_subset, output[select][select2], clusters[select][select2]
 
 
-def preprocess_feature(feature_concat):
+def preprocess_feature(feature_concat,
+                       xyz_stat=None,
+                       dlc_stat=None,
+                       wheel_stat=None,
+                       max_ptp_stat=None,
+                       wf_width_stat=None):
     # normalize truncated_feature: dlc features + xyz location
     # first normalize xyz
-    x_max = feature_concat[:, :, xyz_offset].max()
-    x_min = feature_concat[:, :, xyz_offset].min()
-    y_max = feature_concat[:, :, xyz_offset + 1].max()
-    y_min = feature_concat[:, :, xyz_offset + 1].min()
-    z_max = feature_concat[:, :, xyz_offset + 2].max()
-    z_min = feature_concat[:, :, xyz_offset + 2].min()
+    if xyz_stat is None:
+        x_max = feature_concat[:, :, xyz_offset].max()
+        x_min = feature_concat[:, :, xyz_offset].min()
+        y_max = feature_concat[:, :, xyz_offset + 1].max()
+        y_min = feature_concat[:, :, xyz_offset + 1].min()
+        z_max = feature_concat[:, :, xyz_offset + 2].max()
+        z_min = feature_concat[:, :, xyz_offset + 2].min()
+        xyz_stat = (x_max, x_min, y_max, y_min, z_max, z_min)
+    else:
+        x_max, x_min, y_max, y_min, z_max, z_min = xyz_stat
 
     feature_concat[:, :, xyz_offset] = 0.1 + 0.9 * (feature_concat[:, :, xyz_offset] - x_min) / (x_max - x_min)
     feature_concat[:, :, xyz_offset + 1] = 0.1 + 0.9 * (feature_concat[:, :, xyz_offset + 1] - y_min) / (y_max - y_min)
     feature_concat[:, :, xyz_offset + 2] = 0.1 + 0.9 * (feature_concat[:, :, xyz_offset + 2] - z_min) / (z_max - z_min)
 
+    if dlc_stat is None:
+        tmp_dlc_stat = []
     # next normalize dlc features
     for i in range(stimulus_offset - paw_offset):
         idx = paw_offset + i
 
-        feature_min = feature_concat[:, :, idx].min()
-        feature_max = feature_concat[:, :, idx].max()
+        if dlc_stat is None:
+            feature_min = feature_concat[:, :, idx].min()
+            feature_max = feature_concat[:, :, idx].max()
+            tmp_dlc_stat.append((feature_min, feature_max))
+        else:
+            feature_min, feature_max = dlc_stat[i]
 
         feature_concat[:, :, idx] = 0.1 + 0.9 * (feature_concat[:, :, idx] - feature_min) / (feature_max - feature_min)
+    if dlc_stat is None:
+        dlc_stat = tmp_dlc_stat
 
     # next normalize wheel
-    wheel_min = feature_concat[:, :, wheel_offset].min()
-    wheel_max = feature_concat[:, :, wheel_offset].max()
+    if wheel_stat is None:
+        wheel_min = feature_concat[:, :, wheel_offset].min()
+        wheel_max = feature_concat[:, :, wheel_offset].max()
+        wheel_stat = (wheel_min, wheel_max)
+    else:
+        wheel_min, wheel_max = wheel_stat
 
     feature_concat[:, :, wheel_offset] = -1 + 2 * (feature_concat[:, :, wheel_offset] - wheel_min) / (wheel_max - wheel_min)
 
     # next normalize max_ptp
-    max_ptp_min = feature_concat[:, :, max_ptp_offset].min()
-    max_ptp_max = feature_concat[:, :, max_ptp_offset].max()
+    if max_ptp_stat is None:
+        max_ptp_min = feature_concat[:, :, max_ptp_offset].min()
+        max_ptp_max = feature_concat[:, :, max_ptp_offset].max()
+        max_ptp_stat = (max_ptp_min, max_ptp_max)
+    else:
+        max_ptp_min, max_ptp_max = max_ptp_stat
 
     feature_concat[:, :, max_ptp_offset] = 0.1 + 0.9 * (feature_concat[:, :, max_ptp_offset] - max_ptp_min) / (
                 max_ptp_max - max_ptp_min)
 
     # next normalize wf_width
-    wf_width_min = feature_concat[:, :, wf_width_offset].min()
-    wf_width_max = feature_concat[:, :, wf_width_offset].max()
+    if wf_width_stat is None:
+        wf_width_min = feature_concat[:, :, wf_width_offset].min()
+        wf_width_max = feature_concat[:, :, wf_width_offset].max()
+        wf_width_stat = (wf_width_min, wf_width_max)
+    else:
+        wf_width_min, wf_width_max = wf_width_stat
 
     feature_concat[:, :, wf_width_offset] = 0.1 + 0.9 * (feature_concat[:, :, wf_width_offset] - wf_width_min) / (
                 wf_width_max - wf_width_min)
@@ -728,7 +782,7 @@ def preprocess_feature(feature_concat):
     noise = rng.normal(loc=0.0, scale=1.0, size=feature_concat.shape[:-1])
     feature_concat[:, :, noise_offset] = noise
 
-    return feature_concat
+    return feature_concat, xyz_stat, dlc_stat, wheel_stat, max_ptp_stat, wf_width_stat
 
 def load_trials_df(eid, one=None, maxlen=None, t_before=0., t_after=0., ret_wheel=False,
                    ret_abswheel=False, wheel_binsize=0.02, addtl_types=[], 

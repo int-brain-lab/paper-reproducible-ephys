@@ -6,16 +6,19 @@ from torch.utils.data import Dataset, DataLoader
 import numpy as np
 from sklearn.metrics import r2_score
 from scipy.stats import pearsonr
-from tqdm import notebook
+from tqdm import notebook, tqdm
 
 from fig_mtnn.utils import static_bool, cov_idx_dict, sim_static_bool, sim_cov_idx_dict
 from reproducible_ephys_functions import save_data_path
 
 import random
 
-torch.manual_seed(7358)
-np.random.seed(981414)
-random.seed(55777)
+# torch.manual_seed(7358)
+torch.manual_seed(73587)
+# np.random.seed(981414)
+# random.seed(55777)
+np.random.seed(55566)
+random.seed(515)
 
 def seed_worker(worker_id):
     worker_seed = torch.initial_seed() % 2**32
@@ -23,7 +26,8 @@ def seed_worker(worker_id):
     random.seed(worker_seed)
 
 g = torch.Generator()
-g.manual_seed(993342310)
+# g.manual_seed(993342310)
+g.manual_seed(99334231)
 
 class MTNN(nn.Module):
     def __init__(self, n_neurons, 
@@ -38,6 +42,7 @@ class MTNN(nn.Module):
         self.hidden_dim_static = hidden_dim_static
         self.hidden_dim_dynamic = hidden_dim_dynamic
         self.n_layers = n_layers
+        self.output_size = output_size
         
         self.fc_static1 = nn.Linear(input_size_static, hidden_dim_static, bias=static_bias)
         self.fc_static2 = nn.Linear(hidden_dim_static, hidden_dim_static, bias=static_bias)
@@ -53,10 +58,30 @@ class MTNN(nn.Module):
                           bias=dynamic_bias)
         
         # Final fully connected layers
+        # fc_list = []
+        # for i in range(n_neurons):
+        #     fc_list.append(nn.Linear(hidden_dim_dynamic*2+hidden_dim_static, output_size))
+        # self.fc_list = nn.ModuleList(fc_list)
+
+        # Final fully connected layers
         fc_list = []
+        fc_bias_list = []
         for i in range(n_neurons):
-            fc_list.append(nn.Linear(hidden_dim_dynamic*2+hidden_dim_static, output_size))
-        self.fc_list = nn.ModuleList(fc_list)
+            linear = nn.Linear(hidden_dim_dynamic*2+hidden_dim_static, output_size)
+            fc_list.append(linear.weight.T.unsqueeze(0))
+            fc_bias_list.append(linear.bias.unsqueeze(0).unsqueeze(0))
+        fc_list = torch.cat(fc_list, dim=0)
+        fc_bias_list = torch.cat(fc_bias_list, dim=0)
+        # print(fc_list.shape)
+        
+        # neuron_weights = -1 + torch.randn(n_neurons, hidden_dim_dynamic*2+hidden_dim_static, 
+        #                                   output_size, requires_grad=True) * 2
+        # neuron_weights *= torch.sqrt(torch.Tensor([1/(hidden_dim_dynamic*2+hidden_dim_static)]))
+
+        # neuron_bias = -1 + torch.randn(n_neurons, 1, output_size, requires_grad=True) * 2
+        
+        self.neuron_weights = torch.nn.Parameter(fc_list)#neuron_weights)
+        self.neuron_bias = torch.nn.Parameter(fc_bias_list)#neuron_bias)
 
         self.ReLU = torch.nn.ReLU()
         
@@ -92,17 +117,45 @@ class MTNN(nn.Module):
         out_dynamic = self.ReLU(out_dynamic)
         out_dynamic = self.Dropout(out_dynamic)
 
-        output = []
+        # output = []
+        # for i, neuron_id in enumerate(neuron_order):
+        #     neuron_i = int(neuron_id.item())
+        #     out_static_i = out_static[i].unsqueeze(0)
+        #     out_dynamic_i = out_dynamic[i]
+        #     out_static_i = torch.tile(out_static_i, (out_dynamic_i.shape[0], 1))
+        #     final_input = torch.cat((out_static_i, out_dynamic_i), dim=1)
+        #     y = self.fc_list[neuron_i](final_input).T
+        #     print(y.shape)
+        #     output.append(y)
 
-        for i, neuron_id in enumerate(neuron_order):
-            neuron_i = int(neuron_id.item())
-            out_static_i = out_static[i].unsqueeze(0)
-            out_dynamic_i = out_dynamic[i]
-            out_static_i = torch.tile(out_static_i, (out_dynamic_i.shape[0], 1))
-            final_input = torch.cat((out_static_i, out_dynamic_i), dim=1)
-            output.append(self.fc_list[neuron_i](final_input).T)
-         
-        output = torch.cat(output)
+        # output = torch.cat(output)
+        # print(output.shape)
+
+        # output = torch.zeros((len(neuron_order), out_dynamic.shape[1]))
+        # output = output.to(self.device)
+        # for neuron_id in range(self.n_neurons):
+        #     idx = neuron_order == neuron_id
+        #     if idx.sum() == 0:
+        #         continue
+        #     out_static_i = out_static[idx].unsqueeze(1)
+        #     out_dynamic_i = out_dynamic[idx]
+        #     out_static_i = torch.tile(out_static_i, (1, out_dynamic_i.shape[1], 1))
+        #     final_input = torch.cat((out_static_i, out_dynamic_i), dim=2)
+        #     final_layer_output = self.fc_list[neuron_id](final_input)
+        #     final_layer_output = final_layer_output.squeeze() #torch.transpose(final_layer_output, 1, 2)
+        #     output[idx] = final_layer_output
+
+        neuron_order = neuron_order.to(self.device)
+        neuron_order = neuron_order.int()
+        # print(neuron_order)
+        out_static = torch.tile(out_static.unsqueeze(1), (1, out_dynamic.shape[1], 1))
+        final_input = torch.cat((out_static, out_dynamic), dim=2)
+        neuronWeights = torch.index_select(self.neuron_weights, 0, neuron_order)
+        output = torch.einsum(
+            "btd,bdk->btk", final_input, neuronWeights
+        ) + torch.index_select(self.neuron_bias, 0, neuron_order)
+
+        output = output.squeeze()
         out = self.ReLU(output)
         #print(out.shape)
         #out = torch.swapaxes(out,0,1)
@@ -263,7 +316,7 @@ def add_weight_decay(net, l2_value1, l2_value2):
 def run_train(model, train_feature_path, train_output_path,
               val_feature_path, val_output_path, n_epochs=150, 
               lr=0.1, lr_decay=0.95, momentum=0.9, batch_size=512, 
-              clip=2, weight_decay=1e-5, valid_loss_min = np.Inf,
+              clip=2e0, weight_decay=1e-5, valid_loss_min = np.Inf,
               model_name_suffix=None, remove_cov=None, 
               only_keep_cov=None, eval_train=False, simulated=False):
 
@@ -284,6 +337,7 @@ def run_train(model, train_feature_path, train_output_path,
     #params = add_weight_decay(model, weight_decay, bias_weight_decay)
     #optimizer = torch.optim.SGD(params, lr=lr, momentum=momentum)
     optimizer = torch.optim.SGD(model.parameters(), lr=lr, momentum=momentum, weight_decay=weight_decay)
+    # optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
     lr_lambda = lambda epoch: lr_decay ** epoch
     scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_lambda)
 
@@ -318,9 +372,9 @@ def run_train(model, train_feature_path, train_output_path,
     loss_list = []
     val_loss_list = []
     model.train()
-    for epoch in notebook.tqdm(range(1, n_epochs + 1)):
+    for epoch in tqdm(range(1, n_epochs + 1)):
         batch_losses = []
-        for neu, static_f, dynamic_f, target in notebook.tqdm(train_dataloader):
+        for neu, static_f, dynamic_f, target in train_dataloader:
             optimizer.zero_grad() # Clears existing gradients from previous epoch
             static_f_gpu = static_f.cuda().float()
 
@@ -397,12 +451,13 @@ def run_train(model, train_feature_path, train_output_path,
     return best_epoch, loss_list, val_loss_list
 
 
-def run_eval(model, test_feature_path, test_output_path, 
+def run_eval(model, test_feature_path, test_output_path, test_feature=None,
              batch_size=256, remove_cov=None, only_keep_cov=None, simulated=False):
     
     criterion = nn.PoissonNLLLoss(log_input=False)
     
-    test_feature = np.load(test_feature_path)
+    if test_feature is None:
+        test_feature = np.load(test_feature_path)
     test_output = np.load(test_output_path)
     static = static_bool if not simulated else sim_static_bool
     

@@ -29,9 +29,9 @@ def plot_figures9():
     INPUT_SIZE_STATIC = static_idx.shape[0]
     print(INPUT_SIZE_STATIC, INPUT_SIZE_DYNAMIC)
 
-    HIDDEN_SIZE_STATIC = 64
-    HIDDEN_SIZE_DYNAMIC = 64
-    n_layers = 3
+    HIDDEN_SIZE_STATIC = 128
+    HIDDEN_SIZE_DYNAMIC = 128
+    n_layers = 4
 
     remove_cov = None
     only_keep_cov = None
@@ -71,11 +71,9 @@ def plot_figures9():
         idx += n
 
     for i in range(len(pred_list)):
-        if i not in [14, 15, 16, 17, 18, 19]:
-            continue
         generate_figure_9(feature_list, pred_list, obs_list,
                           neu_list, sess_list, trial_list, which_sess=[i],
-                          savefig=True, plot_subsample_ratio=1.0)
+                          savefig=True, plot_subsample_ratio=1.0, fr_upper_threshold=np.inf)
 
     model_config = {'n_neurons': n_neurons,
                     'input_size_static': INPUT_SIZE_STATIC,
@@ -94,7 +92,7 @@ def plot_figures9():
                                  savefig=True)
 
     glm_score_path = data_path.joinpath('glm_data')
-    glm_score = np.load(glm_score_path.joinpath('glm_scores.npy'), allow_pickle=True)
+    glm_score = None #np.load(glm_score_path.joinpath('glm_scores.npy'), allow_pickle=True)
     glm_score_full_mtnn_cov = np.load(glm_score_path.joinpath('glm_scores_full_mtnn_cov.npy'), allow_pickle=True)
     generate_figure9_supplement2(model_config,
                                  glm_score,
@@ -137,9 +135,9 @@ def plot_figures10():
     INPUT_SIZE_STATIC = static_idx.shape[0]
     print(INPUT_SIZE_STATIC, INPUT_SIZE_DYNAMIC)
 
-    HIDDEN_SIZE_STATIC = 64
-    HIDDEN_SIZE_DYNAMIC = 64
-    n_layers = 3
+    HIDDEN_SIZE_STATIC = 128
+    HIDDEN_SIZE_DYNAMIC = 128
+    n_layers = 4
 
 
     model_config = {'n_neurons': n_neurons,
@@ -164,8 +162,12 @@ def plot_figures10():
                    'choice', 'reward', 'wheel velocity', 'lick', 'noise',
                    'mouse prior', 'last mouse prior', 'decision strategy (GLM-HMM)']
 
-    generate_figure_10(model_config, leave_one_out_covs, single_covs, leave_group_out, savefig=True)
+    leave_one_out_covs = ['lab', 'session', 'x', 'y']
+    leave_group_out = []
+    single_covs = ['paw speed', 'nose speed', 'pupil diameter',
+                   'motion energy', 'stimuli']
 
+    generate_figure_10(model_config, leave_one_out_covs, single_covs, leave_group_out, savefig=True)
 
     sim_model_config = {'n_neurons': n_neurons,
                         'input_size_static': 2,
@@ -179,16 +181,16 @@ def plot_figures10():
     sim_load_path = data_path.joinpath('simulated_data')
     glm_scores = np.load(sim_load_path.joinpath('glm_scores.npy'), allow_pickle=True)
     glm_leave_one_out = np.load(sim_load_path.joinpath('glm_leave_one_out.npy'), allow_pickle=True)
-
-    generate_figure_10_supplement1(sim_model_config,
-                                   glm_scores,
-                                   glm_leave_one_out,
-                                   savefig=True)
+    generate_figure_10_supplement1(sim_model_config, glm_scores, glm_leave_one_out, savefig=True)
 
     single_covs_supplement2 = ['paw speed', 'nose speed', 'pupil diameter',
                                'motion energy', 'stimuli', 'go cue', 'first movement',
                                'choice', 'reward', 'wheel velocity', 'lick']
     generate_figure_10_supplement2(model_config, single_covs_supplement2, savefig=True)
+    
+    generate_figure_10_supplement3(model_config, savefig=True)
+    
+    generate_figure_10_supplement4(model_config, savefig=True)
 
 
 if __name__ == '__main__':

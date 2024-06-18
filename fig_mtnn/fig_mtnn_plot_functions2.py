@@ -8,8 +8,9 @@ from copy import deepcopy
 
 from fig_mtnn.utils import (reshape_flattened, get_acronym_dict, get_acronym_dict_reverse, get_region_colors, cov_idx_dict,
                                          grouped_cov_idx_dict, compute_mean_frs)
-from fig_mtnn.mtnn import load_test_model
-from reproducible_ephys_functions import save_data_path, figure_style, save_figure_path
+from fig_mtnn.mtnn import load_test_model, run_eval, initialize_mtnn, get_device
+
+from reproducible_ephys_functions import save_data_path, figure_style, save_figure_path, labs
 
 data_load_path = save_data_path(figure='fig_mtnn').joinpath('mtnn_data')
 save_path = save_figure_path(figure='fig_mtnn')
@@ -227,7 +228,7 @@ def generate_figure_10(model_config,
 #                                   c=frs[region], cmap=plt.get_cmap('Reds'), s=20, alpha=0.7)
     #ax['panel_B'].legend(fontsize=24)
 #     ax['panel_B'].set_ylim(-0.1,0.2)
-    ax['panel_B'].set_ylim(-0.1,0.5)
+    ax['panel_B'].set_ylim(-0.2,0.5)
     ax['panel_B'].set_yticks(np.arange(-0.1,0.6,0.1))
     ax['panel_B'].set_yticklabels(np.arange(-0.1,0.6,0.1), fontsize=18)
     ax['panel_B'].yaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
@@ -268,7 +269,7 @@ def generate_figure_10(model_config,
                                   color=region_colors[region], label=region if i==0 else None, s=24, alpha=0.6)
     #ax['panel_C'].legend(fontsize=24)
 #     ax['panel_C'].set_ylim(-0.1,0.2)
-    ax['panel_C'].set_ylim(-0.1,0.5)
+    ax['panel_C'].set_ylim(-0.2,0.5)
     ax['panel_C'].set_yticks([])
     
     # Single-covariate
@@ -305,12 +306,14 @@ def generate_figure_10(model_config,
 #                            color='k',linestyle='--')
         for j, region in enumerate(regions):
             scr = scores['single_covariate'][cov][region]
+            color = region_colors[region]
+            label = region if region != 'PPC' else 'VISa/am'
             ax['panel_A'].scatter(np.ones_like(scr)*i+0.1*(j-2), scr, 
-                                  color=region_colors[region], label=region if i==0 else None, s=24, alpha=0.6)
+                                  color=color, label=label if i==0 else None, s=24, alpha=0.6)
 #             ax['panel_C'].scatter(np.ones_like(scr)*i+0.1*(j-2), scr, 
 #                                   c=frs[region], cmap=plt.get_cmap('Reds'), s=20, alpha=0.7)
     ax['panel_A'].legend(fontsize=24)
-    ax['panel_A'].set_ylim(-0.1,0.5)
+    ax['panel_A'].set_ylim(-0.2,0.5)
     ax['panel_A'].set_yticks(np.arange(-0.1,0.6,0.1))
     ax['panel_A'].set_yticklabels(np.arange(-0.1,0.6,0.1), fontsize=18)
     ax['panel_A'].yaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
@@ -503,14 +506,20 @@ def generate_figure_10_supplement2(model_config,
                                    single_covs,
                                    savefig=False):
     
-    color_names = ["windows blue",
-                   "red",
-                   "amber",
-                   "faded green",
-                   "dusty purple"]
+#     color_names = ["windows blue",
+#                    "amber",
+#                    "faded green",
+#                    "red",
+#                    "dusty purple",
+#                    "black",
+#                    "magenta",
+#                    "cyan"]
 
-    colors = sns.xkcd_palette(color_names)
-    shapes = ['o', 's', '^', '+']
+#     colors = sns.xkcd_palette(color_names)
+
+    lab_number_map, institution_map, institution_colors = labs()
+
+    shapes = ['o', '+', '^', 's']
     
     scores, frs = compute_scores_for_figure_10(model_config,
                                               [],
@@ -559,11 +568,14 @@ def generate_figure_10_supplement2(model_config,
                 axs[i,j].xaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
             
             if i==0 and j==0:
-                for n in range(4):
+                for n in range(8):
                     for m in range(4):
                         subject = sess_list[4*n+m]['session']['subject']#.tolist()['session']['subject']
-                        axs[i,j].scatter(-2, -2, color=colors[n], marker=shapes[m], 
-                                         alpha=1.0, s=70, label=subject)
+                        lab_name = sess_list[4*n+m]['session']['lab']
+                        institution_name = institution_map[lab_name]
+                        institution_color = institution_colors[institution_name]
+                        axs[i,j].scatter(-2, -2, color=institution_color, marker=shapes[m], 
+                                         alpha=0.8, s=70, label=subject)
                 axs[i,j].legend(bbox_to_anchor=(13.0,-5.5), fontsize=18)
                 continue
             elif i == j:
@@ -572,10 +584,13 @@ def generate_figure_10_supplement2(model_config,
             scorei_list = reshape_flattened(scores['single_covariate'][covi]['all'], preds_shape, trim=3)
             scorej_list = reshape_flattened(scores['single_covariate'][covj]['all'], preds_shape, trim=3)
             
-            for n in range(4):
+            for n in range(8):
                 for m in range(4):
+                    lab_name = sess_list[4*n+m]['session']['lab']
+                    institution_name = institution_map[lab_name]
+                    institution_color = institution_colors[institution_name]
                     axs[i,j].scatter(scorej_list[4*n+m],
-                                     scorei_list[4*n+m], color=colors[n], marker=shapes[m], s=30, alpha=0.7)
+                                     scorei_list[4*n+m], color=institution_color, marker=shapes[m], s=30, alpha=0.5)
             axs[i,j].plot([-1,1],[-1,1],color='black')
             axs[i,j].set_ylim(-0.1,0.55)
             axs[i,j].set_xlim(-0.1,0.55)
@@ -583,7 +598,247 @@ def generate_figure_10_supplement2(model_config,
     plt.suptitle('Pairwise scatterplots of MTNN single-covariate effect sizes', y=0.92, fontsize=40)
     
     if savefig:
-        figname = save_path.joinpath(f'figure10_supplement2.png')
-        plt.savefig(figname, bbox_inches='tight', facecolor='white')
+        figname = save_path.joinpath(f'figure10_supplement2.pdf')
+        plt.savefig(figname, bbox_inches='tight', facecolor='white', dpi=600)
     
+    plt.show()
+
+    
+def generate_figure_10_supplement3(model_config, savefig=False):
+    
+    lab_number_map, institution_map, institution_colors = labs()
+
+    data_path = save_data_path(figure='fig_mtnn')
+    data_load_path = data_path.joinpath('mtnn_data')
+    test_feature = np.load(data_load_path.joinpath('test/feature.npy'))
+    test_trials = np.load(data_load_path.joinpath('test/trials.npy'), allow_pickle=True)
+    
+    neuron_order = test_feature[:, 0, 0]
+    feature = test_feature[:, :, 1:]
+
+    neurons = np.unique(neuron_order)
+    n_neurons = neurons.shape[0]
+    print('number of neurons: {}'.format(n_neurons))
+
+    INPUT_SIZE_DYNAMIC = feature.shape[-1] - static_idx.shape[0]
+    INPUT_SIZE_STATIC = static_idx.shape[0]
+    print(INPUT_SIZE_STATIC, INPUT_SIZE_DYNAMIC)
+
+    HIDDEN_SIZE_STATIC = 128
+    HIDDEN_SIZE_DYNAMIC = 128
+    n_layers = 4
+    dropout = 0.15
+
+    remove_cov = None
+    only_keep_cov = None
+
+    model = initialize_mtnn(n_neurons=n_neurons,
+                            input_size_static=INPUT_SIZE_STATIC,
+                            input_size_dynamic=INPUT_SIZE_DYNAMIC,
+                            static_bias=True, dynamic_bias=True,
+                            hidden_dim_static=HIDDEN_SIZE_STATIC,
+                            hidden_dim_dynamic=HIDDEN_SIZE_DYNAMIC, n_layers=n_layers,
+                            dropout=dropout)
+
+    model_load_path = data_path.joinpath(f'trained_models/state_dict_rem={remove_cov}_keep={only_keep_cov}.pt')
+    model.load_state_dict(torch.load(model_load_path))
+
+    preds, loss = run_eval(model, data_load_path.joinpath('test/feature.npy'),
+                           data_load_path.joinpath('test/output.npy'),
+                           remove_cov=remove_cov, only_keep_cov=only_keep_cov)
+
+    preds_shape = np.load(data_load_path.joinpath('test/shape.npy'))
+    obs = np.load(data_load_path.joinpath('test/output.npy'))
+    test_feature = np.load(data_load_path.joinpath('test/feature.npy'))
+    neu_list = np.load(data_load_path.joinpath('clusters.npy'), allow_pickle=True)
+    sess_list = np.load(data_load_path.joinpath('session_info.npy'), allow_pickle=True).tolist()
+    trial_list = np.load(data_load_path.joinpath('test/trials.npy'), allow_pickle=True)
+
+    pred_list = []
+    obs_list = []
+    feature_list = []
+    idx = 0
+    for sh in preds_shape:
+        n = sh[0] * sh[1]
+        pred_list.append(preds[idx:idx + n].reshape(sh[:-1]))
+        obs_list.append(obs[idx:idx + n].reshape(sh[:-1]))
+        feature_list.append(test_feature[idx:idx + n].reshape(sh))
+        idx += n
+    
+    # panel 1: region PO/observed
+    plt.figure(figsize=(6,4))
+    n_sessions = len(obs_list)
+    plotted_institutions = []
+    for i in range(n_sessions):
+        feat = feature_list[i]
+        obs = obs_list[i]
+        sess = sess_list[i]
+        PO_idx = feat[:, 0, 0, acronym_offset+4] == 1
+        lab_name = sess['session']['lab']
+        session_name = sess['session']['subject']
+        institution_name = institution_map[lab_name]
+        institution_color = institution_colors[institution_name]
+
+        if PO_idx.sum() == 0:
+            continue
+
+        mean_fr = np.mean(obs[PO_idx], axis=(0,1))
+        baselined_mean_fr = mean_fr-mean_fr[0]
+        if institution_name in plotted_institutions:
+            plt.plot(baselined_mean_fr, color=institution_color, linewidth=2)
+        else:
+            plt.plot(baselined_mean_fr, label=institution_name, color=institution_color, linewidth=2)
+        plotted_institutions.append(institution_name)
+    plt.ylim(-6, 12.5)
+    plt.ylabel('Baselined firing rate (sp/s)')
+    plt.xlabel('Time from movement onset (s)')
+    plt.axvline(10, color='k', linestyle=':')
+    plt.xticks(np.arange(0, obs_list[0].shape[-1]+1, 10), labels=[-0.5, 0.0, 0.5, 1.0])
+    plt.legend(ncols=1)
+    plt.title('Observed PETH of Held-out Test Trials')
+    if savefig:
+        figname = save_path.joinpath(f'original_peth.png')
+        plt.savefig(figname, bbox_inches='tight', facecolor='white', dpi=600)
+    plt.show()
+    
+    
+    # panel 2: region PO/predicted
+    plt.figure(figsize=(6,4))
+    n_sessions = len(obs_list)
+    plotted_institutions = []
+    for i in range(n_sessions):
+        feat = feature_list[i]
+        pred = pred_list[i]
+        sess = sess_list[i]
+        PO_idx = feat[:, 0, 0, acronym_offset+4] == 1
+        lab_name = sess['session']['lab']
+        session_name = sess['session']['subject']
+        institution_name = institution_map[lab_name]
+        institution_color = institution_colors[institution_name]
+
+        if PO_idx.sum() == 0:
+            continue
+
+        mean_fr = np.mean(pred[PO_idx], axis=(0,1))
+        baselined_mean_fr = mean_fr-mean_fr[0]
+        if institution_name in plotted_institutions:
+            plt.plot(baselined_mean_fr, color=institution_color, linewidth=2)
+        else:
+            plt.plot(baselined_mean_fr, label=institution_name, color=institution_color, linewidth=2)
+        plotted_institutions.append(institution_name)
+    plt.ylim(-6, 12.5)
+    plt.ylabel('Baselined firing rate (sp/s)')
+    plt.xlabel('Time from movement onset (s)')
+    plt.axvline(10, color='k', linestyle=':')
+    plt.xticks(np.arange(0, obs_list[0].shape[-1]+1, 10), labels=[-0.5, 0.0, 0.5, 1.0])
+    plt.legend(ncols=1)
+    plt.title('Predicted PETH of Held-out Test Trials')
+    if savefig:
+        figname = save_path.joinpath(f'pred_peth.png')
+        plt.savefig(figname, bbox_inches='tight', facecolor='white', dpi=600)
+    plt.show()
+    
+    
+    
+    fake_feature = deepcopy(test_feature)
+    fake_feature[:, :, lab_offset:session_offset] = 0
+    fake_feature[:, :, lab_offset+1] = 1 # CCU
+
+    fake_preds, loss = run_eval(model, None,
+                                data_load_path.joinpath('test/output.npy'),
+                                test_feature=fake_feature,
+                                remove_cov=remove_cov, only_keep_cov=only_keep_cov)
+
+    fake_pred_list = []
+    idx = 0
+    for sh in preds_shape:
+        n = sh[0] * sh[1]
+        fake_pred_list.append(fake_preds[idx:idx + n].reshape(sh[:-1]))
+        idx += n
+        
+    # panel 3: region PO/predicted after changing the lab IDs
+    plt.figure(figsize=(6,4))
+    n_sessions = len(obs_list)
+    plotted_institutions = []
+    for i in range(n_sessions):
+        feat = feature_list[i]
+        pred = fake_pred_list[i]
+        sess = sess_list[i]
+        PO_idx = feat[:, 0, 0, acronym_offset+4] == 1
+        lab_name = sess['session']['lab']
+        session_name = sess['session']['subject']
+        institution_name = institution_map[lab_name]
+        institution_color = institution_colors[institution_name]
+
+        if PO_idx.sum() == 0:
+            continue
+
+        mean_fr = np.mean(pred[PO_idx], axis=(0,1))
+        baselined_mean_fr = mean_fr-mean_fr[0]
+        if institution_name in plotted_institutions:
+            plt.plot(baselined_mean_fr, color=institution_color, linewidth=2)
+        else:
+            plt.plot(baselined_mean_fr, label=institution_name, color=institution_color, linewidth=2)
+        plotted_institutions.append(institution_name)
+    plt.ylim(-6, 12.5)
+    plt.ylabel('Baselined firing rate (sp/s)')
+    plt.xlabel('Time from movement onset (s)')
+    plt.axvline(10, color='k', linestyle=':')
+    plt.xticks(np.arange(0, obs_list[0].shape[-1]+1, 10), labels=[-0.5, 0.0, 0.5, 1.0])
+    plt.legend(ncols=1)
+    plt.title('Predicted PETH of Held-out Test Trials\nAfter Fixing All Lab IDs to CCU')
+    if savefig:
+        figname = save_path.joinpath(f'perturbed_labID_peth.png')
+        plt.savefig(figname, bbox_inches='tight', facecolor='white', dpi=600)
+    plt.show()
+
+    
+def generate_figure_10_supplement4(model_config, savefig=False):
+    xtick_labels = ['Original\nlab weights']
+    labels = ['original']
+
+    for mult in [1, 5, 10]:
+        xtick_labels.append(f'Perturbed\nlab weights\nVarying l2 norm:\n0 - {str(7*mult)}')
+        labels.append('varying_gains_factor_'+str(mult))
+        
+    labID_es_list = []
+    for label in labels:
+
+        load_path = save_data_path(figure='fig_mtnn').joinpath('mtnn_data')
+
+        preds_shape = np.load(load_path.joinpath('test/shape.npy'))
+        obs = np.load(load_path.joinpath(f'test/output_labID_{label}.npy'))
+        test_feature = np.load(load_path.joinpath('test/feature.npy'))
+
+        obs_list = []
+        feature_list = []
+        idx = 0
+        for sh in preds_shape:
+            n = sh[0]*sh[1]
+            obs_list.append(obs[idx:idx+n].reshape(sh[:-1]))
+            feature_list.append(test_feature[idx:idx+n].reshape(sh))
+            idx += n
+
+        baseline_score2 = load_test_model(model_config, ['session'], None, obs_list, preds_shape, 
+                                      use_psth=False, model_name_suffix=f'labID_{label}')
+
+        score = load_test_model(model_config, ['lab'], None, obs_list, preds_shape, 
+                            use_psth=False, model_name_suffix=f'labID_{label}')
+
+        labID_es = baseline_score2 - score
+
+        labID_es_list.append(labID_es)
+        
+    np.random.seed(0)
+    plt.figure(figsize=(6,6))
+    plt.title('MTNN leave-one-out analysis\ncaptures simulated lab ID effects', fontsize=16)
+    for i, labID_es in enumerate(labID_es_list):
+        plt.scatter(0.05*np.random.normal(size=(len(labID_es)))+i*0.5, labID_es, color='k', s=24, alpha=0.1)
+    plt.xticks(np.arange(len(labels))*0.5, labels=xtick_labels, rotation=0)
+    plt.xlim(-0.25, len(labID_es_list)*0.5-0.25)
+    plt.ylim(-0.1, 1.5)
+    plt.ylabel(r'$\Delta$R2')
+    if savefig:
+        figname = save_path.joinpath(f'labID_perturbed.png')
+        plt.savefig(figname, bbox_inches='tight', facecolor='white', dpi=600)
     plt.show()
