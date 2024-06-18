@@ -1,11 +1,11 @@
 import matplotlib.pyplot as plt
 from reproducible_ephys_functions import filter_recordings, BRAIN_REGIONS, figure_style, save_figure_path
-from figure_spatial.figure_spatial_load_data import load_data, load_dataframe, load_regions
+from fig_spatial.fig_spatial_load_data import load_data, load_dataframe, load_regions
 import numpy as np
 from matplotlib import cm, colors
 import figrid as fg
 
-fig_path = save_figure_path(figure='figure_spatial')
+fig_path = save_figure_path(figure='fig_spatial')
 
 
 def plot_supp_figure():
@@ -103,7 +103,7 @@ def plot_fr_ff():
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
 
-        plt.savefig(fig_path.joinpath(f'figure_spatial_SuppFF_TimeCourse_{reg}.png'))
+        plt.savefig(fig_path.joinpath(f'fig_spatial_SuppFF_TimeCourse_{reg}.png'))
 
 
 def plot_fr_3D():
@@ -141,7 +141,7 @@ def plot_fr_3D():
         ax.view_init(15, 70)
         plt.draw()
 
-        plt.savefig(fig_path.joinpath(f'figure_spatial_SuppFF_Spatial_{reg}.png'))
+        plt.savefig(fig_path.joinpath(f'fig_spatial_SuppFF_Spatial_{reg}.png'))
 
 
 if __name__ == '__main__':
