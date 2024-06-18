@@ -15,6 +15,7 @@ from scipy.stats import pearsonr, spearmanr, percentileofscore
 from copy import deepcopy
 import pandas as pd
 import random
+from datetime import datetime
 
 from sklearn.decomposition import PCA
 from scipy.stats import zscore
@@ -26,8 +27,20 @@ import matplotlib as mpl
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.patches import Patch
 from ipywidgets import interact
+from sklearn.metrics import r2_score
+import umap
+from sklearn.manifold import TSNE
+from matplotlib.lines import Line2D
+from mpl_toolkits.mplot3d import Axes3D
+from matplotlib.patches import Ellipse
+import matplotlib.transforms as transforms
+import string
+from itertools import combinations
+from statsmodels.stats.multitest import multipletests
 
 T_BIN = 0.02  # time bin size in seconds
+one = ONE()
+
 
 def get_repeated_sites():    
     one = ONE()
@@ -85,7 +98,7 @@ def find_nearest(array,value):
         
 def get_acronyms_per_eid(eid, probe=None, new_spike = False):
 
-    T_BIN = 0.5
+    T_BIN = 1
     one = ONE()
     
     As = {}
@@ -127,8 +140,7 @@ def get_acronyms_per_eid(eid, probe=None, new_spike = False):
         # Get for each cluster the location acronym                                   
         cluster_chans = clusters['channels'][Clusters]
         els = load_channel_locations(eid, one=one)   
-        
-        ids = els[probe]['atlas_id'][chn_inds]
+        ids = els[probe]['atlas_id'][cluster_chans]
         br = atlas.BrainRegions()
         mapped_ids = br.remap(ids, source_map='Allen', target_map='Beryl')
         id_info = br.get(ids=mapped_ids)
@@ -249,8 +261,7 @@ def bin_neural(eid, double=True, probe=None, reg=None, query_type='remote',
             # Get for each cluster the location x,y,z   
             cluster_chans = clusters['channels'][Clusters]      
             els = load_channel_locations(eid, one=one) 
-
-            ids = els[probe]['atlas_id'][chn_inds]
+            ids = els[probe]['atlas_id'][cluster_chans]
             br = atlas.BrainRegions()
             mapped_ids = br.remap(ids, source_map='Allen', target_map='Beryl')
             id_info = br.get(ids=mapped_ids)
@@ -263,20 +274,22 @@ def bin_neural(eid, double=True, probe=None, reg=None, query_type='remote',
 
 
 
-def PSTH_PCA(eid, duration=1.5 ,lag=-0.5, double=True, probe=None, 
-             reg=None, choice_split=True, new_spike=True):
+def PSTH(eid, duration=1.5 ,lag=-0.5, double=True, probe=None, 
+             reg=None, split='choice', new_spike=True):
     #eid = '56b57c38-2699-4091-90a8-aba35103155e'
     #eid,reg,probe='671c7ea7-6726-4fbe-adeb-f89c2c8e489b','GRN','probe00'
     
     '''
     combine both probes into binned activity
-    then do PSTH and reduce dimenions via PCA to 3,
+    then do PSTH
     then keep only bins in trials,
     keep block id info for each bin
     
     choice_split: instead of blocks, color activity by choice
         and deactivate pseudo sessions
-    
+
+    now aligned to motion onset 
+
     '''
        
     one = ONE() 
@@ -294,7 +307,8 @@ def PSTH_PCA(eid, duration=1.5 ,lag=-0.5, double=True, probe=None,
     neuleft, neuright = [], []          
      
     print('cutting data')
-
+    wheelMoves = one.load_object(eid, 'wheelMoves')
+    A = wheelMoves['intervals'][:,0]
     trials = one.load_object(eid, 'trials')
     evts = ['stimOn_times', 'feedback_times', 'probabilityLeft',
             'choice', 'feedbackType']   
@@ -323,12 +337,30 @@ def PSTH_PCA(eid, duration=1.5 ,lag=-0.5, double=True, probe=None,
         # skip incorrect trial
         if trials['feedbackType'][tr] == 0:
             continue   
- 
-        start_idx = find_nearest(times,trials['stimOn_times'][tr] + lag) 
+
+        
+        b = trials['stimOn_times'][tr]
+        c = trials['feedback_times'][tr]
+        # making sure the motion onset time is in a coupled interval
+        ind = np.where((A > b) & (A < c), True, False)
+        if all(~ind):
+            #print(f'non-still start, trial {tr} and eid {eid}')
+            continue
+        a = A[ind][0]
+
+        start_idx = find_nearest(times,a + lag)#trials['stimOn_times'][tr] 
         end_idx = start_idx + int(duration/T_BIN)   
 
+        if split == 'RT':
+             
+            rt = a - b 
+            if rt < 0.1:
+                neuleft.append(D[start_idx:end_idx])
+            if rt > 0.2:
+                neuright.append(D[start_idx:end_idx]) 
+                        
 
-        if choice_split:
+        if split == 'choice':
             # split trials 
 
             if trials['choice'][tr] == 1:
@@ -338,7 +370,7 @@ def PSTH_PCA(eid, duration=1.5 ,lag=-0.5, double=True, probe=None,
             else:
                 continue
 
-        else:    
+        if split == 'block':    
             # split by block
             if trials['probabilityLeft'][tr] == 0.5:
                 continue
@@ -348,10 +380,10 @@ def PSTH_PCA(eid, duration=1.5 ,lag=-0.5, double=True, probe=None,
             if trials['probabilityLeft'][tr] == 0.2:
                 neuright.append(D[start_idx:end_idx])
 
-    if choice_split:
+    if split == 'choice':
         print('left choice trials: ',len(neuleft),
               '; right choice trials: ', len(neuright))
-    else:
+    if split == 'block':
         print('pleft0.8 trials: ',len(neuleft),
               '; pleft0.2 trials: ', len(neuright))    
 
@@ -365,6 +397,21 @@ def PSTH_PCA(eid, duration=1.5 ,lag=-0.5, double=True, probe=None,
 
     return [neuleft,neuright]
 
+
+def get_probe_age(pid):
+
+    eid,pname = one.pid2eid(pid)
+    probe_insertions = one.load_dataset(eid, 'probes.description')
+    
+    serial = [y['serial'] for y in probe_insertions if y['label']==pname][0]   
+
+    sess = one.alyx.rest('insertions', 'list', serial=serial)
+    d_0 = [x['session_info']['start_time'] for x in sess][-1].split('T')[0]
+    then = datetime.strptime(d_0, "%Y-%m-%d")
+    now  = datetime.now()
+    duration = now - then 
+    return duration.days
+
  
 '''################################
 batch
@@ -372,7 +419,8 @@ batch
 
 
 
-def single_cell_embedding(duration=1.5, lag=-0.5, new_spike=True,norm_=True):
+def single_cell_embedding(duration=1.5, lag=-0.5, new_spike=True,
+                          split='RT', norm_=True):
 
     '''
     PCA on time (choice left/right psth concatenated)
@@ -392,8 +440,8 @@ def single_cell_embedding(duration=1.5, lag=-0.5, new_spike=True,norm_=True):
         
         for ses in sess:
             try:
-                w = PSTH_PCA(ses[0],duration,lag,probe=ses[1],reg=reg,
-                    new_spike=new_spike)
+                w = PSTH(ses[0],duration,lag,probe=ses[1],reg=reg,
+                    new_spike=new_spike,split=split)
                 neus1 = np.concatenate(w)
                 neus.append(neus1)
                 ns.append(neus1.shape[1])
@@ -432,10 +480,8 @@ def single_cell_embedding(duration=1.5, lag=-0.5, new_spike=True,norm_=True):
         D[reg] = {'ns':ns,'labs':labs,
                   'Y':M2,'var_exp':pca.explained_variance_ratio_[:3],
                   'Y_re_star':Y_re_star}
-    
-    
         
-    np.save('/home/mic/repro_manifold/single_cell_new_norm.npy', D,
+    np.save(f'/home/mic/repro_manifold/single_cell_{split}2.npy', D,
             allow_pickle=True)    
     print(errs) 
     #return D
@@ -455,7 +501,7 @@ def multi_eid_PCA_dist(duration=1.5, lag=-0.5):
             eid = s[0]
             probe = s[1]
             try:
-                w = PSTH_PCA(eid, duration, lag,probe=probe, reg=reg)
+                w = PSTH(eid, duration, lag,probe=probe, reg=reg)
                 ps = [np.mean(x,axis=1) for x in w]    
 
                 neus = np.concatenate(w) 
@@ -484,17 +530,142 @@ Plotting
 ########################'''
 
 
+def psths_diff(pid,w=None,norm_=True, sfig=True):
+    if sfig:
+        plt.ioff()
+    else:
+        plt.ion()    
+
+    eid, pname = one.pid2eid(pid)
+
+
+    #eid, pname = ['ebe090af-5922-4fcd-8fc6-17b8ba7bad6d', 'probe01']
+    
+    if w is None:
+        w = PSTH(eid,probe=pname)
+
+    fig = plt.figure(figsize=(10,6))
+    axs = []
+    
+    duration = 1.5 #sec
+    lag = -0.5
+    
+    minY = min([np.amin(y) for y in w])
+    maxY = max([np.amax(y) for y in w])           
+    
+    k = 0
+
+    xs = np.linspace(0,int(duration/T_BIN),5)
+
+    s = ' '.join([str(one.eid2path(eid)).split('/')[i] for i in [4,6,7]])
+    
+    age = get_probe_age(pid)
+
+    axs.append(plt.subplot(1,3,k+1))
+    
+    d = w[0].T
+    d_l = np.zeros(d.shape)
+    if norm_:
+        # normalise each neuron in each psth separately
+        for i in range(d_l.shape[0]):
+            bsl = np.mean(d[i,0:int(abs(lag)/T_BIN)])          
+            d_l[i]=(d[i]-bsl)/(bsl+0.5)
+    else:
+        d_l = d
+
+    axs[k].imshow(d_l, cmap='Greys',aspect="auto",#'Greys'
+        interpolation='none',vmin=minY,vmax=maxY)    
+
+    axs[k].set_xticks(xs)
+    axs[k].set_xticklabels(xs*T_BIN + lag)
+    axs[k].set_title(f'left choice PSTH ')
+    axs[k].set_xlabel(f'time [sec], T_BIN={T_BIN} sec')
+    axs[k].set_ylabel('neurons')
+
+    axs[k].axvline(x=abs(lag/T_BIN), linewidth=0.5, linestyle='--', 
+                           c='g',label='stim on')
+                           
+    axs[k].legend(loc='lower left')
+
+    k+=1
+
+    d = w[1].T
+    d_r = np.zeros(d.shape)
+    if norm_:
+        # normalise each neuron in each psth separately
+        for i in range(d_r.shape[0]):
+            bsl = np.mean(d[i,0:int(abs(lag)/T_BIN)])          
+            d_r[i]=(d[i]-bsl)/(bsl+0.5)
+    else:
+        d_r = d        
+    
+    axs.append(plt.subplot(1,3,k+1))#        
+    axs[k].imshow(d_r, cmap='Greys',aspect="auto",#'Greys'
+        interpolation='none',vmin=minY,vmax=maxY)    
+
+    axs[k].set_xticks(xs)
+    axs[k].set_xticklabels(xs*T_BIN + lag)
+    axs[k].set_title(f'right choice PSTH')
+    axs[k].set_xlabel(f'time [sec], T_BIN={T_BIN} sec')
+    axs[k].set_ylabel('neurons')           
+    
+    axs[k].axvline(x=abs(lag/T_BIN), linewidth=0.5, linestyle='--', 
+                           c='g',label='stim on')    
+
+    #axs[k].legend()  
+       
+    k+=1            
+    # plot psth difference
+    axs.append(plt.subplot(1,3,k+1))
+            
+    axs[k].imshow(abs(d_r - d_l), cmap='Greys',aspect="auto",#'Greys'
+        interpolation='none',vmin=minY,vmax=maxY)    
+
+    axs[k].set_xticks(xs)
+    axs[k].set_xticklabels(xs*T_BIN + lag)
+    axs[k].set_title(f'abs(psth(left) - psth(right)) ')
+    axs[k].set_xlabel(f'time [sec], T_BIN={T_BIN} sec')
+    axs[k].set_ylabel('neurons')           
+    
+    axs[k].axvline(x=abs(lag/T_BIN), linewidth=0.5, linestyle='--', 
+                           c='g',label='stim on')    
+    #axs[k].legend()
+    
+    ax2=axs[k].twinx()
+    
+    ax2.plot(np.mean(abs(d_r - d_l),axis=0),color='b',
+             linewidth=0.5)
+    ax2.set_ylabel('mean(abs(psth(left) - psth(right)))')         
+    ax2.yaxis.label.set_color('b')
+    ax2.spines["right"].set_edgecolor('b')
+    ax2.tick_params(axis='y', colors='b')
+    k+=1        
+
+    plt.suptitle(f'{s}, probe age in days: {age}')   
+    plt.tight_layout()    
+    
+    if sfig: 
+        plt.savefig(f'/home/mic/repro_manifold/'
+                    f'no_response_cases/pid_{pid}.png')
+        plt.close()            
+    #return w                
+                
+
 def plot_cell_heatmaps(reg,share_ax=True, rmv_grey=False,athr = 0.2):
                       
     '''
     plot psth per lab for a given region
     and corresponding Y_reconstr matrix
     '''
-
+    #regs = ['PPC', 'CA1', 'DG', 'LP', 'PO', None]
 #    s = '/home/mic/repro_manifold/single_cell_new.npy'
 #    s = '/home/mic/repro_manifold/single_cell.npy'
 
-    s = '/home/mic/repro_manifold/single_cell_new_norm.npy'
+    align = 'motion'
+    if align == 'motion':
+        s = '/home/mic/repro_manifold/single_cell_motion.npy'
+    else:
+        s = '/home/mic/repro_manifold/single_cell_new_norm.npy'
 
     D = np.load(s, allow_pickle=True).flat[0]
                
@@ -704,21 +875,19 @@ def plot_cell_heatmaps(reg,share_ax=True, rmv_grey=False,athr = 0.2):
         reg = 'whole probe'
     #plt.suptitle(f'PSTH left choice | PSTH right choice || PSTH via 2 PCs left | PSTH via 2 PCs right; Region: {reg}; share_ax={share_ax}; pnorm=True')
     plt.tight_layout()#rect=[0, 0.03, 1, 0.95])   
-    plt.savefig(f'/home/mic/repro_manifold/heatmaps_new/'
-                f'heatmaps_{reg}_norm.png')
+#    plt.savefig(f'/home/mic/repro_manifold/heatmaps_new/'
+#                f'heatmaps_{reg}_norm.png')
 #    plt.close()
 
 
 
-def plot_single_cell(new_spike=True, pnorm=True):
+def plot_single_cell(new_spike=True):
 
 #    s = '/home/mic/repro_manifold/single_cell_new.npy'
 #    s = '/home/mic/repro_manifold/single_cell.npy'
 
-    if pnorm:
-        s = '/home/mic/repro_manifold/single_cell_new_norm.npy'
-    else:
-        s = '/home/mic/repro_manifold/single_cell_new.npy'
+
+    s = '/home/mic/repro_manifold/single_cell_motion.npy'
 
     D = np.load(s, allow_pickle=True).flat[0]
     
@@ -773,12 +942,19 @@ def plot_single_cell(new_spike=True, pnorm=True):
         # plot means
         for lab in cents2:
             Ax[k].scatter(cents2[lab][0],cents2[lab][1],
-                          s=400,marker='x',color=lab_cols[lab])  
+                          s=400,marker='x',color=lab_cols[lab]) 
+                          
+            # plot confidence ellipses
+        for lab in cents2:
+            x = np.concatenate(cents[lab])
+            confidence_ellipse(x[:,0], x[:,1], Ax[k], n_std=1.0,
+                               edgecolor=lab_cols[lab])                  
+                          
                             
         varex = str(np.round(D[reg]['var_exp'][:2],2))
         if reg is None:
             reg = 'whole probe'    
-        Ax[k].text(-1.8,-1.8,f"{reg}; Var. expl.:{varex}")
+        Ax[k].set_title(f"{reg}; Var. expl.:{varex}")
         Ax[k].set_xlabel('pc0')
         Ax[k].set_ylabel('pc1')
         k += 1
@@ -1036,8 +1212,7 @@ def scat3d(c, choice_split=True, lag=-0.5, ax=None, dim2 = False):
         ax.set_zlabel('pc3')     
         set_axes_equal(ax)  
     
-    
-            
+
     legend_elements = [Patch(facecolor='b', edgecolor='b',
                        label='pleft0.2'),
                        Patch(facecolor='r', edgecolor='r',
@@ -1116,6 +1291,875 @@ def trajectory_distance_simp(c, make_fig = True, lag=-0.5, ax=None,
 #            ys = D[d] - np.mean(D[d][:int(lag/T_BIN)])
              
         return d_01
+
+
+def illustrate_reconstruction(reg):
+
+    '''
+    check mosaic plot function to get different space allocation
+    '''
+
+
+    s = '/home/mic/repro_manifold/single_cell_new_norm.npy'
+    D = np.load(s, allow_pickle=True).flat[0][reg]
+
+    # determine goodness of reconstruction via r2 score
+    y = D['Y']
+    y_re = np.array(D['Y_re_star'])
+
+    # get lab per neuron
+    ns = D['ns']
+    labs = D['labs']
+    ns.insert(0,0)
+    ns = np.cumsum(ns)
+
+    athr = 0.2
+
+    r2s = []
+    l2s = []
+    iex = []
+    for i in range(len(y)):
+        if abs(max(y[i])) > athr:
+            r2s.append(r2_score(y[i],y_re[i]))
+            l2s.append(np.sum(np.power((y[i]-y_re[i]),2)))
+            iex.append(i)
+            
+            
+    fig, axs = plt.subplots(nrows=1,ncols=2,figsize=(5,3))
+    # illustrate example cells
+    # 3 with great, 3 with medium, 3 with bad reconstruction     
+    t =np.argsort(r2s)   
+    t_ = np.concatenate([t[:1],t[-1:]])#,t[len(t)//2:len(t)//2 +1]
+    
+    xs = np.arange(len(y[0]))*T_BIN
+    
+    for k in [iex[j] for j in t_]:
+        
+        axs[0].plot(xs,y[k]/T_BIN,color='k')
+        axs[0].plot(xs,y_re[k]/T_BIN,color='r',linestyle='--')
+
+    for x in np.array([25, 100])*T_BIN:
+        axs[0].axvline(x=x, linewidth=0.5, linestyle='--', 
+                               c='g',label='stim on')
+                                   
+    axs[0].set_xlabel('time [sec]')
+    axs[0].set_ylabel('firing rate [Hz]')
+    axs[0].set_title('example cells PSTHs \n and PCA-reconstruction')
+    
+    
+    n, bins, patches = axs[1].hist(x=r2s, bins='auto', color='#0504aa',                
+                                alpha=0.7, rwidth=0.85)
+                                
+    axs[1].set_xlabel(r'$r^2$')
+    axs[1].set_ylabel('number of neurons')
+    axs[1].set_title('goodness of PSTH \n reconstruction')     
+    
+    plt.tight_layout()    
+    
+    
+def mscatter(x,y,ax=None, m=None, **kw):
+    import matplotlib.markers as mmarkers
+    if not ax: ax=plt.gca()
+    sc = ax.scatter(x,y,**kw)
+    if (m is not None) and (len(m)==len(x)):
+        paths = []
+        for marker in m:
+            if isinstance(marker, mmarkers.MarkerStyle):
+                marker_obj = marker
+            else:
+                marker_obj = mmarkers.MarkerStyle(marker)
+            path = marker_obj.get_path().transformed(
+                        marker_obj.get_transform())
+            paths.append(path)
+        sc.set_paths(paths)
+    return sc  
+    
+      
+def single_cell_reg_vs_lab(algo = 'PCA',rm_unre=True, 
+                           shuf=False,align='motion',
+                           lim5 = True):
+
+    # may also try umap here instead of PCA!
+     
+    _,b,lab_cols = labs_maps()
+
+    if align == 'motion':
+        s = '/home/mic/repro_manifold/single_cell_motion.npy'
+    else:
+        s = '/home/mic/repro_manifold/single_cell_new_norm.npy'
+    D = np.load(s, allow_pickle=True).flat[0]
+    
+    ys = []
+    regs_ = []
+    labs_ = []
+    for reg in D:
+        if reg is None:
+            continue
+
+        ys.append(D[reg]['Y'])
+        regs_.append([reg]*(D[reg]['Y'].shape[0]))
+        # get lab and region per neuron
+        ns = D[reg]['ns']
+        labs = D[reg]['labs']
+        assert len(ns) == len(labs), 'ns/labs length mismatch!'
+        for i in range(len(labs)):
+            labs_.append([labs[i]]*ns[i])     
+
+    y = np.concatenate(ys)
+    regs = np.concatenate(regs_)
+    labs = np.concatenate(labs_)
+    
+    xs = np.arange(len(y[0]))*T_BIN
+    
+    if shuf:
+        np.random.shuffle(labs)
+
+    lab3 = ['wittenlab','zadorlab','cortexlab']
+    
+    if rm_unre:
+        # remove non-responsive units
+        athr = 0.2
+
+        bad = []
+        for i in range(len(y)):
+            if abs(max(y[i])) < athr:    
+                bad.append(i)
+                continue
+            if lim5: # restrict to     
+                if labs[i] in lab3:
+                    bad.append(i)         
+                
+        y = np.delete(y,bad,axis=0)
+        #y = np.array(y)
+        regs = np.delete(regs,bad,axis=0)
+        labs = np.delete(labs,bad,axis=0)    
+
+    # merge hofer and mirsicflogel labs
+    labs[labs=='mrsicflogellab'] = 'hoferlab'
+    
+    if algo == 'umap':
+        emb = umap.UMAP(random_state=8).fit_transform(y)
+    if algo == 'tSNE':
+        emb = TSNE(n_components=2,perplexity=30,
+                          random_state=8).fit_transform(y)  
+    if algo == 'PCA': 
+        pca = PCA(n_components=2)
+        pca.fit(y)
+        emb = pca.transform(y) 
+
+
+    #fig,axs = plt.subplots(nrows=2,ncols=2,figsize=(5,6))
+    
+    fig = plt.figure()
+    
+    mosaic = """
+            AB
+            CD
+            """    
+    axs = fig.subplot_mosaic(mosaic)
+    
+    
+    
+    cols_lab = [lab_cols[b[x]] for x in labs]                       
+    axs['A'].scatter(emb[:,0],emb[:,1],marker='o',c=cols_lab, s=2)
+
+    labs_ = Counter(labs)
+
+    cents = {}
+    for lab in labs_:
+        cents[lab] = np.mean(emb[labs == lab],axis=0)
+
+    # plot means
+    for lab in cents:
+        axs['A'].scatter(cents[lab][0],cents[lab][1],
+                      s=800,marker='x',color=lab_cols[b[lab]])      
+
+    # plot confidence ellipses
+    for lab in labs_:
+        x = emb[labs == lab]
+        confidence_ellipse(x[:,0], x[:,1], axs['A'], n_std=1.0,
+                           edgecolor=lab_cols[b[lab]])
+
+
+    le = [Patch(facecolor=lab_cols[b[lab]], 
+           edgecolor=lab_cols[b[lab]],
+           label=b[lab]) for lab in labs_] 
+               
+    axs['A'].legend(handles=le,
+     loc='upper left',bbox_to_anchor=(0, 0.5), ncol=1).set_draggable(True)      
+    
+    axs['A'].set_xlabel('embedding dim 1')
+    axs['A'].set_ylabel('embedding dim 2')
+    plt.tight_layout()      
+    
+    # plot average PSTHs across labs
+    for lab in labs_:     
+        ms = np.mean((y[labs == lab])/T_BIN,axis=0)
+        ste = np.std((y[labs == lab])/T_BIN,axis=0)/np.sqrt(len(y[labs == lab]))
+        
+        axs['C'].plot(xs,ms,color=lab_cols[b[lab]])
+        axs['C'].fill_between(xs, ms + ste, ms - ste, 
+                              color=lab_cols[b[lab]],alpha=0.2)
+    
+    
+    
+    axs['C'].set_xlabel('time [sec]')
+    axs['C'].set_ylabel('firing rate [Hz]')    
+    for x in np.array([25, 100])*T_BIN:
+        axs['C'].axvline(x=x, linewidth=0.5, linestyle='--', 
+                               c='g',label='motion start') 
+                                    
+    D = reg_cols()
+    regs_ = Counter(regs)    
+    cols_reg = [D[x] for x in regs]
+    axs['B'].scatter(emb[:,0],emb[:,1],marker='o',c=cols_reg, s=2)
+    
+    regs_ = Counter(regs)
+    cents = {}
+    for reg in regs_:
+        cents[reg] = np.mean(emb[regs == reg],axis=0)
+
+    # plot means
+    for reg in cents:
+        axs['B'].scatter(cents[reg][0],cents[reg][1],
+                      s=800,marker='x',color=D[reg])
+                      
+    # plot confidence ellipses
+    for reg in regs_:
+        x = emb[regs == reg]
+        confidence_ellipse(x[:,0], x[:,1], axs['B'],
+                           n_std=1.0,edgecolor=D[reg])    
+   
+
+    le = [Patch(facecolor=D[reg], 
+           edgecolor=D[reg],
+           label=reg) for reg in regs_] 
+               
+    plt.legend(handles=le,
+     loc='upper left',bbox_to_anchor=(0, 0.5), ncol=1).set_draggable(True)      
+    
+    axs['B'].set_xlabel('embedding dim 1')
+    axs['B'].set_ylabel('embedding dim 2')
+    
+    axs['B'].sharex(axs['A'])
+    axs['B'].sharey(axs['A']) 
+    
+    axs['C'].sharex(axs['D'])
+    axs['C'].sharey(axs['D'])     
+    
+    # plot average PSTHs
+    for reg in regs_:   
+        ms = np.mean((y[regs == reg])/T_BIN,axis=0)
+        ste = np.std((y[regs == reg])/T_BIN,axis=0)/np.sqrt(len(y[regs == reg]))
+        
+        axs['D'].plot(xs,ms,color=D[reg])
+        axs['D'].fill_between(xs, ms + ste, ms - ste, 
+                              color=D[reg],alpha=0.2)
+        
+    for x in np.array([25, 100])*T_BIN:
+        axs['D'].axvline(x=x, linewidth=0.5, linestyle='--', 
+                               c='g',label='motion start')        
+    axs['D'].set_xlabel('time [sec]')
+    axs['D'].set_ylabel('firing rate [Hz]')        
+     
+    plt.suptitle(f'{algo}; dim reduction of PSTH; {len(y)} clusters; \n lab name shuffle {shuf}; responsive only {rm_unre}; align = {align}')
+    plt.tight_layout()    
+    
+
+def reg_cols():
+    
+    return {'PPC': sns.color_palette('colorblind')[0],
+        'CA1': sns.color_palette('colorblind')[2],
+        'DG': sns.color_palette('muted')[2],
+        'LP': sns.color_palette('colorblind')[4],
+        'PO': sns.color_palette('colorblind')[6],
+        'RS': sns.color_palette('Set2')[0],
+        'FS': sns.color_palette('Set2')[1],
+        'RS1': sns.color_palette('Set2')[2],
+        'RS2': sns.color_palette('Set2')[3]}    
+    
+    
+def confidence_ellipse(x, y, ax, n_std=3.0, facecolor='none', **kwargs):
+    """
+    Create a plot of the covariance confidence ellipse of *x* and *y*.
+
+    Parameters
+    ----------
+    x, y : array-like, shape (n, )
+        Input data.
+
+    ax : matplotlib.axes.Axes
+        The axes object to draw the ellipse into.
+
+    n_std : float
+        The number of standard deviations to determine the ellipse's radiuses.
+
+    **kwargs
+        Forwarded to `~matplotlib.patches.Ellipse`
+
+    Returns
+    -------
+    matplotlib.patches.Ellipse
+    """
+    if x.size != y.size:
+        raise ValueError("x and y must be the same size")
+
+    cov = np.cov(x, y)
+    pearson = cov[0, 1]/np.sqrt(cov[0, 0] * cov[1, 1])
+    # Using a special case to obtain the eigenvalues of this
+    # two-dimensional dataset.
+    ell_radius_x = np.sqrt(1 + pearson)
+    ell_radius_y = np.sqrt(1 - pearson)
+    ellipse = Ellipse((0, 0), width=ell_radius_x * 2, height=ell_radius_y * 2,
+                      facecolor=facecolor, **kwargs)
+
+    # Calculating the stdandard deviation of x from
+    # the squareroot of the variance and multiplying
+    # with the given number of standard deviations.
+    scale_x = np.sqrt(cov[0, 0]) * n_std# /np.sqrt(len(x))
+    mean_x = np.mean(x)
+
+    # calculating the stdandard deviation of y ...
+    scale_y = np.sqrt(cov[1, 1]) * n_std# /np.sqrt(len(y))
+    mean_y = np.mean(y)
+
+    transf = transforms.Affine2D() \
+        .rotate_deg(45) \
+        .scale(scale_x, scale_y) \
+        .translate(mean_x, mean_y)
+
+    ellipse.set_transform(transf + ax.transData)
+    return ax.add_patch(ellipse)
+
+
+
+def all_panels(algo = 'PCA',rm_unre=True, 
+               align='motion',lim5 = True,split='RT'):
+
+    # may also try umap here instead of PCA!
+     
+    _,b,lab_cols = labs_maps()
+
+    if split == 'choice':
+        s = '/home/mic/repro_manifold/single_cell_motion.npy'   
+        ts = 'left|right choice PSTH'
+    if split == 'RT':
+        s = '/home/mic/repro_manifold/single_cell_RT2.npy'
+        ts = 'fast|slow RT PSTH'
+            
+        
+    D = np.load(s, allow_pickle=True).flat[0]
+    
+    ys = []
+    ys_re = []
+    regs_ = []
+    labs_ = []
+    for reg in D:
+        if reg is None:
+            continue
+
+        ys.append(D[reg]['Y'])
+        ys_re.append(np.array(D[reg]['Y_re_star']))
+        regs_.append([reg]*(D[reg]['Y'].shape[0]))
+        # get lab and region per neuron
+        ns = D[reg]['ns']
+        labs = D[reg]['labs']
+        assert len(ns) == len(labs), 'ns/labs length mismatch!'
+        for i in range(len(labs)):
+            labs_.append([labs[i]]*ns[i])     
+
+    y = np.concatenate(ys)
+    y_re = np.concatenate(ys_re)
+    regs = np.concatenate(regs_)
+    labs = np.concatenate(labs_)
+    
+
+    xs = np.arange(len(y[0]))*T_BIN   
+
+    lab3 = ['wittenlab','zadorlab','cortexlab']
+    
+    if rm_unre:
+        # remove non-responsive units
+        athr = 0.2
+
+        bad = []
+        for i in range(len(y)):
+            if abs(max(y[i])) < athr:    
+                bad.append(i)
+                continue
+            if lim5: # restrict to     
+                if labs[i] in lab3:
+                    bad.append(i)         
+        
+        print(y.shape, y_re.shape, len(bad))        
+        y = np.delete(y,bad,axis=0)
+        y_re = np.delete(y_re,bad,axis=0)
+        regs = np.delete(regs,bad,axis=0)
+        labs = np.delete(labs,bad,axis=0)
+        
+
+    # merge hofer and mirsicflogel labs
+    labs[labs=='mrsicflogellab'] = 'hoferlab'
+ 
+    if algo == 'umap':
+        emb = umap.UMAP(random_state=8).fit_transform(y)
+    if algo == 'tSNE':
+        emb = TSNE(n_components=2,perplexity=30,
+                          random_state=8).fit_transform(y)  
+    if algo == 'PCA': 
+        pca = PCA(n_components=2)
+        pca.fit(y)
+        emb = pca.transform(y) 
+
+    #fig,axs = plt.subplots(nrows=2,ncols=2,figsize=(5,6))
+    
+    fig = plt.figure(figsize=(16,10))
+    
+    inner = [['Ea'],
+             ['Eb']]
+
+    mosaic = [['C','A','Ia','I',None],
+              ['Ga','G','Ja','J',None],
+              ['Ha','H','Ka','K',None],
+              ['D','B','L',inner,'F']]
+   
+    ms2 = ['Ga','Ha','Ia','Ja','Ka']
+    #panel_n = {
+    
+   
+    axs = fig.subplot_mosaic(mosaic)
+    
+    cols_lab = [lab_cols[b[x]] for x in labs]                       
+    axs['A'].scatter(emb[:,0],emb[:,1],marker='o',c=cols_lab, s=2)
+
+    labs_ = Counter(labs)
+
+    cents = {}
+    for lab in labs_:
+        cents[lab] = np.mean(emb[labs == lab],axis=0)
+
+    # plot means
+    for lab in cents:
+        axs['A'].scatter(cents[lab][0],cents[lab][1],
+                      s=800,marker='x',color=lab_cols[b[lab]])      
+
+    # plot confidence ellipses
+    for lab in labs_:
+        x = emb[labs == lab]
+        confidence_ellipse(x[:,0], x[:,1], axs['A'], n_std=1.0,
+                           edgecolor=lab_cols[b[lab]])
+
+    # permutation test
+    # for a given pair of labs there's a distance of means 
+    def distE(x,y):    
+        return np.sqrt(np.dot(x, x) - 2 * np.dot(x, y) + np.dot(y, y))    
+     
+    nrand = 20  #random lab allocations    
+    centsr = []
+    for shuf in range(nrand):
+        labsr = labs.copy()
+        random.shuffle(labsr)        
+        cenr = {}
+        for lab in labs_:
+            cenr[lab] = np.mean(emb[labsr == lab],axis=0)            
+        centsr.append(cenr)
+    
+    comb = combinations(cents, 2)
+
+    ps = {}
+    for pair in comb:
+        dist = distE(cents[pair[0]],cents[pair[1]])
+        null_d = [distE(cenr[pair[0]],cenr[pair[1]]) for cenr in centsr]
+        p = 1 - (0.01 * percentileofscore(null_d,dist))
+        ps[pair] = p 
+
+
+    le = [Patch(facecolor=lab_cols[b[lab]], 
+           edgecolor=lab_cols[b[lab]],
+           label=b[lab]) for lab in labs_] 
+               
+    axs['A'].legend(handles=le,
+     loc='lower right', ncol=1).set_draggable(True)
+           
+    axs['A'].set_title('all cells')
+    axs['A'].set_xlabel('embedding dim 1')
+    axs['A'].set_ylabel('embedding dim 2')
+    axs['A'].text(-0.1, 1.15, 'A', transform=axs['A'].transAxes,
+      fontsize=16,  va='top', ha='right', weight='bold')
+            
+    
+    # plot average PSTHs across labs
+    for lab in labs_:     
+        ms = np.mean((y[labs == lab])/T_BIN,axis=0)
+        ste = np.std((y[labs == lab])/T_BIN,axis=0)/np.sqrt(len(y[labs == lab]))
+        
+        axs['C'].plot(xs,ms,color=lab_cols[b[lab]])
+        axs['C'].fill_between(xs, ms + ste, ms - ste, 
+                              color=lab_cols[b[lab]],alpha=0.2)
+    
+    
+
+                              
+    axs['C'].set_title(ts)
+    axs['C'].set_xlabel('time [sec]')
+    axs['C'].set_ylabel('firing rate [Hz]')    
+    for x in np.array([25, 100])*T_BIN:
+        axs['C'].axvline(x=x, lw=0.5, linestyle='--', 
+                               c='g',label='motion start')
+                               
+    axs['C'].axvline(x=75*T_BIN, lw=2, linestyle='-', 
+                           c='cyan',label='trial cut')                               
+                               
+    axs['C'].text(-0.1, 1.15, 'C', transform=axs['C'].transAxes,
+      fontsize=16,  va='top', ha='right', weight='bold')
+    
+    le = [Line2D([0], [0], color='g', lw=0.5, ls='--', label='motion start'),
+          Line2D([0], [0], color='cyan', lw=2, ls='-', label='trial cut')] 
+               
+    axs['C'].legend(handles=le,
+     loc='lower right', ncol=1).set_draggable(True)  
+                                    
+    Dc = reg_cols()
+    regs_ = Counter(regs)    
+    cols_reg = [Dc[x] for x in regs]
+    axs['B'].scatter(emb[:,0],emb[:,1],marker='o',c=cols_reg, s=2)
+    
+    regs_ = Counter(regs)
+    cents = {}
+    for reg in regs_:
+        cents[reg] = np.mean(emb[regs == reg],axis=0)
+
+    # plot means
+    for reg in cents:
+        axs['B'].scatter(cents[reg][0],cents[reg][1],
+                      s=800,marker='x',color=Dc[reg])
+                      
+    # plot confidence ellipses
+    for reg in regs_:
+        x = emb[regs == reg]
+        confidence_ellipse(x[:,0], x[:,1], axs['B'],
+                           n_std=1.0,edgecolor=Dc[reg])    
+
+    le = [Patch(facecolor=Dc[reg], 
+           edgecolor=Dc[reg],
+           label=reg) for reg in regs_] 
+               
+    axs['B'].legend(handles=le,
+     loc='lower right', ncol=1).set_draggable(True) 
+          
+    axs['B'].set_title('all cells')
+    axs['B'].set_xlabel('embedding dim 1')
+    axs['B'].set_ylabel('embedding dim 2')
+    axs['B'].text(-0.1, 1.15, 'B', transform=axs['B'].transAxes,
+      fontsize=16,  va='top', ha='right', weight='bold')
+    
+    axs['B'].sharex(axs['A'])
+    axs['B'].sharey(axs['A']) 
+    
+    axs['C'].sharex(axs['D'])
+    axs['C'].sharey(axs['D'])     
+    
+    # plot average PSTHs
+    for reg in regs_:   
+        ms = np.mean((y[regs == reg])/T_BIN,axis=0)
+        ste = np.std((y[regs == reg])/T_BIN,axis=0)/np.sqrt(len(y[regs == reg]))
+        
+        axs['D'].plot(xs,ms,color=Dc[reg])
+        axs['D'].fill_between(xs, ms + ste, ms - ste, 
+                              color=Dc[reg],alpha=0.2)
+        
+    for x in np.array([25, 100])*T_BIN:
+        axs['D'].axvline(x=x, linewidth=0.5, linestyle='--', 
+                               c='g',label='motion start')
+                               
+    axs['D'].axvline(x=75*T_BIN, lw=2, linestyle='-', 
+                           c='cyan',label='trial cut') 
+            
+    axs['D'].set_title(ts)
+    axs['D'].set_xlabel('time [sec]')
+    axs['D'].set_ylabel('firing rate [Hz]')        
+    axs['D'].text(-0.1, 1.15, 'D', transform=axs['D'].transAxes,
+      fontsize=16,  va='top', ha='right', weight='bold')
+      
+    le = [Line2D([0], [0], color='g', lw=0.5, ls='--', label='motion start'),
+          Line2D([0], [0], color='cyan', lw=2, ls='-', label='trial cut')] 
+               
+    axs['D'].legend(handles=le,
+     loc='lower right', ncol=1).set_draggable(True)
+  
+    '''
+    check mosaic plot function to get different space allocation
+    '''
+
+    r2s = []
+    l2s = []
+    iex = []
+    for i in range(len(y)):
+        r2s.append(r2_score(y[i],y_re[i]))
+        l2s.append(np.sum(np.power((y[i]-y_re[i]),2)))
+        iex.append(i)
+            
+    # illustrate example cells
+    # 1 with great, 1 with bad reconstruction     
+    t = np.argsort(r2s)   
+    t_ = np.concatenate([t[170:171],t[-1:]])#,t[len(t)//2:len(t)//2 +1]
+    
+    xs = np.arange(len(y[0]))*T_BIN
+    
+    # split good and bad example cell into two panels
+    ms = ['Ea','Eb']
+    idxs = [iex[j] for j in t_]
+    
+    for k in range(len(idxs)):
+
+        axs[ms[k]].plot(xs,y[idxs[k]]/T_BIN,c='k',label='PSTH')
+        axs[ms[k]].plot(xs,y_re[idxs[k]]/T_BIN,c='r',ls='--',label='fit')
+
+        for x in np.array([25, 100])*T_BIN:
+            axs[ms[k]].axvline(x=x, linewidth=0.5, linestyle='--', 
+                                   c='g',label='motion start')
+        axs[ms[k]].axvline(x=75*T_BIN, lw=2, linestyle='-', 
+                               c='cyan',label='trial cut')               
+        axs[ms[k]].set_ylabel('firing rate \n [Hz]')
+        axs[ms[k]].text(1, 0.2, 
+                        rf'$r^2$={np.round(r2_score(y[idxs[k]],y_re[idxs[k]]),2)}',
+                        transform=axs[ms[k]].transAxes,
+                        fontsize=8,  va='top', ha='right') 
+        k+=1                       
+        
+        
+    axs['Eb'].set_xlabel('time [sec]')
+    
+    axs['Ea'].set_title('example cells PSTHs \n and PCA-reconstruction')
+        
+    axs['Ea'].text(-0.1, 1.15, 'E', transform=axs['Ea'].transAxes,
+      fontsize=16,  va='top', ha='right', weight='bold')
+      
+      
+    le = [Line2D([0], [0], c='r',ls='--', label='fit'),
+          Line2D([0], [0], c='k', label='PSTH')] 
+               
+    axs['Ea'].legend(handles=le,
+     loc='lower right', ncol=1).set_draggable(True)
+      
+    n, bins, patches = axs['F'].hist(x=r2s, bins='auto', color='#0504aa',                
+                                alpha=0.7, rwidth=0.85)
+                                
+    axs['F'].set_xlabel(r'$r^2$')
+    axs['F'].set_ylabel('number of neurons')
+    axs['F'].set_title('goodness of PSTH \n reconstruction')     
+    axs['F'].text(-0.1, 1.15, 'F', transform=axs['F'].transAxes,
+      fontsize=16,  va='top', ha='right', weight='bold')
+    
+    # per region dim red
+    ms = ['G','H','I','J','K']
+    ms2 = ['Ga','Ha','Ia','Ja','Ka']
+    
+    k = 0
+    
+    p_r = {}
+    for reg in D:
+        if reg is None:
+            continue
+        
+        y2 = y[regs == reg]
+        labs2 = labs[regs == reg]
+            
+#        pca = PCA(n_components=2)
+#        pca.fit(y2)
+#        emb = pca.transform(y2) 
+        
+        emb2 = emb[regs == reg]
+
+        cols_lab = [lab_cols[b[x]] for x in labs2]                      
+        axs[ms[k]].scatter(emb2[:,0],emb2[:,1],marker='o',c=cols_lab, s=2)
+
+        labs_ = Counter(labs2)
+
+        cents = {}
+        for lab in labs_:
+            cents[lab] = np.mean(emb2[labs2 == lab],axis=0)
+
+        # plot means
+        for lab in cents:
+            axs[ms[k]].scatter(cents[lab][0],cents[lab][1],
+                          s=800,marker='x',color=lab_cols[b[lab]])      
+
+        # plot confidence ellipses
+        for lab in labs_:
+            x = emb2[labs2 == lab]
+            confidence_ellipse(x[:,0], x[:,1], axs[ms[k]], n_std=1.0,
+                               edgecolor=lab_cols[b[lab]])
+
+        # shuffle test
+        nrand = 20  #random lab allocations    
+        centsr = []
+        for shuf in range(nrand):
+            labsr = labs2.copy()
+            random.shuffle(labsr)        
+            cenr = {}
+            for lab in labs_:
+                cenr[lab] = np.mean(emb2[labsr == lab],axis=0)            
+            centsr.append(cenr)
+        
+
+        ps = {}
+        for lab in cents:
+            cs = np.mean([cents[l] for l in cents if l!=lab],axis=0)
+            dist = distE(cents[lab],cs)
+             
+            null_d = [distE(cenr[lab],
+                      np.mean([cenr[l] for l in cenr if l!=lab],axis=0)) 
+                      for cenr in centsr]
+            p = 1 - (0.01 * percentileofscore(null_d,dist))
+            ps[lab] = np.round(p,3) 
+        p_r[reg] = ps
+
+#        comb = combinations(cents, 2)
+
+#        ps = {}
+#        for pair in comb:
+#            dist = distE(cents[pair[0]],cents[pair[1]])
+#            null_d = [distE(cenr[pair[0]],cenr[pair[1]]) for cenr in centsr]
+#            p = 1 - (0.01 * percentileofscore(null_d,dist))
+#            ps[pair] = np.round(p,3) 
+#        p_r[reg] = ps
+
+        axs[ms[k]].set_title(reg)
+        axs[ms[k]].set_xlabel('embedding dim 1')
+        axs[ms[k]].set_ylabel('embedding dim 2')
+        axs[ms[k]].text(-0.1, 1.15, ms[k], transform=axs[ms[k]].transAxes,
+          fontsize=16,  va='top', ha='right', weight='bold')
+          
+        axs[ms[k]].sharex(axs['A'])
+        axs[ms[k]].sharey(axs['A']) 
+        
+        # plot average PSTHs across labs
+        for lab in labs_:  
+   
+            mes = np.mean((y2[labs2 == lab])/T_BIN,axis=0)
+            ste = np.std((y2[labs2 == lab])/T_BIN,axis=0)/np.sqrt(len(y2[labs2 == lab]))
+            
+            
+            axs[ms2[k]].plot(xs,mes,color=lab_cols[b[lab]])
+            axs[ms2[k]].fill_between(xs, mes + ste, mes - ste, 
+                                  color=lab_cols[b[lab]],alpha=0.2)
+                                  
+        axs[ms2[k]].set_title(reg)
+        axs[ms2[k]].set_xlabel('time [sec]')
+        axs[ms2[k]].set_ylabel('firing rate [Hz]')    
+        for x in np.array([25, 100])*T_BIN:
+            axs[ms2[k]].axvline(x=x, lw=0.5, linestyle='--', 
+                                   c='g',label='motion start')
+                                   
+        axs[ms2[k]].axvline(x=75*T_BIN, lw=2, linestyle='-', 
+                               c='cyan',label='trial cut')                               
+                                   
+        axs[ms2[k]].text(-0.1, 1.15, ms2[k], transform=axs[ms2[k]].transAxes,
+          fontsize=16,  va='top', ha='right', weight='bold')
+        
+        le = [Line2D([0], [0], color='g', lw=0.5, ls='--', label='motion start'),
+              Line2D([0], [0], color='cyan', lw=2, ls='-', label='trial cut')] 
+                   
+#        axs[ms2[k]].legend(handles=le,
+#         loc='lower right', ncol=1).set_draggable(True)         
+
+        axs[ms2[k]].sharex(axs['C'])
+        axs[ms2[k]].sharey(axs['C'])
+                
+        k+=1
+
+    # plot permutation test p values for regional scatters 
+    a = np.zeros((len(p_r),len(p_r[list(p_r.keys())[0]])))
+    
+    # multiple comparison correction
+    pvals = [p_r[reg][lab] for  reg in p_r for lab in p_r[reg]]
+    _, pvals_c, _, _ = multipletests(pvals, 0.05, method='fdr_bh')
+    
+    p_rc = {}
+    i = 0
+    for reg in p_r:
+        p_rc[reg] = {}
+        for lab in p_r[reg]:
+            p_rc[reg][lab] = pvals_c[i]        
+            i += 1
+            
+    i = 0
+    for reg in p_r:
+        j = 0
+        for pair in p_r[reg]:
+            #if p_r[reg][pair] < 0.05:
+            a[i,j] = p_r[reg][pair]
+            j += 1                        
+        i += 1
+    
+    im = axs['L'].imshow(a, cmap='cool',aspect="auto",#'Greys'
+        interpolation='none')      
+    cb = fig.colorbar(im, ax=axs['L'], location='right', anchor=(0, 0.3), shrink=0.7)
+    cb.ax.set_ylabel('p')
+    axs['L'].set_xticks(range(len(p_r[reg].keys())))
+    axs['L'].set_xticklabels([b[lab] for lab in p_r[reg].keys()],rotation = 90)
+    axs['L'].set_yticks(range(len(p_r.keys())))
+    axs['L'].set_yticklabels(p_r.keys())    
+    
+    axs['L'].set_title(f'permutation test')
+    axs['L'].set_xlabel(f'labs')
+    axs['L'].set_ylabel('regions') 
+    axs['L'].text(-0.1, 1.15, 'L', transform=axs['L'].transAxes,
+      fontsize=16,  va='top', ha='right', weight='bold')
+      
+    plt.suptitle(f'{algo}; dim reduction of PSTH; {len(y)} clusters'
+                 f'; responsive only {rm_unre}; align = {align}; split = {split}')     
+    plt.tight_layout()
+
+
+
+def plot_reaction_time_hists(rts=None):
+
+    fig = plt.figure()
+    lab3 = ['wittenlab','zadorlab','cortexlab']
+    if rts is None:
+        inserts = get_repeated_sites()
+        eids = np.array(inserts)[:,0]
+        
+        rts = []
+        for eid in eids:
+            lab = str(one.eid2path(eid)).split('/')[4]
+            if lab in lab3:
+                continue
+            wheelMoves = one.load_object(eid, 'wheelMoves')
+            A = wheelMoves['intervals'][:,0]
+            trials = one.load_object(eid, 'trials')
+            evts = ['stimOn_times', 'feedback_times', 'probabilityLeft',
+                    'choice', 'feedbackType']   
+
+            for tr in range(len(trials['intervals'])):
+                    
+                # skip trial if any key info is nan 
+                if any(np.isnan([trials[k][tr] for k in evts])):
+                    continue
+                    
+                # skip trial if duration is too long
+                if trials['feedback_times'][tr] - trials['stimOn_times'][tr] > 10: 
+                    continue      
+
+
+                b = trials['stimOn_times'][tr]
+                c = trials['feedback_times'][tr]
+                # making sure the motion onset time is in a coupled interval
+                ind = np.where((A > b) & (A < c), True, False)
+                if all(~ind):
+                    #print(f'non-still start, trial {tr} and eid {eid}')
+                    continue
+                a=A[ind][0]    
+                rts.append(a-b)
+        
+    rtsf = np.array(rts)
+    
+    plt.hist(rtsf[np.where(rtsf<5)[0]],bins=200)
+    plt.xlabel('reaction time [sec]')
+    plt.ylabel('frequency')
+    plt.title('pooled reaction times \n of repeated site sessions')
 
 
 

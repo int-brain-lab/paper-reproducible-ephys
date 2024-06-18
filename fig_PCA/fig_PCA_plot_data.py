@@ -46,6 +46,12 @@ warnings.filterwarnings("ignore")
 T_BIN = 0.02  # time bin size in seconds
 _, b, lab_cols = labs()
 
+# canonical lab order
+canon = ['danlab', 'mainenlab','churchlandlab',
+        'angelakilab','wittenlab', 'hoferlab',
+        'cortexlab', 'churchlandlab_ucla', 'steinmetzlab',
+        'zadorlab']
+
 
 # set figure style
 figure_style()
@@ -118,173 +124,6 @@ def distE(x, y):
     return np.sqrt(np.dot(x, x) - 2 * np.dot(x, y) + np.dot(y, y))
 
 
-def perm_test_shift(inclu=False, fdr=True, sig_lev=0.01, ax = None):
-
-    '''
-    do KS test with multiples of std of values shifted
-    until target issignificantly different to remaining
-    '''
-    emb, regs, labss = all_panels(get_dat=True) 
-    
-    # abbreviate lab names
-    labs0 = [b[x] for x in labss]
-    labss = np.array(labs0)
-       
-    regs_ = list(Counter(regs))
-    labs_ = list(Counter(labss))
-
-    td = {'regs':regs,'labs':labss}
-
-    res = []
-    As = []
-    # shift firs PCs by multiples of their std 
-    n_stds = 1
-    steps = 10
-    shifts = np.linspace(0,n_stds,steps)
-    
-    for shift in shifts:
-     
-        RKS = {}
-
-        for tarn in td:
-            
-            tar = td[tarn]
-
-            for reg in regs_ + ['all']:
-                if tarn != 'labs':
-                    if reg != 'all':
-                        continue
-                    else:
-                        emb0 = emb
-                        tar0 = tar
-                else:
-                    if reg == 'all':
-                        emb0 = emb
-                        tar0 = tar
-                                   
-                    else:
-                        emb0 = emb[regs == reg]
-                        tar0 = tar[regs == reg]
-                    
-                tar_ = Counter(tar0)
-                
-                gs = {}  # first PCs per class (for KS test)
-                gsi = {}  # first PCs per remaining classes
-                
-                for x in tar_:
-                
-                    # here the shift occurs
-                    x0 = emb0[tar0 == x][:,0]
-                    gs[x] = x0 + shift * np.std(x0)
-                    gsi[x] = emb0[tar0 != x][:,0]                
-               
-                pKS = {}
-                      
-                for x in tar_:
-                    if inclu:
-                        g_ = emb0[:,0]
-                    else:
-                        g_ = gsi[x]
-                    
-                    _, pKS[x] = ks_2samp(g_, gs[x])
-                    
-                if fdr:
-                    _, pls_cKS, _, _ = multipletests([pKS[x] for x in pKS],
-                                                    sig_lev, method='fdr_bh')
-                else:
-                    pls_cKS = [pKS[x] for x in pKS]
-
-                resKS = dict(zip([x for x in pKS], 
-                                 [np.round(y,4) for y in pls_cKS]))
-                RKS[tarn+'_'+reg] = resKS  
-
-        res.append(RKS)
-
-        # matrix to summarize p-values        
-        AKS = np.empty([len(regs_) + 1, len(labs_) + 1])
-        AKS[:] = np.nan
-
-
-        # fill entries for region contsraint tests    
-        for i in range(len(regs_)):
-            for j in range(len(labs_)):
-                if labs_[j] not in RKS[f'labs_{regs_[i]}']:
-                    continue        
-                else:
-                    AKS[i,j] = RKS[f'labs_{regs_[i]}'][labs_[j]]
-
-        # add for tests that use all cells
-        j = 0
-        for lab in RKS['labs_all']:        
-            AKS[-1,j] = RKS['labs_all'][lab]
-            j += 1 
-            
-        i = 0
-        for reg in RKS['regs_all']:       
-            AKS[i,-1] = RKS['regs_all'][reg]
-            i += 1
-            
-        As.append(AKS)  
-
-    A = np.array(As)
-    
-    _, rs, cols = A.shape
-    
-    a0 = np.empty((rs,cols))
-    a0[:] = np.nan
-    
-    for i in range(rs):
-        for j in range(cols):
-            if any(np.isnan(A[:,i,j])):
-                continue    
-            a0[i,j] = np.where(A[:,i,j]<sig_lev)[0][0]
-
-
-    '''
-    plotting
-    '''
-
-    if ax is None:
-        fig, ax = plt.subplots(figsize=(3,3))
-    else:
-        fig = plt.gcf()
-
-
-    ncols = int(np.nanmax(a0)) + 1
-    cmap = mpl.colors.ListedColormap(plt.cm.Blues(np.linspace(0.3, 1, ncols)))
-    #cmap.set_under((.8, .8, .8, 1.0))
-
-    # continue here
-    sns.heatmap(a0.T, cmap=cmap, square=True,
-                cbar=True,
-                annot=False, annot_kws={"size": 5},
-                linewidths=.5, fmt='.2f', 
-                ax=ax)                
-    
-    cbar = ax.collections[0].colorbar
-    cbar.set_ticks(np.linspace(1, ncols, 2 * ncols + 1)[1::2] -1)
-    cbar.set_ticklabels(np.arange(0, ncols)/10)
-    cbar.set_label('shift until sig. [std]')
-    
-    
-    ax.set(xlabel='', ylabel='', 
-              xticks=np.arange(len(regs_ + ['all'])) + 0.5, 
-              yticks=np.arange(len(labs_ + ['all'])) + 0.5,
-              title='power analysis')
-              
-    ax.set_yticklabels(labs_ + ['all'], 
-                          va='center', rotation=0)
-    ax.set_xticklabels(regs_ + ['all'], rotation=90)
-    
-    # separate 'all' from others via lines
-    ax.axvline(x=len(regs_),c='k', linewidth=2)
-    ax.axhline(y=len(labs_),c='k', linewidth=2)
-
-    fig = plt.gcf()
-    fig.tight_layout()
-
-
-
 def perm_test(inclu=False, print_=False, 
               nrand=2000, sig_lev =0.01, fdr = True, ax = None,
               plot_=True, samp=True):
@@ -302,7 +141,16 @@ def perm_test(inclu=False, print_=False,
     '''
         
     emb00, regs00, labss00 = all_panels(get_dat=True)
-    labs_ = list(Counter(labss00))
+    labs__ = list(Counter(labss00))
+
+    #order labs canonically
+    labs_ = []
+
+    for lab in canon:
+        if lab in labs__:
+            labs_.append(lab)    
+    
+    
     regs_ = Counter(regs00)
     
     assert len(emb00) == len(regs00) == len(labss00), 'mismatch' 
@@ -648,7 +496,7 @@ def perm_test(inclu=False, print_=False,
 
 
 def all_panels(rm_unre=True, align='move', split='rt', 
-               xyz_res=False, re_rank=2, fdr=True, permute_include=True,
+               xyz_res=False, re_rank=2, fdr=False, permute_include=True,
                nrand = 2000, sig_lev = 0.01, inclu = False, 
                perm_tests=True, get_dat=False, freeze='freeze_2024_03',
                get_info=False):
@@ -796,7 +644,14 @@ def all_panels(rm_unre=True, align='move', split='rt',
         axss[key].spines['top'].set_visible(False)
         axss[key].spines['right'].set_visible(False)        
             
-    labs_ = Counter(labs)
+    labs__ = Counter(labs)
+    
+    #order labs canonically
+    labs_ = []
+
+    for lab in canon:
+        if lab in labs__:
+            labs_.append(lab)
 
     le_labs = [Patch(facecolor=lab_cols[b[lab]], 
                edgecolor=lab_cols[b[lab]], label=b[lab]) for lab in labs_]
@@ -820,9 +675,7 @@ def all_panels(rm_unre=True, align='move', split='rt',
                   fdr = fdr, ax=axs['KSmean'],samp=True)                   
                   
                   
-#        # power analysis          
-#        perm_test_shift(inclu=inclu,sig_lev =sig_lev,fdr = fdr, 
-#                        ax=axs['KSshift'])
+
                         
         # put panel label
         for pan in ['KS', 'KSmean']:              
@@ -949,7 +802,7 @@ def all_panels(rm_unre=True, align='move', split='rt',
                          c='g', label='movement onset')
 
     axs['D'].set_xlabel('time from \n movement onset (s)')
-    axs['D'].set_ylabel('Firing rate \n (spikes/s)')
+    axs['D'].set_ylabel('Baselined firing rate \n (spikes/s)')
     axs['D'].text(-0.1, 1.30, panel_n['D'], 
                   transform=axs['D'].transAxes, fontsize=plfs, 
                   va='top', ha='right', weight='bold')
@@ -981,7 +834,7 @@ def all_panels(rm_unre=True, align='move', split='rt',
                          c='g', label='movement onset')
 
     axs['m_labs'].set_xlabel('time from \n movement onset (s)')
-    axs['m_labs'].set_ylabel('Firing rate \n (spikes/s)')
+    axs['m_labs'].set_ylabel('Baselined firing rate \n (spikes/s)')
     axs['m_labs'].text(-0.1, 1.30, panel_n['m_labs'], 
                   transform=axs['m_labs'].transAxes, fontsize=plfs, 
                   va='top', ha='right', weight='bold')
@@ -1025,7 +878,7 @@ def all_panels(rm_unre=True, align='move', split='rt',
             axs[ms[k]].axvline(x=0, linewidth=0.5, linestyle='--',
                                c='g', label='movement onset')
 
-        axs[ms[k]].set_ylabel('Firing rate \n (spikes/s)')
+        axs[ms[k]].set_ylabel('Baselined \n firing rate \n (spikes/s)')
         stext = rf'$R^2$={np.round(r2_score(y[idxs[k]], y_res[2][idxs[k]]), 2)}'
         axs[ms[k]].text(0.3, 1, stext, transform=axs[ms[k]].transAxes,
                         fontsize=7, va='top', ha='right')
@@ -1177,7 +1030,7 @@ def all_panels(rm_unre=True, align='move', split='rt',
     bars = axsir.bar(range(len(ksr)), [ksr[reg][0] for reg in ksr], 
                   color = [Dc[reg] for reg in ksr])
                   
-    axsir.set_xlabel('regs')
+    axsir.set_xlabel('regions')
     axsir.set_xticks([])
     axsir.set_xticklabels([])
     axsir.set_ylabel('KS')
@@ -1369,7 +1222,7 @@ def all_panels(rm_unre=True, align='move', split='rt',
 
         axs3[ms2[k]].set_title(reg, loc='left')
         axs3[ms2[k]].set_xlabel('time from \n movement onset (s)')
-        axs3[ms2[k]].set_ylabel('Firing rate \n (spikes/s)')
+        axs3[ms2[k]].set_ylabel('Baselined firing rate \n (spikes/s)')
         
         for x in np.array([25]) * T_BIN:
             axs3[ms2[k]].axvline(x=0, lw=0.5, linestyle='--', 

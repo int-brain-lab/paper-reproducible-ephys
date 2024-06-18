@@ -111,19 +111,29 @@ def plot_probe_surf_coord(traj='micro', min_rec_per_lab=4):
     # Load in data
     probe_data = load_dataframe(df_name='traj')
 
-    # manually exclude (for now) unresolved PIDs + one odd?(68d) looking insertion..?
+    # manually exclude (for now) unresolved PIDs + one odd?(68d) looking insertion..? 38a1 - NR_0031, micro data far off??
     pids = [
         '2ff92e61-c2af-4dbf-8862-bd50b344762b',
         '8f1d5aad-8c1f-4e81-869a-5a1ab1bf53b2',
         'b53cc868-008a-4d20-a33a-ea3101be2d34',
         'f06d6cd9-a6b8-49a4-90d1-7905d04c2f8b',
-        '84fd7fa3-6c2d-4233-b265-46a427d3d68d']
+        '84fd7fa3-6c2d-4233-b265-46a427d3d68d',
+        '4836a465-c691-4852-a0b1-dcd2b1ce38a1']
 
     for p in pids:
         probe_data = probe_data[ probe_data['pid'] != p]
 
     # map labs to institutions
-    probe_data['institution'] = probe_data['lab'].map(institution_map)
+    probe_data['institute'] = probe_data['lab'].map(institution_map)
+
+    # remove any institutes which have N less than min_rec_per_lab
+    pd_inst_counts = probe_data['institute'].value_counts()
+    # keys returns the value counts names (ie. institute strings!)
+    inst_ex = pd_inst_counts.keys()[pd_inst_counts < min_rec_per_lab]
+    # remove each institute that has too few n
+    for ie in inst_ex:
+        print('\n\nexcluding institute from ALL-PROBE analysis (below min_rec_per_lab): ', ie)
+        probe_data = probe_data[probe_data['institute'] != ie].reset_index()
 
     # for micro-manipulator EXCLUDE where micro-manipulator data was not recorded - planned == micro
     if traj == 'micro':
@@ -153,8 +163,8 @@ def plot_probe_surf_coord(traj='micro', min_rec_per_lab=4):
                  marker="o", markersize=0.5, alpha=0.8, markeredgewidth=0.5)
 
     # Plot mean micro coords - institution means - as cross
-    inst_mean_x = probe_data.groupby('institution')[f'{traj}_x'].mean()
-    inst_mean_y = probe_data.groupby('institution')[f'{traj}_y'].mean()
+    inst_mean_x = probe_data.groupby('institute')[f'{traj}_x'].mean()
+    inst_mean_y = probe_data.groupby('institute')[f'{traj}_y'].mean()
 
     for x, y, k in zip(inst_mean_x, inst_mean_y, inst_mean_x.keys()):
         ax1.plot(x, y, 
@@ -214,11 +224,13 @@ def plot_probe_surf_coord(traj='micro', min_rec_per_lab=4):
         #      'PASS : ' + str(np.around(top_mean_include, 1)) + ' (' + str(np.around(top_std_include, 2)) + ')' + ' µm')
 
     if traj == 'micro':
-        ax1.set_xlim((-2500, -1800))
-        ax1.set_ylim((-2500, -1500))
+        ax1.set_xlim((-3200, -1200))
+        ax1.set_ylim((-3200, -1200))
+        #ax1.set_xlim((-2600, -1600))
+        #ax1.set_ylim((-2400, -1400))
     else:
-        ax1.set_xlim((-3000, -1000))
-        ax1.set_ylim((-3000, -1000))
+        ax1.set_xlim((-3200, -1200))
+        ax1.set_ylim((-3200, -1200))
     ax1.xaxis.set_major_locator(plt.MaxNLocator(5))
     ax1.yaxis.set_major_locator(plt.MaxNLocator(5))
 
@@ -259,13 +271,14 @@ def plot_probe_distance_all_lab(traj='micro', min_rec_per_lab=4, perform_permuta
     # Load data
     probe_data = load_dataframe(df_name='traj')
 
-    # manually exclude (for now) unresolved PIDs + one odd?(68d) looking insertion..?
+    # manually exclude (for now) unresolved PIDs + one odd?(68d) looking insertion..? 38a1 - NR_0031, micro data far off??
     pids = [
         '2ff92e61-c2af-4dbf-8862-bd50b344762b',
         '8f1d5aad-8c1f-4e81-869a-5a1ab1bf53b2',
         'b53cc868-008a-4d20-a33a-ea3101be2d34',
         'f06d6cd9-a6b8-49a4-90d1-7905d04c2f8b',
-        '84fd7fa3-6c2d-4233-b265-46a427d3d68d']
+        '84fd7fa3-6c2d-4233-b265-46a427d3d68d',
+        '4836a465-c691-4852-a0b1-dcd2b1ce38a1']
 
     for p in pids:
         probe_data = probe_data[ probe_data['pid'] != p]
@@ -350,18 +363,14 @@ def plot_probe_distance_all_lab(traj='micro', min_rec_per_lab=4, perform_permuta
     axr1c0 = fig_axes[1]
 
     # Create an array with colors to use
-    #colors_pts = ["#0BFF0B", "#FF0B0B"]  # GREEN AND RED FOR PASS/FAIL
     colors_pts = ["#000000"]  # BLACK
 
     # Plot ALL kdeplot + boxplot/stripplot
-    #sns.histplot(probe_data[f'{traj}_error_surf_xy'], kde=True, color='grey', ax=ax1)
-    #sns.boxplot(y='passed', x=f'{traj}_error_surf_xy', data=probe_data, hue='passed', orient="h", fliersize=2,
-    #            order = ['PASS', 'FAIL'], ax=ax1)
-    #ax1.legend_.remove()
     sns.kdeplot( x=f'{traj}_error_surf_xy', data=probe_data, color='#000000', fill=True, ax=axr0c0)
     axr0c0.tick_params(axis='both', which='major', labelsize=5)
     # round up to nearest hundred from maximum xy surface error for histoloy
     max_distance = int(math.ceil( max(probe_data[f'{traj}_error_surf_xy']) / 100.0)) * 100
+    max_distance = int(math.ceil( max(probe_data['hist_error_surf_xy']) / 100.0)) * 100 # use histology error for both plots
     axr0c0.set_xlim(0, max_distance)
     axr0c0.set_ylabel('density', fontsize=6)
     axr0c0.set_xlabel(None)
@@ -382,8 +391,6 @@ def plot_probe_distance_all_lab(traj='micro', min_rec_per_lab=4, perform_permuta
         order_colors.append(institution_colors[ob])
 
     # plot boxplot
-    #sns.boxplot(y='institute', x=f'{traj}_error_surf_xy', data=probe_data, orient="h", showfliers = False, 
-    #            order=order_by, ax=axr1c0)
     sns.boxplot(y='institute', x=f'{traj}_error_surf_xy', data=probe_data, 
                 palette=order_colors, orient="h", showfliers=False, linewidth=0.5, 
                 order=order_by, ax=axr1c0)
@@ -401,7 +408,7 @@ def plot_probe_distance_all_lab(traj='micro', min_rec_per_lab=4, perform_permuta
     axr1c0.set_xlim(0, max_distance)
     axr1c0.set_xlabel(None)
     axr1c0.xaxis.set_major_locator(plt.MaxNLocator(5))
-    axr1c0.tick_params(axis='x', labelrotation=90)
+    #axr1c0.tick_params(axis='x', labelrotation=90)
     #axr1c0.get_legend().remove()
 
     if traj == 'micro':
@@ -410,11 +417,12 @@ def plot_probe_distance_all_lab(traj='micro', min_rec_per_lab=4, perform_permuta
         #axr1c0.legend(handles[0:2], labels[0:2], bbox_to_anchor=(0.98, 0.05), loc=4, 
         #       borderaxespad=0., prop={'size': 4}, markerscale=0.2)
         fig.suptitle('Micromanipulator-to-planned distance', fontsize=7)
-        fig.supxlabel('Micromanipulator distance (µm)', fontsize=7)
+        #fig.supxlabel('\nMicromanipulator distance (µm)', fontsize=7)
+        axr1c0.set_xlabel('Micromanipulator distance (µm)')
     else:
         fig.suptitle('Histology-to-planned distance', fontsize=7)
-        fig.supxlabel('Histology distance (µm)', fontsize=7)
-
+        #fig.supxlabel('\nHistology distance (µm)', fontsize=7)
+        axr1c0.set_xlabel('Histology distance (µm)')
 
     plt.tight_layout()  # tighten layout around xlabel & ylabel
     fig.set_size_inches(2.15, 2.8)
@@ -437,6 +445,6 @@ def plot_probe_distance_all_lab(traj='micro', min_rec_per_lab=4, perform_permuta
         else:
             print('\nHistology brain surface coordinate')
 
-        print("PERMUTATION TEST ALL : ", p_m, "\n\n")
+        print("\n\n\nPERMUTATION TEST ALL : ", p_m, "\n\n\n\n")
 
 
