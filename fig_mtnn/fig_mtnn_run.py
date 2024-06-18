@@ -5,7 +5,7 @@ import sys
 sys.path.append('..')
 from fig_mtnn.fig_mtnn_prepare_data import prepare_data
 from fig_mtnn.fig_mtnn_load_data import download_data
-from fig_mtnn.fig_mtnn_train import train_all, train_groups
+from fig_mtnn.fig_mtnn_train import train_all, train_groups, train_labID_exp
 from fig_mtnn.fig_mtnn_plot_data import plot_figures9, plot_figures10
 
 from one.api import ONE
@@ -19,6 +19,7 @@ def run_fig_mtnn(one, do_training=False):
         prepare_data(one)
         train_all()
         train_groups()
+        train_labID_exp()
 
     plot_figures9()
     plot_figures10()

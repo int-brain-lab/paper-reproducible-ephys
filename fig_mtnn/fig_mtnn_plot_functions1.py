@@ -11,7 +11,7 @@ import pylab as pl
 from tqdm import notebook
 from sklearn.metrics import r2_score
 
-from reproducible_ephys_functions import save_data_path, save_figure_path, figure_style
+from reproducible_ephys_functions import save_data_path, save_figure_path, figure_style, labs
 from fig_mtnn.neural_and_behav_rasters import plot_neural_behav_raster
 from fig_mtnn.utils import (cov_idx_dict, get_acronym_dict_reverse, compute_mean_frs, acronym_offset, noise_offset, lab_offset,
                                          session_offset, xyz_offset, stimulus_offset, leave_out_covs_for_glm, reshape_flattened)
@@ -174,7 +174,7 @@ def make_fig_ax():
 
 def generate_figure_9(feature_list, pred_list, obs_list, neu_list, sess_list, trial_list,
                       bin_size=0.05, which_sess=None, savefig=False, 
-                      plot_subsample_ratio=0.2, plot_neurons = None):
+                      plot_subsample_ratio=0.2, plot_neurons = None, fr_upper_threshold=None):
     '''
     which_sess: list
     '''
@@ -222,6 +222,14 @@ def generate_figure_9(feature_list, pred_list, obs_list, neu_list, sess_list, tr
 
             region_idx = np.nonzero(left[0][j,0,0,acronym_offset:noise_offset])[0][0]
             region = acronym_dict_reverse[region_idx]
+            
+            if fr_upper_threshold is not None:
+                mean_fr_j = np.concatenate([left_obs_j,right_obs_j], axis=0).mean()
+                if mean_fr_j >= fr_upper_threshold:
+                    continue
+                else:
+                    print(f'mean fr: {mean_fr_j}')
+            
             r2_psth = r2_score(np.concatenate([left_obs_j,right_obs_j], axis=0).mean(0), 
                            np.concatenate([left_pred_j,right_pred_j], axis=0).mean(0), 
                            multioutput='raw_values')[0]
@@ -357,24 +365,25 @@ def generate_figure9_supplement1(model_config,
                                  xlims=[4.0,45.0], ylims=[-0.075,1.0], 
                                  savefig=False):
     
-    color_names = ["windows blue",
-                   "red",
-                   "amber",
-                   "faded green",
-                   "dusty purple",
-                   "orange",
-                   "clay",
-                   "pink",
-                   "greyish",
-                   "mint",
-                   "cyan",
-                   "steel blue",
-                   "forest green",
-                   "pastel purple",
-                   "salmon",
-                   "dark brown"]
-
-    colors = sns.xkcd_palette(color_names)
+#     color_names = ["windows blue",
+#                    "red",
+#                    "amber",
+#                    "faded green",
+#                    "dusty purple",
+#                    "orange",
+#                    "clay",
+#                    "pink",
+#                    "greyish",
+#                    "mint",
+#                    "cyan",
+#                    "steel blue",
+#                    "forest green",
+#                    "pastel purple",
+#                    "salmon",
+#                    "dark brown"]
+#     colors = sns.xkcd_palette(color_names)
+    
+    lab_number_map, institution_map, institution_colors = labs()
     shapes = ['o', 's', '^', '+']
 
     mean_frs = compute_mean_frs(data_load_path.joinpath('train/shape.npy'), data_load_path.joinpath('train/output.npy'))
@@ -400,20 +409,22 @@ def generate_figure9_supplement1(model_config,
     for i, sess in enumerate(sess_list):
         lab_id = np.where(feature_list[i][0,0,0,lab_offset:session_offset] == 1)[0][0]
         session_id = np.where(feature_list[i][0,0,0,session_offset:xyz_offset] == 1)[0][0]
-        #sess = sess.tolist()
+        lab_name = sess['session']['lab']
+        institution_name = institution_map[lab_name]
+        institution_color = institution_colors[institution_name]
         
         axs[0].scatter(reshaped_frs[i][0], reshaped_score[i][0], s=s,
-                       color=colors[lab_id], marker=shapes[session_id], alpha=alpha,
+                       color=institution_color, marker=shapes[session_id], alpha=alpha,
                        label=sess['session']['subject'])
         axs[1].scatter(reshaped_frs[i][0], reshaped_score_psth[i][0], s=s,
-                       color=colors[lab_id], marker=shapes[session_id], alpha=alpha,
+                       color=institution_color, marker=shapes[session_id], alpha=alpha,
                        label=sess['session']['subject'])
         
         axs[0].scatter(reshaped_frs[i][1:], reshaped_score[i][1:], s=s,
-                       color=colors[lab_id], marker=shapes[session_id],
+                       color=institution_color, marker=shapes[session_id],
                        alpha=alpha)
         axs[1].scatter(reshaped_frs[i][1:], reshaped_score_psth[i][1:], s=s,
-                       color=colors[lab_id], marker=shapes[session_id],
+                       color=institution_color, marker=shapes[session_id],
                        alpha=alpha)
     axs[0].set_ylabel('R2', fontsize=24)
     axs[0].set_xlabel('Mean Firing Rate (spikes/sec)', fontsize=24)
@@ -422,8 +433,8 @@ def generate_figure9_supplement1(model_config,
     axs[1].set_xlabel('Mean Firing Rate (spikes/sec)', fontsize=24)
     axs[1].set_title('PETHs of Held-out test trials', fontsize=24)
     
-    axs[0].legend(fontsize=16)
-    axs[1].legend(fontsize=16)
+    axs[0].legend(fontsize=8.5)
+    axs[1].legend(fontsize=8.5)
     
     axs[0].set_xlim(xlims[0],xlims[1])
     axs[0].set_ylim(ylims[0],ylims[1])
@@ -567,7 +578,7 @@ def get_session_order(feature_list):
         order.append((xyz_offset-session_offset)*lab_id+session_id)
         
     return np.array(order)
-    
+
 def generate_figure9_supplement3(model_config, 
                                  preds_shape,
                                  obs,
@@ -651,6 +662,9 @@ def generate_figure9_supplement3(model_config,
     plt.text(10-9, session_boundary[7]-2, 'CSHL (C)', color='k',fontsize=20)
     plt.text(10-9, session_boundary[11]-2, 'UCL', color='k',fontsize=20)
     plt.text(10-9, session_boundary[15]-2, 'Berkeley', color='k',fontsize=20)
+    plt.text(10-9, session_boundary[19]-2, 'NYU', color='k',fontsize=20)
+    plt.text(10-9, session_boundary[23]-2, 'UCLA', color='k',fontsize=20)
+    plt.text(10-9, session_boundary[27]-2, 'UW', color='k',fontsize=20)
     
     plt.ylabel('neurons', fontsize=18)
     plt.xlabel('time (sec)', fontsize=18)
@@ -664,3 +678,100 @@ def generate_figure9_supplement3(model_config,
         plt.savefig(figname,bbox_inches='tight', facecolor='white')
     
     plt.show()
+    
+# def generate_figure9_supplement3(model_config, 
+#                                  preds_shape,
+#                                  obs,
+#                                  test_feature,
+#                                  sess_list,
+#                                  preds,
+#                                  savefig=False):
+    
+#     obs_list = []
+#     feature_list = []
+#     pred_list = []
+#     idx = 0
+#     n_neurons = 0
+#     trial_len = obs.shape[-1]
+#     for sh in preds_shape:
+#         n = sh[0]*sh[1]
+#         obs_list.append(obs[idx:idx+n].reshape(sh[:-1]))
+#         feature_list.append(test_feature[idx:idx+n].reshape(sh))
+#         pred_list.append(preds[idx:idx+n].reshape(sh[:-1]))
+#         idx += n
+#         n_neurons += sh[0]
+
+#     session_order = get_session_order(feature_list)
+    
+#     curr_idx = 0
+#     heatmap=np.zeros((n_neurons,4*trial_len))
+#     n_neurons_list = []
+#     for i in range(len(session_order)):
+#         session = np.where(session_order == i)[0][0]
+#         feature_i = feature_list[session]
+#         pred_i = pred_list[session]
+#         obs_i = obs_list[session]
+# #         print(sess_list[session])
+
+#         left_bool = feature_i[0,:,:,stimulus_offset].sum(1)!=0
+#         right_bool = feature_i[0,:,:,stimulus_offset+1].sum(1)!=0
+#         for j in range(obs_i.shape[0]):
+#             unit = curr_idx+j
+#             heatmap[unit,:trial_len] = obs_i[j,left_bool].mean(0)
+#             heatmap[unit,trial_len:2*trial_len] = obs_i[j,right_bool].mean(0)
+#             heatmap[unit,2*trial_len:3*trial_len] = pred_i[j,left_bool].mean(0)
+#             heatmap[unit,3*trial_len:] = pred_i[j,right_bool].mean(0)
+#         curr_idx += obs_i.shape[0]
+#         n_neurons_list.append(obs_i.shape[0])
+        
+    
+#     plt.figure(figsize=(12,24))
+    
+#     vlim = np.percentile(heatmap, [0,99.7])
+#     plt.imshow(heatmap, aspect='auto', cmap='Greys', interpolation='none', vmin=vlim[0], vmax=vlim[1])
+#     plt.axvline(x=[trial_len], linewidth=2, linestyle='-', 
+#                                        c='k',label='separate left and right')
+#     plt.axvline(x=[3*trial_len], linewidth=2, linestyle='-', 
+#                                        c='k',label='separate left and right')
+#     plt.axvline(x=[2*trial_len], linewidth=3, linestyle='-', 
+#                                        c='k',label='separate Y and Y_pred')
+#     for i in [trial_len//3,trial_len+trial_len//3,2*trial_len+trial_len//3,3*trial_len+trial_len//3]:
+#         plt.axvline(x=[i], linewidth=2, linestyle='--', 
+#                                            c='green', label='movement onset')
+
+#     session_boundary = np.cumsum(n_neurons_list)
+#     for i in session_boundary[:-1]:
+#         plt.axhline(y=[i-0.5], linewidth=2, linestyle='--', 
+#                                            c='red', label='session boundary')
+#     for idx, i in enumerate(session_boundary[:-1]):
+#         if (idx+1)%4 != 0:
+#             continue
+#         plt.axhline(y=[i-0.5], linewidth=3, linestyle='-', 
+#                                            c='blue', label='lab boundary')
+        
+#     plt.text(trial_len-6, session_boundary[11]-5, 
+#              'separate left and right choice PETHs',rotation=90,color='k',fontsize=22)
+#     plt.text(3*trial_len-6, session_boundary[11]-5, 
+#              'separate left and right choice MTNN prediction PETHs',rotation=90,color='k',fontsize=22)
+    
+#     plt.text(10-5, 0.3*n_neurons, 'movement onset',rotation=90,color='green',fontsize=20)
+#     plt.text(trial_len*4-33, session_boundary[0]-1, 'session boundary', color='red',fontsize=20)
+#     plt.text(trial_len*4-25, session_boundary[3]-1, 'lab boundary', color='blue',fontsize=20)
+#     plt.text(10-9, 0-2, 'SWC', color='k',fontsize=20)
+#     plt.text(10-9, session_boundary[3]-2, 'CCU', color='k',fontsize=20)
+#     plt.text(10-9, session_boundary[7]-2, 'CSHL (C)', color='k',fontsize=20)
+#     plt.text(10-9, session_boundary[11]-2, 'UCL', color='k',fontsize=20)
+#     plt.text(10-9, session_boundary[15]-2, 'Berkeley', color='k',fontsize=20)
+    
+#     plt.ylabel('neurons', fontsize=18)
+#     plt.xlabel('time (sec)', fontsize=18)
+#     plt.xticks([0,10,30],labels=['-0.5','0.0','1.0'], fontsize=14)
+#     plt.yticks(fontsize=14)
+    
+#     plt.title('Observed and MTNN-predicted PETHs on held-out trials', fontsize=24, y=1.03)
+    
+#     if savefig:
+#         figname = save_path.joinpath(f'figure9_supplement3.png')
+#         plt.savefig(figname,bbox_inches='tight', facecolor='white')
+    
+#     plt.show()
