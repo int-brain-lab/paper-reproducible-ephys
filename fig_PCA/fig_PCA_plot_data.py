@@ -949,7 +949,7 @@ def all_panels(rm_unre=True, align='move', split='rt',
                          c='g', label='movement onset')
 
     axs['D'].set_xlabel('time from \n movement onset (s)')
-    axs['D'].set_ylabel('Firing rate \n (spikes/s)')
+    axs['D'].set_ylabel('Baselined \n firing rate \n (spikes/s)')
     axs['D'].text(-0.1, 1.30, panel_n['D'], 
                   transform=axs['D'].transAxes, fontsize=plfs, 
                   va='top', ha='right', weight='bold')
@@ -981,7 +981,7 @@ def all_panels(rm_unre=True, align='move', split='rt',
                          c='g', label='movement onset')
 
     axs['m_labs'].set_xlabel('time from \n movement onset (s)')
-    axs['m_labs'].set_ylabel('Firing rate \n (spikes/s)')
+    axs['m_labs'].set_ylabel('Baselined \n firing rate \n (spikes/s)')
     axs['m_labs'].text(-0.1, 1.30, panel_n['m_labs'], 
                   transform=axs['m_labs'].transAxes, fontsize=plfs, 
                   va='top', ha='right', weight='bold')
@@ -1025,7 +1025,7 @@ def all_panels(rm_unre=True, align='move', split='rt',
             axs[ms[k]].axvline(x=0, linewidth=0.5, linestyle='--',
                                c='g', label='movement onset')
 
-        axs[ms[k]].set_ylabel('Firing rate \n (spikes/s)')
+        axs[ms[k]].set_ylabel('Baselined \n firing rate \n (spikes/s)')
         stext = rf'$R^2$={np.round(r2_score(y[idxs[k]], y_res[2][idxs[k]]), 2)}'
         axs[ms[k]].text(0.3, 1, stext, transform=axs[ms[k]].transAxes,
                         fontsize=7, va='top', ha='right')
@@ -1369,7 +1369,7 @@ def all_panels(rm_unre=True, align='move', split='rt',
 
         axs3[ms2[k]].set_title(reg, loc='left')
         axs3[ms2[k]].set_xlabel('time from \n movement onset (s)')
-        axs3[ms2[k]].set_ylabel('Firing rate \n (spikes/s)')
+        axs3[ms2[k]].set_ylabel('Baselined \n firing rate \n (spikes/s)')
         
         for x in np.array([25]) * T_BIN:
             axs3[ms2[k]].axvline(x=0, lw=0.5, linestyle='--', 
