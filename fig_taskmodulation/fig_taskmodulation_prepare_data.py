@@ -582,5 +582,5 @@ if __name__ == '__main__':
     insertions = get_insertions(level=0, one=one, freeze='freeze_2024_03', recompute=True)
     prepare_data(insertions, one=one, recompute=True, **default_params)
     save_dataset_info(one, figure='fig_taskmodulation')
-    # compute_permutation_test(n_permut=40000, n_cores=8)
-    # compute_power_analysis(n_permut=40000, n_cores=8)
+    compute_permutation_test(n_permut=40000, n_cores=8)
+    compute_power_analysis(n_permut=40000, n_cores=8)
