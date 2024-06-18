@@ -1,12 +1,46 @@
 import numpy as np
-from fig_data_quality.plots.utils import get_colors_region
 from fig_data_quality.tables import load_channels, load_clusters
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from scipy.ndimage import gaussian_filter1d
+import colorsys
+from iblatlas.regions import BrainRegions
+import numpy as np
 
+## Utilities
+
+def scale_lightness(rgb, scale_l):
+    """
+    
+    """
+    # convert rgb to hls
+    h, l, s = colorsys.rgb_to_hls(*rgb)
+    # manipulate h, l, s values and return as rgb
+    return colorsys.hls_to_rgb(h, min(1, l * scale_l), s = s)
+
+def get_colors_region(region):
+    """
+    :param region: Cosmos acronym
+    :returns: colors, colors_translucent
+    """
+    br = BrainRegions()
+    region_idx = br.acronym2index([region])[1][0]
+    region_rgb = br.rgb[region_idx][0]
+    colors = [region_rgb / 255., scale_lightness(region_rgb/255., 1.2)]
+    colors_translucent = [np.array(list(colors[0]) + [0.75]), np.array(list(colors[1]) + [0.75])]
+    return colors, colors_translucent
+
+def get_3colors_region(region):
+    br = BrainRegions()
+    region_idx = br.acronym2index([region])[1][0]
+    region_rgb = br.rgb[region_idx][0]
+    colors = [region_rgb / 255., scale_lightness(region_rgb/255., 1.15), scale_lightness(region_rgb/255., 1.3)]
+    colors_translucent = [np.array(list(colors[0]) + [0.75]), np.array(list(colors[1]) + [0.75]), np.array(list(colors[2]) + [0.75])]
+    return colors, colors_translucent
+
+## Plotting functions
 
 def metrics_plot(dset, region="Isocortex", axes=None, ibl_clusters=None, ibl_channels=None, clusters=None, channels=None):
     """

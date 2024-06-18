@@ -1,5 +1,5 @@
 import numpy as np
-from fig_data_quality.plots.utils import get_3colors_region
+from fig_data_quality.plot import get_3colors_region
 from fig_data_quality.tables import load_channels, load_clusters
 import matplotlib.pyplot as plt
 import seaborn as sns

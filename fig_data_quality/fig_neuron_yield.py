@@ -1,6 +1,6 @@
 from fig_data_quality.tables import load_channels, load_clusters
-from fig_data_quality.plots.metrics import compute_yield
-from fig_data_quality.plots.utils import get_colors_region
+from fig_data_quality.plot import compute_yield
+from fig_data_quality.plot import get_colors_region
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
