@@ -13,7 +13,8 @@ import numpy as np
 
 def scale_lightness(rgb, scale_l):
     """
-    
+    Given an RGB color vector, return with lightness
+    scaled by `scale_l`.
     """
     # convert rgb to hls
     h, l, s = colorsys.rgb_to_hls(*rgb)
@@ -22,6 +23,8 @@ def scale_lightness(rgb, scale_l):
 
 def get_colors_region(region):
     """
+    Get standard atlas colors for given Cosmos region.
+
     :param region: Cosmos acronym
     :returns: colors, colors_translucent
     """
@@ -33,6 +36,12 @@ def get_colors_region(region):
     return colors, colors_translucent
 
 def get_3colors_region(region):
+    """
+    Get 3 increasingly lighter shades of standard atlas color for a Cosmos region.
+
+    :param region: Cosmos acronym
+    :returns: colors, colors_translucent (both 3-vectors)
+    """
     br = BrainRegions()
     region_idx = br.acronym2index([region])[1][0]
     region_rgb = br.rgb[region_idx][0]
@@ -40,13 +49,18 @@ def get_3colors_region(region):
     colors_translucent = [np.array(list(colors[0]) + [0.75]), np.array(list(colors[1]) + [0.75]), np.array(list(colors[2]) + [0.75])]
     return colors, colors_translucent
 
-## Plotting functions
+## Plotting functions (all deprecated)
 
 def metrics_plot(dset, region="Isocortex", axes=None, ibl_clusters=None, ibl_channels=None, clusters=None, channels=None):
     """
+    -- Deprecated function --
     :param dset: one of "steinmetz", "allen"
     :param region: Cosmos acronym of region
-    :param axes: 
+    :param axes: matplotlib Axes
+    :param ibl_clusters: IBL clusters DF
+    :param ibl_channels: IBL channels DF
+    :param clusters: non-IBL clusters DF
+    :param channels: non-IBL clusters DF
     """
     assert dset in ["steinmetz", "allen"], "dset must be one of 'steinemtz', 'allen'"
         
@@ -206,7 +220,10 @@ def metrics_plot(dset, region="Isocortex", axes=None, ibl_clusters=None, ibl_cha
     return mean_ibl, mean
 
 def histograms(dset, region="Isocortex", ibl_clusters=None, ibl_channels=None, clusters=None, channels=None):
-
+    """
+    -- Deprecated function --
+    """
+    
     assert dset in ["steinmetz", "allen"], "dset must be one of 'steinemtz', 'allen'"
     if dset == "steinmetz":
         ibl_dset = "bwm"
@@ -329,6 +346,10 @@ def histograms(dset, region="Isocortex", ibl_clusters=None, ibl_channels=None, c
     fig.suptitle(f"Histograms: {region}")
 
 def yield_detail(dset, region="Isocortex",ibl_clusters=None, ibl_channels=None, clusters=None, channels=None):
+    """
+    -- Deprecated function --
+    """
+    
     assert dset in ["steinmetz", "allen"], "dset must be one of 'steinemtz', 'allen'"
 
     if dset == "steinmetz":
