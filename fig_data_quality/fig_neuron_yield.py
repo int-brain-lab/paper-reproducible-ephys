@@ -17,8 +17,9 @@ dfs = []
 for region in regions:
     
     ibl_clusters = load_clusters("re_147", region)
-    # make sure we only include insertions listed in the clusters table
+    # channels unchanged by different sorting version
     ibl_channels = load_channels("re", region)
+    # make sure we only include insertions listed in the clusters table
     ibl_channels = ibl_channels.loc[
         list(ibl_clusters.index.get_level_values(0).unique())
     ]
