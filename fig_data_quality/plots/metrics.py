@@ -1,6 +1,6 @@
 import numpy as np
-from data_quality.plots.utils import get_colors_region
-from data_quality.tables import load_channels, load_clusters
+from fig_data_quality.plots.utils import get_colors_region
+from fig_data_quality.tables import load_channels, load_clusters
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
