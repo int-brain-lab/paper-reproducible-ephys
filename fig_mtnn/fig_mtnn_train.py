@@ -1,8 +1,9 @@
-from fig_mtnn.utils import static_idx, leave_out_covs_for_glm, cov_idx_dict, sim_cov_idx_dict, grouped_cov_idx_dict
+from fig_mtnn.utils import *
 from fig_mtnn.mtnn import run_eval, initialize_mtnn, get_device, run_train, load_test_model
 import numpy as np
 from reproducible_ephys_functions import save_data_path
 from tqdm import notebook
+import torch
 
 def train_all(do_train=True, do_train_on_glm_covariates=True):
 
@@ -296,7 +297,7 @@ def train_labID_exp():
     labels = ['original']
 
     np.random.seed(0)
-    lab_orthog_weights = np.linalg.qr(np.random.normal(size=(128,128))).Q[:, :8]
+    lab_orthog_weights = np.linalg.qr(np.random.normal(size=(128,128)))[0][:, :8]
 
     for mult in [1, 5, 10]:
         lab_weights_list.append(lab_orthog_weights * (np.arange(0, 8)[None] * mult))
