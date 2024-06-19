@@ -4,12 +4,12 @@ Code for GLM
 """
 import numpy as np
 import pandas as pd
-import modeling.design_matrix as dm
-import modeling.utils as mut
+import fig_mtnn.modeling.design_matrix as dm
+import fig_mtnn.modeling.utils as mut
 
 import matplotlib.pyplot as plt
-from modeling import linear
-from modeling import poisson
+from fig_mtnn.modeling import linear
+from fig_mtnn.modeling import poisson
 from brainbox.plot import peri_event_time_histogram
 
 

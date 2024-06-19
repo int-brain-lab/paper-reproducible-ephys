@@ -2,21 +2,16 @@ import boto3
 from pathlib import Path
 from reproducible_ephys_functions import save_data_path
 from one.api import ONE
+from one.remote.aws import get_s3_from_alyx
 
 one = ONE(base_url='https://openalyx.internationalbrainlab.org/')
 data_path = save_data_path(figure='fig_mtnn')
-S3_DATA_PATH = 'paper_reproducible_ephys/mtnn'
+S3_DATA_PATH = 'paper_reproducible_ephys/mtnn_Q2_2024'
 
 
 def download_aws(folder):
-    repo_json = one.alyx.rest('data-repository', 'read', id='aws_cortexlab')['json']
-    bucket_name = repo_json['bucket_name']
-    session_keys = {
-        'aws_access_key_id': repo_json.get('Access key ID', None),
-        'aws_secret_access_key': repo_json.get('Secret access key', None)
-    }
-    session = boto3.Session(**session_keys)
-    s3 = session.resource('s3')
+
+    s3, bucket_name = get_s3_from_alyx(one.alyx)
     bucket = s3.Bucket(bucket_name)
 
     for obj in bucket.objects.filter(Prefix=f'{S3_DATA_PATH}/{folder}'):
@@ -37,6 +32,13 @@ def download_glm_hmm():
         return
     print('downloading glm_hmm data')
     download_aws('glm_hmm')
+
+
+def download_lp():
+    if data_path.joinpath('lpks').exists():
+        return
+    print('downloading lightening pose data')
+    download_aws('lpks')
 
 
 def download_data():

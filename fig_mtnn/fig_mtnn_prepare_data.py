@@ -6,15 +6,15 @@ from numpy.random import normal
 from sklearn.linear_model import RidgeCV
 
 from iblatlas.atlas import AllenAtlas
-import modeling.linear as lm
-import modeling.utils as mut
+import fig_mtnn.modeling.linear as lm
+import fig_mtnn.modeling.utils as mut
 import brainbox.io.one as bbone
 
 from reproducible_ephys_functions import save_data_path, save_dataset_info, repo_path
 from fig_mtnn.utils import *
 from fig_mtnn.glm import generate_design, generate_design_full_mtnn_cov, bases, bases_full_mtnn_cov, binwidth, t_before, t_after, GLMPredictor
 from fig_mtnn.simulate import simulate_cell, concat_simcell_data, to_mtnn_form
-from fig_mtnn.fig_mtnn_load_data import download_priors, download_glm_hmm
+from fig_mtnn.fig_mtnn_load_data import download_priors, download_glm_hmm, download_lp
 
 import matplotlib.pyplot as plt
 
@@ -39,6 +39,7 @@ def prepare_mtnn_data(eids, insertions, one, brain_atlas=None):
 
     download_priors()
     download_glm_hmm()
+    download_lp()
 
     feature_list = []
     output_list = []
@@ -85,7 +86,7 @@ def prepare_mtnn_data(eids, insertions, one, brain_atlas=None):
         print(trial_number_list[i].shape)
         np.save(save_path.joinpath(f'{session_list[i]["session"]["id"]}_trials.npy'), trial_number_list[i])
 
-#     feature_list, output_list, cluster_number_list, session_list, trial_number_list = load_original(eids)
+    # feature_list, output_list, cluster_number_list, session_list, trial_number_list = load_original(eids)
 
     total_n_neurons = 0
     shape_list = []
@@ -195,7 +196,6 @@ def prepare_mtnn_data(eids, insertions, one, brain_atlas=None):
         val_output.append(output_subset_list[i][:, val_bool].reshape(-1, sh[-2]))
         test_output.append(output_subset_list[i][:, test_bool].reshape(-1, sh[-2]))
         
-        
     # standardize data
     train_feature = np.concatenate(train_feature)
     val_feature = np.concatenate(val_feature)
@@ -285,7 +285,7 @@ def prepare_glm_and_simulated_data(insertions, one, brain_atlas=None):
 
         ba = brain_atlas or AllenAtlas()
         sl = bbone.SpikeSortingLoader(eid=eid, pname=probe, one=one, atlas=ba)
-        spikes, _, _ = sl.load_spike_sorting(revision='2024-03-22')
+        spikes, _, _ = sl.load_spike_sorting(revision='2024-03-22', enforce_version=False)
 
         clu_idx = np.isin(spikes.clusters, clusters[i])
         spk_times = spikes.times[clu_idx]
@@ -706,7 +706,7 @@ def prepare_glm_data_full_mtnn_cov(insertions, one, brain_atlas=None):
 
         ba = brain_atlas or AllenAtlas()
         sl = bbone.SpikeSortingLoader(eid=eid, pname=probe, one=one, atlas=ba)
-        spikes, _, _ = sl.load_spike_sorting(revision='2024-03-22')
+        spikes, _, _ = sl.load_spike_sorting(revision='2024-03-22', enforce_version=False)
 
         clu_idx = np.isin(spikes.clusters, clusters[i])
         spk_times = spikes.times[clu_idx]
