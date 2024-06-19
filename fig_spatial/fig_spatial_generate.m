@@ -96,4 +96,4 @@ disp({'x','y','z','amp','p2t dur'})
 disp([pMWU_corrFR; pMWU_corrTM1; pMWU_corrTM2])
 disp([pMWU_corrFR<0.05; pMWU_corrTM1<0.05; pMWU_corrTM2<0.05])
 
-%saveas(f, append(save_path, 'figureSpatial_', BrainRegion, '.png'))
+saveas(f, append(save_path, 'figureSpatial_', BrainRegion, '.png'))

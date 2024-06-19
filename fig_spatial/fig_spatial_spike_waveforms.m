@@ -1,10 +1,4 @@
-clear, close all, clc
-data_path = '/Users/mt/Downloads/FlatIron/paper_repro_ephys_data/figure_spatial/';
-
-save_path = '/Users/mt/Downloads/FlatIron/paper_repro_ephys_data/figure_spatial/figures/';
-
-CSVfile = [data_path, 'figure_spatial_dataframe_filt.csv']; 
-
+function [] = fig_spatial_FanoFactor_generate(CSVfile, save_path)
 
 BrainRegions = ["PPC", "CA1", "DG", "LP", "PO"];
 ThreshRegion = [0.35, 0.35, 0.35, 0.35, 0.35];
