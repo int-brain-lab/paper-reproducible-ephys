@@ -1,6 +1,9 @@
-## Figure 4
+## Figure Task Modulation
 
-Figure 4 can be reproduced by executing fig_taskmodulation_run.py file 
+This code can be used to reproduce Figure 4 in the paper
+
+The figures can be reproduced by executing the fig_taskmodulation_run.py file 
+
 ```
 python fig_taskmodulation_run.py
 ```
@@ -14,3 +17,13 @@ one = ONE()
 run_fig_taskmodulation(one)
 
 ```
+
+To find out where the data and figures have been stored locally you can do the following
+```python
+from reproducible_ephys_functions import save_data_path, save_figure_path
+print(save_data_path('fig_taskmodulation'))
+print(save_figure_path('fig_taskmodulation'))
+```
+
+## Info
+The power analysis computation can take a while to run

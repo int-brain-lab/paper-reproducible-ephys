@@ -39,11 +39,7 @@ def run_fig_ephysfeatures(one, recompute=False, supplementary=True, freeze='free
 
 
 if __name__ == '__main__':
-    # Use this for the open access data
-    #one = ONE(base_url='https://openalyx.internationalbrainlab.org', password='international', silent=True)
 
-    # Use this for the latest data
-    # one = ONE(base_url='https://openalyx.internationalbrainlab.org')
     one = ONE(base_url='https://alyx.internationalbrainlab.org')
     # Create figure
     run_fig_ephysfeatures(one=one, recompute=False, supplementary=False, freeze='freeze_2024_03')
