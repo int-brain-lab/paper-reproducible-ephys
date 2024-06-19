@@ -6,11 +6,12 @@ import matplotlib
 import numpy as np
 from copy import deepcopy
 
-from fig_mtnn.utils import (reshape_flattened, get_acronym_dict, get_acronym_dict_reverse, get_region_colors, cov_idx_dict,
-                                         grouped_cov_idx_dict, compute_mean_frs)
+from fig_mtnn.utils import *
 from fig_mtnn.mtnn import load_test_model, run_eval, initialize_mtnn, get_device
 
 from reproducible_ephys_functions import save_data_path, figure_style, save_figure_path, labs
+
+import torch
 
 data_load_path = save_data_path(figure='fig_mtnn').joinpath('mtnn_data')
 save_path = save_figure_path(figure='fig_mtnn')

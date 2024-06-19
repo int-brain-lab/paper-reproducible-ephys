@@ -5,10 +5,11 @@ from reproducible_ephys_functions import save_data_path
 from fig_mtnn.utils import static_idx, grouped_cov_idx_dict
 from fig_mtnn.mtnn import run_eval, initialize_mtnn, get_device
 from fig_mtnn.fig_mtnn_plot_functions1 import (generate_figure_9, generate_figure9_supplement1, generate_figure9_supplement2,
-                                                            generate_figure9_supplement2_v2, generate_figure9_supplement3)
+                                               generate_figure9_supplement2_v2, generate_figure9_supplement3)
 
 from fig_mtnn.fig_mtnn_plot_functions2 import (generate_figure_10, generate_figure_10_supplement1,
-                                                            generate_figure_10_supplement2)
+                                               generate_figure_10_supplement2, generate_figure_10_supplement3,
+                                               generate_figure_10_supplement4)
 
 
 data_path = save_data_path(figure='fig_mtnn')
@@ -162,10 +163,10 @@ def plot_figures10():
                    'choice', 'reward', 'wheel velocity', 'lick', 'noise',
                    'mouse prior', 'last mouse prior', 'decision strategy (GLM-HMM)']
 
-    leave_one_out_covs = ['lab', 'session', 'x', 'y']
-    leave_group_out = []
-    single_covs = ['paw speed', 'nose speed', 'pupil diameter',
-                   'motion energy', 'stimuli']
+#     leave_one_out_covs = ['lab', 'session', 'x', 'y']
+#     leave_group_out = []
+#     single_covs = ['paw speed', 'nose speed', 'pupil diameter',
+#                    'motion energy', 'stimuli']
 
     generate_figure_10(model_config, leave_one_out_covs, single_covs, leave_group_out, savefig=True)
 
