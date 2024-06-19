@@ -10,11 +10,11 @@ from one.api import ONE
 
 def run_fig_spatial(one, recompute=False):
 
-    insertions = get_insertions(level=2, recompute=recompute, one=one, freeze=None)
+    insertions = get_insertions(level=0, recompute=recompute, one=one, freeze='freeze_2024_03')
     prepare_data(insertions, one=one, **default_params, recompute=recompute)
     plot_supp_figure()
 
 
 if __name__ == '__main__':
     one = ONE()
-    run_fig_spatial(one, recompute=True)
+    run_fig_spatial(one)

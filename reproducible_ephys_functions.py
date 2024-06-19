@@ -395,7 +395,7 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
             df_lfp = compute_lfp_insertion(one=one, pid=ins['probe_insertion'])
 
             sl = bbone.SpikeSortingLoader(eid=eid, pname=probe, one=one, atlas=ba)
-            spikes, clusters, channels = sl.load_spike_sorting(revision='2024-03-22')
+            spikes, clusters, channels = sl.load_spike_sorting(revision='2024-03-22', enforce_version=False)
             clusters = sl.merge_clusters(spikes, clusters, channels)
 
             channels['rawInd'] = one.load_dataset(eid, dataset='channels.rawInd.npy', collection=collection)

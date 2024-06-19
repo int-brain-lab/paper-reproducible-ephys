@@ -138,7 +138,9 @@ def plot_example_raster_with_regions(one, pid=None, ba=None):
     heights = [1]
     gs_kw = dict(width_ratios=widths, height_ratios=heights)
     fig, axs = plt.subplots(1, 2, constrained_layout=True, gridspec_kw=gs_kw, figsize=(15, 5))
-    pid = pid or example_pid
+    if pid is None:
+        pid = example_pid
+        example = True
 
     plot_raster_with_regions(pid, one, axs[1], axs[0], ba)
 
@@ -149,6 +151,10 @@ def plot_example_raster_with_regions(one, pid=None, ba=None):
     axs[1].xaxis.set_tick_params(labelsize=14)
     axs[1].set_ylabel('Distance from probe tip (um)', size=16)
     axs[1].set_xlabel('Time (s)', size=16)
+    if example:
+        # Only show the active period, not the passive period
+        axs[1].set_xlim(0, 2657)
+
 
     fig_path = save_figure_path(figure='fig_intro')
     plt.savefig(fig_path.joinpath('fig_intro_panelE.png'))
@@ -232,7 +238,7 @@ def plot_multiple_raster_with_regions(one, pids=None, ba=None):
 def plot_raster_with_regions(pid, one, ax_raster, ax_regions, ba, mapping='Allen', restrict_labels=True, labels='left'):
 
     sl = SpikeSortingLoader(pid=pid, one=one, atlas=ba)
-    spikes, clusters, channels = sl.load_spike_sorting(revision='2024-03-22')
+    spikes, clusters, channels = sl.load_spike_sorting(revision='2024-03-22', enforce_version=False)
 
     driftmap(spikes['times'], spikes['depths'], ax=ax_raster, plot_style='bincount')
     ax_raster.set_xlim([0, 60 * 60])  # display 1 hour
