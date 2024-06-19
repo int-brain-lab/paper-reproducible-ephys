@@ -34,6 +34,7 @@ from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import KFold
 from datetime import datetime
+from scipy.stats import combine_pvalues
 
 from reproducible_ephys_functions import (filter_recordings, 
 save_figure_path, labs, figure_style)
@@ -57,59 +58,6 @@ canon = ['danlab', 'mainenlab','churchlandlab',
 figure_style()
 
 
-def confidence_ellipse(x, y, ax, n_std=3.0, facecolor='none', **kwargs):
-    """
-    Create a plot of the covariance confidence ellipse of *x* and *y*.
-
-    Parameters
-    ----------
-    x, y : array-like, shape (n, )
-        Input data.
-
-    ax : matplotlib.axes.Axes
-        The axes object to draw the ellipse into.
-
-    n_std : float
-        The number of standard deviations to determine the ellipse's radiuses.
-
-    **kwargs
-        Forwarded to `~matplotlib.patches.Ellipse`
-
-    Returns
-    -------
-    matplotlib.patches.Ellipse
-    """
-    if x.size != y.size:
-        raise ValueError("x and y must be the same size")
-
-    cov = np.cov(x, y)
-    pearson = cov[0, 1] / np.sqrt(cov[0, 0] * cov[1, 1])
-    # Using a special case to obtain the eigenvalues of this
-    # two-dimensional dataset.
-    ell_radius_x = np.sqrt(1 + pearson)
-    ell_radius_y = np.sqrt(1 - pearson)
-    ellipse = Ellipse((0, 0), width=ell_radius_x * 2, height=ell_radius_y * 2,
-                      facecolor=facecolor, **kwargs)
-
-    # Calculating the stdandard deviation of x from
-    # the squareroot of the variance and multiplying
-    # with the given number of standard deviations.
-    scale_x = np.sqrt(cov[0, 0]) * n_std  # /np.sqrt(len(x))
-    mean_x = np.mean(x)
-
-    # calculating the stdandard deviation of y ...
-    scale_y = np.sqrt(cov[1, 1]) * n_std  # /np.sqrt(len(y))
-    mean_y = np.mean(y)
-
-    transf = transforms.Affine2D() \
-        .rotate_deg(45) \
-        .scale(scale_x, scale_y) \
-        .translate(mean_x, mean_y)
-
-    ellipse.set_transform(transf + ax.transData)
-    return ax.add_patch(ellipse)
-
-
 def ecdf(a):
     '''
     get cummulative distribution function
@@ -124,9 +72,9 @@ def distE(x, y):
     return np.sqrt(np.dot(x, x) - 2 * np.dot(x, y) + np.dot(y, y))
 
 
-def perm_test(inclu=False, print_=False, 
-              nrand=2000, sig_lev =0.01, fdr = True, ax = None,
-              plot_=True, samp=True):
+def perm_test(inclu=False, print_=False, rerun = False,
+              nrand=2000, sig_lev =0.01, fdr = False, ax = None,
+              plot_=True, samp=True, nns = 100, nnf = 0.8):
 
     '''
     compute the distance of the mean of a subgroup
@@ -138,6 +86,8 @@ def perm_test(inclu=False, print_=False,
     restr: restricted to an area (target must be lab)
     incl: include tested cells into pack
     samp: for region-targeted test, restrict to random subset 
+    nns: how many samplings
+    nnf: what fraction of cells is sampled
     '''
         
     emb00, regs00, labss00 = all_panels(get_dat=True)
@@ -161,7 +111,7 @@ def perm_test(inclu=False, print_=False,
 
         fig_path = save_figure_path(figure='fig_PCA')
         
-        if fig_path.joinpath('A.npy').is_file():
+        if fig_path.joinpath('A.npy').is_file() and not rerun:
             print('loading sample averaged test results')
             AKS = np.load(fig_path.joinpath('A.npy'))
 
@@ -169,15 +119,21 @@ def perm_test(inclu=False, print_=False,
             print('computing 100 sample averages, KS only')
                         
             As = []
-            for i in range(100):
+            
 
-                # restrict KS analysis to subset of cells
-                reg0 = random.sample(list(regs_),1)[0]
-                print('restricting tests on subsets of cells')
-                n0 = dict(Counter(regs00))[reg0]
-                print(f'sampling randomly {n0} cells ({reg0})')
-                s0 = random.sample(range(len(regs00)),n0)
+            print(f'sampling {nnf} of all neurons, {nns} times')
+            for i in range(nns):
+
+#                # restrict KS analysis to subset of cells
+#                reg0 = random.sample(list(regs_),1)[0]
+#                print('restricting tests on subsets of cells')
+#                n0 = dict(Counter(regs00))[reg0]
+#                print(f'sampling randomly {n0} cells ({reg0})')
+#                s0 = random.sample(range(len(regs00)),n0)
                 
+                s0 = random.sample(range(len(regs00)),
+                                   int(nnf*len(regs00)))
+
                 emb = emb00[s0]
                 regs = regs00[s0]
                 labss = labss00[s0]
@@ -279,7 +235,30 @@ def perm_test(inclu=False, print_=False,
                     i += 1             
             
                 As.append(AKS)
-            A = np.nanmean(As,axis=0)
+                
+            #A = np.nanmean(As,axis=0)
+            
+            aa, bb = As[0].shape
+            combined_p_values_matrix = np.empty((aa,bb))
+                        
+            num_matrices = len(As)  
+
+            # Iterate over each element in the (6, 11) matrix
+            for i in range(aa):
+                for j in range(bb):
+                    # Extract the p-value at position (i, j) from each matrix
+                    p_values = [As[k][i, j] for 
+                        k in range(num_matrices) 
+                        if not np.isnan(As[k][i, j])]
+
+                    # Check if there are any non-NaN p-values to process
+                    if p_values:
+                        # Combine p-values using Fisher's method
+                        _, combined_p = combine_pvalues(p_values,
+                             method='fisher')
+                        combined_p_values_matrix[i, j] = combined_p
+            
+            A = combined_p_values_matrix
             np.save(fig_path.joinpath('A.npy'),A)
             AKS = A
 
@@ -465,7 +444,6 @@ def perm_test(inclu=False, print_=False,
                           bbox_to_anchor=(0.1, 0.1, 1, 1), 
                           bbox_transform=ax.transAxes)
                           
-    # continue here (change AKS to A for dist test)
     sns.heatmap(np.log10(AKS.T), cmap=newcmp, square=True,
                 cbar=True if not samp else False, 
                 cbar_ax=axin if not samp else None,
@@ -496,10 +474,10 @@ def perm_test(inclu=False, print_=False,
 
 
 def all_panels(rm_unre=True, align='move', split='rt', 
-               xyz_res=False, re_rank=2, fdr=False, permute_include=True,
+               xyz_res=False, fdr=False, permute_include=True,
                nrand = 2000, sig_lev = 0.01, inclu = False, 
                perm_tests=True, get_dat=False, freeze='freeze_2024_03',
-               get_info=False):
+               get_info=False, nns = 100, nnf = 0.8, rerun=False):
                              
     '''
     Plotting main figure and supp figure;
@@ -607,7 +585,7 @@ def all_panels(rm_unre=True, align='move', split='rt',
 
     mosaic = [[inner, 'F','B','B'],
               ['D', 'KSregs','c_labs', 'c_labs'],
-              ['m_labs', 'KSlabs', 'KS', 'KSmean']]
+              ['m_labs', 'KSlabs', 'KS', 'KS']]
     
 
     mosaic_supp = [['Ha', 'Hb', 'H'],
@@ -667,18 +645,19 @@ def all_panels(rm_unre=True, align='move', split='rt',
         # run all permutation tests
         perm_test(inclu=inclu, 
                   nrand=nrand, sig_lev =sig_lev, 
-                  fdr = fdr, ax=axs['KS'],samp=False) 
+                  fdr = fdr, ax=axs['KS'],samp=False, rerun=rerun) 
                   
-        # average across subset sampling
-        perm_test(inclu=inclu, 
-                  nrand=nrand, sig_lev =sig_lev, 
-                  fdr = fdr, ax=axs['KSmean'],samp=True)                   
+#        # average across subset sampling
+#        perm_test(inclu=inclu, 
+#                  nrand=nrand, sig_lev =sig_lev, 
+#                  fdr = fdr, ax=axs['KSmean'],samp=True,
+#                  nns = nns, nnf = nnf, rerun=rerun)                   
                   
                   
 
                         
         # put panel label
-        for pan in ['KS', 'KSmean']:              
+        for pan in ['KS']:              
             axs[pan].text(-0.1, 1.3, panel_n[pan],
                             transform=axs[pan].transAxes,
                             fontsize=plfs, va='top',
@@ -700,17 +679,7 @@ def all_panels(rm_unre=True, align='move', split='rt',
     regs_ = Counter(regs)    
     cents = {reg: np.mean(emb[regs == reg], axis=0)
              for reg in regs_}   
-    
-    
-#    for reg in cents:
-#        # plot means
-#        axs['B'].scatter(cents[reg][0], cents[reg][1], 
-#                         s=500, marker='x', color=Dc[reg])
-#                         
-#        # plot confidence ellipses
-#        x = emb[regs == reg]
-#        confidence_ellipse(x[:, 0], x[:, 1], axs['B'], 
-#                           n_std=1.0, edgecolor=Dc[reg])        
+       
 
     le = [Patch(facecolor=Dc[reg], edgecolor=Dc[reg], 
                 label=reg) for reg in regs_]
@@ -747,16 +716,7 @@ def all_panels(rm_unre=True, align='move', split='rt',
     cols_lab = [lab_cols[b[x]] for x in labs]
     axs['c_labs'].scatter(emb[:, 0], emb[:, 1], marker='o', c=cols_lab, s=2)
         
-    
-#    for lab in centsl:
-#        # plot means
-#        axs['c_labs'].scatter(centsl[lab][0], centsl[lab][1], 
-#                         s=500, marker='x', color=lab_cols[b[lab]])
-#                         
-#        # plot confidence ellipses
-#        x = emb[labs == lab]
-#        confidence_ellipse(x[:, 0], x[:, 1], axs['c_labs'], 
-#                           n_std=1.0, edgecolor=lab_cols[b[lab]])        
+           
 
     axs['c_labs'].legend(handles=le_labs, bbox_to_anchor=(0.3, 1), 
                     loc='lower left', ncol=3, frameon=False,
@@ -1094,16 +1054,6 @@ def all_panels(rm_unre=True, align='move', split='rt',
         for lab in labs_:
             cents[lab] = np.mean(emb2[labs2 == lab], axis=0)
             
-#        # plot means
-#        for lab in cents:
-#            axs3[ms[k]].scatter(cents[lab][0], cents[lab][1], 
-#                                s=500, marker='x', color=lab_cols[b[lab]])
-
-#        # plot confidence ellipses
-#        for lab in labs_:
-#            x = emb2[labs2 == lab]
-#            confidence_ellipse(x[:, 0], x[:, 1], axs3[ms[k]], 
-#                               n_std=1.0, edgecolor=lab_cols[b[lab]])
 
         '''
         KS test using 1PCs
