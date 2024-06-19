@@ -12,7 +12,7 @@ def prepare_data(one, ba=None):
 
     for pid in pids:
         sl = SpikeSortingLoader(pid=pid, one=one, atlas=ba)
-        _ = sl.load_spike_sorting(revision='2024-03-22')
+        _ = sl.load_spike_sorting(revision='2024-03-22', enforce_version=False)
 
     for region in mesh_regions:
         atlas_id = ba.regions.acronym2id(region)[0]

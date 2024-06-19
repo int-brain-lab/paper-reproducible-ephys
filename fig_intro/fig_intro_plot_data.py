@@ -1,7 +1,7 @@
 from reproducible_ephys_functions import save_figure_path, get_insertions, BRAIN_REGIONS, combine_regions
 from iblatlas.atlas import AllenAtlas, Insertion
 from ibllib.pipes import histology
-from neuropixel import SITES_COORDINATES, TIP_SIZE_UM
+from neuropixel import trace_header, TIP_SIZE_UM
 import numpy as np
 from brainbox.io.one import SpikeSortingLoader
 from brainbox.plot import driftmap
@@ -13,6 +13,7 @@ from one.api import ONE
 import matplotlib.pyplot as plt
 import itertools
 
+SITES_COORDINATES = trace_header(version=1)
 
 def plot_main_figure(one, ba=None):
     ba = ba or AllenAtlas()
@@ -209,7 +210,6 @@ def plot_multiple_raster_with_regions(one, pids=None, ba=None):
     subfigs = subfigs.flat
 
     for i, pid in enumerate(pids):
-        print(pid)
         widths = [10, 1]
         heights = [1]
         gs_kw = dict(width_ratios=widths, height_ratios=heights, wspace=0, hspace=0)
