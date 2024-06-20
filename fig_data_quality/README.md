@@ -12,7 +12,7 @@ or by using the following code snippet in an ipython terminal
 ```python
 
 from fig_data_quality.fig_data_quality_run import run_fig_data_quality
-run_fig_PCA()
+run_fig_data_quality()
 
 ```
 
