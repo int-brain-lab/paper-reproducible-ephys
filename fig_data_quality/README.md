@@ -1,8 +1,8 @@
 ## Figure Data Quality
 
-This code can be used to reproduce Figures 1f, and Fig. 1 Supplements 4 and 5.
+This code can be used to reproduce Figure 1f, and Figure 1 Supplements 4 and 5.
 
-The figures can be reproduced by executing the fig_PCA_run.py file 
+The figures can be reproduced by executing the fig_data_quality_run.py file 
 ```
 python fig_data_quality_run.py
 ```
