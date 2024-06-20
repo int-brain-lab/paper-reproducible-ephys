@@ -145,7 +145,7 @@ def traj_list_to_dataframe(trajectories):
     return trajectories
 
 
-def get_insertions(level=0, recompute=False, as_dataframe=False, one=None, freeze=None, bilateral=False):
+def get_insertions(level=0, recompute=False, as_dataframe=False, one=None, freeze='freeze_2024_03', bilateral=False):
     """
     Find insertions used for analysis based on different exclusion levels
     Level -1: minimum_regions = 0, resolved = True, behavior = False, n_trial >= 0, exclude_critical = False
@@ -274,7 +274,7 @@ def combine_regions(regions):
     return regions
 
 
-def load_metrics(bilateral=False, freeze=None):
+def load_metrics(bilateral=False, freeze='freeze_2024_03'):
     if freeze is not None:
         metrics = pd.read_csv(data_release_path().joinpath(f'metrics_{freeze}.csv'))
     else:
