@@ -1,5 +1,5 @@
 This repository contains code to reproduce figures from the 
-[IBL reproducible ephys paper](https://www.biorxiv.org/content/10.1101/2022.05.09.491042v5.article-metrics)
+[IBL reproducible ephys paper](https://www.biorxiv.org/content/10.1101/2022.05.09.491042v5)
  
 # Installation
 ## Making a new python environment (optional)
@@ -61,7 +61,7 @@ DATA_PATH = '/path/where/to/save/your/data/
 # Getting Started
 
 ## Reproducing the figures
-In each figure subfolder there is a read me that contains instructions for how to replicate the analysis and 
+In each figure subfolder there is a README that contains instructions for how to replicate the analysis and 
 generate the figures in the paper.
 
 The subfolders correspond to the following figures
@@ -86,4 +86,4 @@ insertions = get_insertions(level=0, one=one, freeze='freeze_2024_03')
 
 ## More detail about insertions used for each figure
 A detailed overview of the criteria and insertions that have been used for each figure can be found in this
-[spreadsheet](https://docs.google.com/spreadsheets/d/1_bJLDG0HNLFx3SOb4GxLxL52H4R2uPRcpUlIw6n4n-E/edit#gid=779570884)
+[spreadsheet](https://docs.google.com/spreadsheets/d/1_bJLDG0HNLFx3SOb4GxLxL52H4R2uPRcpUlIw6n4n-E)
