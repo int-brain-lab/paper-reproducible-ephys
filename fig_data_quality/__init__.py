@@ -1,3 +1,3 @@
-from .fig_neuron_yield import plot_neuron_yield
+from .fig_neuron_yield import plot_neuron_yield, save_neuron_yield_anova
 from .fig_supplemental_neuron_metrics import plot_supplemental_neuron_metrics
-from .fig_qualitative_ratings import plot_qualitative_ratings
+from .fig_qualitative_ratings import plot_qualitative_ratings, save_qualitative_ratings_anova

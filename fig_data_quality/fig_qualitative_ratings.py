@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 from fig_data_quality.tables import tables_dir
 
-from reproducible_ephys_functions import save_figure_path
+from reproducible_ephys_functions import save_figure_path, save_data_path
 
 """
 Generates Fig. 1 Supp. 5
@@ -64,7 +64,7 @@ def plot_qualitative_ratings():
     fig_path = save_figure_path(figure="fig_data_quality")
     fig.savefig(fig_path.joinpath(f"fig_qualitative_ratings.svg"))
 
-def qualitative_ratings_anova():
+def save_qualitative_ratings_anova():
 
     results = pd.read_csv(tables_dir.joinpath("double_blind_results.csv")).loc[:100]
 
@@ -83,4 +83,7 @@ def qualitative_ratings_anova():
     model = ols(
         'Q("Score") ~ C(Q("Source")) + C(Q("Rater")) + C(Q("Source")):C(Q("Rater"))', df
     ).fit()
-    sm.stats.anova_lm(model, typ=2)
+    anova = sm.stats.anova_lm(model, typ=2)
+
+    data_path = save_data_path(figure="fig_data_quality")
+    anova.to_csv(data_path.joinpath("qualitative_ratings_anova.csv"))

@@ -5,17 +5,17 @@ import matplotlib.pyplot as plt
 from fig_data_quality.tables import load_channels, load_clusters
 from fig_data_quality.plot import compute_yield
 
-from reproducible_ephys_functions import save_figure_path
+from reproducible_ephys_functions import save_figure_path, save_data_path
 
 """
 Generates Figure 1f
 Also includes the ANOVA on dataset and region (Results > Neuropixels recordings during decision-making target the same brain location)
 """
 
-def plot_neuron_yield():
+regions = ["Isocortex", "TH", "HPF"]
 
-    regions = ["Isocortex", "TH", "HPF"]
-
+def load_yield_info():
+    
     # put all the invidual insertion yields into one DF
     dfs = []
     for region in regions:
@@ -77,7 +77,12 @@ def plot_neuron_yield():
         dfs.append(al_yield)
         dfs.append(st_yield)
 
-    df = pd.concat(dfs)
+    return pd.concat(dfs)
+
+
+def plot_neuron_yield():
+
+    df = load_yield_info()
 
     fontsize = 7.0
     plt.rcParams["axes.labelsize"] = fontsize
@@ -133,6 +138,9 @@ def plot_neuron_yield():
     fig_path = save_figure_path(figure="fig_data_quality")
     fig.savefig(fig_path.joinpath("fig_neuron_yield.svg"))
 
+def save_neuron_yield_anova():
+
+    df = load_yield_info()
 
     # 2-way ANOVA on region and dataset
     df = df.drop(columns=["nunits", "nsites"])
@@ -146,4 +154,7 @@ def plot_neuron_yield():
     model = ols(
         'Q("yield") ~ C(Q("dataset")) + C(Q("region")) + C(Q("dataset")):C(Q("region"))', df
     ).fit()
-    sm.stats.anova_lm(model, typ=2)
+    anova = sm.stats.anova_lm(model, typ=2)
+
+    data_path = save_data_path(figure="fig_data_quality")
+    anova.to_csv(data_path.joinpath("neuron_yield_anova.csv"))
