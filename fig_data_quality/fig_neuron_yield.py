@@ -5,137 +5,145 @@ import matplotlib.pyplot as plt
 from fig_data_quality.tables import load_channels, load_clusters
 from fig_data_quality.plot import compute_yield
 
+from reproducible_ephys_functions import save_figure_path
+
 """
 Generates Figure 1f
 Also includes the ANOVA on dataset and region (Results > Neuropixels recordings during decision-making target the same brain location)
 """
 
-regions = ["Isocortex", "TH", "HPF"]
+def plot_neuron_yield():
 
-# put all the invidual insertion yields into one DF
-dfs = []
-for region in regions:
-    
-    ibl_clusters = load_clusters("re_147", region)
-    # channels unchanged by different sorting version
-    ibl_channels = load_channels("re", region)
-    # make sure we only include insertions listed in the clusters table
-    ibl_channels = ibl_channels.loc[
-        list(ibl_clusters.index.get_level_values(0).unique())
-    ]
+    regions = ["Isocortex", "TH", "HPF"]
 
-    al_clusters = load_clusters("allen", region)
-    al_channels = load_channels("allen", region)
+    # put all the invidual insertion yields into one DF
+    dfs = []
+    for region in regions:
+        
+        ibl_clusters = load_clusters("re_147", region)
+        # channels unchanged by different sorting version
+        ibl_channels = load_channels("re", region)
+        # make sure we only include insertions listed in the clusters table
+        ibl_channels = ibl_channels.loc[
+            list(ibl_clusters.index.get_level_values(0).unique())
+        ]
 
-    st_clusters = load_clusters("steinmetz", region)
-    st_channels = load_channels("steinmetz", region)
+        al_clusters = load_clusters("allen", region)
+        al_channels = load_channels("allen", region)
 
-    re_yield, al_yield = compute_yield(
-        ibl_clusters, ibl_channels, al_clusters, al_channels
-    )
-    _, st_yield = compute_yield(ibl_clusters, ibl_channels, st_clusters, st_channels)
+        st_clusters = load_clusters("steinmetz", region)
+        st_channels = load_channels("steinmetz", region)
 
-    re_yield["region"] = region
-    re_yield.drop(columns=["lab"], inplace=True)
-    re_yield.rename(
-        columns={
-            "passing_units": "nunits",
-            "num_sites": "nsites",
-            "passing_per_site": "yield",
-        },
-        inplace=True,
-    )
-    re_yield["dataset"] = "IBL"
+        re_yield, al_yield = compute_yield(
+            ibl_clusters, ibl_channels, al_clusters, al_channels
+        )
+        _, st_yield = compute_yield(ibl_clusters, ibl_channels, st_clusters, st_channels)
 
-    al_yield["region"] = region
-    al_yield.rename(
-        columns={
-            "passing_units": "nunits",
-            "num_sites": "nsites",
-            "passing_per_site": "yield",
-        },
-        inplace=True,
-    )
-    al_yield["dataset"] = "Allen"
+        re_yield["region"] = region
+        re_yield.drop(columns=["lab"], inplace=True)
+        re_yield.rename(
+            columns={
+                "passing_units": "nunits",
+                "num_sites": "nsites",
+                "passing_per_site": "yield",
+            },
+            inplace=True,
+        )
+        re_yield["dataset"] = "IBL"
 
-    st_yield["region"] = region
-    st_yield.rename(
-        columns={
-            "passing_units": "nunits",
-            "num_sites": "nsites",
-            "passing_per_site": "yield",
-        },
-        inplace=True,
-    )
-    st_yield["dataset"] = "Steinmetz"
+        al_yield["region"] = region
+        al_yield.rename(
+            columns={
+                "passing_units": "nunits",
+                "num_sites": "nsites",
+                "passing_per_site": "yield",
+            },
+            inplace=True,
+        )
+        al_yield["dataset"] = "Allen"
 
-    dfs.append(re_yield)
-    dfs.append(al_yield)
-    dfs.append(st_yield)
+        st_yield["region"] = region
+        st_yield.rename(
+            columns={
+                "passing_units": "nunits",
+                "num_sites": "nsites",
+                "passing_per_site": "yield",
+            },
+            inplace=True,
+        )
+        st_yield["dataset"] = "Steinmetz"
 
-df = pd.concat(dfs)
+        dfs.append(re_yield)
+        dfs.append(al_yield)
+        dfs.append(st_yield)
 
-fontsize = 7.0
-plt.rcParams["axes.labelsize"] = fontsize
-fig, ax = plt.subplots(1, 3, figsize=(3, 2))
-region_fullname = {"Isocortex": "Cortex", "TH": "Thalamus", "HPF": "Hippocampus"}
-err_kws = {"markersize": 20, "linewidth": 1.0}
-for i, region in enumerate(regions):
+    df = pd.concat(dfs)
 
-    b = sns.stripplot(
-        data=df[df.region == region],
-        x="dataset",
-        y="yield",
-        ax=ax[i],
-        zorder=-1,
-        alpha=0.6,
-        order=["IBL", "Steinmetz", "Allen"],
-    )
+    fontsize = 7.0
+    plt.rcParams["axes.labelsize"] = fontsize
+    fig, ax = plt.subplots(1, 3, figsize=(3, 2))
+    region_fullname = {"Isocortex": "Cortex", "TH": "Thalamus", "HPF": "Hippocampus"}
+    err_kws = {"markersize": 20, "linewidth": 1.0}
+    for i, region in enumerate(regions):
 
-    sns.pointplot(
-        data=df[df.region == region],
-        x="dataset",
-        y="yield",
-        ax=ax[i],
-        markersize=2,
-        markers="none",
-        capsize=0.2,
-        errorbar=("se", 1),
-        color="black",
-        err_kws=err_kws,
-        linestyle="none",
-        order=["IBL", "Steinmetz", "Allen"],
-    )
-    ax[i].set_title(region_fullname[region], fontsize=fontsize)
-    ax[i].set_xlabel(None)
-    tx = ax[i].get_xticks()
-    ax[i].set_xticks(tx, ["IBL", "STE", "ALN"], fontsize=fontsize)
+        b = sns.stripplot(
+            data=df[df.region == region],
+            x="dataset",
+            y="yield",
+            ax=ax[i],
+            zorder=-1,
+            alpha=0.6,
+            order=["IBL", "Steinmetz", "Allen"],
+        )
 
-    ax[i].set_ylim(0, 1.5)
+        sns.pointplot(
+            data=df[df.region == region],
+            x="dataset",
+            y="yield",
+            ax=ax[i],
+            markersize=2,
+            markers="none",
+            capsize=0.2,
+            errorbar=("se", 1),
+            color="black",
+            err_kws=err_kws,
+            linestyle="none",
+            order=["IBL", "Steinmetz", "Allen"],
+        )
+        ax[i].set_title(region_fullname[region], fontsize=fontsize)
+        ax[i].set_xlabel(None)
+        tx = ax[i].get_xticks()
+        ax[i].set_xticks(tx, ["IBL", "STE", "ALN"], fontsize=fontsize)
 
-    if i != 0:
-        ax[i].set_ylabel(None)
-        ax[i].set_yticks([])
-        sns.despine(ax=ax[i], left=True)
+        ax[i].set_ylim(0, 1.5)
 
-    else:
-        ax[i].set_ylabel("QC passing neurons per electrode site", fontsize=fontsize)
-        ax[i].set_yticks([0.0, 0.5, 1.0, 1.5])
-        sns.despine(ax=ax[i], trim=True)
-        ty = ax[i].get_yticks()
-        ly = ax[i].get_yticklabels()
-        ax[i].set_yticks(ty, ly, fontsize=fontsize)
+        if i != 0:
+            ax[i].set_ylabel(None)
+            ax[i].set_yticks([])
+            sns.despine(ax=ax[i], left=True)
 
-# 2-way ANOVA on region and dataset
-df = df.drop(columns=["nunits", "nsites"])
-dataset_map = {"IBL": 1, "Steinmetz": 2, "Allen": 3}
-region_map = {"Isocortex": 1, "TH": 2, "HPF": 3}
-df = df.replace({"region": region_map, "dataset": dataset_map})
+        else:
+            ax[i].set_ylabel("QC passing neurons per electrode site", fontsize=fontsize)
+            ax[i].set_yticks([0.0, 0.5, 1.0, 1.5])
+            sns.despine(ax=ax[i], trim=True)
+            ty = ax[i].get_yticks()
+            ly = ax[i].get_yticklabels()
+            ax[i].set_yticks(ty, ly, fontsize=fontsize)
 
-import statsmodels.api as sm
-from statsmodels.formula.api import ols
+    fig_path = save_figure_path(figure="fig_data_quality")
+    fig.savefig(fig_path.joinpath("fig_neuron_yield.svg"))
 
-model = ols(
-    'Q("yield") ~ C(Q("dataset")) + C(Q("region")) + C(Q("dataset")):C(Q("region"))', df
-).fit()
-sm.stats.anova_lm(model, typ=2)
+
+    # 2-way ANOVA on region and dataset
+    df = df.drop(columns=["nunits", "nsites"])
+    dataset_map = {"IBL": 1, "Steinmetz": 2, "Allen": 3}
+    region_map = {"Isocortex": 1, "TH": 2, "HPF": 3}
+    df = df.replace({"region": region_map, "dataset": dataset_map})
+
+    import statsmodels.api as sm
+    from statsmodels.formula.api import ols
+
+    model = ols(
+        'Q("yield") ~ C(Q("dataset")) + C(Q("region")) + C(Q("dataset")):C(Q("region"))', df
+    ).fit()
+    sm.stats.anova_lm(model, typ=2)
