@@ -121,6 +121,7 @@ def plot_supplemental_neuron_metrics():
             color=colors,
         )
         axes[0, 0].set_title("Number of insertions\nin region", fontsize=8)
+        axes[0, 0].set_xticks(axes[0, 0].get_xticks())
         axes[0, 0].set_xticklabels(["IBL", "STE", "ALN"], fontsize=8, rotation=90)
 
         ## 0, 1 Pointplot of number of sites (in region) per insertion
@@ -175,6 +176,7 @@ def plot_supplemental_neuron_metrics():
         )
         sns.stripplot(sites.T, ax=axes[0, 1], palette=colors_translucent)
         axes[0, 1].set_title("Electrode sites in region\nper insertion", fontsize=8)
+        axes[0, 1].set_xticks(axes[0, 1].get_xticks())
         axes[0, 1].set_xticklabels(["IBL", "STE", "ALN"], fontsize=8, rotation=90)
         axes[0, 1].set_xlabel(None)
         axes[0, 1].set_ylabel(None)
@@ -239,6 +241,7 @@ def plot_supplemental_neuron_metrics():
 
         sns.stripplot(units_per_ins_all.T, ax=axes[0, 2], palette=colors_translucent)
         axes[0, 2].set_title("Units in region per insertion", fontsize=8)
+        axes[0, 2].set_xticks(axes[0, 2].get_xticks())
         axes[0, 2].set_xticklabels(["IBL", "STE", "ALN"], fontsize=8, rotation=90)
 
         ## 0, 3 Bar plot of mean units per site
@@ -251,6 +254,7 @@ def plot_supplemental_neuron_metrics():
             color=colors,
         )
         axes[0, 3].set_title("Units per site in region", fontsize=8)
+        axes[0, 3].set_xticks(axes[0, 3].get_xticks())
         axes[0, 3].set_xticklabels(["IBL", "STE", "ALN"], fontsize=8, rotation=90)
 
         ## 1, 0 Fraction passing sliding refractory period metric
@@ -265,6 +269,7 @@ def plot_supplemental_neuron_metrics():
         )
         axes[1, 0].set_title("Sliding RP QC", fontsize=8)
         axes[1, 0].set_ylabel("Fraction of units in region passing", fontsize=8)
+        axes[1, 0].set_xticks(axes[1, 0].get_xticks())
         axes[1, 0].set_xticklabels(["IBL", "STE", "ALN"], fontsize=8, rotation=90)
 
         ## 1, 1 Fraction passing noise cutoff metric
@@ -284,6 +289,7 @@ def plot_supplemental_neuron_metrics():
         )
         axes[1, 1].set_title("Noise cutoff QC", fontsize=8)
         axes[1, 1].set_ylabel("Fraction passing", fontsize=8)
+        axes[1, 1].set_xticks(axes[1, 1].get_xticks())
         axes[1, 1].set_xticklabels(["IBL", "STE", "ALN"], fontsize=8, rotation=90)
 
         ## 1, 2 Fraction passing amplitude median metric 
@@ -298,6 +304,7 @@ def plot_supplemental_neuron_metrics():
         )
         axes[1, 2].set_title("Amplitude median QC", fontsize=8)
         axes[1, 2].set_ylabel("Fraction passing", fontsize=8)
+        axes[1, 2].set_xticks(axes[1, 2].get_xticks())
         axes[1, 2].set_xticklabels(["IBL", "STE", "ALN"], fontsize=8, rotation=90)
 
         ## 1, 3 Passing units per site (Yield)
@@ -370,6 +377,7 @@ def plot_supplemental_neuron_metrics():
         )
         sns.stripplot(passing_per_site_all.T, ax=axes[1, 3], palette=colors_translucent)
         axes[1, 3].set_title("QC passing neurons per site", fontsize=8)
+        axes[1, 3].set_xticks(axes[1, 3].get_xticks())
         axes[1, 3].set_xticklabels(["IBL", "STE", "ALN"], fontsize=8, rotation=90)
         axes[1, 3].set_xlabel(None)
         axes[1, 3].set_ylabel(None)
