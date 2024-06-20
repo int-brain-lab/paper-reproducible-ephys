@@ -5,7 +5,8 @@ from matplotlib import cm
 import numpy as np
 from ibllib.ephys.neuropixel import SITES_COORDINATES
 from ibllib.pipes.ephys_alignment import EphysAlignment
-from ibllib.atlas import atlas, BrainRegions
+from iblatlas import atlas
+from iblatlas.regions import BrainRegions
 from brainbox.processing import bincount2D, compute_cluster_average
 from brainbox.metrics.single_units import quick_unit_metrics
 from matplotlib.image import NonUniformImage

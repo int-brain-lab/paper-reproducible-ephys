@@ -3,3 +3,5 @@ reproducible_ephys_paths.py
 .idea
 *.egg-info
 *.html
+*.png
+

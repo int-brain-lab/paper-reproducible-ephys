@@ -14,7 +14,7 @@ from ibldevtools.Gaelle.Neural_QC_Metric__Yield__SebastianB_2021Oct import META_
 from one.api import ONE
 from reproducible_ephys_functions import query
 from brainbox.io.spikeglx import stream
-from ibllib.atlas.regions import BrainRegions
+from iblatlas.regions import BrainRegions
 import numpy as np
 from ibllib.ephys.spikes import detection
 import pandas as pd

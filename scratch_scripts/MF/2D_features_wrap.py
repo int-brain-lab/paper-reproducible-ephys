@@ -5,7 +5,7 @@ from httplib2 import Http
 from oauth2client import client, file, tools
 import pandas as pd
 from oneibl.one import ONE
-from ibllib.atlas import atlas
+from iblatlas import atlas
 
 # Define paths to authentication details
 credentials_file_path = '/iblmayo/googleAPI/credentials/IBL/credentials.json'

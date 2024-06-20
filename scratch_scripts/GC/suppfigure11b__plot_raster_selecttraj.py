@@ -11,8 +11,8 @@ from pathlib import Path
 import brainbox.plot as bbplot
 # from brainbox.io.one import load_spike_sorting_with_channel
 from brainbox.io.one import load_spike_sorting_fast
-from ibllib.atlas import AllenAtlas
-from ibllib.atlas.regions import BrainRegions
+from iblatlas.atlas import AllenAtlas
+from iblatlas.regions import BrainRegions
 from brainbox.ephys_plots import plot_brain_regions
 import numpy as np
 

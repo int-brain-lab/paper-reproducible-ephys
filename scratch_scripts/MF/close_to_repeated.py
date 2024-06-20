@@ -1,5 +1,5 @@
 from one.api import ONE
-import ibllib.atlas as atlas
+import iblatlas.atlas as atlas
 from ibllib.pipes import histology
 import numpy as np
 from pathlib import Path

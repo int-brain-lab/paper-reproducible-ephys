@@ -10,10 +10,10 @@ Aug. 2021
 """
 
 from one.api import ONE
-from ibllib.atlas import atlas
+from iblatlas import atlas
 import numpy as np
 from ibllib.pipes import histology
-from ibllib.ephys.neuropixel import SITES_COORDINATES, TIP_SIZE_UM
+from neuropixel import SITES_COORDINATES, TIP_SIZE_UM
 from ibllib.pipes.ephys_alignment import EphysAlignment
 import matplotlib.pyplot as plt
 
@@ -36,7 +36,7 @@ traj = trajectories[0]
 # Get channels from traj, inpired from:
 # https://github.com/int-brain-lab/ibllib/blob/de3f451f43721e05677822a9e618a3bebe387e87/brainbox/io/one.py#L589-L593
 
-ins = atlas.Insertion.from_dict(traj)
+ins = atlas.Insertion.from_dict(traj, brain_atlas=brain_atlas)
 # Deepest coordinate first
 depths = SITES_COORDINATES[:, 1]
 xyz = np.c_[ins.tip, ins.entry].T

@@ -14,7 +14,7 @@ import brainbox.io.one as bbone
 from brainbox.metrics.single_units import spike_sorting_metrics
 from reproducible_ephys_functions import query, data_path, combine_regions, exclude_recordings
 from one.api import ONE
-from ibllib.atlas import AllenAtlas
+from iblatlas.atlas import AllenAtlas
 ba = AllenAtlas()
 one = ONE()
 
