@@ -34,4 +34,4 @@ print(save_figure_path('fig_intro'))
 
 ## Info
 Currently the code only creates the individual panels for the figures and does not construct the whole figures shown in
-the paper
+the paper. We have not released data for the poor quality examples in figure 1 supp 3 so this figure cannot be reproduced

@@ -29,3 +29,6 @@ from reproducible_ephys_functions import save_data_path, save_figure_path
 print(save_data_path('fig_ephysfeatures'))
 print(save_figure_path('fig_ephysfeatures'))
 ```
+
+## Info
+We have not released data to replicate the results for the bilateral recordings fig 3 supp 3
