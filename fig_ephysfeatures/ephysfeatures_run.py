@@ -11,7 +11,7 @@ from one.api import ONE
 logger = logging.getLogger('paper_reproducible_ephys')
 
 
-def run_fig_ephysfeatures(one, recompute=False, supplementary=True, bilateral=False, freeze='freeze_2024_03'):
+def run_fig_ephysfeatures(one, recompute=False, supplementary=True, freeze='freeze_2024_03'):
     insertions = reproducible_ephys_functions.get_insertions(level=0, one=one, freeze=freeze)
     prepare_data(insertions, one=one, recompute=recompute)
     run_decoding(n_shuffle=500, qc='pass', recompute=recompute)
@@ -19,14 +19,14 @@ def run_fig_ephysfeatures(one, recompute=False, supplementary=True, bilateral=Fa
 
     plot_main_figure(one=one, freeze=freeze)
     if supplementary:
-        if bilateral:
-            import fig_ephysfeatures.supp_figure_bilateral.prepare_data as supp_prepare_data
-            insertions = reproducible_ephys_functions.query(min_regions=0, n_trials=0, behavior=False,
-                                                            exclude_critical=True, one=one,
-                                                            as_dataframe=False, bilateral=True)
-            reproducible_ephys_functions.compute_metrics(insertions, one=one, bilateral=True)
-            supp_prepare_data.prepare_neural_data(insertions, recompute=recompute, one=one)
-            _ = supp_prepare_data.prepare_data(insertions, recompute=recompute, one=one)
+        # if bilateral:
+        #     import fig_ephysfeatures.supp_figure_bilateral.prepare_data as supp_prepare_data
+        #     insertions = reproducible_ephys_functions.query(min_regions=0, n_trials=0, behavior=False,
+        #                                                     exclude_critical=True, one=one,
+        #                                                     as_dataframe=False, bilateral=True)
+        #     reproducible_ephys_functions.compute_metrics(insertions, one=one, bilateral=True)
+        #     supp_prepare_data.prepare_neural_data(insertions, recompute=recompute, one=one)
+        #     _ = supp_prepare_data.prepare_data(insertions, recompute=recompute, one=one)
 
 
         from fig_ephysfeatures.ephysfeatures_supp1 import plot_figure_supp1

@@ -1,13 +1,24 @@
-## `fig_data_quality`
+## Figure Data Quality
 
-Parquet files containing cluster and channel information from the Pykilosort 1.4.7 run of the RE, Allen, and Steinmetz datasets are in the `tables/` directory. 
-This also serves as its own module (`fig_data_quality.tables`) containing a light loading API. 
+This code can be used to reproduce Figure 1f, and Figure 1 Supplements 4 and 5.
 
-- `clusters_{X}.pqt` contains a multi-index table, with all clusters and single unit metrics for each insertion in dataset `X`. 
-- `channels_{X}.pqt` contains a multi-index table, with all channels and their depths and histology assignments (if available) for dataset `X`.
+The figures can be reproduced by executing the fig_data_quality_run.py file 
+```
+python fig_data_quality_run.py
+```
 
-The `double_blind_results.csv` file contains the scores given by raters in the raw data quality exercise. 
+or by using the following code snippet in an ipython terminal
 
-The `plot` module contains some helpers for plotting the figures. 
+```python
 
-The `scripts/` directory preserves some plotting scripts that were used along the way during the data quality analysis. 
+from fig_data_quality.fig_data_quality_run import run_fig_data_quality
+run_fig_data_quality()
+
+```
+
+To find out where the data and figures have been stored locally you can do the following
+```python
+from reproducible_ephys_functions import save_data_path, save_figure_path
+print(save_data_path('fig_data_quality'))
+print(save_figure_path('data_quality'))
+```

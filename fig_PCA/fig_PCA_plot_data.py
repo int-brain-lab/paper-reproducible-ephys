@@ -52,6 +52,13 @@ canon = ['danlab', 'mainenlab','churchlandlab',
         'angelakilab','wittenlab', 'hoferlab',
         'cortexlab', 'churchlandlab_ucla', 'steinmetzlab',
         'zadorlab']
+        
+canon_regs = [ "VISa/am",
+    "CA1",
+    "DG",
+    "LP",
+    "PO"]
+       
 
 
 # set figure style
@@ -101,7 +108,12 @@ def perm_test(inclu=False, print_=False, rerun = False,
             labs_.append(lab)    
     
     
-    regs_ = Counter(regs00)
+    regs__ = Counter(regs00)
+    regs_ = []
+    for reg in canon_regs:
+        if reg in regs__:
+            regs_.append(reg)     
+    
     
     assert len(emb00) == len(regs00) == len(labss00), 'mismatch' 
     
@@ -676,7 +688,12 @@ def all_panels(rm_unre=True, align='move', split='rt',
     axs['B'].scatter(emb[:, 0], emb[:, 1], marker='o', c=cols_reg, s=2)
     
     # centers per region 
-    regs_ = Counter(regs)    
+    regs__ = Counter(regs)
+    regs_ = []
+    for reg in canon_regs:
+        if reg in regs__:
+            regs_.append(reg)
+        
     cents = {reg: np.mean(emb[regs == reg], axis=0)
              for reg in regs_}   
        
@@ -1026,8 +1043,7 @@ def all_panels(rm_unre=True, align='move', split='rt',
     k = 0
     p_ = {}  # Guido's permutation test score
     p_ks = {}  # KS test on 1st PC
-    D = ['VISa/am', 'CA1', 'DG', 'LP', 'PO']#'CA1', 
-
+    D = canon_regs 
     
     axsi = []  # inset axes
     for reg in D:
