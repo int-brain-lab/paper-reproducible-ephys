@@ -35,7 +35,7 @@ DATA_DIR = data_path()
 if EXCL_REC:
     traj = query()
 else:
-    traj = query(str_query='probe_insertion__session__project__name__icontains,ibl_neuropixel_brainwide_01',
+    traj = query(str_query='probe_insertion__session__projects__name__icontains,ibl_neuropixel_brainwide_01',
                  min_regions=0)
 
 # Initialize dataframe

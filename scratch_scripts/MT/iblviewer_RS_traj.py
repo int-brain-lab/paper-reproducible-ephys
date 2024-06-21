@@ -25,9 +25,9 @@ def get_bwm_ins_alyx(one):
     ins_id: list of insertions eids
     sess_id: list of (unique) sessions eids
     """
-    
+
     #For Repeated Site Probes:
-    STR_QUERY = 'probe_insertion__session__project__name__icontains,ibl_neuropixel_brainwide_01,' \
+    STR_QUERY = 'probe_insertion__session__projects__name__icontains,ibl_neuropixel_brainwide_01,' \
                 'probe_insertion__session__qc__lt,50,' \
                 '~probe_insertion__json__qc,CRITICAL,' \
                 'probe_insertion__session__n_trials__gte,400,' \
@@ -35,13 +35,13 @@ def get_bwm_ins_alyx(one):
     ins = one.alyx.rest('trajectories', 'list', provenance='Planned',
                         x=-2243, y=-2000, theta=15, django=STR_QUERY)
 
-  
+
     #For Repeated Site Probes:
     ins_ids = [item['probe_insertion'] for item in ins]
     sess_id = [item['session']['id'] for item in ins]
-    
+
     # Here's what's in 'json':
-    # dict_keys(['qc', 'n_units', 'xyz_picks', 'extended_qc', 'drift_rms_um', 'firing_rate_max', 'n_units_qc_pass', 
+    # dict_keys(['qc', 'n_units', 'xyz_picks', 'extended_qc', 'drift_rms_um', 'firing_rate_max', 'n_units_qc_pass',
     # 'amplitude_max_uV', 'firing_rate_median', 'amplitude_median_uV', 'whitening_matrix_conditioning'])
     positions = []
     for item in ins_ids:
@@ -86,7 +86,7 @@ def add_insertion_probes(viewer, one_connection, as_segments=False, line_width=2
         segments_data, segment_ids = get_picks_mean_vectors(lines_data)
         line_ids = np.array(line_ids)
         segment_ids = line_ids[segment_ids]
-        lines = viewer.add_segments(segments_data, line_width=line_width, 
+        lines = viewer.add_segments(segments_data, line_width=line_width,
                                     add_to_scene=True, trim_outliers=trim_outliers)
     else:
         lines = viewer.add_lines(lines_data, line_width=line_width,

@@ -15,7 +15,7 @@ from one.api import ONE
 
 
 #basic BWM query
-STR_QUERY = 'probe_insertion__session__project__name__icontains,ibl_neuropixel_brainwide_01' 
+STR_QUERY = 'probe_insertion__session__projects__name__icontains,ibl_neuropixel_brainwide_01'
 BRAIN_REGIONS = ['VIS', 'CA1', 'DG', 'LP', 'PO']
 one = ONE()
 
@@ -29,7 +29,7 @@ print('Number of total trajectories planned for repeated site: ', len(trajectori
 
 # With QC < 50
 previous_num = len(trajectories) #save this number to compute the next decrease
-str_query = str_query + ',' + 'probe_insertion__session__qc__lt,50' 
+str_query = str_query + ',' + 'probe_insertion__session__qc__lt,50'
 trajectories = one.alyx.rest('trajectories', 'list', provenance='Planned',
                              x=-2243, y=-2000, theta=15,
                              django=str_query)
@@ -37,7 +37,7 @@ print('With QC < 50: ', len(trajectories), '(', len(trajectories) - previous_num
 
 # With QC not critical
 previous_num = len(trajectories) #save this number to compute the next decrease
-str_query = str_query + ',' + '~probe_insertion__json__qc,CRITICAL' 
+str_query = str_query + ',' + '~probe_insertion__json__qc,CRITICAL'
 trajectories = one.alyx.rest('trajectories', 'list', provenance='Planned',
                              x=-2243, y=-2000, theta=15,
                              django=str_query)
@@ -61,7 +61,7 @@ trajectories = one.alyx.rest('trajectories', 'list', provenance='Planned',
 print('With resolved alignment: ', len(trajectories), '(', len(trajectories) - previous_num, ')')
 
 
-# With min regions >=3 
+# With min regions >=3
 previous_num = len(trajectories) #save this number to compute the next decrease
 min_regions = 3
 region_traj = []
@@ -80,7 +80,7 @@ print('With min regions >=3: ', len(trajectories), '(', len(trajectories) - prev
 
 #%%
 
-#currently hardcoded to match Steven & Guido analyses; 
+#currently hardcoded to match Steven & Guido analyses;
 #todo: finalize numbers and match with above code
 num_trajectories = [92, -7, -16, -21, -7, -16, -32];
 
@@ -93,11 +93,11 @@ fig = plt.figure()
 ax = fig.add_subplot(1, 1, 1, xticks=[], yticks=[])
 sankey = Sankey(ax=ax, scale=0.01, offset=0.2, head_angle=90)
 sankey.add(flows=[92, -7, -16, -21, -7, -16, -32],
-           labels=['All sessions', 'Histology damage', 
+           labels=['All sessions', 'Histology damage',
                    'Sessions per lab',
                    'Noise/yield',
                    'Targeting',
-                   'Behavior', 
+                   'Behavior',
                    'Data analysis'],
            orientations=[0, 1, -1, -1, -1,-1, 0],
            pathlengths=[0.5, 0.2, 0.1, 0.2, 0.3, 0.5, 0.5],
@@ -134,7 +134,7 @@ plt.savefig(r'C:\Users\Steinmetz Lab User\Documents\GitHub\analysis\reproducible
 
 #%%
 
-#currently hardcoded to match Steven & Guido analyses; 
+#currently hardcoded to match Steven & Guido analyses;
 #todo: finalize numbers and match with above code
 num_trajectories = [92, -7, -16, -21, -7, -16, -32];
 
@@ -147,11 +147,11 @@ fig = plt.figure()
 ax = fig.add_subplot(1, 1, 1, xticks=[], yticks=[])
 sankey = Sankey(ax=ax, scale=0.01, offset=0.2, head_angle=90)
 sankey.add(flows=[92, -7, -16, -21, -7, -16, -32],
-           labels=['All sessions', 'Histology damage', 
+           labels=['All sessions', 'Histology damage',
                    'Sessions per lab',
                    'Noise/yield',
                    'Targeting',
-                   'Behavior', 
+                   'Behavior',
                    'Data analysis'],
            orientations=[0, 1, -1, -1, -1,-1, 0],
            pathlengths=[0.5, 0.2, 0.1, 0.2, 0.3, 0.5, 0.5],
@@ -191,7 +191,7 @@ import ssl
 ssl._create_default_https_context = ssl._create_unverified_context
 
 #basic BWM query
-STR_QUERY = 'probe_insertion__session__project__name__icontains,ibl_neuropixel_brainwide_01' 
+STR_QUERY = 'probe_insertion__session__projects__name__icontains,ibl_neuropixel_brainwide_01'
 # BRAIN_REGIONS = ['VIS', 'CA1', 'DG', 'LP', 'PO']
 one = ONE()
 
@@ -204,14 +204,14 @@ print('Number of total trajectories : ', len(trajectories))
 
 # With QC < 50
 previous_num = len(trajectories) #save this number to compute the next decrease
-str_query = str_query + ',' + 'probe_insertion__session__qc__lt,50' 
+str_query = str_query + ',' + 'probe_insertion__session__qc__lt,50'
 trajectories = one.alyx.rest('trajectories', 'list', provenance='Planned',
                              django=str_query)
 print('With QC < 50: ', len(trajectories), '(', len(trajectories) - previous_num, ')')
 
 # With QC not critical
 previous_num = len(trajectories) #save this number to compute the next decrease
-str_query = str_query + ',' + '~probe_insertion__json__qc,CRITICAL' 
+str_query = str_query + ',' + '~probe_insertion__json__qc,CRITICAL'
 trajectories = one.alyx.rest('trajectories', 'list', provenance='Planned',
                              django=str_query)
 print('With QC not CRITICAL: ', len(trajectories), '(', len(trajectories) - previous_num, ')')
