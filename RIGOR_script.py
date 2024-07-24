@@ -236,7 +236,7 @@ def get_metrics(save_path, channel_idx=None, shank=None):
     session_raster, t_vals, d_vals = bincount2D(spikes.times[kp_idx], spikes.depths[kp_idx],
                                                 t_bin, d_bin, ylim=[min_chn, max_chn])
     session_raster = session_raster / t_bin
-    gs0_ax4.imshow(session_raster, extent=np.r_[np.min(t_vals), np.max(t_vals), np.min(d_vals), np.max(d_vals)], aspect='auto',
+    gs0_ax4.imshow(session_raster, extent=np.r_[np.min(t_vals), np.max(t_vals), min_chn, max_chn], aspect='auto',
                    origin='lower', vmax=50, cmap='binary')
     gs0_ax3.axis('off')
     gs0_ax4.set_yticks([])
