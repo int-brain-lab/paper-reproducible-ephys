@@ -87,3 +87,6 @@ insertions = get_insertions(level=0, one=one, freeze='freeze_2024_03')
 ## More detail about insertions used for each figure
 A detailed overview of the criteria and insertions that have been used for each figure can be found in this
 [spreadsheet](https://docs.google.com/spreadsheets/d/1_bJLDG0HNLFx3SOb4GxLxL52H4R2uPRcpUlIw6n4n-E)
+
+# Running RIGOR metrics on your data
+To run the RIGOR metrics on your own data please refer to this [readme](RIGOR_readme.md)
