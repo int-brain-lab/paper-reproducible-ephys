@@ -1,7 +1,7 @@
 import one.alf.io as alfio
 import matplotlib.pyplot as plt
 from pathlib import Path
-from ibllib.ephys.ephysqc import EphysQC, phy_model_from_ks2_path, spike_sorting_metrics_ks2
+from ibllib.ephys.ephysqc import phy_model_from_ks2_path, spike_sorting_metrics_ks2
 from phylib.io.alf import EphysAlfCreator
 from ibllib.pipes.ephys_tasks import SpikeSorting
 import numpy as np
@@ -9,14 +9,18 @@ from matplotlib import gridspec
 from brainbox.processing import bincount2D, compute_cluster_average
 from neuropixel import NP2Converter
 import spikeglx
+from ibldsp import voltage, utils
+import scipy
+import pandas as pd
+import neuropixel
 
-LFP_BAND = [20, 80]
+
 MAX_AP_RMS = 40
-MAX_LFP_POWER = -150
+MAX_LFP_DERIVATIVE = 1
 MIN_NEURONS_PER_CHANNEL = 0.1
 
 
-def RIGOR_metrics(spikesorting_path, raw_data_path, save_path=None):
+def RIGOR_metrics(spikesorting_path, raw_data_path, save_path=None, recompute=False):
 
     spikesorting_path = Path(spikesorting_path)
     raw_data_path = Path(raw_data_path)
@@ -38,13 +42,18 @@ def RIGOR_metrics(spikesorting_path, raw_data_path, save_path=None):
         conv = NP2Converter(ap_file, compress=False)
         conv.init_params(nsamples=int(600 * conv.sr.fs))
         conv._process_NP21(offset=int(conv.sr.ns / 2), assert_shanks=False)
+        lf_file = next(raw_data_path.glob('*lf.*bin'), None)
 
-    # Figure out
-    ephys_qc = EphysQC(None, session_path=raw_data_path, stream=False, use_alyx=False)
-    ephys_qc.probe_path = ephys_qc.session_path
-    _ = ephys_qc.run(update=False, ensure=False, out_path=Path(save_path))
+    # Compute metrics on ap band
+    print('Computing metrics on raw ap data')
+    compute_ap_metrics(ap_file, save_path, recompute=recompute)
+
+    # Compute metrics on lf band
+    print('Computing metrics on raw lfp data')
+    compute_lfp_metrics(lf_file, save_path, recompute=recompute)
 
     # Compute metric a la IBL
+    print('Computing spikesorting metrics')
     m = phy_model_from_ks2_path(ks2_path=spikesorting_path, bin_path=raw_data_path)
     ac = EphysAlfCreator(m)
     ac.convert(save_path, label=None, force=True, ampfactor=SpikeSorting._sample2v(ap_file))
@@ -66,6 +75,85 @@ def RIGOR_metrics(spikesorting_path, raw_data_path, save_path=None):
             get_metrics(save_path, chn_idx, shank=sh)
     else:
         get_metrics(save_path)
+
+
+def compute_ap_metrics(ap_file, save_path, recompute=False):
+
+    save_file = save_path.joinpath('_iblqc_ephysChannels.apRMS.npy')
+    if recompute is False and save_file.exists():
+        return
+
+    sr = spikeglx.Reader(ap_file)
+    nc = sr.nc - sr.nsync
+
+    BATCHES_SPACING = 300
+    TMIN = 40
+    SAMPLE_LENGTH = 1
+
+    th = sr.geometry
+    if sr.meta.get('NP2.4_shank', None) is not None:
+        h = neuropixel.trace_header(sr.major_version, nshank=4)
+        h = neuropixel.split_trace_header(h, shank=int(sr.meta.get('NP2.4_shank')))
+    else:
+        h = neuropixel.trace_header(sr.major_version, nshank=np.unique(th['shank']).size)
+
+    t0s = np.arange(TMIN, sr.rl - SAMPLE_LENGTH, BATCHES_SPACING)
+    all_rms = np.zeros((2, nc, t0s.shape[0]))
+
+    for i, t0 in enumerate(t0s):
+        sl = slice(int(t0 * sr.fs), int((t0 + SAMPLE_LENGTH) * sr.fs))
+        raw = sr[sl, :-sr.nsync].T
+        destripe = voltage.destripe(raw, fs=sr.fs, h=h)
+        all_rms[0, :, i] = utils.rms(raw)
+        all_rms[1, :, i] = utils.rms(destripe)
+
+    ap_rms = np.median(all_rms, axis=-1)
+    np.save(save_file, ap_rms)
+
+
+def compute_lfp_metrics(lf_file, save_path, recompute=False):
+
+    save_file = save_path.joinpath('lfp_metrics.pqt')
+    if recompute is False and save_file.exists():
+        return
+
+    LFP_RESAMPLE_FACTOR = 10
+    LFP_BAND = [20, 80]
+    THETA_BAND = [6, 12]
+
+    BATCHES_SPACING = 200
+    TMIN = 40
+    SAMPLE_LENGTH = 20
+
+    sr = spikeglx.Reader(lf_file)
+
+    t0s = np.arange(TMIN, sr.rl - SAMPLE_LENGTH, BATCHES_SPACING)
+
+    th = sr.geometry
+    if sr.meta.get('NP2.4_shank', None) is not None and sr.meta.get('nSavedChans', 385) < 385:
+        h = neuropixel.trace_header(sr.major_version, nshank=4)
+        h = neuropixel.split_trace_header(h, shank=int(sr.meta.get('NP2.4_shank')))
+    else:
+        h = neuropixel.trace_header(sr.major_version, nshank=np.unique(th['shank']).size)
+
+    for j, t0 in enumerate(t0s):
+        sl = slice(int(t0 * sr.fs), int((t0 + SAMPLE_LENGTH) * sr.fs))
+        raw = sr[sl, :-sr.nsync].T
+        destripe = voltage.destripe_lfp(raw, fs=sr.fs, h=h, channel_labels=True)
+        lfp = scipy.signal.decimate(destripe, LFP_RESAMPLE_FACTOR, axis=1, ftype='fir')
+
+        f, pow = scipy.signal.periodogram(lfp, fs=250, scaling='density')
+        if j == 0:
+            rms_lf_band, rms_theta_band = (np.zeros((lfp.shape[0], len(t0s))) for i in range(2))
+
+        rms_lf_band[:, j] = np.nanmean(
+                10 * np.log10(pow[:, np.logical_and(f >= LFP_BAND[0], f <= LFP_BAND[1])]), axis=-1)
+        rms_theta_band[:, j] = np.nanmean(
+                10 * np.log10(pow[:, np.logical_and(f >= THETA_BAND[0], f <= THETA_BAND[1])]), axis=-1)
+        lfp_power = np.nanmedian(rms_lf_band - 20 * np.log10(f[1]), axis=-1) * 2
+        lfp_theta = np.nanmedian(rms_theta_band - 20 * np.log10(f[1]), axis=-1) * 2
+        df_lfp = pd.DataFrame.from_dict({'lfp_power': lfp_power, 'lfp_theta': lfp_theta})
+        df_lfp.to_parquet(save_file)
 
 
 def get_metrics(save_path, channel_idx=None, shank=None):
@@ -93,22 +181,21 @@ def get_metrics(save_path, channel_idx=None, shank=None):
     ap_rms = np.percentile(ap['apRMS'][1, channels.rawInd], 90) * 1e6
 
     # LFP PSD
-    lfp = alfio.load_object(save_path, 'ephysSpectralDensityLF')
-    freqs = (lfp['freqs'] > LFP_BAND[0]) & (lfp['freqs'] < LFP_BAND[1])
-    chan_power = lfp['power'][:, channels.rawInd]
-    lfp_power = np.mean(10 * np.log(chan_power[freqs]))  # convert to dB
+    lfp = pd.read_parquet(save_path.joinpath('lfp_metrics.pqt'))
+    chan_power = lfp['lfp_power'][channels.rawInd].values
+    lfp_derivative = np.median(np.abs(np.gradient(chan_power)))
 
     # NEURON YIELD
     neuron_yield = (clusters.metrics.label == 1).sum() / len(channels.localCoordinates)
 
     ap_qc = 'PASS' if ap_rms < MAX_AP_RMS else 'FAIL'
-    lfp_qc = 'PASS' if lfp_power < MAX_LFP_POWER else 'FAIL'
+    lfp_qc = 'PASS' if lfp_derivative < MAX_LFP_DERIVATIVE else 'FAIL'
     yield_qc = 'PASS' if neuron_yield > MIN_NEURONS_PER_CHANNEL else 'FAIL'
 
     if shank is not None:
         print(f'\n\nMetrics for shank {shank}')
     print(f'AP rms: {ap_rms}, QC: {ap_qc}')
-    print(f'LFP power: {lfp_power}, QC: {lfp_qc}')
+    print(f'LFP power: {lfp_derivative}, QC: {lfp_qc}')
     print(f'Neuron yield: {neuron_yield}, QC: {yield_qc}')
 
     # Make a plot with some details
@@ -149,16 +236,15 @@ def get_metrics(save_path, channel_idx=None, shank=None):
     session_raster, t_vals, d_vals = bincount2D(spikes.times[kp_idx], spikes.depths[kp_idx],
                                                 t_bin, d_bin, ylim=[min_chn, max_chn])
     session_raster = session_raster / t_bin
-    gs0_ax4.imshow(session_raster, extent=np.r_[np.min(t_vals), np.max(t_vals), np.min(d_vals), np.max(d_vals)], aspect='auto',
+    gs0_ax4.imshow(session_raster, extent=np.r_[np.min(t_vals), np.max(t_vals), min_chn, max_chn], aspect='auto',
                    origin='lower', vmax=50, cmap='binary')
     gs0_ax3.axis('off')
     gs0_ax4.set_yticks([])
     gs0_ax4.set_xlabel('Time in session')
 
     # LFP PLOT
-    power_vals = 10 * np.log(np.mean(chan_power[freqs], axis=0))[:, np.newaxis]
-    clim = np.nanquantile(power_vals, [0.1, 0.9])
-    lf_im = gs0_ax6.imshow(power_vals, extent=np.r_[0, 10, min_chn, max_chn], origin='lower', cmap='viridis', aspect='auto',
+    clim = np.nanquantile(chan_power, [0.1, 0.9])
+    lf_im = gs0_ax6.imshow(chan_power[:, np.newaxis], extent=np.r_[0, 10, min_chn, max_chn], origin='lower', cmap='viridis', aspect='auto',
                            vmin=clim[0], vmax=clim[1])
     cbar = fig.colorbar(lf_im, orientation="horizontal", ax=gs0_ax5)
     cbar.set_label('LFP (dB)')
