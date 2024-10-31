@@ -569,8 +569,7 @@ def all_panels(rm_unre=True, align='move', split='rt',
         y_res[re_rank] = (np.array(np.matrix(u) * 
                           np.matrix(S_star) * np.matrix(vh)))
 
-    xs = np.arange(len(y[0])) * T_BIN
-    xs = xs[:len(xs) // 2]  # for just plotting first PSTH
+    xs = data['time']
 
     # get a sessions idx per cell (for err bars later)
     cps = [k for k in range(1, len(labs)) if labs[k] != labs[k - 1]]
@@ -762,23 +761,23 @@ def all_panels(rm_unre=True, align='move', split='rt',
 
         labsinreg = len(Counter(labs[regs == reg]))
         sessinreg = len(Counter(sess[regs == reg]))
+        cellsinreg = len(y[regs == reg])
 
         ms = np.mean((y[regs == reg]) / T_BIN, axis=0)
-        ste = np.std((y[regs == reg]) / T_BIN, axis=0) / np.sqrt(sessinreg)
+        ste = np.std((y[regs == reg]) / T_BIN, axis=0) / np.sqrt(cellsinreg)
 
         # only plot one PSTH
         ms = ms[:len(xs)]
         ste = ste[:len(xs)]
 
-        axs['D'].plot(xs - 0.5, ms, color=Dc[reg])
-        axs['D'].fill_between(xs - 0.5, ms + ste, ms - ste, 
+        axs['D'].plot(xs, ms, color=Dc[reg])
+        axs['D'].fill_between(xs, ms + ste, ms - ste, 
                               color=Dc[reg], alpha=0.2)
 
     for x in np.array([25]) * T_BIN:
-        axs['D'].axvline(x=0, linewidth=0.5, linestyle='--', 
-                         c='g', label='movement onset')
+        axs['D'].axvline(x=0, linewidth=0.5, linestyle='--', c='g')
 
-    axs['D'].set_xlabel('time from \n movement onset (s)')
+    axs['D'].set_xlabel(f'time from \n {align} onset (s)')
     axs['D'].set_ylabel('Baselined firing rate \n (spikes/s)')
     axs['D'].text(-0.1, 1.30, panel_n['D'], 
                   transform=axs['D'].transAxes, fontsize=plfs, 
@@ -794,23 +793,23 @@ def all_panels(rm_unre=True, align='move', split='rt',
 
         labsinlab = len(Counter(labs[labs == lab]))
         sessinlab = len(Counter(sess[labs == lab]))
+        cellsinlab = len(y[labs == lab])
 
         ms = np.mean((y[labs == lab]) / T_BIN, axis=0)
-        ste = np.std((y[labs == lab]) / T_BIN, axis=0) / np.sqrt(sessinlab)
+        ste = np.std((y[labs == lab]) / T_BIN, axis=0) / np.sqrt(cellsinlab)
 
         # only plot one PSTH
         ms = ms[:len(xs)]
         ste = ste[:len(xs)]
 
-        axs['m_labs'].plot(xs - 0.5, ms, color=lab_cols[b[lab]])
-        axs['m_labs'].fill_between(xs - 0.5, ms + ste, ms - ste, 
+        axs['m_labs'].plot(xs, ms, color=lab_cols[b[lab]])
+        axs['m_labs'].fill_between(xs, ms + ste, ms - ste, 
                               color=lab_cols[b[lab]], alpha=0.2)
 
     for x in np.array([25]) * T_BIN:
-        axs['m_labs'].axvline(x=0, linewidth=0.5, linestyle='--', 
-                         c='g', label='movement onset')
+        axs['m_labs'].axvline(x=0, linewidth=0.5, linestyle='--', c='g')
 
-    axs['m_labs'].set_xlabel('time from \n movement onset (s)')
+    axs['m_labs'].set_xlabel(f'time from \n {align} onset (s)')
     axs['m_labs'].set_ylabel('Baselined firing rate \n (spikes/s)')
     axs['m_labs'].text(-0.1, 1.30, panel_n['m_labs'], 
                   transform=axs['m_labs'].transAxes, fontsize=plfs, 
@@ -821,8 +820,7 @@ def all_panels(rm_unre=True, align='move', split='rt',
     example cell reconstruction
     '''
 
-    le = [Line2D([0], [0], color='g', lw=0.5, ls='--', 
-                 label='movement onset')]
+    le = [Line2D([0], [0], color='g', lw=0.5, ls='--')]
 
     # illustrate example cells
     # 1 with great, 1 with bad reconstruction
@@ -846,22 +844,20 @@ def all_panels(rm_unre=True, align='move', split='rt',
     for k in range(len(idxs)):
 
 
-        axs[ms[k]].plot(xs - 0.5, y[idxs[k]][:len(xs)] / T_BIN,
+        axs[ms[k]].plot(xs, y[idxs[k]][:len(xs)] / T_BIN,
                         c='k', label='PETH')
-        axs[ms[k]].plot(xs - 0.5, y_res[2][idxs[k]][:len(xs)] / T_BIN,
+        axs[ms[k]].plot(xs, y_res[2][idxs[k]][:len(xs)] / T_BIN,
                         c='r', ls='--', label='2-PC-fit')
 
-        for x in np.array([25]) * T_BIN:
-            axs[ms[k]].axvline(x=0, linewidth=0.5, linestyle='--',
-                               c='g', label='movement onset')
+        axs[ms[k]].axvline(x=0, linewidth=0.5, linestyle='--',c='g')
 
         axs[ms[k]].set_ylabel('Baselined \n firing rate \n (spikes/s)')
         stext = rf'$R^2$={np.round(r2_score(y[idxs[k]], y_res[2][idxs[k]]), 2)}'
-        axs[ms[k]].text(0.3, 1, stext, transform=axs[ms[k]].transAxes,
+        axs[ms[k]].text(0.3, 1.3, stext, transform=axs[ms[k]].transAxes,
                         fontsize=7, va='top', ha='right')
 
         if k == 1:
-            axs[ms[k]].set_xlabel('time from \n movement onset (s)')
+            axs[ms[k]].set_xlabel(f'time from \n {align} onset (s)')
 
         if k == 0:
             axs[ms[k]].text(-0.1, 1.6, panel_n[ms[k]],
@@ -1177,29 +1173,27 @@ def all_panels(rm_unre=True, align='move', split='rt',
             # normalise by the number of sessions, not the number of cells
 
             sessinlab = len(Counter(sess2[labs2 == lab]))
+            cellsinlab = len(y[labs == lab])
 
-            ste = np.std((y2[labs2 == lab]) / T_BIN, axis=0) / np.sqrt(sessinlab)
+            ste = np.std((y2[labs2 == lab]) / T_BIN, axis=0) / np.sqrt(cellsinlab)
             mes = mes[:len(xs)]
             ste = ste[:len(xs)]
 
-            axs3[ms2[k]].plot(xs - 0.5, mes, color=lab_cols[b[lab]])
-            axs3[ms2[k]].fill_between(xs - 0.5, mes + ste, mes - ste,
+            axs3[ms2[k]].plot(xs, mes, color=lab_cols[b[lab]])
+            axs3[ms2[k]].fill_between(xs, mes + ste, mes - ste,
                                       color=lab_cols[b[lab]], alpha=0.2)
 
         axs3[ms2[k]].set_title(reg, loc='left')
-        axs3[ms2[k]].set_xlabel('time from \n movement onset (s)')
+        axs3[ms2[k]].set_xlabel(f'time from \n {align} onset (s)')
         axs3[ms2[k]].set_ylabel('Baselined firing rate \n (spikes/s)')
         
-        for x in np.array([25]) * T_BIN:
-            axs3[ms2[k]].axvline(x=0, lw=0.5, linestyle='--', 
-                                 c='g', label='movement onset')
+        axs3[ms2[k]].axvline(x=0, lw=0.5, linestyle='--', c='g')
 
         axs3[ms2[k]].text(-0.1, 1.30, panel_n3[ms2[k]],
                           transform=axs3[ms2[k]].transAxes, 
                           fontsize=plfs, va='top', ha='right', weight='bold')
 
-        le = [Line2D([0], [0], color='g', lw=0.5, ls='--', 
-              label='movement onset')]
+        le = [Line2D([0], [0], color='g', lw=0.5, ls='--')]
 
         axs3[ms[k]].sharex(axs['B'])
         axs3[ms[k]].sharey(axs['B'])
