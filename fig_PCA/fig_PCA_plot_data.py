@@ -79,9 +79,9 @@ def distE(x, y):
     return np.sqrt(np.dot(x, x) - 2 * np.dot(x, y) + np.dot(y, y))
 
 
-def perm_test(inclu=False, print_=False, rerun = False,
+def perm_test(inclu=False, print_=False, rerun = True, align='move',
               nrand=2000, sig_lev =0.01, fdr = False, ax = None,
-              plot_=True, samp=True, nns = 100, nnf = 0.8):
+              plot_=True, samp=True, nns = 1000,):
 
     '''
     compute the distance of the mean of a subgroup
@@ -94,10 +94,9 @@ def perm_test(inclu=False, print_=False, rerun = False,
     incl: include tested cells into pack
     samp: for region-targeted test, restrict to random subset 
     nns: how many samplings
-    nnf: what fraction of cells is sampled
     '''
         
-    emb00, regs00, labss00 = all_panels(get_dat=True)
+    emb00, regs00, labss00, eids00 = all_panels(get_dat=True, align=align)
     labs__ = list(Counter(labss00))
 
     #order labs canonically
@@ -128,33 +127,40 @@ def perm_test(inclu=False, print_=False, rerun = False,
             AKS = np.load(fig_path.joinpath('A.npy'))
 
         else:
-            print('computing 100 sample averages, KS only')
+            print(f'computing {nns} sample averages, KS only')
                         
             As = []
+
             
+            df00 = pd.DataFrame({
+                'pc1': emb00[:,0],
+                'pc2': emb00[:,1],
+                'regs': regs00,
+                'labs': labss00,
+                'eids': eids00})
 
-            print(f'sampling {nnf} of all neurons, {nns} times')
             for i in range(nns):
-
-#                # restrict KS analysis to subset of cells
-#                reg0 = random.sample(list(regs_),1)[0]
-#                print('restricting tests on subsets of cells')
-#                n0 = dict(Counter(regs00))[reg0]
-#                print(f'sampling randomly {n0} cells ({reg0})')
-#                s0 = random.sample(range(len(regs00)),n0)
                 
-                s0 = random.sample(range(len(regs00)),
-                                   int(nnf*len(regs00)))
-
-                emb = emb00[s0]
-                regs = regs00[s0]
-                labss = labss00[s0]
                 
-                td = {'regs':regs,'labs':labss}
                 RKS = {}
 
-                for tarn in td:
-                    
+                for tarn in ['regs', 'labs']:
+
+                    # KS on min subset of cells
+
+                    min_cells_per_tarn = df00[tarn].value_counts().min()
+
+                    sampled_df = (df00.groupby(tarn).apply(
+                        lambda x: x.sample(n=min_cells_per_tarn, 
+                        random_state=random.randint(1, 10000))
+                        ).reset_index(drop=True))
+
+                    emb = sampled_df['feat'].values
+                    regs = sampled_df['regs'].values
+                    labss = sampled_df['labs'].values
+
+                    td = {'regs':regs,'labs':labss}
+
                     tar = td[tarn]
 
                     for reg in list(regs_) + ['all']:
@@ -178,8 +184,8 @@ def perm_test(inclu=False, print_=False, rerun = False,
                         gsi = {}  # first PCs per remaining classes
                         
                         for x in tar_:
-                            gs[x] = emb0[tar0 == x][:,0]
-                            gsi[x] = emb0[tar0 != x][:,0]                
+                            gs[x] = emb0[tar0 == x]
+                            gsi[x] = emb0[tar0 != x]               
 
                         centsr = []  # null_d
                         centsir = []  # null_d inverse
@@ -187,7 +193,7 @@ def perm_test(inclu=False, print_=False, rerun = False,
                               
                         for x in tar_:
                             if inclu:
-                                g_ = emb0[:,0]
+                                g_ = emb0
                             else:
                                 g_ = gsi[x]
                             
@@ -272,7 +278,6 @@ def perm_test(inclu=False, print_=False, rerun = False,
             
             A = combined_p_values_matrix
             np.save(fig_path.joinpath('A.npy'),A)
-            AKS = A
 
     else:
         print('computing KS and dist test on all cells')
@@ -489,7 +494,7 @@ def all_panels(rm_unre=True, align='move', split='rt',
                xyz_res=False, fdr=False, permute_include=True,
                nrand = 2000, sig_lev = 0.01, inclu = False, 
                perm_tests=True, get_dat=False, freeze='freeze_2024_03',
-               get_info=False, nns = 100, nnf = 0.8, rerun=False):
+               get_info=False, nns = 1000, rerun=True):
                              
     '''
     Plotting main figure and supp figure;
@@ -500,7 +505,6 @@ def all_panels(rm_unre=True, align='move', split='rt',
     # panel letter fontsize
     plfs = 10
 
-               
     # load metainfo df, row per cell
     concat_df = load_dataframe()
     
@@ -527,6 +531,7 @@ def all_panels(rm_unre=True, align='move', split='rt',
     y = all_frs
     regs = concat_df['region'].values
     labs = concat_df['lab'].values
+    eids = concat_df['eid'].values
     
     print(len(Counter(concat_df['pid'].values)), 'insertions')
     
@@ -545,7 +550,7 @@ def all_panels(rm_unre=True, align='move', split='rt',
     emb = pca.transform(y)
 
     if get_dat:
-        return emb, regs, labs
+        return emb, regs, labs, eids
   
     if get_info:
         return concat_df
@@ -589,14 +594,9 @@ def all_panels(rm_unre=True, align='move', split='rt',
     inner = [['Ea'],
              ['Eb']]
 
-#    mosaic = [[inner, 'F', 'KS', 'KSmean'],
-#              ['B','B', 'D', 'KSregs'],
-#              ['c_labs', 'c_labs', 'm_labs', 'KSlabs']]
-
-
     mosaic = [[inner, 'F','B','B'],
               ['D', 'KSregs','c_labs', 'c_labs'],
-              ['m_labs', 'KSlabs', 'KS', 'KS']]
+              ['m_labs', 'KSlabs', 'KS', 'KSmean']]
     
 
     mosaic_supp = [['Ha', 'Hb', 'H'],
@@ -654,21 +654,17 @@ def all_panels(rm_unre=True, align='move', split='rt',
 
     if perm_tests:
         # run all permutation tests
-        perm_test(inclu=inclu, 
+        perm_test(inclu=inclu, align=align,
                   nrand=nrand, sig_lev =sig_lev, 
                   fdr = fdr, ax=axs['KS'],samp=False, rerun=rerun) 
                   
-#        # average across subset sampling
-#        perm_test(inclu=inclu, 
-#                  nrand=nrand, sig_lev =sig_lev, 
-#                  fdr = fdr, ax=axs['KSmean'],samp=True,
-#                  nns = nns, nnf = nnf, rerun=rerun)                   
-                  
-                  
-
-                        
+        # average across subset sampling
+        perm_test(inclu=inclu, align=align, nrand=nrand, sig_lev =sig_lev, 
+                    fdr = fdr, ax=axs['KSmean'], samp=True,
+                    nns = nns, rerun=rerun)                   
+              
         # put panel label
-        for pan in ['KS']:              
+        for pan in ['KS', 'KSmean']:              
             axs[pan].text(-0.1, 1.3, panel_n[pan],
                             transform=axs[pan].transAxes,
                             fontsize=plfs, va='top',
