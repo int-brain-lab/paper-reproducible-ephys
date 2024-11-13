@@ -28,6 +28,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 import seaborn as sns
 import matplotlib as mpl
 
+import statsmodels.formula.api as smf
 from statsmodels.stats.multitest import multipletests
 from sklearn.linear_model import LogisticRegression, Ridge
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
@@ -63,6 +64,8 @@ canon_regs = [ "VISa/am",
 
 # set figure style
 figure_style()
+Dc = figure_style(return_colors=True)
+Dc['VISa/am'] = Dc['PPC']
 
 
 def ecdf(a):
@@ -675,8 +678,8 @@ def all_panels(rm_unre=True, align='move', split='rt',
     plot scatter, all cells, colored by reg
     ###
     '''
-    Dc = figure_style(return_colors=True)
-    Dc['VISa/am'] = Dc['PPC']
+    
+    
 
     # scatter 2d PCs
     cols_reg = [Dc[x] for x in regs]
@@ -1215,5 +1218,85 @@ def all_panels(rm_unre=True, align='move', split='rt',
     print(f'Saving figures to {fig_path}')
     fig.savefig(fig_path.joinpath('figure_PCA.pdf'))
     figs.savefig(fig_path.joinpath('figure_PCA_supp1.pdf'))
-        
+
+
+def linear_mixed_effects(align='move', comp='pc1'):
+
+    emb00, regs00, labss00, eids00 = all_panels(get_dat=True, align=align)
+
+    df00 = pd.DataFrame({
+                        'pc1': emb00[:,0],
+                        'pc2': emb00[:,1],
+                        'regs': regs00,
+                        'labs': labss00,
+                        'eids': eids00})
+
+    model = smf.mixedlm(f"{comp} ~ regs + labs", data=df00, 
+                        groups="eids", re_formula="1")
+
+    return model.fit(method='cg')
+
+
+def plot_SI_lme():
+    '''
+    For alignments ['move', 'stim'] and components ['pc1', 'pc2'],
+    plot coefficients of linear mixed effects model in a 1x4 grid.
+    Each panel shows coefficients with error bars and 95% confidence intervals.
+    '''
     
+    fig, axs = plt.subplots(nrows=1, ncols=4, figsize=(7.14, 3), sharey=True)
+    plt.ion()
+
+    alignments = ['move', 'stim']
+    components = ['pc1', 'pc2']
+
+    for idx, (align, comp) in enumerate([(a, c) for a in alignments for c in components]):
+        ax = axs[idx]
+
+        result = linear_mixed_effects(align=align, comp=comp)
+        plot_df = pd.DataFrame(result.summary().tables[1])
+
+        # Convert necessary columns to numeric
+        plot_df[['Coef.', 'Std.Err.', 'z', 'P>|z|', '[0.025', '0.975]']] = plot_df[
+            ['Coef.', 'Std.Err.', 'z', 'P>|z|', '[0.025', '0.975]']
+        ].apply(pd.to_numeric, errors='coerce')
+
+        # Define colors and error bars
+        for row_idx, row in plot_df.iterrows():
+            coef = row['Coef.']
+            lower_bound = row['[0.025']
+            upper_bound = row['0.975]']
+            color = 'red' if row['P>|z|'] < 0.05 else 'grey'
+            
+            ax.errorbar(
+                coef, row_idx, 
+                xerr=[[coef - lower_bound], [upper_bound - coef]], 
+                fmt='o', color=color , ecolor=color, elinewidth=2, capsize=0
+            )
+
+        # Set y-axis labels with colors for lab or region
+        y_labels = plot_df.index
+        y_colors = [
+            'black' if label in ['Intercept', 'eids Var']
+            else lab_cols[b[label.split('.')[1][:-1]]]
+            if 'labs' in label else Dc[label.split('.')[1][:-1]]
+            for label in y_labels
+        ]
+
+        ax.set_yticks(range(len(y_labels)))
+        for tick, color in zip(ax.get_yticklabels(), y_colors):
+            tick.set_color(color)
+
+        # Title and labels
+        ax.set_title(f"{align.capitalize()}, {comp.upper()}")
+        if idx == 0:
+            ax.set_yticks(range(len(plot_df)))
+            ax.set_yticklabels(plot_df.index)
+
+        ax.axhline(y=4.5, color='black', linestyle='--')
+        ax.axvline(x=0, color='gray', linestyle='--')
+        
+        ax.set_xlabel("Coefficient Estimate")
+
+    plt.tight_layout()
+    plt.show()
