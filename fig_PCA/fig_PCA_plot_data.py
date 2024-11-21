@@ -61,12 +61,13 @@ canon_regs = [ "VISa/am",
     "PO"]
        
 
-
 # set figure style
 figure_style()
 Dc = figure_style(return_colors=True)
 Dc['VISa/am'] = Dc['PPC']
 
+# for significance testing
+sig_lev=0.05
 
 def ecdf(a):
     '''
@@ -83,7 +84,7 @@ def distE(x, y):
 
 
 def perm_test(inclu=False, print_=False, rerun = True, align='move',
-              nrand=2000, sig_lev =0.01, fdr = False, ax = None,
+              nrand=2000, fdr = False, ax = None,
               plot_=True, samp=True, nns = 1000,):
 
     '''
@@ -158,7 +159,7 @@ def perm_test(inclu=False, print_=False, rerun = True, align='move',
                         random_state=random.randint(1, 10000))
                         ).reset_index(drop=True))
 
-                    emb = sampled_df['feat'].values
+                    emb = sampled_df['pc1'].values
                     regs = sampled_df['regs'].values
                     labss = sampled_df['labs'].values
 
@@ -495,7 +496,7 @@ def perm_test(inclu=False, print_=False, rerun = True, align='move',
 
 def all_panels(rm_unre=True, align='move', split='rt', 
                xyz_res=False, fdr=False, permute_include=True,
-               nrand = 2000, sig_lev = 0.01, inclu = False, 
+               nrand = 2000, inclu = False, 
                perm_tests=True, get_dat=False, freeze='freeze_2024_03',
                get_info=False, nns = 1000, rerun=True):
                              
@@ -1237,11 +1238,12 @@ def linear_mixed_effects(align='move', comp='pc1'):
     return model.fit(method='cg')
 
 
-def plot_SI_lme():
+def plot_SI_lme(fdr=True):
     '''
     For alignments ['move', 'stim'] and components ['pc1', 'pc2'],
     plot coefficients of linear mixed effects model in a 1x4 grid.
     Each panel shows coefficients with error bars and 95% confidence intervals.
+    fdr: fasle discovery rate correction, at sigl=0.05
     '''
     
     fig, axs = plt.subplots(nrows=1, ncols=4, figsize=(7.14, 3), sharey=True)
@@ -1249,24 +1251,51 @@ def plot_SI_lme():
 
     alignments = ['move', 'stim']
     components = ['pc1', 'pc2']
+    pans = [(a, c) for a in alignments for c in components]
 
-    for idx, (align, comp) in enumerate([(a, c) for a in alignments for c in components]):
+    if fdr:
+        D = {}
+        for (align, comp) in pans:
+
+            result = linear_mixed_effects(align=align, comp=comp)
+            plot_df = pd.DataFrame(result.summary().tables[1])
+            # Convert necessary columns to numeric
+            plot_df[['Coef.', 'Std.Err.', 'z', 'P>|z|', '[0.025', '0.975]']] = plot_df[
+                ['Coef.', 'Std.Err.', 'z', 'P>|z|', '[0.025', '0.975]']
+            ].apply(pd.to_numeric, errors='coerce')
+            D[f'{align}_{comp}'] = plot_df
+
+        ps = np.concatenate([D[key]['P>|z|'].values for key in D])
+        ps[np.isnan(ps)] = 1
+        n_p = len(D[list(D.keys())[0]]['P>|z|'])
+        _, ps_c, _, _ = multipletests(ps, sig_lev, method='fdr_bh')
+
+        for k in range(len(D)):
+            D[list(D.keys())[k]]['P>|z|'] = ps_c[k*n_p:(k+1)*n_p] 
+            k+=1
+        print(f'fdr corrected p-values at {sig_lev}')
+
+    for idx, (align, comp) in enumerate(pans):
         ax = axs[idx]
 
-        result = linear_mixed_effects(align=align, comp=comp)
-        plot_df = pd.DataFrame(result.summary().tables[1])
+        if fdr:
+            plot_df = D[f'{align}_{comp}'] 
+        else:
+            result = linear_mixed_effects(align=align, comp=comp)
+            plot_df = pd.DataFrame(result.summary().tables[1])
 
-        # Convert necessary columns to numeric
-        plot_df[['Coef.', 'Std.Err.', 'z', 'P>|z|', '[0.025', '0.975]']] = plot_df[
-            ['Coef.', 'Std.Err.', 'z', 'P>|z|', '[0.025', '0.975]']
-        ].apply(pd.to_numeric, errors='coerce')
+            # Convert necessary columns to numeric
+            plot_df[['Coef.', 'Std.Err.', 'z', 'P>|z|', '[0.025', '0.975]']] = plot_df[
+                ['Coef.', 'Std.Err.', 'z', 'P>|z|', '[0.025', '0.975]']
+            ].apply(pd.to_numeric, errors='coerce')
+
 
         # Define colors and error bars
         for row_idx, row in plot_df.iterrows():
             coef = row['Coef.']
             lower_bound = row['[0.025']
             upper_bound = row['0.975]']
-            color = 'red' if row['P>|z|'] < 0.05 else 'grey'
+            color = 'red' if row['P>|z|'] < sig_lev else 'grey'
             
             ax.errorbar(
                 coef, row_idx, 
