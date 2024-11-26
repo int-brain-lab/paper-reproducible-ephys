@@ -38,7 +38,7 @@ def panel_probe_lfp(fig, ax, boundary_align='DG-TH', ylim=[-2000, 2000], normali
             z = z - z_subtract
 
         # Plot
-        im = plot_probe(df['lfp'].values, z, ax[iR], clim=clim, normalize=normalize,
+        im = plot_probe(df['lfp_destriped'].values, z, ax[iR], clim=clim, normalize=normalize,
                         cmap='viridis')
 
         if data['include']:
@@ -161,4 +161,4 @@ def panel_probe_neurons(fig, ax, boundary_align='DG-TH', ylim=[-2000, 2000]):
                       bbox_to_anchor=(1, 0.1, 1, 1), bbox_transform=ax[-1].transAxes)
     cbar = fig.colorbar(im, cax=axin, ticks=im.get_clim())
     cbar.ax.set_yticklabels([f'{levels[0]}', f'{levels[1]}'])
-    cbar.set_label('Firing rate (spks/s)', rotation=270, labelpad=0)
+    cbar.set_label('Firing rate (spikes/s)', rotation=270, labelpad=0)

@@ -20,6 +20,8 @@ def panel_probe_lfp(fig, ax, boundary_align='DG-TH', ylim=[-2000, 2000],
     df_chns = load_bilateral_data(df_name='chns')
     df_chns['institute'] = df_chns['lab'].map(institution_map)
     df_chns['lab_number'] = df_chns['lab'].map(lab_number_map)
+    df_chns = df_chns[~df_chns.institute.isin(['UCLA', 'UW'])]
+
     df_filt = df_chns.copy()
     df_filt = df_filt.sort_values(by=['institute', 'subject', 'probe']).reset_index(drop=True)
     df_filt = df_filt.drop_duplicates(subset=['subject', 'pid']).reset_index()
@@ -75,6 +77,9 @@ def panel_probe_neurons(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[
 
     df_chns['institute'] = df_chns['lab'].map(institution_map)
     df_chns['lab_number'] = df_chns['lab'].map(lab_number_map)
+
+    df_chns = df_chns[~df_chns.institute.isin(['UCLA', 'UW'])]
+
     df_filt = df_chns.copy()
     df_filt = df_filt.sort_values(by=['institute', 'subject', 'probe']).reset_index(drop=True)
     df_filt = df_filt.drop_duplicates(subset=['subject', 'pid']).reset_index()
@@ -228,6 +233,8 @@ def panel_distribution(ax, example_region='CA1', example_metric='lfp_power',
 
     # Load in bilateral data
     df_bilateral_ins = load_bilateral_data(df_name='ins')
+    df_bilateral_ins['institute'] = df_bilateral_ins['lab'].map(institution_map)
+    df_bilateral_ins = df_bilateral_ins[~df_bilateral_ins.institute.isin(['UCLA', 'UW'])]
     df_bl_slice = df_bilateral_ins[(df_bilateral_ins['region'] == example_region)]
     print(df_bl_slice)
 
@@ -273,6 +280,8 @@ def panel_summary(ax, regions=['PPC', 'CA1', 'DG']):
 
     # Load in bilateral data
     df_ins = load_bilateral_data(df_name='ins')
+    df_ins['institute'] = df_ins['lab'].map(institution_map)
+    df_ins = df_ins[~df_ins.institute.isin(['UCLA', 'UW'])]
 
     # Load in all data
     df_all_ins = load_all_data(df_name='ins')

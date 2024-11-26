@@ -64,17 +64,30 @@ def panel_probe_lfp(fig, ax, df_filt, boundary_align='DG-TH', ylim=[-2000, 2000]
     ax[-1].set_axis_off()
 
     # Add lab names
-    plt.figtext(0.22, 0.715, 'Berkeley', va="center", ha="center", size=7, color=lab_colors['Berkeley'])
-    plt.figtext(0.305, 0.715, 'Champalimaud', va="center", ha="center", size=7, color=lab_colors['CCU'])
-    plt.figtext(0.385, 0.715, 'CSHL (C)', va="center", ha="center", size=7, color=lab_colors['CSHL (C)'])
-    plt.figtext(0.425, 0.715, '(Z)', va="center", ha="center", size=7, color=lab_colors['CSHL (Z)'])
-    plt.figtext(0.46, 0.715, 'NYU', va="center", ha="center", size=7, color=lab_colors['NYU'])
-    plt.figtext(0.52, 0.715, 'Princeton', va="center", ha="center", size=7, color=lab_colors['Princeton'])
-    plt.figtext(0.57, 0.715, 'SWC', va="center", ha="center", size=7, color=lab_colors['SWC'])
-    plt.figtext(0.645, 0.715, 'UCL', va="center", ha="center", size=7, color=lab_colors['UCL'])
+    plt.figtext(0.12, 0.705, 'Berkeley', va="center", ha="center", size=7, color=lab_colors['Berkeley'])
+    plt.figtext(0.215, 0.705, 'CCU', va="center", ha="center", size=7, color=lab_colors['CCU'])
+    plt.figtext(0.300, 0.705, 'CSHL (C)', va="center", ha="center", size=7, color=lab_colors['CSHL (C)'])
+    plt.figtext(0.345, 0.705, '(Z)', va="center", ha="center", size=7, color=lab_colors['CSHL (Z)'])
+    plt.figtext(0.40, 0.705, 'NYU', va="center", ha="center", size=7, color=lab_colors['NYU'])
+    plt.figtext(0.465, 0.705, 'Princeton', va="center", ha="center", size=7, color=lab_colors['Princeton'])
+    plt.figtext(0.53, 0.705, 'SWC', va="center", ha="center", size=7, color=lab_colors['SWC'])
+    plt.figtext(0.635, 0.705, 'UCL', va="center", ha="center", size=7, color=lab_colors['UCL'])
     #plt.figtext(0.805, 0.715, '(H)', va="center", ha="center", size=7, color=lab_colors['UCL (H)'])
-    plt.figtext(0.77, 0.715, 'UCLA', va="center", ha="center", size=7, color=lab_colors['UCLA'])
-    plt.figtext(0.86, 0.715, 'UW', va="center", ha="center", size=7, color=lab_colors['UW'])
+    plt.figtext(0.78, 0.705, 'UCLA', va="center", ha="center", size=7, color=lab_colors['UCLA'])
+    plt.figtext(0.89, 0.705, 'UW', va="center", ha="center", size=7, color=lab_colors['UW'])
+
+    # Old positions Add lab names
+    # plt.figtext(0.22, 0.715, 'Berkeley', va="center", ha="center", size=7, color=lab_colors['Berkeley'])
+    # plt.figtext(0.305, 0.715, 'Champalimaud', va="center", ha="center", size=7, color=lab_colors['CCU'])
+    # plt.figtext(0.385, 0.715, 'CSHL (C)', va="center", ha="center", size=7, color=lab_colors['CSHL (C)'])
+    # plt.figtext(0.425, 0.715, '(Z)', va="center", ha="center", size=7, color=lab_colors['CSHL (Z)'])
+    # plt.figtext(0.46, 0.715, 'NYU', va="center", ha="center", size=7, color=lab_colors['NYU'])
+    # plt.figtext(0.52, 0.715, 'Princeton', va="center", ha="center", size=7, color=lab_colors['Princeton'])
+    # plt.figtext(0.57, 0.715, 'SWC', va="center", ha="center", size=7, color=lab_colors['SWC'])
+    # plt.figtext(0.645, 0.715, 'UCL', va="center", ha="center", size=7, color=lab_colors['UCL'])
+    # #plt.figtext(0.805, 0.715, '(H)', va="center", ha="center", size=7, color=lab_colors['UCL (H)'])
+    # plt.figtext(0.77, 0.715, 'UCLA', va="center", ha="center", size=7, color=lab_colors['UCLA'])
+    # plt.figtext(0.86, 0.715, 'UW', va="center", ha="center", size=7, color=lab_colors['UW'])
 
     # Add colorbar
     axin = inset_axes(ax[-1], width="50%", height="90%", loc='lower right', borderpad=0,
@@ -204,7 +217,7 @@ def panel_probe_neurons(fig, ax, df_filt, boundary_align='DG-TH', ylim=[-2000, 2
                       bbox_to_anchor=(1, 0.1, 1, 1), bbox_transform=ax[-1].transAxes)
     cbar = fig.colorbar(im, cax=axin, ticks=im.get_clim())
     cbar.ax.set_yticklabels([f'{levels[0]}', f'{levels[1]}'])
-    cbar.set_label('Firing rate (spks/s)', rotation=270, labelpad=-2)
+    cbar.set_label('Firing rate (spikes/s)', rotation=270, labelpad=-2)
 
     # Return the list of pids used in this figure
     return np.unique(df_filt['pid'])

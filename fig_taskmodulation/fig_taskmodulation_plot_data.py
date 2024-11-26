@@ -1,7 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import figrid as fg
-from reproducible_ephys_functions import filter_recordings, BRAIN_REGIONS, labs, save_figure_path, figure_style, save_data_path
+from reproducible_ephys_functions import (filter_recordings, BRAIN_REGIONS, labs, save_figure_path, figure_style, save_data_path,
+                                          get_label_pos, get_row_coord, remove_frame)
 from fig_taskmodulation.fig_taskmodulation_load_data import load_data, load_dataframe, tests, filtering_criteria
 from fig_taskmodulation.fig_taskmodulation_plot_functions import plot_raster_and_psth, plot_raster_and_psth_LvsR
 import seaborn as sns
@@ -19,6 +20,8 @@ np.set_printoptions(suppress=True)
 
 lab_number_map, institution_map, lab_colors = labs()
 fig_path = save_figure_path(figure='fig_taskmodulation')
+
+lab_number_map, institution_map, institution_colors = labs()
 
 PRINT_PIDS = False
 
@@ -54,12 +57,113 @@ shortened_tests = {#'trial': 'Trial (first 400 ms)',
                    'post_stim': 'Stimulus',
                    'post_move': 'Movement',
                    'start_to_move': 'Reaction period',
-                   'pre_move': 'Move. initiation',
+                   'pre_move': 'Move initiation',
                    'post_reward': 'Reward',
-                   'pre_move_lr': 'L vs R move.',
+                   'pre_move_lr': 'L vs R move',
                    'avg_ff_post_move': 'Fano Factor'}
 
 region_rename = dict(zip(BRAIN_REGIONS, ['VISa/am', 'CA1', 'DG', 'LP', 'PO']))
+
+def plot_main_figure_test():
+
+    height = 9
+    width = 7
+
+    yspans = get_row_coord(height, [1, 1, 4], hspace=0.8, pad=0.3)
+    xspan_row1 = get_row_coord(width, [1, 1, 1])
+    xspan_row2 = get_row_coord(width, [3, 3, 3, 3, 1], hspace=0.1)
+    xspan_row3 = get_row_coord(width, [1, 1])
+
+    xspan_inset = get_row_coord(width, [1, 3], hspace=0.2, pad=0, span=xspan_row3[1])
+    yspan_inset = get_row_coord(height, [1, 3], pad=0, span=yspans[2])
+
+    figure_style()
+    fig = plt.figure(figsize=(width, height), dpi=150)
+    hxcoords = [xspan_row3[1][0] + 0.05, xspan_row3[1][-1] - 0.05]
+    hycoords = [yspan_inset[1][0], yspan_inset[1][-1] - 0.05]
+    ax = {'A': fg.place_axes_on_grid(fig, xspan=xspan_row1[0], yspan=yspans[0], dim=[2, 1], hspace=0.1),
+          'B': fg.place_axes_on_grid(fig, xspan=xspan_row1[1], yspan=yspans[0]),
+          'C': fg.place_axes_on_grid(fig, xspan=xspan_row1[2], yspan=yspans[0]),
+          'D_1': fg.place_axes_on_grid(fig, xspan=xspan_row2[0], yspan=yspans[1]),
+          'D_2': fg.place_axes_on_grid(fig, xspan=xspan_row2[1], yspan=yspans[1]),
+          'D_3': fg.place_axes_on_grid(fig, xspan=xspan_row2[2], yspan=yspans[1]),
+          'D_4': fg.place_axes_on_grid(fig, xspan=xspan_row2[3], yspan=yspans[1]),
+          'D_5': fg.place_axes_on_grid(fig, xspan=xspan_row2[4], yspan=yspans[1]),
+          'E': fg.place_axes_on_grid(fig, xspan=xspan_row3[0], yspan=yspans[2], dim=[7, 1], hspace=0.1),
+          'F': fg.place_axes_on_grid(fig, xspan=xspan_inset[0], yspan=yspan_inset[0]),
+          'G': fg.place_axes_on_grid(fig, xspan=xspan_inset[1], yspan=yspan_inset[0]),
+          'H': fg.place_axes_on_grid(fig, xspan=hxcoords, yspan=hycoords)
+          }
+
+    plot_panel_single_neuron_LvsR(ax=ax['A'], save=False)
+    plot_panel_single_subject(ax=ax['B'], save=False)
+    plot_panel_task_modulated_neurons(specific_tests=['pre_move'],
+                                      ax=ax['E'][2:],
+                                      save=False)
+    plot_panel_power_analysis(ax=ax['G'], ax2=ax['F'])
+    plot_panel_permutation(ax=ax['H'])
+
+    # we have to find out max and min neurons here now, because plots are split
+    df = load_dataframe()
+    df_filt = filter_recordings(df, **filtering_criteria)
+    df_filt = df_filt[df_filt['permute_include'] == 1].reset_index()
+    df_filt_reg = df_filt.groupby('region')
+    max_neurons = 0
+    min_neurons = 1000000
+    for iR, reg in enumerate(BRAIN_REGIONS):
+        df_reg = df_filt_reg.get_group(reg)
+        df_reg_inst = df_reg.groupby('institute')
+        for inst in df_reg_inst.groups.keys():
+            inst_idx = df_reg_inst.groups[inst]
+            max_neurons = max(max_neurons, inst_idx.shape[0])
+            min_neurons = min(min_neurons, inst_idx.shape[0])
+    D_regions = [reg for reg in BRAIN_REGIONS if reg != 'LP']
+    plot_panel_all_subjects(max_neurons=max_neurons, min_neurons=min_neurons, ax=[ax['C']], save=False, plotted_regions=['LP'])
+    plot_panel_all_subjects(max_neurons=max_neurons, min_neurons=min_neurons, ax=[ax['D_1'], ax['D_2'], ax['D_3'], ax['D_4']], save=False, plotted_regions=D_regions)
+    ax['D_2'].xaxis.set_label_coords(1.15, -0.2)
+
+    ax['D_5'].set_axis_off()
+    ax['E'][0].set_axis_off()
+    ax['E'][1].set_axis_off()
+
+    # Add lab labels to the final plot axis
+    lab_number_map, institution_map, institution_colors = labs()
+    inst = list(set(list(institution_map.values())))
+    inst.sort()
+    inst = [i for i in inst if i != 'UCL (H)']
+    pos = np.linspace(0, 1, len(inst))[::-1]
+    for p, l in zip(pos, inst):
+        ax['D_5'].text(0.5, p, l, color=institution_colors[l], fontsize=7, transform=ax['D_5'].transAxes)
+
+    labels = [{'label_text': 'a', 'xpos': get_label_pos(width,xspan_row1[0][0]), 'ypos': get_label_pos(height, yspans[0][0], pad=0.3),
+               'fontsize': 10, 'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
+              {'label_text': 'b', 'xpos': get_label_pos(width, xspan_row1[1][0]), 'ypos': get_label_pos(height, yspans[0][0], pad=0.3), 'fontsize': 10,
+               'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
+              {'label_text': 'c', 'xpos': get_label_pos(width, xspan_row1[2][0]), 'ypos': get_label_pos(height, yspans[0][0], pad=0.3), 'fontsize': 10,
+               'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
+              {'label_text': 'd', 'xpos': get_label_pos(width, xspan_row2[0][0]), 'ypos': get_label_pos(height, yspans[1][0], pad=0.3), 'fontsize': 10,
+               'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
+              {'label_text': 'e', 'xpos': get_label_pos(width, xspan_row3[0][0]), 'ypos': get_label_pos(height, yspans[2][0], pad=0.3), 'fontsize': 10,
+               'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
+              {'label_text': 'f', 'xpos': get_label_pos(width, xspan_inset[0][0]), 'ypos': get_label_pos(height,yspan_inset[0][0], pad=0.3), 'fontsize': 10,
+               'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
+              {'label_text': 'g', 'xpos': get_label_pos(width, xspan_inset[1][0]), 'ypos': get_label_pos(height, yspan_inset[0][0], pad=0.3), 'fontsize': 10,
+               'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
+              {'label_text': 'h', 'xpos': get_label_pos(width, hxcoords[0]), 'ypos': get_label_pos(height, hycoords[0], pad=0.3), 'fontsize': 10,
+               'weight': 'bold', 'ha': 'right', 'va': 'bottom'}]
+
+    fg.add_labels(fig, labels)
+    print(f'Saving figures to {fig_path}')
+    adjust = 0.3
+    fig.subplots_adjust(top=1 - adjust / height, bottom=(adjust + 0.2) / height, left=(adjust + 0.2)/ width,
+                        right=1 - adjust / width)
+    plt.savefig(fig_path.joinpath('fig_taskmodulation_combined_test.svg'))
+    plt.savefig(fig_path.joinpath('fig_taskmodulation_combined_test.pdf'))
+    plt.close()
+
+
+
+
 
 def plot_main_figure():
     DPI = 400  # if the figure is too big on your screen, lower this number
@@ -176,6 +280,109 @@ def task_mod_panel_helper(fig, panel_name, xspan, ybot, ytop):
     return ret
 
 
+def plot_supp_figure_test():
+    figure_style()
+    width = 7
+    height = 9
+    fig = plt.figure(figsize=(width, height))
+
+    xspans = get_row_coord(width, [1, 1])
+    yspans = get_row_coord(height, [7, 7, 7, 1], hspace=[0.5, 0.5, 0.4], pad=0.3)
+    xspan_all = get_row_coord(width, [1])
+    ax = {'A': fg.place_axes_on_grid(fig, xspan=xspans[0], yspan=yspans[0], dim=[7, 1], hspace=0.8),
+          'B': fg.place_axes_on_grid(fig, xspan=xspans[1], yspan=yspans[0], dim=[7, 1], hspace=0.8),
+          'C': fg.place_axes_on_grid(fig, xspan=xspans[0], yspan=yspans[1], dim=[7, 1], hspace=0.8),
+          'D': fg.place_axes_on_grid(fig, xspan=xspans[1], yspan=yspans[1], dim=[7, 1], hspace=0.8),
+          'E': fg.place_axes_on_grid(fig, xspan=xspans[0], yspan=yspans[2], dim=[7, 1], hspace=0.8),
+          'F': fg.place_axes_on_grid(fig, xspan=xspans[1], yspan=yspans[2], dim=[7, 1], hspace=0.8),
+          'G': fg.place_axes_on_grid(fig, xspan=xspan_all[0], yspan=yspans[3])
+          }
+
+    plot_panel_task_modulated_neurons(specific_tests=['post_stim'],
+                                      ax=ax['A'][2:],
+                                      save=False)
+    ax['A'][0].set_title('Stimulus vs pre stimulus test')
+
+    plot_panel_task_modulated_neurons(specific_tests=['post_move'],
+                                      ax=ax['B'][2:],
+                                      save=False)
+    ax['B'][0].set_title('Movement vs pre stimulus test')
+
+    plot_panel_task_modulated_neurons(specific_tests=['start_to_move'],
+                                      ax=ax['C'][2:],
+                                      save=False)
+    ax['C'][0].set_title('Reaction period vs pre stimulus test')
+
+    plot_panel_task_modulated_neurons(specific_tests=['pre_move'],
+                                      ax=ax['D'][2:],
+                                      save=False)
+    ax['D'][0].set_title('Movement initiation vs pre stimulus test')
+
+    plot_panel_task_modulated_neurons(specific_tests=['post_reward'],
+                                      ax=ax['E'][2:],
+                                      save=False)
+    ax['E'][0].set_title('Reward vs pre stimulus test')
+
+    plot_panel_task_modulated_neurons(specific_tests=['pre_move_lr'],
+                                      ax=ax['F'][2:],
+                                      save=False)
+    ax['F'][0].set_title('Left vs right movement test')
+
+    labels = [{'label_text': 'a', 'xpos': get_label_pos(width,xspans[0][0]), 'ypos': get_label_pos(height, yspans[0][0], pad=0.3),
+               'fontsize': 10, 'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
+              {'label_text': 'b', 'xpos': get_label_pos(width, xspans[1][0]), 'ypos': get_label_pos(height, yspans[0][0], pad=0.3), 'fontsize': 10,
+               'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
+              {'label_text': 'c', 'xpos': get_label_pos(width, xspans[0][0]), 'ypos': get_label_pos(height, yspans[1][0], pad=0.3), 'fontsize': 10,
+               'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
+              {'label_text': 'd', 'xpos': get_label_pos(width, xspans[1][0]), 'ypos': get_label_pos(height, yspans[1][0], pad=0.3), 'fontsize': 10,
+               'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
+              {'label_text': 'e', 'xpos': get_label_pos(width, xspans[0][0]), 'ypos': get_label_pos(height, yspans[2][0], pad=0.3), 'fontsize': 10,
+               'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
+              {'label_text': 'f', 'xpos': get_label_pos(width, xspans[1][0]), 'ypos': get_label_pos(height,yspans[2][0], pad=0.3), 'fontsize': 10,
+               'weight': 'bold', 'ha': 'right', 'va': 'bottom'},]
+
+
+    fg.add_labels(fig, labels)
+
+    ax['G'].set_axis_off()
+
+    lab_number_map, institution_map, institution_colors = labs()
+    inst = list(set(list(institution_map.values())))
+    inst.sort()
+
+    for i, l in enumerate(inst):
+        if l == 'UCL (H)':
+            continue
+        if i == 0:
+            text = ax['G'].text(0.2, 0.5, l, color=institution_colors[l], fontsize=8, transform=ax['G'].transAxes)
+        else:
+            text = ax['G'].annotate(
+                '  ' + l, xycoords=text, xy=(1, 0), verticalalignment="bottom",
+                color=institution_colors[l], fontsize=8)  # custom properties
+
+    for a, v in ax.items():
+        if a == 'G':
+            continue
+        if a not in ['E', 'F']:
+            v[-1].set_xlabel('')
+        else:
+            v[-1].set_xlabel('Percentage modulated neurons')
+        v[0].set_axis_off()
+        v[1].set_axis_off()
+        # Shift the VIs/am label
+        v[2].yaxis.set_label_coords(-0.02, 1.02)
+
+
+    print(f'Saving figures to {fig_path}')
+    adjust = 0.3
+    fig.subplots_adjust(top=1 - adjust / height, bottom=0.2 / height, left=adjust/ width,
+                        right=1 - adjust / width)
+    plt.savefig(fig_path.joinpath('figure_taskmodulation_supp.svg'))
+    plt.savefig(fig_path.joinpath('figure_taskmodulation_supp.pdf'))
+    plt.close()
+
+
+
 def plot_supp_figure():
     DPI = 400  # if the figure is too big on your screen, lower this number
     figure_style()
@@ -273,7 +480,7 @@ def plot_panel_single_neuron_LvsR(ax=None, save=True, neuron=650):
 
     #ax[0].set_title(f'Contrast: {side}, {feedback} choices', loc='left')
     #ax[0].set_title(f'{side} stim., {feedback} choices', loc='left')
-    ax[0].set_title('Example LP neuron', loc='left')
+    ax[0].set_title('Example LP neuron')#, loc='left')
     #Need to put legend for colorbar/contrasts
 
 def plot_panel_single_subject(event='move', norm='subtract', smoothing='sliding', ax=None, save=True):
@@ -325,7 +532,7 @@ def plot_panel_single_subject(event='move', norm='subtract', smoothing='sliding'
 
     # ax.set_title("Single mouse, {}".format(region))
     ax.set_xlabel("Time from movement onset (s)")
-    ax.set_ylabel("Baselined firing rate (sp/s)", labelpad=-0)
+    ax.set_ylabel("Baselined firing rate (spikes/s)")#, labelpad=-0)
     ax.spines["right"].set_visible(False)
     ax.spines["top"].set_visible(False)
     ax.set_xlim(left=time[0], right=time[-1])
@@ -336,7 +543,7 @@ def plot_panel_single_subject(event='move', norm='subtract', smoothing='sliding'
     if save:
         plt.savefig(fig_path.joinpath('fig_taskmodulation_example_subject.png'))
 
-    ax.set_title('Example recording in LP', loc='left')
+    ax.set_title('Example recording in LP')#, loc='left')
 
 
 def plot_panel_all_subjects(max_neurons, min_neurons, ax=None, save=True, plotted_regions=BRAIN_REGIONS):
@@ -396,7 +603,7 @@ def plot_panel_all_subjects(max_neurons, min_neurons, ax=None, save=True, plotte
         if iR >= 1:
             ax[iR].set_yticklabels([])
         else:
-            ax[iR].set_ylabel("Baselined firing rate (sp/s)")
+            ax[iR].set_ylabel("Baselined firing rate (spikes/s)")
             # ax[iR].set_title('Recordings from all labs', loc='left')
             # if len(plotted_regions) != 1:
             #     ax[iR].set_ylabel("Baselined firing rate (sp/s)")
@@ -404,22 +611,24 @@ def plot_panel_all_subjects(max_neurons, min_neurons, ax=None, save=True, plotte
         # ax[iR].set_title(region_rename[reg])
 
         if len(plotted_regions) == 1:
-            ax[iR].set_title('Recording averages in LP', loc='left')
+            ax[iR].set_title('Recording averages in LP')#, loc='left')
         else:
             ax[iR].set_title(region_rename[reg])
 
         if iR == 1 or len(plotted_regions) == 1:
             ax[iR].set_xlabel("Time from movement onset (s)")
 
-        print(all_present_labs)
-        if iR == len(plotted_regions) - 1 and len(plotted_regions) != 1:
-            # this is a hack for the legend
-            for lab in all_present_labs:
-                print(lab, lab_colors[lab])
-                ax[iR].plot(data['time'], np.zeros_like(data['time']) - 100, c=lab_colors[lab], label=lab)
-                leg = ax[iR].legend(frameon=False, bbox_to_anchor=(1, 1.19), labelcolor='linecolor', handlelength=0, handletextpad=0, fancybox=True)
-            for item in leg.legendHandles:
-                item.set_visible(False)
+        # print(all_present_labs)
+        # if iR == len(plotted_regions) - 1 and len(plotted_regions) != 1:
+        #     # this is a hack for the legend
+        #     for lab in all_present_labs:
+        #         print(lab, lab_colors[lab])
+        #         if lab == 'UCL':
+        #             continue
+        #         ax[iR].plot(data['time'], np.zeros_like(data['time']) - 100, c=lab_colors[lab], label=lab)
+        #         leg = ax[iR].legend(frameon=False, bbox_to_anchor=(1, 1.19), labelcolor='linecolor', handlelength=10, handletextpad=0, fancybox=True)
+            # for item in leg.legendHandles:
+            #      item.set_visible(False)
 
     if save:
         plt.savefig(fig_path.joinpath('fig_taskmodulation_all_subjects.png'))
@@ -462,7 +671,7 @@ def plot_panel_task_modulated_neurons(specific_tests=None, ax=None, save=True):
                 if i == 4:
                     plt.xlabel('Mice')
                 elif i == 0:
-                    plt.title('% modulated neurons', loc='left')
+                    plt.title('Percentage modulated neurons', loc='left')
             else:
                 for lab in vals['institute'].values:
                     mean = vals[test].values[vals['institute'].values == lab].mean()
@@ -472,7 +681,7 @@ def plot_panel_task_modulated_neurons(specific_tests=None, ax=None, save=True):
                 ax[i].scatter(vals[test].values, positions, color=colors, s=1)
                 # ax[i].bar(np.arange(vals[test].values.shape[0]), vals[test].values, color=colors)
                 ax[i].set_xlim(-0.05, 1.05)
-                ax[i].set_ylabel(region_rename[br], labelpad=0)
+                ax[i].set_ylabel(region_rename[br])
                 ax[i].set_xticks([])
                 ax[i].set_yticks([])
                 sns.despine()
@@ -481,7 +690,7 @@ def plot_panel_task_modulated_neurons(specific_tests=None, ax=None, save=True):
                 #     ax[i].set_title('{} test'.format(shortened_tests[test]))
                 if i == 4:
                     ax[i].set_xticks([0, 1], [0, 100])  # we are plotting percentages
-                    ax[i].set_xlabel('% modulated neurons ({} test)'.format(shortened_tests[test]))
+                    ax[i].set_xlabel('Percentage modulated neurons ({} test)'.format(shortened_tests[test]))
         if specific_tests is None:
             plt.suptitle(tests[test], size=22)
         if save:
@@ -520,15 +729,16 @@ def plot_panel_permutation(ax=None, n_permut=20000, qc='pass', n_cores=8):
     cbar = ax.collections[0].colorbar
     cbar.set_ticks(np.log10([0.01, 0.05, 0.25, 1]))
     cbar.set_ticklabels([0.01, 0.05, 0.25, 1])
+    cbar.set_label('p-value', rotation=270, labelpad=8)
 
     ax.set_yticks([0.5, 1.5, 2.5, 3.5, 4.5, 6.5, 7.5, 8.5, 9.5, 10.5])
     ax.set_yticklabels([region_rename[br] for br in BRAIN_REGIONS] + [region_rename[br] for br in BRAIN_REGIONS], va='center', rotation=0)
     ax.set_xticks([0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5])
-    ax.set_xticklabels(test_names, ha='center', rotation=90)  # rotation=30, ha='right')
+    ax.set_xticklabels(test_names, ha='right', rotation=45)  # rotation=30, ha='right')
     #ax.set_title('Task-driven activity: Comparison across labs', loc='left', pad=15)
 
-    ax.set_title("% modulated neurons", size='small')
-    ax.annotate("Distribution of F.R. modulations", (0.5, 0.485), horizontalalignment='center', xycoords='axes fraction', size='small')
+    ax.set_title("Percentage modulated neurons", size=7)#, size='small')
+    ax.annotate("Distribution of firing rate modulations", (0.5, 0.485), horizontalalignment='center', xycoords='axes fraction', size=7)#, size='small')
 
     return p_vals
 
@@ -727,11 +937,221 @@ def plot_panel_power_analysis(ax, ax2):
             ax.set_ylim(min_y, max_y)
             ax2.set_ylim(min_y, max_y)
 
-            ax2.set_ylabel('FR modulation (sp/s)')
+            ax2.set_ylabel('Firing rate modulation (spikes/s)')
             # ax.annotate("{}, {}, p={:.3f}".format(shortened_tests[test], reg, p_values[i]), xy=(0.5, 1), xytext=(0, pad), xycoords='axes fraction', textcoords='offset points', size='large', ha='center', va='baseline')
             ax2.set_xticks([])
             ax.set_xticks([])
             ax.set_yticks([])
+
+
+def plot_power_analysis_test():
+    significant_disturbances = pickle.load(open(save_data_path(figure='fig_taskmodulation').joinpath('shifts'), 'rb'))
+
+    # max_y, min_y = 9, -3
+    max_y, min_y = 16, -16
+    ff_min_y, ff_max_y = 0, 4
+
+    obs_max, obs_min = -10, 10
+    pad = 5 # in points
+    i = -1
+    perturbation_shift = 0.33
+    dist_between_violins = 0.8
+    lab_to_num = dict(zip(['Berkeley', 'CCU', 'CSHL (C)', 'CSHL (Z)', 'NYU', 'Princeton', 'SWC', 'UCL', 'UCLA', 'UW'], list(np.arange(10) * dist_between_violins)))
+
+    p_values = pickle.load(open(save_data_path(figure='fig_taskmodulation').joinpath('p_values'), 'rb'))
+    df = load_dataframe()
+    df_filt = filter_recordings(df, **filtering_criteria, recompute=False)
+    df_filt = df_filt[df_filt['permute_include'] == 1]
+    df_filt_reg = df_filt.groupby('region')
+
+    powers = []
+    vars = []
+    powers_ff = []
+    vars_ff = []
+    perturb_in_std = []
+    all_powers = []
+    ns = []
+
+    figure_style()
+    width = 7
+    height = 8
+    fig = plt.figure(figsize=(width, height))
+
+    xspans = get_row_coord(width, [1])
+    xspans_row2 = get_row_coord(width, [1, 1], hspace=1.4, span=[0.1, 0.9])
+    yspans = get_row_coord(height, [21, 1, 6], hspace=[0.3, 0.5], pad=0.3)
+
+    axs = {'A': fg.place_axes_on_grid(fig, xspan=xspans[0], yspan=yspans[0], dim=[7, 5], wspace=0.1, hspace=0.2),
+          'A_1': fg.place_axes_on_grid(fig, xspan=xspans[0], yspan=yspans[1]),
+          'B': fg.place_axes_on_grid(fig, xspan=xspans_row2[0], yspan=yspans[2]),
+          'C': fg.place_axes_on_grid(fig, xspan=xspans_row2[1], yspan=yspans[2]),
+          }
+
+    labels = [{'label_text': 'a', 'xpos': get_label_pos(width, xspans[0][0]), 'ypos': get_label_pos(height, yspans[0][0], pad=0.3),
+               'fontsize': 10, 'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
+              {'label_text': 'b', 'xpos': get_label_pos(width, xspans_row2[0][0]), 'ypos': get_label_pos(height, yspans[2][0], pad=0.3), 'fontsize': 10,
+               'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
+              {'label_text': 'c', 'xpos': get_label_pos(width, xspans_row2[1][0]), 'ypos': get_label_pos(height, yspans[2][0], pad=0.3), 'fontsize': 10,
+               'weight': 'bold', 'ha': 'right', 'va': 'bottom'},]
+
+    fg.add_labels(fig, labels)
+
+    for jj, test in enumerate(tests.keys()):
+        for ii, reg in enumerate(BRAIN_REGIONS):
+
+            ax = axs['A'][jj][ii]
+
+            # plt.subplot(8, 5, ii + jj * 5 + 1)
+            df_reg = df_filt_reg.get_group(reg)
+            i += 1
+
+            if test == 'avg_ff_post_move':
+                data = df_reg[test].values
+            else:
+                data = df_reg['mean_fr_diff_{}'.format(test)].values
+            labs = df_reg['institute'].values
+            subjects = df_reg['subject'].values
+
+            labs = labs[~np.isnan(data)]
+            subjects = subjects[~np.isnan(data)]
+            data = data[~np.isnan(data)]
+
+            ax.annotate("p={:.3f}".format(p_values[i]), xy=(0.5, 0.95), xycoords='axes fraction',
+                        size='6', ha='center', va='bottom')
+            if significant_disturbances[i, 0, 0] == 0 and significant_disturbances[i, 0, 1] == 0:
+                if jj == 6:
+                    ax.plot([-0.3, 6.3], [ff_min_y, ff_max_y], 'k')
+                    ax.plot([-0.3, 6.3], [ff_max_y, ff_min_y], 'k')
+                else:
+                    ax.plot([-0.3, 6.3], [min_y, max_y], 'k')
+                    ax.plot([-0.3, 6.3], [max_y, min_y], 'k')
+
+            for j, lab in enumerate(np.unique(labs)):
+                if np.sum(labs == lab) == 0:
+                    continue
+
+                lab_mean = data[labs == lab].mean()
+                ax.plot([lab_to_num[lab] - 0.3, lab_to_num[lab] + 0.3], [lab_mean, lab_mean], color=lab_colors[lab])
+
+                parts = ax.violinplot(data[labs == lab], positions=[lab_to_num[lab]], showextrema=False)  # , showmeans=True)
+                # print("{}, {}, {}".format(lab, lab_to_num[lab], np.min(data[labs == lab])))
+                parts['bodies'][0].set_facecolor(lab_colors[lab])
+                parts['bodies'][0].set_edgecolor(lab_colors[lab])
+
+                if test == 'avg_ff_post_move':
+                    vars_ff.append(np.std(data[labs == lab]) / np.sqrt(np.sum(labs == lab)))
+                else:
+                    vars.append(np.std(data[labs == lab]) / np.sqrt(np.sum(labs == lab)))
+
+                # parts['cmeans'].set_color('k') # this can be used to check whether the means align -> whether the datasets are assigned correctly
+
+                val = significant_disturbances[i, j, 0]
+
+                if not (significant_disturbances[i, 0, 0] == 0 and significant_disturbances[i, 0, 1] == 0):
+                    perturb_in_std.append(val / np.std(data[labs == lab]))
+
+                all_powers.append(val)
+                ns.append(np.sum(labs == lab))
+                if test == 'avg_ff_post_move':
+                    powers_ff.append(val)
+                    ax.axhline(1, color='grey', alpha=1/3, zorder=0)
+                else:
+                    powers.append(val)
+                    ax.axhline(0, color='grey', alpha=1/3, zorder=0)
+
+                temp_color = lab_colors[lab] if val < 1000 else 'red'
+                if isinstance(temp_color, str):
+                    val = max_y - lab_mean
+                    # print(ii + jj * 8 + 1)
+                ax.plot([lab_to_num[lab] + perturbation_shift, lab_to_num[lab] + perturbation_shift], [lab_mean, lab_mean + val], color=temp_color)
+                obs_max = max(obs_max, lab_mean + val)
+                val = significant_disturbances[i, j, 1]
+
+                all_powers[-1] -= val
+
+                if test == 'avg_ff_post_move':
+                    powers_ff[-1] -= val
+                else:
+                    powers[-1] -= val
+
+                if not (significant_disturbances[i, 0, 0] == 0 and significant_disturbances[i, 0, 1] == 0):
+                    perturb_in_std.append(val / np.std(data[labs == lab]))
+
+                temp_color = lab_colors[lab] if val > -1000 else 'red'
+                if isinstance(temp_color, str):
+                    val = min_y - lab_mean
+                    # print(ii + jj * 8 + 1)
+                ax.plot([lab_to_num[lab] + perturbation_shift, lab_to_num[lab] + perturbation_shift], [lab_mean, lab_mean + val], color=temp_color)
+                obs_min = min(obs_min, lab_mean + val)
+            ax.set_xlim(-0.3, (len(lab_to_num) - 1) * dist_between_violins + .36)
+            sns.despine()
+            if jj == 6:
+                if ii == 0:
+                    ax.set_ylabel('Fano factor')
+                    ax.yaxis.set_label_coords(-0.25, 0.5)
+
+                ax.set_ylim(ff_min_y, ff_max_y)
+                ax.set_xticks([])
+                ax.set_xlabel('Labs')
+            else:
+                ax.set_ylim(min_y, max_y)
+                ax.set_xticks([])
+
+            if ii != 0 and ii != 6:
+                ax.set_yticks([])
+
+            if ii == 4:
+                test_name = shortened_tests[test]
+                if test_name == 'Reaction period':
+                    test_name = 'Reaction \n period'
+
+                ax.annotate(test_name, xy=(1.1, 0.5), xycoords='axes fraction', size='8', ha='left', va='center', rotation='vertical')
+
+            if jj == 0:
+                ax.set_title(region_rename[reg], pad=20)
+
+            if jj == 3 and ii == 0:
+                ax.set_ylabel('Firing rate modulation (spikes/s)')
+                ax.yaxis.set_label_coords(-0.25, 1.1)
+
+
+    axs['A_1'].set_axis_off()
+    inst = list(set(list(institution_map.values())))
+    inst.sort()
+
+    for i, l in enumerate(inst):
+        if l == 'UCL (H)':
+            continue
+        if i == 0:
+            text = axs['A_1'].text(0.2, 0.5, l, color=institution_colors[l], fontsize=8, transform=axs['A_1'].transAxes)
+        else:
+            text = axs['A_1'].annotate(
+                '  ' + l, xycoords=text, xy=(1, 0), verticalalignment="bottom",
+                color=institution_colors[l], fontsize=8)  # custom properties
+
+
+    axs['B'].scatter(powers, np.power(vars, 0.5), color='blue', label="Firing modulation", s=0.15)
+    axs['B'].scatter(powers_ff, np.power(vars_ff, 0.5), color='blue', label="Fano factor", s=0.15)
+    axs['B'].set_xlabel("Shifts")
+    axs['B'].set_ylabel(r"Std / $\sqrt{N}$")
+
+    std_limit = 3
+    perturb_in_std = np.array(perturb_in_std)
+    assert np.sum(perturb_in_std == 0) == 0, "Perturbations of significant tests in histogram"
+    axs['C'].hist(perturb_in_std[np.abs(perturb_in_std) < std_limit], bins=25, color='grey')
+    print("excluded stds {}".format(np.sum(np.abs(perturb_in_std) >= std_limit)))
+    axs['C'].set_xlabel("Shifts (std)")
+    axs['C'].set_ylabel("Number of occurences")
+    axs['C'].set_xlim(-std_limit, std_limit)
+
+
+    print(f'Saving figures to {fig_path}')
+    adjust = 0.3
+    fig.subplots_adjust(top=1 - adjust / height, bottom=(adjust + 0.2) / height, left=(adjust + 0.2) / width,
+                        right=1 - (adjust + 0.2) / width)
+    plt.savefig(fig_path.joinpath('figure_power_analysis_test.svg'))
+    plt.savefig(fig_path.joinpath('figure_power_analysis_test.pdf'))
+    plt.close()
 
 
 def plot_power_analysis():
@@ -861,7 +1281,7 @@ def plot_power_analysis():
             if ii == 0:
                 plt.gca().annotate(shortened_tests[test], xy=(-0.45, 0.5), xytext=(0, 0), xycoords='axes fraction', textcoords='offset points', size='x-large', ha='right', va='center', rotation='vertical')
                 if jj == 3:
-                    plt.ylabel('FR modulation (sp/s)', fontsize=21)
+                    plt.ylabel('FR modulation (spikes/s)', fontsize=21)
             if jj == 0:
                 plt.gca().annotate(region_rename[reg], xy=(0.5, 1.2), xytext=(0, pad), xycoords='axes fraction', textcoords='offset points', size='x-large', ha='center', va='baseline')
             if jj != 6:

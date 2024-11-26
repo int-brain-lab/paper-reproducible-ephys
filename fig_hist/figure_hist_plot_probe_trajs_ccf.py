@@ -19,7 +19,7 @@ from fig_hist.fig_hist_load_data import load_dataframe
 from fig_hist.fig_hist_functions import df_to_traj_dict
 
 
-def plot_trajs(plan_colour='w', lab_colour=True):
+def plot_trajs(plan_colour='w', lab_colour=True, ax1=None, ax2=None, save=True):
     '''Plot CCF in coronal & sagittal tilted slices along planned rep site traj
     and add histology trajs projections onto this plot.
     '''
@@ -34,10 +34,15 @@ def plot_trajs(plan_colour='w', lab_colour=True):
 
     # use repo-ephys figure style
     figure_style()
-    fig1, ax1 = plt.subplots()
-    fig2, ax2 = plt.subplots()
-    fig1.set_size_inches(1, 2.15)
-    fig2.set_size_inches(1, 2.15)
+    if ax1 is None:
+        fig1, ax1 = plt.subplots()
+    else:
+        fig1 = plt.gcf()
+
+    if ax2 is None:
+        fig2, ax2 = plt.subplots()
+    else:
+        fig2 = plt.gcf()
 
     # empty numpy arrays for storing the entry point of probe into brain
     # and "exit point" i.e the probe tip!
@@ -96,12 +101,16 @@ def plot_trajs(plan_colour='w', lab_colour=True):
     ax1.text(-2900, -5700, 'Coronal', style='italic', color='w')
     ax2.text(-1100, -5700, 'Sagittal', style='italic', color='w')
 
-    fig1.tight_layout()
-    fig2.tight_layout()
+    if save:
+        fig1.set_size_inches(1, 2.15)
+        fig2.set_size_inches(1, 2.15)
 
-    fig_path = save_figure_path(figure='fig_hist')
-    fig1.savefig(fig_path.joinpath('C_probe_trajs_ccf_coronal.svg'), bbox_inches="tight")
-    fig2.savefig(fig_path.joinpath('C_probe_trajs_ccf_sagittal.svg'), bbox_inches="tight")
+        fig1.tight_layout()
+        fig2.tight_layout()
+
+        fig_path = save_figure_path(figure='fig_hist')
+        fig1.savefig(fig_path.joinpath('C_probe_trajs_ccf_coronal.svg'), bbox_inches="tight")
+        fig2.savefig(fig_path.joinpath('C_probe_trajs_ccf_sagittal.svg'), bbox_inches="tight")
 
 
 if __name__ == "__main__":

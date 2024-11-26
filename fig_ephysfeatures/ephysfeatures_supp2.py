@@ -24,12 +24,15 @@ def plot_figure_supp2(freeze=None):
     rec_per_lab = df_filt.groupby('institute').size()
     df_filt['recording'] = np.concatenate([np.arange(i) for i in rec_per_lab.values])
 
-    rows = 4
+    rows = 6
     cols = int(np.ceil(len(df_filt['subject']) / rows))
     figure_style()
-    fig = plt.figure(constrained_layout=False, figsize=(7, 5), dpi=300)
-    gs = fig.add_gridspec(rows, cols + 1, width_ratios=np.r_[np.ones(cols) * 0.9, 0.1])
-    gs.update(wspace=0.05, hspace=0.3, left=0.1, right=0.9, top=0.9, bottom=0.1)
+    width = 7
+    height = 6
+    fig = plt.figure(figsize=(width, height), dpi=150)
+    gs = fig.add_gridspec(rows + 1, cols + 1, width_ratios=np.r_[np.ones(cols) * 0.9, 0.2],
+                          height_ratios=np.r_[np.ones(rows) * 1, 0.2])
+    gs.update(wspace=0.05, hspace=0.4)
 
     ml_ranges = []
     axs = []
@@ -73,7 +76,7 @@ def plot_figure_supp2(freeze=None):
         ax = fig.add_subplot(gs[int(iR / cols), np.mod(iR, cols)])
 
         ax.imshow(image, aspect='auto', extent=np.r_[[0, 4000], [0, 3840]], cmap='bone', alpha=1, vmin=cmin, vmax=cmax)
-        scat = ax.scatter(df['lateral_um'] + 2000, df['axial_um'], c=df['lfp'], cmap='viridis', s=2, vmin=-190, vmax=-150)
+        scat = ax.scatter(df['lateral_um'] + 2000, df['axial_um'], c=df['lfp_destriped'], cmap='viridis', s=2, vmin=-190, vmax=-150)
         ax.set_title(data['recording'] + 1, color=lab_colors[data['institute']])
         ax.plot([200, 200], [100, 1100], color='red', lw=2)
 
@@ -90,12 +93,30 @@ def plot_figure_supp2(freeze=None):
 
         axs.append(ax)
 
-    ax = fig.add_subplot(gs[0:rows, cols])
-    cbar = fig.colorbar(scat, cax=ax, ticks=scat.get_clim())
-    cbar.set_label('Power spectral density', rotation=270, labelpad=-8)
-    cbar.ax.set_yticklabels([f'{-190} dB', f'{-150} dB'])
+    ax = fig.add_subplot(gs[1:rows-1, cols])
+    cbar = fig.colorbar(scat, cax=ax, ticks=scat.get_clim(), location='right')
+    cbar.set_label('Power spectral density (dB)', rotation=270, labelpad=-8)
+    cbar.ax.set_yticklabels([f'{-190}', f'{-150}'])
+
+    ax = fig.add_subplot(gs[rows, :])
+    ax.set_axis_off()
+    lab_number_map, institution_map, institution_colors = labs()
+    inst = list(set(list(institution_map.values())))
+    inst.sort()
+    for i, l in enumerate(inst):
+        if l == 'UCL (H)':
+            continue
+        if i == 0:
+            text = ax.text(0.2, 0.5, l, color=institution_colors[l], fontsize=8, transform=ax.transAxes)
+        else:
+            text = ax.annotate(
+                '  ' + l, xycoords=text, xy=(1, 0), verticalalignment="bottom",
+                color=institution_colors[l], fontsize=8)  # custom properties
 
     save_path = save_figure_path(figure='fig_ephysfeatures')
+    adjust = 0.3
+    fig.subplots_adjust(top=1 - adjust / height, bottom=adjust / height, left=adjust / width,
+                        right=1 - (adjust + 0.2) / width)
     plt.savefig(save_path.joinpath('figure3_supp2.png'))
     plt.savefig(save_path.joinpath('figure3_supp2.pdf'))
 
