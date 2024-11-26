@@ -4,6 +4,7 @@ from tqdm import notebook
 
 import figrid as fg
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 from matplotlib.ticker import FormatStrFormatter
 import seaborn as sns
 from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -362,7 +363,7 @@ def generate_figure9_supplement1(model_config,
                                  test_feature,
                                  sess_list,
                                  alpha=0.6, s=30,
-                                 xlims=[4.0,45.0], ylims=[-0.075,1.0], 
+                                 xlims=[4.0,45.0], ylims=[-0.075,1.0], axs=None,
                                  savefig=False):
     
 #     color_names = ["windows blue",
@@ -396,16 +397,29 @@ def generate_figure9_supplement1(model_config,
         obs_list.append(obs[idx:idx+n].reshape(sh[:-1]))
         feature_list.append(test_feature[idx:idx+n].reshape(sh))
         idx += n
- 
+
     baseline_score = load_test_model(model_config, None, None, obs_list, preds_shape, use_psth=False)
     baseline_score_psth = load_test_model(model_config, None, None, obs_list, preds_shape, use_psth=True)
-    
+
     reshaped_score = reshape_flattened(baseline_score, preds_shape, trim=3)
     reshaped_score_psth = reshape_flattened(baseline_score_psth, preds_shape, trim=3)
     reshaped_frs = reshape_flattened(mean_frs, preds_shape, trim=3)
 
-    fig, axs = plt.subplots(1,2, sharey=True, figsize=(20,10))
-    plt.subplots_adjust(wspace=0.075)
+    if axs is None:
+        fig, axs = plt.subplots(1,2, sharey=True, figsize=(20,10))
+        plt.subplots_adjust(wspace=0.075)
+        label_size = 24
+        title_size = 24
+        suptitle_size = 32
+        ticklabel_size = 18
+        legend_size = 8.5
+    else:
+        label_size = mpl.rcParams["axes.labelsize"]
+        ticklabel_size = mpl.rcParams["ytick.labelsize"]
+        title_size = label_size
+        suptitle_size = mpl.rcParams["axes.titlesize"]
+        legend_size = label_size
+
     for i, sess in enumerate(sess_list):
         lab_id = np.where(feature_list[i][0,0,0,lab_offset:session_offset] == 1)[0][0]
         session_id = np.where(feature_list[i][0,0,0,session_offset:xyz_offset] == 1)[0][0]
@@ -426,15 +440,16 @@ def generate_figure9_supplement1(model_config,
         axs[1].scatter(reshaped_frs[i][1:], reshaped_score_psth[i][1:], s=s,
                        color=institution_color, marker=shapes[session_id],
                        alpha=alpha)
-    axs[0].set_ylabel('R2', fontsize=24)
-    axs[0].set_xlabel('Mean Firing Rate (spikes/sec)', fontsize=24)
-    axs[0].set_title('Held-out test trials', fontsize=24)
+
+    axs[0].set_ylabel('R2', fontsize=label_size)
+    axs[0].set_xlabel('Mean firing rate (spikes/s)', fontsize=label_size)
+    axs[0].set_title('Held-out test trials', fontsize=title_size)
     
-    axs[1].set_xlabel('Mean Firing Rate (spikes/sec)', fontsize=24)
-    axs[1].set_title('PETHs of Held-out test trials', fontsize=24)
+    axs[1].set_xlabel('Mean firing rate (spikes/s)', fontsize=label_size)
+    axs[1].set_title('PETHs of held-out test trials', fontsize=title_size)
     
-    axs[0].legend(fontsize=8.5)
-    axs[1].legend(fontsize=8.5)
+    # axs[0].legend(fontsize=legend_size)
+    axs[1].legend(fontsize=legend_size)
     
     axs[0].set_xlim(xlims[0],xlims[1])
     axs[0].set_ylim(ylims[0],ylims[1])
@@ -442,22 +457,22 @@ def generate_figure9_supplement1(model_config,
     axs[1].set_ylim(ylims[0],ylims[1])
     
     axs[0].set_yticks(np.arange(0,1.2,0.2))
-    axs[0].set_yticklabels(np.arange(0,1.2,0.2), fontsize=18)
+    axs[0].set_yticklabels(np.arange(0,1.2,0.2), fontsize=ticklabel_size)
     axs[0].yaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
     
     axs[0].set_xticks(np.arange(0,50,5).astype(int))
-    axs[0].set_xticklabels(np.arange(0,50,5).astype(int), fontsize=18)
+    axs[0].set_xticklabels(np.arange(0,50,5).astype(int), fontsize=ticklabel_size)
     
     axs[1].set_xticks(np.arange(0,50,5).astype(int))
-    axs[1].set_xticklabels(np.arange(0,50,5).astype(int), fontsize=18)
-    
-    plt.suptitle('MTNN Prediction Quality vs. Firing Rate', fontsize=32)
+    axs[1].set_xticklabels(np.arange(0,50,5).astype(int), fontsize=ticklabel_size)
+
+    axs[0].text(1, 1.2, 'MTNN prediction quality vs firing rate',
+                             transform=axs[0].transAxes, ha='center', fontsize=suptitle_size)
     
     if savefig:
         figname = save_path.joinpath(f'figure9_supplement1.png')
         plt.savefig(figname, bbox_inches='tight', facecolor='white')
-    
-    plt.show()
+        plt.show()
     
 def generate_figure9_supplement2(model_config, 
                                  glm_score,

@@ -316,7 +316,7 @@ def add_weight_decay(net, l2_value1, l2_value2):
 def run_train(model, train_feature_path, train_output_path,
               val_feature_path, val_output_path, n_epochs=150, 
               lr=0.1, lr_decay=0.95, momentum=0.9, batch_size=512, 
-              clip=2e0, weight_decay=1e-5, valid_loss_min = np.Inf,
+              clip=2e0, weight_decay=1e-5, valid_loss_min = np.inf,
               model_name_suffix=None, remove_cov=None, 
               only_keep_cov=None, eval_train=False, simulated=False):
 

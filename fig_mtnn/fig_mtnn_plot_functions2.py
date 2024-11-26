@@ -1,6 +1,7 @@
 import figrid as fg
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FormatStrFormatter
+import matplotlib as mpl
 import seaborn as sns
 import matplotlib
 import numpy as np
@@ -9,7 +10,7 @@ from copy import deepcopy
 from fig_mtnn.utils import *
 from fig_mtnn.mtnn import load_test_model, run_eval, initialize_mtnn, get_device
 
-from reproducible_ephys_functions import save_data_path, figure_style, save_figure_path, labs
+from reproducible_ephys_functions import save_data_path, figure_style, save_figure_path, labs, get_row_coord, get_label_pos
 
 import torch
 
@@ -199,7 +200,7 @@ def generate_figure_10(model_config,
         
         cov = [cov]
         if cov[0] == 'noise':
-            all_scores_mean_list.append(-np.Inf)
+            all_scores_mean_list.append(-np.inf)
         else:
             all_scores_mean = scores['leave_one_out'][tuple(cov)]['all'].mean()
             all_scores_mean_list.append(all_scores_mean)
@@ -284,7 +285,7 @@ def generate_figure_10(model_config,
             single_covs_renamed.append(cov)
             
         if cov == 'noise':
-            all_scores_mean_list.append(-np.Inf)
+            all_scores_mean_list.append(-np.inf)
         else:
             all_scores_mean = scores['single_covariate'][cov]['all'].mean()
             all_scores_mean_list.append(all_scores_mean)
@@ -350,6 +351,8 @@ def generate_figure_10_supplement1(model_config,
                                    glm_scores,
                                    glm_leave_one_out,
                                    savefig=False,
+                                   test=False,
+                                   ax=None,
                                    down_lim=-0.05,
                                    up_lim=0.75):
     
@@ -369,142 +372,132 @@ def generate_figure_10_supplement1(model_config,
         feature_list.append(test_feature[idx:idx+n].reshape(sh))
         idx += n
 
-    best_score = load_test_model(model_config, None, None, 
-                                 obs_list, preds_shape, use_psth=False, 
-                                 data_dir=data_dir, model_name_suffix=None, simulated=True)
-    leftstim_score = load_test_model(model_config, ['left stimuli'], None, 
-                                 obs_list, preds_shape, use_psth=False, 
-                                 data_dir=data_dir, model_name_suffix=None, simulated=True)
-    rightstim_score = load_test_model(model_config, ['right stimuli'], None, 
-                                 obs_list, preds_shape, use_psth=False, 
-                                 data_dir=data_dir, model_name_suffix=None, simulated=True)
-    incorrect_score = load_test_model(model_config, ['incorrect'], None, 
-                                 obs_list, preds_shape, use_psth=False, 
-                                 data_dir=data_dir, model_name_suffix=None, simulated=True)
-    correct_score = load_test_model(model_config, ['correct'], None, 
-                                 obs_list, preds_shape, use_psth=False, 
-                                 data_dir=data_dir, model_name_suffix=None, simulated=True)
-    fmv_score = load_test_model(model_config, ['first movement'], None, 
-                                 obs_list, preds_shape, use_psth=False, 
-                                 data_dir=data_dir, model_name_suffix=None, simulated=True)
-    prior_score = load_test_model(model_config, ['mouse prior'], None, 
-                                 obs_list, preds_shape, use_psth=False, 
-                                 data_dir=data_dir, model_name_suffix=None, simulated=True)
-    last_prior_score = load_test_model(model_config, ['last mouse prior'], None, 
-                                 obs_list, preds_shape, use_psth=False, 
-                                 data_dir=data_dir, model_name_suffix=None, simulated=True)
-    wheel_score = load_test_model(model_config, ['wheel velocity'], None, 
-                                 obs_list, preds_shape, use_psth=False, 
-                                 data_dir=data_dir, model_name_suffix=None, simulated=True)
+    if not test:
+        best_score = load_test_model(model_config, None, None,
+                                     obs_list, preds_shape, use_psth=False,
+                                     data_dir=data_dir, model_name_suffix=None, simulated=True)
+        leftstim_score = load_test_model(model_config, ['left stimuli'], None,
+                                     obs_list, preds_shape, use_psth=False,
+                                     data_dir=data_dir, model_name_suffix=None, simulated=True)
+        rightstim_score = load_test_model(model_config, ['right stimuli'], None,
+                                     obs_list, preds_shape, use_psth=False,
+                                     data_dir=data_dir, model_name_suffix=None, simulated=True)
+        incorrect_score = load_test_model(model_config, ['incorrect'], None,
+                                     obs_list, preds_shape, use_psth=False,
+                                     data_dir=data_dir, model_name_suffix=None, simulated=True)
+        correct_score = load_test_model(model_config, ['correct'], None,
+                                     obs_list, preds_shape, use_psth=False,
+                                     data_dir=data_dir, model_name_suffix=None, simulated=True)
+        fmv_score = load_test_model(model_config, ['first movement'], None,
+                                     obs_list, preds_shape, use_psth=False,
+                                     data_dir=data_dir, model_name_suffix=None, simulated=True)
+        prior_score = load_test_model(model_config, ['mouse prior'], None,
+                                     obs_list, preds_shape, use_psth=False,
+                                     data_dir=data_dir, model_name_suffix=None, simulated=True)
+        last_prior_score = load_test_model(model_config, ['last mouse prior'], None,
+                                     obs_list, preds_shape, use_psth=False,
+                                     data_dir=data_dir, model_name_suffix=None, simulated=True)
+        wheel_score = load_test_model(model_config, ['wheel velocity'], None,
+                                     obs_list, preds_shape, use_psth=False,
+                                     data_dir=data_dir, model_name_suffix=None, simulated=True)
+    else:
+        best_score = np.random.random(200)
+        leftstim_score = np.random.random(200)
+        rightstim_score = np.random.random(200)
+        incorrect_score = np.random.random(200)
+        correct_score = np.random.random(200)
+        fmv_score = np.random.random(200)
+        prior_score = np.random.random(200)
+        last_prior_score = np.random.random(200)
+        wheel_score = np.random.random(200)
 
-    figure_style()
-    
-    fig, ax, labels = make_fig_ax_supplement1()
-    ax['panel_B'][0][0].set_xticks([])
-    ax['panel_B'][0][1].set_xticks([])
-    ax['panel_B'][0][2].set_xticks([])
-    ax['panel_B'][0][3].set_xticks([])
-    
-    ax['panel_A'].scatter(best_score, glm_scores, color='k', alpha=0.6)
+    if ax is None:
+        figure_style()
+        fig, ax, labels = make_fig_ax_supplement1()
+        title_size = 16
+        label_size = 14
+        suptitle_size = 24
+        ticklabel_size = 14
+        ms = mpl.rcParams['lines.markersize'] ** 2
+        fg.add_labels(fig, labels)
+    else:
+        label_size = mpl.rcParams["axes.labelsize"]
+        ticklabel_size = mpl.rcParams["ytick.labelsize"]
+        title_size = label_size
+        suptitle_size = mpl.rcParams["axes.titlesize"]
+        ms = 2
+
+
+    ax['panel_A'].scatter(best_score, glm_scores, color='k', alpha=0.6, s=ms)
     ax['panel_A'].set_xlim(down_lim, up_lim)
     ax['panel_A'].set_ylim(down_lim, up_lim)
     ax['panel_A'].plot([-1,1],[-1,1],color='k')
-    ax['panel_A'].set_ylabel('GLM predictive performance (R2)', fontsize=20)
-    ax['panel_A'].set_xlabel('MTNN predictive performance (R2)', fontsize=20)
-    ax['panel_A'].set_yticks(np.arange(0,0.8,0.1))
-    ax['panel_A'].set_yticklabels(np.arange(0,0.8,0.1), fontsize=14)
+    ax['panel_A'].set_ylabel('GLM predictive performance (R2)', fontsize=label_size)
+    ax['panel_A'].set_xlabel('MTNN predictive performance (R2)', fontsize=label_size)
+    ax['panel_A'].set_yticks(np.arange(0,0.8,0.2))
+    ax['panel_A'].set_yticklabels(np.arange(0,0.8,0.2), fontsize=ticklabel_size)
     ax['panel_A'].yaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
-    ax['panel_A'].set_xticks(np.arange(0,0.8,0.1))
-    ax['panel_A'].set_xticklabels(np.arange(0,0.8,0.1), fontsize=14)
+    ax['panel_A'].set_xticks(np.arange(0,0.8,0.2))
+    ax['panel_A'].set_xticklabels(np.arange(0,0.8,0.2), fontsize=ticklabel_size)
     ax['panel_A'].xaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
-    ax['panel_A'].set_title('GLM vs MTNN\npredictive performance on simulated data', fontsize=24)
-    
-    ax['panel_B'][0][0].set_title('left stimulus', fontsize=16)
-    ax['panel_B'][0][1].set_title('right stimulus', fontsize=16)
-    ax['panel_B'][0][2].set_title('incorrect', fontsize=16)
-    ax['panel_B'][0][3].set_title('correct', fontsize=16)
-    ax['panel_B'][1][0].set_title('first movement onset', fontsize=16)
-    ax['panel_B'][1][1].set_title('mouse prior', fontsize=16)
-    ax['panel_B'][1][2].set_title('previous mouse prior', fontsize=16)
-    ax['panel_B'][1][3].set_title('wheel velocity', fontsize=16)
-    
-    ax['panel_B'][0][0].set_ylabel('GLM Effect Size '+r'($\Delta$'+'R2)', fontsize=16)
-    ax['panel_B'][1][0].set_ylabel('GLM Effect Size '+r'($\Delta$'+'R2)', fontsize=16)
-    
-    ax['panel_B'][1][0].set_xlabel('MTNN Effect Size '+r'($\Delta$'+'R2)', fontsize=16)
-    ax['panel_B'][1][1].set_xlabel('MTNN Effect Size '+r'($\Delta$'+'R2)', fontsize=16)
-    ax['panel_B'][1][2].set_xlabel('MTNN Effect Size '+r'($\Delta$'+'R2)', fontsize=16)
-    ax['panel_B'][1][3].set_xlabel('MTNN Effect Size '+r'($\Delta$'+'R2)', fontsize=16)
-    
-    ax['panel_B'][0][0].scatter(best_score-leftstim_score, glm_leave_one_out[:,0], color='k', alpha=0.6)
-    ax['panel_B'][0][0].set_xlim(down_lim,up_lim)
-    ax['panel_B'][0][0].set_ylim(down_lim,up_lim)
-    ax['panel_B'][0][0].plot([-1,1],[-1,1],color='k')
-    ax['panel_B'][0][0].set_yticks(np.arange(0,0.8,0.1))
-    ax['panel_B'][0][0].set_yticklabels(np.arange(0,0.8,0.1), fontsize=14)
-    ax['panel_B'][0][0].yaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
-    
-    ax['panel_B'][0][1].scatter(best_score-rightstim_score, glm_leave_one_out[:,1], color='k', alpha=0.6)
-    ax['panel_B'][0][1].set_xlim(down_lim,up_lim)
-    ax['panel_B'][0][1].set_ylim(down_lim,up_lim)
-    ax['panel_B'][0][1].plot([-1,1],[-1,1],color='k')
-    
-    ax['panel_B'][0][2].scatter(best_score-incorrect_score, glm_leave_one_out[:,3], color='k', alpha=0.6)
-    ax['panel_B'][0][2].set_xlim(down_lim,up_lim)
-    ax['panel_B'][0][2].set_ylim(down_lim,up_lim)
-    ax['panel_B'][0][2].plot([-1,1],[-1,1],color='k')
-    
-    ax['panel_B'][0][3].scatter(best_score-correct_score, glm_leave_one_out[:,2], color='k', alpha=0.6)
-    ax['panel_B'][0][3].set_xlim(down_lim,up_lim)
-    ax['panel_B'][0][3].set_ylim(down_lim,up_lim)
-    ax['panel_B'][0][3].plot([-1,1],[-1,1],color='k')
-    
-    ax['panel_B'][1][0].scatter(best_score-fmv_score, glm_leave_one_out[:,4], color='k', alpha=0.6)
-    ax['panel_B'][1][0].set_xlim(down_lim,up_lim)
-    ax['panel_B'][1][0].set_ylim(down_lim,up_lim)
-    ax['panel_B'][1][0].plot([-1,1],[-1,1],color='k')
-    ax['panel_B'][1][0].set_yticks(np.arange(0,0.8,0.1))
-    ax['panel_B'][1][0].set_yticklabels(np.arange(0,0.8,0.1), fontsize=14)
-    ax['panel_B'][1][0].yaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
-    ax['panel_B'][1][0].set_xticks(np.arange(0,0.8,0.1))
-    ax['panel_B'][1][0].set_xticklabels(np.arange(0,0.8,0.1), fontsize=14)
-    ax['panel_B'][1][0].xaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
-    
-    ax['panel_B'][1][1].scatter(best_score-prior_score, glm_leave_one_out[:,5], color='k', alpha=0.6)
-    ax['panel_B'][1][1].set_xlim(down_lim,up_lim)
-    ax['panel_B'][1][1].set_ylim(down_lim,up_lim)
-    ax['panel_B'][1][1].plot([-1,1],[-1,1],color='k')
-    ax['panel_B'][1][1].set_xticks(np.arange(0,0.8,0.1))
-    ax['panel_B'][1][1].set_xticklabels(np.arange(0,0.8,0.1), fontsize=14)
-    ax['panel_B'][1][1].xaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
-    
-    ax['panel_B'][1][2].scatter(best_score-last_prior_score, glm_leave_one_out[:,6], color='k', alpha=0.6)
-    ax['panel_B'][1][2].set_xlim(down_lim,up_lim)
-    ax['panel_B'][1][2].set_ylim(down_lim,up_lim)
-    ax['panel_B'][1][2].plot([-1,1],[-1,1],color='k')
-    ax['panel_B'][1][2].set_xticks(np.arange(0,0.8,0.1))
-    ax['panel_B'][1][2].set_xticklabels(np.arange(0,0.8,0.1), fontsize=14)
-    ax['panel_B'][1][2].xaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
-    
-    ax['panel_B'][1][3].scatter(best_score-wheel_score, glm_leave_one_out[:,7], color='k', alpha=0.6)
-    ax['panel_B'][1][3].set_xlim(down_lim,up_lim)
-    ax['panel_B'][1][3].set_ylim(down_lim,up_lim)
-    ax['panel_B'][1][3].plot([-1,1],[-1,1],color='k')
-    ax['panel_B'][1][3].set_xticks(np.arange(0,0.8,0.1))
-    ax['panel_B'][1][3].set_xticklabels(np.arange(0,0.8,0.1), fontsize=14)
-    ax['panel_B'][1][3].xaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
-    
-    plt.suptitle('GLM vs MTNN Effect Sizes on Simulated Data', y=0.61, fontsize=24)
-    
-    fg.add_labels(fig, labels)
+    ax['panel_A'].set_title('GLM vs MTNN predictive \nperformance on simulated data', fontsize=suptitle_size)
+
+    ax['panel_B'][0][0].set_title('Left stimulus', fontsize=title_size)
+    ax['panel_B'][0][0].scatter(best_score - leftstim_score, glm_leave_one_out[:, 0], color='k', alpha=0.6, s=ms)
+
+    ax['panel_B'][0][1].set_title('Right stimulus', fontsize=title_size)
+    ax['panel_B'][0][1].scatter(best_score - rightstim_score, glm_leave_one_out[:, 1], color='k', alpha=0.6, s=ms)
+
+    ax['panel_B'][0][2].set_title('Incorrect', fontsize=title_size)
+    ax['panel_B'][0][2].scatter(best_score - incorrect_score, glm_leave_one_out[:, 3], color='k', alpha=0.6, s=ms)
+
+    ax['panel_B'][0][3].set_title('Correct', fontsize=title_size)
+    ax['panel_B'][0][3].scatter(best_score - correct_score, glm_leave_one_out[:, 2], color='k', alpha=0.6, s=ms)
+
+    ax['panel_B'][1][0].set_title('First movement onset', fontsize=title_size)
+    ax['panel_B'][1][0].scatter(best_score - fmv_score, glm_leave_one_out[:, 4], color='k', alpha=0.6, s=ms)
+
+    ax['panel_B'][1][1].set_title('Mouse prior', fontsize=title_size)
+    ax['panel_B'][1][1].scatter(best_score - prior_score, glm_leave_one_out[:, 5], color='k', alpha=0.6, s=ms)
+
+    ax['panel_B'][1][2].set_title('Previous mouse prior', fontsize=title_size)
+    ax['panel_B'][1][2].scatter(best_score - last_prior_score, glm_leave_one_out[:, 6], color='k', alpha=0.6, s=ms)
+
+    ax['panel_B'][1][3].set_title('Wheel velocity', fontsize=title_size)
+    ax['panel_B'][1][3].scatter(best_score - wheel_score, glm_leave_one_out[:, 7], color='k', alpha=0.6, s=ms)
+
+    for i in range(len(ax['panel_B'])):
+        for j in range(len(ax['panel_B'][0])):
+            if i == 0:
+                ax['panel_B'][i][j].set_xticks([])
+            else:
+                ax['panel_B'][i][j].set_xlabel('MTNN effect size ' + r'($\Delta$' + 'R2)', fontsize=label_size)
+                ax['panel_B'][i][j].set_xticks(np.arange(0, 0.8, 0.2))
+                ax['panel_B'][i][j].set_xticklabels(np.arange(0, 0.8, 0.2), fontsize=ticklabel_size)
+                ax['panel_B'][i][j].xaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
+
+            if j == 0:
+                ax['panel_B'][i][j].set_ylabel('GLM effect size ' + r'($\Delta$' + 'R2)', fontsize=label_size)
+                ax['panel_B'][i][j].set_yticks(np.arange(0, 0.8, 0.2))
+                ax['panel_B'][i][j].set_yticklabels(np.arange(0, 0.8, 0.2), fontsize=ticklabel_size)
+                ax['panel_B'][i][j].yaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
+            else:
+                ax['panel_B'][i][j].set_yticks([])
+
+            ax['panel_B'][i][j].set_xlim(down_lim, up_lim)
+            ax['panel_B'][i][j].set_ylim(down_lim, up_lim)
+            ax['panel_B'][i][j].plot([-1, 1], [-1, 1], color='k')
+
+    ax['panel_B'][0][1].text(1, 1.2, 'GLM vs MTNN effect sizes on simulated data',
+                             transform=ax['panel_B'][0][1].transAxes, ha='center', fontsize=suptitle_size)
+
     if savefig:
         figname = save_path.joinpath(f'figure10_supplement1.png')
         plt.savefig(figname, bbox_inches='tight', facecolor='white')
-    
-    plt.show()
+        plt.show()
 
 def generate_figure_10_supplement2(model_config,
-                                   single_covs,
+                                   single_covs, axs=None, test=False,
                                    savefig=False):
     
 #     color_names = ["windows blue",
@@ -521,11 +514,12 @@ def generate_figure_10_supplement2(model_config,
     lab_number_map, institution_map, institution_colors = labs()
 
     shapes = ['o', '+', '^', 's']
-    
-    scores, frs = compute_scores_for_figure_10(model_config,
-                                              [],
-                                              single_covs,
-                                              [])
+
+    if not test:
+        scores, frs = compute_scores_for_figure_10(model_config,
+                                                  [],
+                                                  single_covs,
+                                                  [])
 
     preds_shape = np.load(data_load_path.joinpath('test/shape.npy'))
     sess_list = np.load(data_load_path.joinpath('session_info.npy'), allow_pickle=True).tolist()
@@ -540,15 +534,32 @@ def generate_figure_10_supplement2(model_config,
             single_covs_renamed.append(cov)
             
         if cov == 'noise':
-            all_scores_mean_list.append(-np.Inf)
+            all_scores_mean_list.append(-np.inf)
         else:
-            all_scores_mean = scores['single_covariate'][cov]['all'].mean()
+            if not test:
+                all_scores_mean = scores['single_covariate'][cov]['all'].mean()
+            else:
+                all_scores_mean = i
             all_scores_mean_list.append(all_scores_mean)
     single_cov_ordering = np.argsort(all_scores_mean_list)[::-1]
     
     ncovs = len(single_covs)
-    fig, axs = plt.subplots(ncovs, ncovs, figsize=(24,24), sharey=True, sharex=True)
-    plt.subplots_adjust(wspace=0.03, hspace=0.03)
+    if axs is None:
+        fig, axs = plt.subplots(ncovs, ncovs, figsize=(24,24), sharey=True, sharex=True)
+        plt.subplots_adjust(wspace=0.03, hspace=0.03)
+        label_size = 20
+        ticklabel_size = 14
+        title_size = 40
+        legend_size = 18
+        legend_ms = 70
+        ms = 30
+    else:
+        label_size = mpl.rcParams["axes.labelsize"]
+        ticklabel_size = mpl.rcParams["ytick.labelsize"]
+        title_size = mpl.rcParams["axes.titlesize"]
+        legend_size = mpl.rcParams["ytick.labelsize"]
+        legend_ms = 5
+        ms = 3
     
     for i in range(ncovs):
         covi = single_covs[single_cov_ordering[i]]
@@ -556,34 +567,39 @@ def generate_figure_10_supplement2(model_config,
             covj = single_covs[single_cov_ordering[j]]        
                 
             if j == 0:
-                axs[i,j].set_ylabel(covi, rotation=45, fontsize=20)
+                axs[i,j].set_ylabel(covi.capitalize(), rotation=45, fontsize=label_size)
                 axs[i,j].yaxis.set_label_coords(-0.9, 0.5)
                 axs[i,j].set_yticks(np.arange(0,0.6,0.2))
-                axs[i,j].set_yticklabels(np.arange(0,0.6,0.2), fontsize=14)
+                axs[i,j].set_yticklabels(np.arange(0,0.6,0.2), fontsize=ticklabel_size)
                 axs[i,j].yaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
             if i == ncovs-1:
-                axs[i,j].set_xlabel(covj, rotation=45, fontsize=20)
+                axs[i,j].set_xlabel(covj.capitalize(), rotation=45, fontsize=label_size)
                 axs[i,j].xaxis.set_label_coords(0.5, -0.2)
                 axs[i,j].set_xticks(np.arange(0,0.6,0.2))
-                axs[i,j].set_xticklabels(np.arange(0,0.6,0.2), fontsize=14)
+                axs[i,j].set_xticklabels(np.arange(0,0.6,0.2), fontsize=ticklabel_size)
                 axs[i,j].xaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
             
             if i==0 and j==0:
+                # This is a fake plot to get the legend
                 for n in range(8):
                     for m in range(4):
-                        subject = sess_list[4*n+m]['session']['subject']#.tolist()['session']['subject']
+                        subject = sess_list[4*n+m]['session']['subject'] #.tolist()['session']['subject']
                         lab_name = sess_list[4*n+m]['session']['lab']
                         institution_name = institution_map[lab_name]
                         institution_color = institution_colors[institution_name]
                         axs[i,j].scatter(-2, -2, color=institution_color, marker=shapes[m], 
-                                         alpha=0.8, s=70, label=subject)
-                axs[i,j].legend(bbox_to_anchor=(13.0,-5.5), fontsize=18)
+                                         alpha=0.8, s=legend_ms, label=subject)
+                axs[i,j].legend(bbox_to_anchor=(ncovs+4, 0.8), fontsize=legend_size)
                 continue
             elif i == j:
                 continue
-                
-            scorei_list = reshape_flattened(scores['single_covariate'][covi]['all'], preds_shape, trim=3)
-            scorej_list = reshape_flattened(scores['single_covariate'][covj]['all'], preds_shape, trim=3)
+
+            if not test:
+                scorei_list = reshape_flattened(scores['single_covariate'][covi]['all'], preds_shape, trim=3)
+                scorej_list = reshape_flattened(scores['single_covariate'][covj]['all'], preds_shape, trim=3)
+            else:
+                scorei_list = np.random.random(preds_shape.shape[0])
+                scorej_list = np.random.random(preds_shape.shape[0])
             
             for n in range(8):
                 for m in range(4):
@@ -591,12 +607,12 @@ def generate_figure_10_supplement2(model_config,
                     institution_name = institution_map[lab_name]
                     institution_color = institution_colors[institution_name]
                     axs[i,j].scatter(scorej_list[4*n+m],
-                                     scorei_list[4*n+m], color=institution_color, marker=shapes[m], s=30, alpha=0.5)
-            axs[i,j].plot([-1,1],[-1,1],color='black')
+                                     scorei_list[4*n+m], color=institution_color, marker=shapes[m], s=ms, alpha=0.5)
+            axs[i,j].plot([-1,1], [-1,1], color='black')
             axs[i,j].set_ylim(-0.1,0.55)
             axs[i,j].set_xlim(-0.1,0.55)
 
-    plt.suptitle('Pairwise scatterplots of MTNN single-covariate effect sizes', y=0.92, fontsize=40)
+    plt.suptitle('Pairwise scatterplots of MTNN single-covariate effect sizes', y=0.92, fontsize=title_size)
     
     if savefig:
         figname = save_path.joinpath(f'figure10_supplement2.pdf')
@@ -605,7 +621,7 @@ def generate_figure_10_supplement2(model_config,
     plt.show()
 
     
-def generate_figure_10_supplement3(model_config, savefig=False):
+def generate_figure_10_supplement3(model_config, test=False, axs=None, savefig=False):
     
     lab_number_map, institution_map, institution_colors = labs()
 
@@ -632,21 +648,25 @@ def generate_figure_10_supplement3(model_config, savefig=False):
 
     remove_cov = None
     only_keep_cov = None
+    if not test:
+        model = initialize_mtnn(n_neurons=n_neurons,
+                                input_size_static=INPUT_SIZE_STATIC,
+                                input_size_dynamic=INPUT_SIZE_DYNAMIC,
+                                static_bias=True, dynamic_bias=True,
+                                hidden_dim_static=HIDDEN_SIZE_STATIC,
+                                hidden_dim_dynamic=HIDDEN_SIZE_DYNAMIC, n_layers=n_layers,
+                                dropout=dropout)
 
-    model = initialize_mtnn(n_neurons=n_neurons,
-                            input_size_static=INPUT_SIZE_STATIC,
-                            input_size_dynamic=INPUT_SIZE_DYNAMIC,
-                            static_bias=True, dynamic_bias=True,
-                            hidden_dim_static=HIDDEN_SIZE_STATIC,
-                            hidden_dim_dynamic=HIDDEN_SIZE_DYNAMIC, n_layers=n_layers,
-                            dropout=dropout)
+        model_load_path = data_path.joinpath(f'trained_models/state_dict_rem={remove_cov}_keep={only_keep_cov}.pt')
+        model.load_state_dict(torch.load(model_load_path))
 
-    model_load_path = data_path.joinpath(f'trained_models/state_dict_rem={remove_cov}_keep={only_keep_cov}.pt')
-    model.load_state_dict(torch.load(model_load_path))
+        preds, loss = run_eval(model, data_load_path.joinpath('test/feature.npy'),
+                               data_load_path.joinpath('test/output.npy'),
+                               remove_cov=remove_cov, only_keep_cov=only_keep_cov)
+    else:
+        preds = np.load(data_load_path.joinpath('test/output.npy'))
+        preds += np.random.random(preds.shape)
 
-    preds, loss = run_eval(model, data_load_path.joinpath('test/feature.npy'),
-                           data_load_path.joinpath('test/output.npy'),
-                           remove_cov=remove_cov, only_keep_cov=only_keep_cov)
 
     preds_shape = np.load(data_load_path.joinpath('test/shape.npy'))
     obs = np.load(data_load_path.joinpath('test/output.npy'))
@@ -667,7 +687,16 @@ def generate_figure_10_supplement3(model_config, savefig=False):
         idx += n
     
     # panel 1: region PO/observed
-    plt.figure(figsize=(6,4))
+    if axs is None:
+        fig = plt.figure(figsize=(6, 4))
+        ax0 = fig.gca()
+        lw = 2
+        ls = ':'
+    else:
+        ax0 = axs[0]
+        lw = mpl.rcParams['lines.linewidth']
+        ls = '--'
+
     n_sessions = len(obs_list)
     plotted_institutions = []
     for i in range(n_sessions):
@@ -686,25 +715,33 @@ def generate_figure_10_supplement3(model_config, savefig=False):
         mean_fr = np.mean(obs[PO_idx], axis=(0,1))
         baselined_mean_fr = mean_fr-mean_fr[0]
         if institution_name in plotted_institutions:
-            plt.plot(baselined_mean_fr, color=institution_color, linewidth=2)
+            ax0.plot(baselined_mean_fr, color=institution_color, linewidth=lw)
         else:
-            plt.plot(baselined_mean_fr, label=institution_name, color=institution_color, linewidth=2)
+            ax0.plot(baselined_mean_fr, label=institution_name, color=institution_color, linewidth=lw)
         plotted_institutions.append(institution_name)
-    plt.ylim(-6, 12.5)
-    plt.ylabel('Baselined firing rate (sp/s)')
-    plt.xlabel('Time from movement onset (s)')
-    plt.axvline(10, color='k', linestyle=':')
-    plt.xticks(np.arange(0, obs_list[0].shape[-1]+1, 10), labels=[-0.5, 0.0, 0.5, 1.0])
-    plt.legend(ncols=1)
-    plt.title('Observed PETH of Held-out Test Trials')
+    ax0.set_ylim(-6, 12.5)
+    ax0.set_ylabel('Baselined firing rate (spikes/s)')
+    ax0.set_xlabel('Time from movement onset (s)', fontsize=7)
+    ax0.axvline(10, color='k', linestyle=ls)
+    ax0.set_xticks(np.arange(0, obs_list[0].shape[-1]+1, 10), labels=[-0.5, 0.0, 0.5, 1.0])
+    ax0.set_title('Observed PETH of \n held-out test trials')
     if savefig:
         figname = save_path.joinpath(f'original_peth.png')
         plt.savefig(figname, bbox_inches='tight', facecolor='white', dpi=600)
-    plt.show()
+        ax0.legend(ncols=1)
+        plt.show()
     
     
     # panel 2: region PO/predicted
-    plt.figure(figsize=(6,4))
+    if axs is None:
+        fig = plt.figure(figsize=(6,4))
+        ax1 = fig.gca()
+        lw = 2
+        ls = ':'
+    else:
+        ax1 = axs[1]
+        lw = mpl.rcParams['lines.linewidth']
+        ls = '--'
     n_sessions = len(obs_list)
     plotted_institutions = []
     for i in range(n_sessions):
@@ -723,32 +760,35 @@ def generate_figure_10_supplement3(model_config, savefig=False):
         mean_fr = np.mean(pred[PO_idx], axis=(0,1))
         baselined_mean_fr = mean_fr-mean_fr[0]
         if institution_name in plotted_institutions:
-            plt.plot(baselined_mean_fr, color=institution_color, linewidth=2)
+            ax1.plot(baselined_mean_fr, color=institution_color, linewidth=lw)
         else:
-            plt.plot(baselined_mean_fr, label=institution_name, color=institution_color, linewidth=2)
+            ax1.plot(baselined_mean_fr, label=institution_name, color=institution_color, linewidth=lw)
         plotted_institutions.append(institution_name)
-    plt.ylim(-6, 12.5)
-    plt.ylabel('Baselined firing rate (sp/s)')
-    plt.xlabel('Time from movement onset (s)')
-    plt.axvline(10, color='k', linestyle=':')
-    plt.xticks(np.arange(0, obs_list[0].shape[-1]+1, 10), labels=[-0.5, 0.0, 0.5, 1.0])
-    plt.legend(ncols=1)
-    plt.title('Predicted PETH of Held-out Test Trials')
+    ax1.set_ylim(-6, 12.5)
+    # ax1.set_ylabel('Baselined firing rate (spikes/s)')
+    ax1.set_xlabel('Time from movement onset (s)')
+    ax1.axvline(10, color='k', linestyle=ls)
+    ax1.set_xticks(np.arange(0, obs_list[0].shape[-1]+1, 10), labels=[-0.5, 0.0, 0.5, 1.0])
+    ax1.set_title('Predicted PETH of \n held-out test trials')
     if savefig:
+        ax1.legend(ncols=1)
         figname = save_path.joinpath(f'pred_peth.png')
         plt.savefig(figname, bbox_inches='tight', facecolor='white', dpi=600)
-    plt.show()
+        plt.show()
     
     
     
     fake_feature = deepcopy(test_feature)
     fake_feature[:, :, lab_offset:session_offset] = 0
     fake_feature[:, :, lab_offset+1] = 1 # CCU
-
-    fake_preds, loss = run_eval(model, None,
-                                data_load_path.joinpath('test/output.npy'),
-                                test_feature=fake_feature,
-                                remove_cov=remove_cov, only_keep_cov=only_keep_cov)
+    if not test:
+        fake_preds, loss = run_eval(model, None,
+                                    data_load_path.joinpath('test/output.npy'),
+                                    test_feature=fake_feature,
+                                    remove_cov=remove_cov, only_keep_cov=only_keep_cov)
+    else:
+        fake_preds = np.load(data_load_path.joinpath('test/output.npy'))
+        fake_preds += np.random.random(fake_preds.shape)
 
     fake_pred_list = []
     idx = 0
@@ -758,7 +798,15 @@ def generate_figure_10_supplement3(model_config, savefig=False):
         idx += n
         
     # panel 3: region PO/predicted after changing the lab IDs
-    plt.figure(figsize=(6,4))
+    if axs is None:
+        fig = plt.figure(figsize=(6,4))
+        ax2 = fig.gca()
+        lw = 2
+        ls = ':'
+    else:
+        ax2 = axs[2]
+        lw = mpl.rcParams['lines.linewidth']
+        ls = '--'
     n_sessions = len(obs_list)
     plotted_institutions = []
     for i in range(n_sessions):
@@ -777,24 +825,26 @@ def generate_figure_10_supplement3(model_config, savefig=False):
         mean_fr = np.mean(pred[PO_idx], axis=(0,1))
         baselined_mean_fr = mean_fr-mean_fr[0]
         if institution_name in plotted_institutions:
-            plt.plot(baselined_mean_fr, color=institution_color, linewidth=2)
+            ax2.plot(baselined_mean_fr, color=institution_color, linewidth=lw)
         else:
-            plt.plot(baselined_mean_fr, label=institution_name, color=institution_color, linewidth=2)
+            ax2.plot(baselined_mean_fr, label=institution_name, color=institution_color, linewidth=lw)
         plotted_institutions.append(institution_name)
-    plt.ylim(-6, 12.5)
-    plt.ylabel('Baselined firing rate (sp/s)')
-    plt.xlabel('Time from movement onset (s)')
-    plt.axvline(10, color='k', linestyle=':')
-    plt.xticks(np.arange(0, obs_list[0].shape[-1]+1, 10), labels=[-0.5, 0.0, 0.5, 1.0])
-    plt.legend(ncols=1)
-    plt.title('Predicted PETH of Held-out Test Trials\nAfter Fixing All Lab IDs to CCU')
+    ax2.set_ylim(-6, 12.5)
+    # ax2.set_ylabel('Baselined firing rate (spikes/s)')
+    ax2.set_xlabel('Time from movement onset (s)')
+    ax2.axvline(10, color='k', linestyle=ls)
+    ax2.set_xticks(np.arange(0, obs_list[0].shape[-1]+1, 10), labels=[-0.5, 0.0, 0.5, 1.0])
+    ax2.set_title('Predicted PETH of held-out test trials\nafter fixing all lab IDs to CCU')
     if savefig:
+        ax2.legend(ncols=1)
         figname = save_path.joinpath(f'perturbed_labID_peth.png')
         plt.savefig(figname, bbox_inches='tight', facecolor='white', dpi=600)
-    plt.show()
+        plt.show()
+
+    return plotted_institutions
 
     
-def generate_figure_10_supplement4(model_config, savefig=False):
+def generate_figure_10_supplement4(model_config, test=False, ax=None, savefig=False):
     xtick_labels = ['Original\nlab weights']
     labels = ['original']
 
@@ -820,26 +870,38 @@ def generate_figure_10_supplement4(model_config, savefig=False):
             feature_list.append(test_feature[idx:idx+n].reshape(sh))
             idx += n
 
-        baseline_score2 = load_test_model(model_config, ['session'], None, obs_list, preds_shape, 
-                                      use_psth=False, model_name_suffix=f'labID_{label}')
+        if not test:
+            baseline_score2 = load_test_model(model_config, ['session'], None, obs_list, preds_shape,
+                                          use_psth=False, model_name_suffix=f'labID_{label}')
 
-        score = load_test_model(model_config, ['lab'], None, obs_list, preds_shape, 
-                            use_psth=False, model_name_suffix=f'labID_{label}')
+            score = load_test_model(model_config, ['lab'], None, obs_list, preds_shape,
+                                use_psth=False, model_name_suffix=f'labID_{label}')
+        else:
+            baseline_score2 = np.random.random(100)
+            score = np.random.random(100)
 
         labID_es = baseline_score2 - score
 
         labID_es_list.append(labID_es)
         
     np.random.seed(0)
-    plt.figure(figsize=(6,6))
-    plt.title('MTNN leave-one-out analysis\ncaptures simulated lab ID effects', fontsize=16)
+    if ax is None:
+        fig = plt.figure(figsize=(6,6))
+        ax = fig.gca()
+        title_size = 16
+        s = 24
+    else:
+        title_size = mpl.rcParams['axes.titlesize']
+        s = 2
+
+    ax.set_title('MTNN leave-one-out analysis\ncaptures simulated lab ID effects', fontsize=title_size)
     for i, labID_es in enumerate(labID_es_list):
-        plt.scatter(0.05*np.random.normal(size=(len(labID_es)))+i*0.5, labID_es, color='k', s=24, alpha=0.1)
-    plt.xticks(np.arange(len(labels))*0.5, labels=xtick_labels, rotation=0)
-    plt.xlim(-0.25, len(labID_es_list)*0.5-0.25)
-    plt.ylim(-0.1, 1.5)
-    plt.ylabel(r'$\Delta$R2')
+        ax.scatter(0.05*np.random.normal(size=(len(labID_es)))+i*0.5, labID_es, color='k', s=s, alpha=0.1)
+    ax.set_xticks(np.arange(len(labels))*0.5, labels=xtick_labels, rotation=0)
+    ax.set_xlim(-0.25, len(labID_es_list)*0.5-0.25)
+    ax.set_ylim(-0.1, 1.5)
+    ax.set_ylabel(r'$\Delta$R2')
     if savefig:
         figname = save_path.joinpath(f'labID_perturbed.png')
         plt.savefig(figname, bbox_inches='tight', facecolor='white', dpi=600)
-    plt.show()
+        plt.show()
