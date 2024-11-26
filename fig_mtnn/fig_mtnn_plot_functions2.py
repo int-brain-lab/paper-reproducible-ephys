@@ -554,11 +554,11 @@ def generate_figure_10_supplement2(model_config,
         legend_ms = 70
         ms = 30
     else:
-        label_size = mpl.rcParams["axes.labelsize"]
+        label_size = 6
         ticklabel_size = mpl.rcParams["ytick.labelsize"]
         title_size = mpl.rcParams["axes.titlesize"]
         legend_size = mpl.rcParams["ytick.labelsize"]
-        legend_ms = 5
+        legend_ms = 3
         ms = 3
     
     for i in range(ncovs):
@@ -567,16 +567,16 @@ def generate_figure_10_supplement2(model_config,
             covj = single_covs[single_cov_ordering[j]]        
                 
             if j == 0:
-                axs[i,j].set_ylabel(covi.capitalize(), rotation=45, fontsize=label_size)
-                axs[i,j].yaxis.set_label_coords(-0.9, 0.5)
-                axs[i,j].set_yticks(np.arange(0,0.6,0.2))
-                axs[i,j].set_yticklabels(np.arange(0,0.6,0.2), fontsize=ticklabel_size)
+                axs[i,j].set_ylabel(covi.capitalize(), rotation=45, fontsize=label_size, va='bottom')
+                # axs[i,j].yaxis.set_label_coords(-0.9, 0.5)
+                axs[i,j].set_yticks(np.arange(0,0.6,0.3))
+                axs[i,j].set_yticklabels(np.arange(0,0.6,0.3), fontsize=ticklabel_size)
                 axs[i,j].yaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
             if i == ncovs-1:
-                axs[i,j].set_xlabel(covj.capitalize(), rotation=45, fontsize=label_size)
-                axs[i,j].xaxis.set_label_coords(0.5, -0.2)
-                axs[i,j].set_xticks(np.arange(0,0.6,0.2))
-                axs[i,j].set_xticklabels(np.arange(0,0.6,0.2), fontsize=ticklabel_size)
+                axs[i,j].set_xlabel(covj.capitalize(), rotation=45, fontsize=label_size, ha='right')
+                # axs[i,j].xaxis.set_label_coords(0.5, -0.2)
+                axs[i,j].set_xticks(np.arange(0,0.6,0.3))
+                axs[i,j].set_xticklabels(np.arange(0,0.6,0.3), fontsize=ticklabel_size)
                 axs[i,j].xaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
             
             if i==0 and j==0:
@@ -589,7 +589,7 @@ def generate_figure_10_supplement2(model_config,
                         institution_color = institution_colors[institution_name]
                         axs[i,j].scatter(-2, -2, color=institution_color, marker=shapes[m], 
                                          alpha=0.8, s=legend_ms, label=subject)
-                axs[i,j].legend(bbox_to_anchor=(ncovs+4, 0.8), fontsize=legend_size)
+                axs[i,j].legend(bbox_to_anchor=(ncovs + 1.7, 0.9), fontsize=legend_size, loc='upper left', frameon=False)
                 continue
             elif i == j:
                 continue
@@ -618,7 +618,7 @@ def generate_figure_10_supplement2(model_config,
         figname = save_path.joinpath(f'figure10_supplement2.pdf')
         plt.savefig(figname, bbox_inches='tight', facecolor='white', dpi=600)
     
-    plt.show()
+        plt.show()
 
     
 def generate_figure_10_supplement3(model_config, test=False, axs=None, savefig=False):

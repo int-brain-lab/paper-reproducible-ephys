@@ -194,11 +194,11 @@ def plot_supp1():
     height = 7
     figure_style()
     fig = plt.figure(figsize=(width, height))
-    xspan = get_row_coord(width, [3, 2])
-    yspan = get_row_coord(height, [1, 1], pad=0.3)
+    xspan = get_row_coord(width, [3, 2], hspace=1)
+    yspan = get_row_coord(height, [1, 1], hspace=1, pad=0.3)
     yspan_all = get_row_coord(height, [1], pad=0.3)
 
-    ax = {'A': fg.place_axes_on_grid(fig, xspan=xspan[0], yspan=yspan[0], dims=[1, 2]),
+    ax = {'A': fg.place_axes_on_grid(fig, xspan=xspan[0], yspan=yspan[0], dim=[1, 2], wspace=0.05),
           'B': fg.place_axes_on_grid(fig, xspan=xspan[0], yspan=yspan[1]),
           'C': fg.place_axes_on_grid(fig, xspan=xspan[1], yspan=yspan_all[0]),
           }
@@ -209,7 +209,7 @@ def plot_supp1():
               {'label_text': 'b', 'xpos': get_label_pos(width, xspan[0][0]),
                'ypos': get_label_pos(height, yspan[1][0], pad=0.3), 'fontsize': 10, 'weight': 'bold',
                'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'b', 'xpos': get_label_pos(width, xspan[1][0]),
+              {'label_text': 'c', 'xpos': get_label_pos(width, xspan[1][0]),
                'ypos': get_label_pos(height, yspan_all[0][0], pad=0.3), 'fontsize': 10, 'weight': 'bold',
                'ha': 'right', 'va': 'bottom'},
               ]
@@ -221,7 +221,7 @@ def plot_supp1():
                                  obs,
                                  test_feature,
                                  sess_list, axs=ax['A'],
-                                 savefig=True)
+                                 savefig=False)
 
     glm_score_path = data_path.joinpath('glm_data')
     glm_score = None  # np.load(glm_score_path.joinpath('glm_scores.npy'), allow_pickle=True)
@@ -232,7 +232,7 @@ def plot_supp1():
                                  preds_shape,
                                  obs,
                                  test_feature, ax=ax['B'],
-                                 savefig=True)
+                                 savefig=False)
 
     generate_figure9_supplement3(model_config,
                                  preds_shape,
@@ -240,7 +240,13 @@ def plot_supp1():
                                  test_feature,
                                  sess_list,
                                  preds, ax=ax['C'],
-                                 savefig=True)
+                                 savefig=False)
+    
+    adjust = 0.3
+    fig.subplots_adjust(top=1-(adjust + 0.2)/height, bottom=(adjust+0.2)/height, left=(adjust+0.2)/width, right=1-(adjust)/width)
+    save_path = save_figure_path(figure='fig_mtnn')
+    fig.savefig(save_path.joinpath('fig_mtnn_supp1.pdf'))
+    fig.savefig(save_path.joinpath('fig_mtnn_supp1.png'))
 
 
 
@@ -300,7 +306,7 @@ def plot_supp2(test=False):
               ]
     fg.add_labels(fig, labels)
 
-    generate_figure_10_supplement1(sim_model_config, glm_scores, glm_leave_one_out, ax=ax, test=True, savefig=False)
+    generate_figure_10_supplement1(sim_model_config, glm_scores, glm_leave_one_out, ax=ax, test=test, savefig=False)
     adjust = 0.3
     fig.subplots_adjust(top=1-adjust/height, bottom=(adjust + 0.2)/height, left=(adjust + 0.2)/width, right=1-(adjust)/width)
     save_path = save_figure_path(figure='fig_mtnn')
@@ -310,7 +316,53 @@ def plot_supp2(test=False):
 
 
 def plot_supp4(test=False):
-    generate_figure_10_supplement2()
+
+    data_load_path = data_path.joinpath('mtnn_data')
+
+    feature = np.load(data_load_path.joinpath('train/feature.npy'))
+
+    neuron_order = feature[:, 0, 0]
+    feature = feature[:, :, 1:]
+
+    neurons = np.unique(neuron_order)
+    n_neurons = neurons.shape[0]
+    print('number of neurons: {}'.format(n_neurons))
+
+    INPUT_SIZE_DYNAMIC = feature.shape[-1] - static_idx.shape[0]
+    INPUT_SIZE_STATIC = static_idx.shape[0]
+    print(INPUT_SIZE_STATIC, INPUT_SIZE_DYNAMIC)
+
+    HIDDEN_SIZE_STATIC = 128
+    HIDDEN_SIZE_DYNAMIC = 128
+    n_layers = 4
+
+    model_config = {'n_neurons': n_neurons,
+                    'input_size_static': INPUT_SIZE_STATIC,
+                    'input_size_dynamic': INPUT_SIZE_DYNAMIC,
+                    'hidden_size_static': HIDDEN_SIZE_STATIC,
+                    'hidden_size_dynamic': HIDDEN_SIZE_DYNAMIC,
+                    'static_bias': True,
+                    'dynamic_bias': True,
+                    'n_layers': n_layers}
+
+
+    single_covs_supplement2 = ['paw speed', 'nose speed', 'pupil diameter',
+                               'motion energy', 'stimuli', 'go cue', 'first movement',
+                               'choice', 'reward', 'wheel velocity', 'lick']
+
+    ncovs = len(single_covs_supplement2)
+    figure_style()
+    width = 7
+    height = 7
+    fig, axs = plt.subplots(ncovs, ncovs, figsize=(width,height), sharey=True, sharex=True)
+    #plt.subplots_adjust(wspace=0.03, hspace=0.03)
+    generate_figure_10_supplement2(model_config, single_covs_supplement2, axs=axs, savefig=False)
+    # adjust = 0.1
+    # fig.subplots_adjust(left=0.01)
+    save_path = save_figure_path(figure='fig_mtnn')
+    fig.savefig(save_path.joinpath('fig_mtnn_supp4.pdf'))
+    fig.savefig(save_path.joinpath('fig_mtnn_supp4.png'))
+
 
 
 def plot_supp3(test=False):
@@ -391,6 +443,9 @@ def plot_supp3(test=False):
     adjust = 0.3
     fig.subplots_adjust(top=1-adjust/height, bottom=(adjust + 0.2)/height, left=(adjust + 0.2)/width,
                         right=1-(adjust)/width)
+    save_path = save_figure_path(figure='fig_mtnn')
+    fig.savefig(save_path.joinpath('fig_mtnn_supp3.pdf'))
+    fig.savefig(save_path.joinpath('fig_mtnn_supp3.png'))
 
 
 

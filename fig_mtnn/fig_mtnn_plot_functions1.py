@@ -413,12 +413,14 @@ def generate_figure9_supplement1(model_config,
         suptitle_size = 32
         ticklabel_size = 18
         legend_size = 8.5
+        s = 10
     else:
         label_size = mpl.rcParams["axes.labelsize"]
         ticklabel_size = mpl.rcParams["ytick.labelsize"]
         title_size = label_size
         suptitle_size = mpl.rcParams["axes.titlesize"]
-        legend_size = label_size
+        legend_size = 4
+        s=2
 
     for i, sess in enumerate(sess_list):
         lab_id = np.where(feature_list[i][0,0,0,lab_offset:session_offset] == 1)[0][0]
@@ -449,7 +451,7 @@ def generate_figure9_supplement1(model_config,
     axs[1].set_title('PETHs of held-out test trials', fontsize=title_size)
     
     # axs[0].legend(fontsize=legend_size)
-    axs[1].legend(fontsize=legend_size)
+    axs[1].legend(fontsize=legend_size, bbox_to_anchor=(1, 1.05), loc='upper left', frameon=False)
     
     axs[0].set_xlim(xlims[0],xlims[1])
     axs[0].set_ylim(ylims[0],ylims[1])
@@ -459,14 +461,15 @@ def generate_figure9_supplement1(model_config,
     axs[0].set_yticks(np.arange(0,1.2,0.2))
     axs[0].set_yticklabels(np.arange(0,1.2,0.2), fontsize=ticklabel_size)
     axs[0].yaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
+    axs[1].set_yticklabels([])
     
-    axs[0].set_xticks(np.arange(0,50,5).astype(int))
-    axs[0].set_xticklabels(np.arange(0,50,5).astype(int), fontsize=ticklabel_size)
+    axs[0].set_xticks(np.arange(0,50,10).astype(int))
+    axs[0].set_xticklabels(np.arange(0,50,10).astype(int), fontsize=ticklabel_size)
     
-    axs[1].set_xticks(np.arange(0,50,5).astype(int))
-    axs[1].set_xticklabels(np.arange(0,50,5).astype(int), fontsize=ticklabel_size)
+    axs[1].set_xticks(np.arange(0,50,10).astype(int))
+    axs[1].set_xticklabels(np.arange(0,50,10).astype(int), fontsize=ticklabel_size)
 
-    axs[0].text(1, 1.2, 'MTNN prediction quality vs firing rate',
+    axs[0].text(1, 1.1, 'MTNN prediction quality vs firing rate',
                              transform=axs[0].transAxes, ha='center', fontsize=suptitle_size)
     
     if savefig:
@@ -526,11 +529,11 @@ def generate_figure9_supplement2(model_config,
     ax.set_xlim(-0.02,0.52)
     ax.set_ylim(-0.02,0.52)
     
-    ax.set_yticks(np.arange(0,0.6,0.1), fontsize=ticklabel_size)
-    ax.set_xticks(np.arange(0,0.6,0.1), fontsize=ticklabel_size)
+    ax.set_yticks(np.arange(0,0.6,0.1))#, fontsize=ticklabel_size)
+    ax.set_xticks(np.arange(0,0.6,0.1))#, fontsize=ticklabel_size)
     
-    ax.set_title('MTNN vs GLM predictive performance comparison\ntrained on movement/task-related/prior covariates',
-                 fontsize=title_size, y=1.02)
+    ax.set_title('MTNN vs GLM predictive performance comparison\ntrained on movement/ task-related/ prior covariates',
+                 fontsize=title_size)
 
     
     if savefig:
@@ -592,7 +595,7 @@ def generate_figure9_supplement2_v2(model_config,
     #plt.yticks(np.arange(0,0.7,0.1), fontsize=18)
     #plt.xticks(np.arange(0,0.7,0.1), fontsize=18)
     
-    plt.title('MTNN vs GLM Predictive Performance Comparison\nTrained on Movement/Task-related/Prior Covariates', fontsize=title_size, y=1.02)
+    plt.title('MTNN vs GLM Predictive Performance Comparison\nTrained on Movement/Task-related/Prior Covariates', fontsize=title_size)
     
     plt.legend(fontsize=20)
     
@@ -601,7 +604,7 @@ def generate_figure9_supplement2_v2(model_config,
         figname = save_path.joinpath(f'figure9_supplement2_v2.png')
         plt.savefig(figname,bbox_inches='tight', facecolor='white')
     
-    plt.show()
+        plt.show()
     
 def get_session_order(feature_list):
 
@@ -670,7 +673,7 @@ def generate_figure9_supplement3(model_config,
         labelsize = mpl.rcParams["axes.labelsize"]
         ticklabel_size = mpl.rcParams["ytick.labelsize"]
         title_size = mpl.rcParams["axes.titlesize"]
-        lw = mpl.rcParams["lines.linewidth"]
+        lw = 0.5
         text_size = 7
 
     
@@ -678,9 +681,9 @@ def generate_figure9_supplement3(model_config,
     ax.imshow(heatmap, aspect='auto', cmap='Greys', interpolation='none', vmin=vlim[0], vmax=vlim[1])
     ax.axvline(x=[trial_len], linewidth=lw, linestyle='-',
                                        c='k',label='separate left and right')
-    ax.axvline(x=[3*trial_len], linewidth=;w, linestyle='-',
+    ax.axvline(x=[3*trial_len], linewidth=lw, linestyle='-',
                                        c='k',label='separate left and right')
-    ax.axvline(x=[2*trial_len], linewidth=lw+1, linestyle='-',
+    ax.axvline(x=[2*trial_len], linewidth=lw+0.5, linestyle='-',
                                        c='k',label='separate Y and Y_pred')
     for i in [trial_len//3,trial_len+trial_len//3,2*trial_len+trial_len//3,3*trial_len+trial_len//3]:
         ax.axvline(x=[i], linewidth=lw, linestyle='--',
@@ -693,7 +696,7 @@ def generate_figure9_supplement3(model_config,
     for idx, i in enumerate(session_boundary[:-1]):
         if (idx+1)%4 != 0:
             continue
-        ax.axhline(y=[i-0.5], linewidth=lw+1, linestyle='-',
+        ax.axhline(y=[i-0.5], linewidth=lw, linestyle='-',
                                            c='blue', label='lab boundary')
         
     ax.text(trial_len-6, session_boundary[11]-5,
@@ -702,23 +705,23 @@ def generate_figure9_supplement3(model_config,
              'Separate left and right choice MTNN prediction PETHs',rotation=90,color='k',fontsize=text_size)
     
     ax.text(10-5, 0.3*n_neurons, 'Movement onset',rotation=90,color='green',fontsize=text_size-2)
-    plt.text(trial_len*4-33, session_boundary[0]-1, 'Session boundary', color='red',fontsize=text_size-2)
-    plt.text(trial_len*4-25, session_boundary[3]-1, 'Lab boundary', color='blue',fontsize=text_size-2)
-    plt.text(10-9, 0-2, 'SWC', color='k',fontsize=text_size-2)
-    plt.text(10-9, session_boundary[3]-2, 'CCU', color='k',fontsize=text_size-2)
-    plt.text(10-9, session_boundary[7]-2, 'CSHL (C)', color='k',fontsize=text_size-2)
-    plt.text(10-9, session_boundary[11]-2, 'UCL', color='k',fontsize=text_size-2)
-    plt.text(10-9, session_boundary[15]-2, 'Berkeley', color='k',fontsize=text_size-2)
-    plt.text(10-9, session_boundary[19]-2, 'NYU', color='k',fontsize=text_size-2)
-    plt.text(10-9, session_boundary[23]-2, 'UCLA', color='k',fontsize=text_size-2)
-    plt.text(10-9, session_boundary[27]-2, 'UW', color='k',fontsize=text_size-2)
+    ax.text(trial_len*4-33, session_boundary[0]-1, 'Session boundary', color='red',fontsize=text_size-2)
+    ax.text(trial_len*4-25, session_boundary[3]-1, 'Lab boundary', color='blue',fontsize=text_size-2)
+    ax.text(10-9, 0-2, 'SWC', color='k',fontsize=text_size-2)
+    ax.text(10-9, session_boundary[3]-2, 'CCU', color='k',fontsize=text_size-2)
+    ax.text(10-9, session_boundary[7]-2, 'CSHL (C)', color='k',fontsize=text_size-2)
+    ax.text(10-9, session_boundary[11]-2, 'UCL', color='k',fontsize=text_size-2)
+    ax.text(10-9, session_boundary[15]-2, 'Berkeley', color='k',fontsize=text_size-2)
+    ax.text(10-9, session_boundary[19]-2, 'NYU', color='k',fontsize=text_size-2)
+    ax.text(10-9, session_boundary[23]-2, 'UCLA', color='k',fontsize=text_size-2)
+    ax.text(10-9, session_boundary[27]-2, 'UW', color='k',fontsize=text_size-2)
     
-    plt.ylabel('Neurons', fontsize=labelsize)
-    plt.xlabel('time (sec)', fontsize=labelsize)
-    plt.xticks([0,10,30],labels=['-0.5','0.0','1.0'], fontsize=ticklabel_size)
-    plt.yticks(fontsize=ticklabel_size)
+    ax.set_ylabel('Neurons', fontsize=labelsize)
+    ax.set_xlabel('Time (s)', fontsize=labelsize)
+    ax.set_xticks([0,10,30],labels=['-0.5','0.0','1.0'], fontsize=ticklabel_size)
+    #ax.set_yticks(fontsize=ticklabel_size)
     
-    plt.title('Observed and MTNN-predicted PETHs on held-out trials', fontsize=title_size, y=1.03)
+    ax.set_title('Observed and MTNN-predicted \n PETHs on held-out trials', fontsize=title_size)
     
     if savefig:
         figname = save_path.joinpath(f'figure9_supplement3.png')
