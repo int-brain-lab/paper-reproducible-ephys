@@ -37,16 +37,18 @@ from datetime import datetime
 from scipy.stats import combine_pvalues
 
 from reproducible_ephys_functions import (filter_recordings, 
-save_figure_path, labs, figure_style, get_row_coord, get_label_pos)
+save_figure_path, LAB_MAP, figure_style, get_row_coord, get_label_pos, BRAIN_REGIONS)
 from fig_PCA.fig_PCA_load_data import load_dataframe, load_data
 import figrid as fg
 
 import warnings
 warnings.filterwarnings("ignore")
 
+PRINT_INFO = False
+
 
 T_BIN = 0.02  # time bin size in seconds
-_, b, lab_cols = labs()
+_, b, lab_cols = LAB_MAP()
 
 # canonical lab order
 canon = ['danlab', 'mainenlab','churchlandlab',
@@ -501,7 +503,6 @@ def all_panels(rm_unre=True, align='move', split='rt',
     # panel letter fontsize
     plfs = 10
 
-               
     # load metainfo df, row per cell
     concat_df = load_dataframe()
     
@@ -524,6 +525,18 @@ def all_panels(rm_unre=True, align='move', split='rt',
         all_frs = all_frs[concat_df['responsive']]
         concat_df = concat_df[concat_df["responsive"]].reset_index()
 
+    if PRINT_INFO:
+        print('Figure 5')
+        print(f'N_inst: {concat_df.institute.nunique()}, N_sess: {concat_df.eid.nunique()}, '
+              f'N_mice: {concat_df.subject.nunique()}, N_cells: {len(concat_df)}')
+        df_gb = concat_df.groupby('region')
+        for reg in BRAIN_REGIONS:
+            df_reg = df_gb.get_group(reg)
+            print(f'Figure 5 supp 1: {reg}')
+            print(f'N_inst: {df_reg.institute.nunique()}, N_sess: {df_reg.eid.nunique()}, '
+                  f'N_mice: {df_reg.subject.nunique()}, N_cells: {len(df_reg)}')
+
+
     # all having same length of #cells
     y = all_frs
     regs = concat_df['region'].values
@@ -538,8 +551,7 @@ def all_panels(rm_unre=True, align='move', split='rt',
     
     # PPC to VISa/am
     regs[regs == 'PPC'] = 'VISa/am'
-    
-    
+
     # PCA embedding
     pca = PCA(n_components=2)
     pca.fit(y)
@@ -583,48 +595,6 @@ def all_panels(rm_unre=True, align='move', split='rt',
         sess.append(k)
 
     sess = np.array(sess)
-
-    # fig = plt.figure(figsize=(8, 7), facecolor='w')
-    # figs = plt.figure(figsize=(11, 10), facecolor='w')
-
-    inner = [['Ea'],
-             ['Eb']]
-
-#    mosaic = [[inner, 'F', 'KS', 'KSmean'],
-#              ['B','B', 'D', 'KSregs'],
-#              ['c_labs', 'c_labs', 'm_labs', 'KSlabs']]
-
-
-    mosaic = [[inner, 'F','B','B'],
-              ['D', 'KSregs','c_labs', 'c_labs'],
-              ['m_labs', 'KSlabs', 'KS', 'KS']]
-    
-
-    mosaic_supp = [['Ha', 'Hb', 'H'],
-                   ['Ia', 'Ib', 'I'],
-                   ['Ja', 'Jb', 'J'],
-                   ['Ka', 'Kb', 'K'],
-                   ['Ga', 'Gb', 'G']]
-                   
-    # mf = [item for sublist in mosaic for item in sublist]
-    # mf[0] = 'Ea'
-    # panel_n = dict(zip(list(Counter(mf)), string.ascii_lowercase))
-    #
-    # # custom swap panel labels:
-    # panel_n['KSmean'] = 'j'
-    # panel_n['KS'] = 'i'
-    # panel_n['B'] = 'c'
-    # panel_n['c_labs'] = 'f'
-    # panel_n['D'] = 'd'
-    # panel_n['m_labs'] = 'g'
-    # panel_n['KSlabs'] = 'h'
-    # panel_n['KSregs'] = 'e'
-
-    # mfs = np.array(mosaic_supp, dtype=object).flatten()
-    # panel_ns = dict(zip(mfs, string.ascii_lowercase))
-
-    #axs = fig.subplot_mosaic(mosaic)
-    # axss = figs.subplot_mosaic(mosaic_supp)
 
     # Main figure
     width_m = 7
@@ -747,14 +717,6 @@ def all_panels(rm_unre=True, align='move', split='rt',
 
     fg.add_labels(figs, labels)
 
-    # despine all plots
-    # for key in axs:
-    #     axs[key].spines['top'].set_visible(False)
-    #     axs[key].spines['right'].set_visible(False)
-    # for key in axss:
-    #     axss[key].spines['top'].set_visible(False)
-    #     axss[key].spines['right'].set_visible(False)
-
     labs__ = Counter(labs)
     
     #order labs canonically
@@ -764,10 +726,6 @@ def all_panels(rm_unre=True, align='move', split='rt',
         if lab in labs__:
             labs_.append(lab)
 
-    le_labs = [Patch(facecolor=lab_cols[b[lab]], 
-               edgecolor=lab_cols[b[lab]], label=b[lab]) for lab in labs_]
-                 
-  
     '''
     ###
     perm tests, plot
@@ -823,22 +781,10 @@ def all_panels(rm_unre=True, align='move', split='rt',
         axs['C_2'].text(0.5, p, r, color=Dc[r], fontsize=7, transform=axs['C_2'].transAxes)
 
     axs['C_2'].set_axis_off()
-       
-
-    # le = [Patch(facecolor=Dc[reg], edgecolor=Dc[reg],
-    #             label=reg) for reg in regs_]
-    #
-    #
-    # axs['B'].legend(handles=le, bbox_to_anchor=(0.3, 1),
-    #                 loc='lower left', ncol=3, frameon=False,
-    #                 prop={'size': 7}).set_draggable(True)
 
     axs['B'].set_title('Regions')
     axs['B'].set_xlabel('Embedding dim 1')
     axs['B'].set_ylabel('Embedding dim 2')
-    # axs['B'].text(-0.1, 1.30, panel_n['B'],
-    #               transform=axs['B'].transAxes, fontsize=plfs,
-    #               va='top', ha='right', weight='bold')
 
     axs['B'].sharex(axss['H'])
     axs['B'].sharey(axss['H'])
@@ -869,16 +815,9 @@ def all_panels(rm_unre=True, align='move', split='rt',
     
     axs['F_2'].set_axis_off()
 
-    # axs['c_labs'].legend(handles=le_labs, bbox_to_anchor=(0.3, 1),
-    #                 loc='lower left', ncol=3, frameon=False,
-    #                 prop={'size': 7}).set_draggable(True)
-
     axs['c_labs'].set_title('Labs')
     axs['c_labs'].set_xlabel('Embedding dim 1')
     axs['c_labs'].set_ylabel('Embedding dim 2')
-    # axs['c_labs'].text(-0.1, 1.30, panel_n['c_labs'],
-    #               transform=axs['c_labs'].transAxes, fontsize=plfs,
-    #               va='top', ha='right', weight='bold')
 
     axs['c_labs'].sharex(axs['B'])
     axs['c_labs'].sharey(axs['B'])
@@ -914,9 +853,7 @@ def all_panels(rm_unre=True, align='move', split='rt',
 
     axs['D'].set_xlabel(f'Time from {align} onset (s)')
     axs['D'].set_ylabel('Baselined firing rate (spikes/s)')
-    # axs['D'].text(-0.1, 1.30, panel_n['D'],
-    #               transform=axs['D'].transAxes, fontsize=plfs,
-    #               va='top', ha='right', weight='bold')
+
 
     '''
     ###
@@ -1253,11 +1190,7 @@ def all_panels(rm_unre=True, align='move', split='rt',
         # axs3[ms3[k]].set_title(reg, loc='left')
         axs3[ms3[k]].set_xlabel('x')
         axs3[ms3[k]].set_ylabel('P(PC1 < x)')
-        # axs3[ms3[k]].text(-0.1, 1.30, panel_n3[ms3[k]],
-        #                  transform=axs3[ms3[k]].transAxes,
-        #                  fontsize=plfs, va='top',
-        #                  ha='right', weight='bold')
-        
+
         if k == 1:
             axs3[ms3[k]].legend(frameon=False, 
                                 loc='upper left').set_draggable(True)
@@ -1292,21 +1225,9 @@ def all_panels(rm_unre=True, align='move', split='rt',
         '''
         ####
         '''
-                
-        # axs3[ms[k]].set_title(reg, loc='left')
-        # axs3[ms[k]].set_xlabel('Embedding dim 1 (PC1)' if k > 0 else
-        #                        'Embedding dim 1' )
+
         axs3[ms[k]].set_xlabel('Embedding dim 1')
         axs3[ms[k]].set_ylabel('Embedding dim 2')
-        # axs3[ms[k]].text(-0.1, 1.30, panel_n3[ms[k]],
-        #                  transform=axs3[ms[k]].transAxes,
-        #                  fontsize=plfs, va='top',
-        #                  ha='right', weight='bold')
-
-        # if ms2[k] == 'Ha':
-        #     axs3[ms2[k]].legend(handles=le_labs, loc='lower left',
-        #                        bbox_to_anchor=(0.1, 1), ncol=3,frameon=False,
-        #                        prop={'size': 8}).set_draggable(True)
 
         # plot average PSTHs across labs
         for lab in labs_:
@@ -1357,14 +1278,10 @@ def all_panels(rm_unre=True, align='move', split='rt',
                 color=lab_cols[l], fontsize=8)  # custom properties
 
 
-
     axs['B'].set_xlim([-2, 1.5])
     axs['B'].set_ylim([-1.1, 1.1])
     axs['D'].set_xlim([-0.2, 0.8])
     axs['D'].set_ylim([-7, 12])
-
-    # fig.tight_layout()
-    # figs.tight_layout()
 
     # shift x position of KSshift heatmap to correct for long text
     B = axs['KS'].get_position()
@@ -1374,10 +1291,10 @@ def all_panels(rm_unre=True, align='move', split='rt',
     print(f'Saving figures to {fig_path}')
     adjust = 0.3
     fig.subplots_adjust(top=1-adjust/height_m, bottom=(adjust + 0.2)/height_m, left=(adjust + 0.2)/width_m, right=1-(adjust + 0.2)/width_m)
-    fig.savefig(fig_path.joinpath('figure_PCA_test.pdf'))
+    fig.savefig(fig_path.joinpath('figure_PCA.pdf'))
 
     adjust = 0.3
     figs.subplots_adjust(top=1-adjust/height, bottom=adjust/height, left=(adjust + 0.2)/width, right=1-(adjust + 0.2)/width)
-    figs.savefig(fig_path.joinpath('figure_PCA_supp1_test.pdf'))
+    figs.savefig(fig_path.joinpath('figure_PCA_supp1.pdf'))
         
     
