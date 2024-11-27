@@ -27,8 +27,9 @@ default_params = {'fr_bin_size': 0.01,
 
 
 def plot_raster_and_psth_LvsR(pid, neuron, contrasts=(1, 0.25, 0.125, 0.0625, 0), feedback='all',
-                         ax=None, one=None, ba=None, plot_ff=False, rxn_time=False, **kwargs):
-    #distingishes neural activity between L and R choices (Not different stim. contrast levels)
+                              ax=None, one=None, ba=None, plot_ff=False, **kwargs):
+
+    # Distingishes neural activity between L and R choices (Not different stim. contrast levels)
     one = one or ONE()
     ba = ba or AllenAtlas()
 
@@ -45,7 +46,6 @@ def plot_raster_and_psth_LvsR(pid, neuron, contrasts=(1, 0.25, 0.125, 0.0625, 0)
     kernel_kwargs = kwargs.get('kernel_kwargs', default_params['kernel_kwargs'])
 
     figsize = kwargs.get('figsize', (9, 12))
-    labelsize = kwargs.get('labelsize', 8)
     zero_line_c = kwargs.get('zero_line_c', 'k')
 
     eid, probe = one.pid2eid(pid)
@@ -54,10 +54,7 @@ def plot_raster_and_psth_LvsR(pid, neuron, contrasts=(1, 0.25, 0.125, 0.0625, 0)
 
     spike_idx = np.isin(spikes['clusters'], neuron)
     if np.sum(spike_idx) == 0:
-        print('warning, warning')
-
-    # find all neurons in LP:
-    # print(np.where(channels['acronym'][clusters.channels] == 'LP'))
+        print(f'Warning no spikes detected for insertion: {pid} and neuron: {neuron}')
 
     trials = one.load_object(eid, 'trials', collection='alf')
     # Remove trials with nans in the stimOn_times or the firstMovement_times
@@ -93,35 +90,29 @@ def plot_raster_and_psth_LvsR(pid, neuron, contrasts=(1, 0.25, 0.125, 0.0625, 0)
     boundary_width = 0.01
     base_grey = 0.3
     counter = 0
-    #contrast_count_list = [0]
     count_list = [0]
     ylabel_pos = []
-    #contrasts = np.sort(contrasts)
     pre_time = event_epoch[0]
     post_time = event_epoch[1]
 
-
     # Plot the individual spikes
     for ch in [-1, 1]:
-        events = eventTimes[trials['choice'] == ch] #when only correct feedback, then ch=1 means left side stim and choice
+        # When only correct feedback, then ch=1 means left side stim and choice
+        events = eventTimes[trials['choice'] == ch]
         for i, time in enumerate(events):
             idx = np.bitwise_and(spikes.times[spike_idx] >= time + pre_time, spikes.times[spike_idx] <= time + post_time)
             ax[0].vlines(spikes.times[spike_idx][idx] - time, counter + i, counter + i + 1, color='k')
         counter += len(events)
-        #contrast_count_list.append(counter)
         count_list.append(counter)
         ax[0].set_xlim(pre_time - fr_bin_size / 2, post_time + fr_bin_size / 2)
-
 
     # Plot the bar indicating stim/choice side on the left side of figure
     for i, ch in enumerate([-1, 1]):
         # Determine color of the colorbar
         if ch == -1:
             ch_color = 1
-            #i=0
         elif ch == 1:
-            ch_color = 0.1 #since no alpha here, we adjust this number from 0.45
-            #i=1
+            ch_color = 0.1  # Since no alpha here, we adjust this number from 0.45
         top = count_list[i]
         bottom = count_list[i + 1]
         # Position of the contrast colorbar:
@@ -129,27 +120,25 @@ def plot_raster_and_psth_LvsR(pid, neuron, contrasts=(1, 0.25, 0.125, 0.0625, 0)
                             [top, top], [bottom, bottom], color=str(1 - (base_grey + ch_color * (1 - base_grey))))
         ylabel_pos.append((top - bottom) / 2 + bottom)
 
-
     ax[0].set_yticks(ylabel_pos)
     ax[0].set_yticklabels(['Right', 'Left'])
     ax[0].axvline(0, color=zero_line_c, ls='--')
-    #ax[0].set_xlim(pre_time - fr_bin_size / 2, post_time + fr_bin_size / 2)
     ax[0].set_ylim(0, counter)
     ax[0].spines['right'].set_visible(False)
     ax[0].spines['top'].set_visible(False)
     ax[0].spines['left'].set_visible(False)
     ax[0].spines['bottom'].set_visible(False)
-    ax[0].tick_params(left=False, right=False, labelbottom=False, bottom=False)  # , labelsize=labelsize)
+    ax[0].tick_params(left=False, right=False, labelbottom=False, bottom=False)
 
-
-    # Comppute the psths for firing rate for each contrast
+    # Compute the psths for firing rate for each contrast
     for ch in [-1, 1]:
         # Determine color of the trace
         if ch == -1:
             ch_color = 1
         elif ch == 1:
             ch_color = 0.45
-        events = eventTimes[trials['choice'] == ch] #when only correct feedback, then ch=1 means left side stim and choice
+        # When only correct feedback, then ch=1 means left side stim and choice
+        events = eventTimes[trials['choice'] == ch]
         fr, fr_std, t = compute_psth(spikes['times'][spike_idx], spikes['clusters'][spike_idx], np.array([neuron]),
                                      events, align_epoch=event_epoch, bin_size=fr_bin_size,
                                      baseline_events=eventBase, base_epoch=base_epoch, smoothing=smoothing, norm=norm,
@@ -162,14 +151,11 @@ def plot_raster_and_psth_LvsR(pid, neuron, contrasts=(1, 0.25, 0.125, 0.0625, 0)
     ax[1].axvline(0, color=zero_line_c, ls='--')
     ax[1].spines['right'].set_visible(False)
     ax[1].spines['top'].set_visible(False)
-    ax[1].set_ylabel("Firing rate (sp/s)")  # , size=labelsize + 3)
+    ax[1].set_ylabel("Firing rate (sp/s)")
     ax[1].set_xlim(left=pre_time, right=post_time)
     ax[1].set_xticks([-0.15, 0, 0.15])
-    #sns.despine(trim=True, ax=ax[1])
-    # ax[1].tick_params(labelsize=labelsize)
 
-
-    #FIX this part later:
+    # Optionally plot the fanofactor
     if plot_ff:
         for ch in [-1, 1]:
             # Determine color of the trace
@@ -177,7 +163,8 @@ def plot_raster_and_psth_LvsR(pid, neuron, contrasts=(1, 0.25, 0.125, 0.0625, 0)
                 ch_color = 0.35
             elif ch == -1:
                 ch_color = 1
-            events = eventTimes[trials['choice'] == ch] #when only correct feedback, then ch=1 means left side stim and choice
+            # When only correct feedback, then ch=1 means left side stim and choice
+            events = eventTimes[trials['choice'] == ch]
             _, _, ff, t = compute_psth(spikes['times'][spike_idx], spikes['clusters'][spike_idx], np.array([neuron]),
                                        events, align_epoch=event_epoch, bin_size=ff_bin_size,
                                        baseline_events=eventBase, base_epoch=base_epoch, smoothing=smoothing, norm=norm,
@@ -187,18 +174,17 @@ def plot_raster_and_psth_LvsR(pid, neuron, contrasts=(1, 0.25, 0.125, 0.0625, 0)
         ax[2].axvline(0, color=zero_line_c, ls='--')
         ax[2].spines['right'].set_visible(False)
         ax[2].spines['top'].set_visible(False)
-        ax[2].set_ylabel("Fano Factor")  # , size=labelsize + 3)
+        ax[2].set_ylabel("Fano Factor")
         ax[2].set_xlim(left=pre_time, right=post_time)
-        # ax[2].tick_params(labelsize=labelsize)
         if align_event == 'move':
-            ax[2].set_xlabel("Time from movement onset (s)")  # , size=labelsize + 3)
+            ax[2].set_xlabel("Time from movement onset (s)")
         else:
-            ax[2].set_xlabel("Time from stimulus onset (s)")  # , size=labelsize + 3)
+            ax[2].set_xlabel("Time from stimulus onset (s)")
     else:
         if align_event == 'move':
-            ax[1].set_xlabel("Time from movement onset (s)")  # , size=labelsize + 3)
+            ax[1].set_xlabel("Time from movement onset (s)")
         else:
-            ax[1].set_xlabel("Time from stimulus onset (s)")  # , size=labelsize + 3))
+            ax[1].set_xlabel("Time from stimulus onset (s)")
 
     return ax
 

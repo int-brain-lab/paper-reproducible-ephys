@@ -41,9 +41,10 @@ STR_QUERY = 'probe_insertion__session__projects__name__icontains,ibl_neuropixel_
             'probe_insertion__session__n_trials__gte,400'
 
 BRAIN_REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
+REGION_RENAME = dict(zip(BRAIN_REGIONS, ['VISa/am', 'CA1', 'DG', 'LP', 'PO']))
 
 
-def labs():
+def LAB_MAP():
     lab_number_map = {'cortexlab': 'Lab 1', 'mainenlab': 'Lab 2', 'churchlandlab': 'Lab 3',
                       'angelakilab': 'Lab 4', 'wittenlab': 'Lab 5', 'hoferlab': 'Lab 6',
                       'mrsicflogellab': 'Lab 6', 'danlab': 'Lab 7', 'zadorlab': 'Lab 8',
@@ -61,6 +62,31 @@ def labs():
     for i, inst in enumerate(institutions):
         institution_colors[inst] = colors[i]
     return lab_number_map, institution_map, institution_colors
+
+
+def plot_vertical_institute_legend(institutes, ax, fontsize=7):
+    _, _, institution_colors = LAB_MAP()
+    # institutes = [institution_map[lab] for lab in labs]
+    institutes = list(set(institutes))
+    institutes.sort()
+    pos = np.linspace(0, 1, len(institutes))[::-1]
+    for p, inst in zip(pos, institutes):
+        ax.text(0.5, p, inst, color=institution_colors[inst], fontsize=fontsize, transform=ax.transAxes)
+
+def plot_horizontal_institute_legend(institutes, ax, offset=0.2, fontsize=8):
+    _, _, institution_colors = LAB_MAP()
+
+    institutes = list(set(institutes))
+    institutes.sort()
+
+    for i, inst in enumerate(institutes):
+        if i == 0:
+            text = ax.text(offset, 0.5, inst, color=institution_colors[inst], fontsize=fontsize,
+                           transform=ax.transAxes)
+        else:
+            text = ax.annotate(
+                '  ' + inst, xycoords=text, xy=(1, 0), verticalalignment="bottom",
+                color=institution_colors[inst], fontsize=fontsize)
 
 
 def query(behavior=False, n_trials=400, resolved=True, min_regions=2, exclude_critical=True, one=None, str_query=None,
