@@ -1,17 +1,19 @@
+import figrid as fg
 import matplotlib.pyplot as plt
-from reproducible_ephys_functions import filter_recordings, BRAIN_REGIONS, figure_style, save_figure_path, get_row_coord, get_label_pos
-from fig_spatial.fig_spatial_load_data import load_data, load_dataframe, load_regions
-import numpy as np
 from matplotlib import cm, colors
+from matplotlib.colors import LinearSegmentedColormap
 import matplotlib.gridspec as gridspec
 import matplotlib.patches as patches
 import matplotlib as mpl
 from matplotlib.ticker import MultipleLocator
-import figrid as fg
+import numpy as np
 
-fig_path = save_figure_path(figure='fig_spatial')
+from reproducible_ephys_functions import (filter_recordings, BRAIN_REGIONS, REGION_RENAME, figure_style,
+                                          save_figure_path, get_row_coord, get_label_pos)
+from fig_spatial.fig_spatial_load_data import load_data, load_dataframe, load_regions
 
-from matplotlib.colors import LinearSegmentedColormap
+PRINT_INFO = False
+fig_save_path = save_figure_path(figure='fig_spatial')
 
 cm_data = [[0.2081, 0.1663, 0.5292], [0.2116238095, 0.1897809524, 0.5776761905],
  [0.212252381, 0.2137714286, 0.6269714286], [0.2081, 0.2386, 0.6770857143],
@@ -59,6 +61,7 @@ parula_map = LinearSegmentedColormap.from_list('parula', cm_data)
 
 
 def plot_fr_ff():
+    # Figure 6 supplement 4
     df = load_dataframe()
     data = load_data(event='move', smoothing='sliding', norm=None)
 
@@ -97,7 +100,7 @@ def plot_fr_ff():
     }
     gs1 = gridspec.GridSpecFromSubplotSpec(5, 1, subplot_spec=gs[0, 0], wspace=0.1, hspace=0.3)
     for regIdx, (reg, alph) in enumerate(zip(BRAIN_REGIONS, ['a', 'b', 'c', 'd', 'e'])):
-        reg_title = 'VISa/am' if reg == 'PPC' else reg
+        reg_title = REGION_RENAME[reg]
         gs_reg = gridspec.GridSpecFromSubplotSpec(2, 2, subplot_spec=gs1[regIdx, 0], wspace=0.1, hspace=0.15)
         axes = {'A': fig.add_subplot(gs_reg[0, 0]),
                 'B': fig.add_subplot(gs_reg[0, 1]),
@@ -106,6 +109,12 @@ def plot_fr_ff():
                 }
 
         df_reg = df_filt_reg.get_group(reg)
+
+        if PRINT_INFO:
+            print(f'Figure 6 supp 4 {reg}')
+            print(f'N_inst: {df_reg.institute.nunique()}, N_sess: {df_reg.eid.nunique()}, '
+                  f'N_mice: {df_reg.subject.nunique()}, N_cells: {len(df_reg)}')
+
         cofm_reg = reg_cent_of_mass[reg_cent_of_mass['region'] == reg]
         plot_fanofactor_3D(df_reg, cofm_reg, ax=ax_3d[reg], cb=True)
 
@@ -176,7 +185,6 @@ def plot_fr_ff():
         rect = patches.Rectangle((40/1e3, 0), (200-40)/1e3, ax.get_ylim()[1], facecolor='green', alpha=0.2, transform=ax.transData)
         ax.add_patch(rect)
 
-
     fig.subplots_adjust(bottom=0.05, top=0.95, left=0.1, right=0.98)
 
     # Reduce slightly the size of the 3D plots
@@ -207,12 +215,13 @@ def plot_fr_ff():
         ax_3d[reg].set_zorder(i)
         ax_3d[reg].patch.set_alpha(0.0)
 
-
-    fig.savefig(fig_path.joinpath(f'fig_spatial_FF.pdf'))
-    fig.savefig(fig_path.joinpath(f'fig_spatial_FF.svg'))
+    fig.savefig(fig_save_path.joinpath(f'fig_spatial_FF.pdf'))
+    fig.savefig(fig_save_path.joinpath(f'fig_spatial_FF.svg'))
+    plt.close()
 
 
 def plot_waveforms():
+    # Figure 6 supplement 5
     thresh = 0.35
     df = load_dataframe()
     df_filt = filter_recordings(df, min_channels_region=5, min_neuron_region=4, min_regions=0, min_rec_lab=0,
@@ -257,8 +266,13 @@ def plot_waveforms():
 
     for i, reg in enumerate(BRAIN_REGIONS):
         ax = axes[reg]
-        reg_title = 'VISa/am' if reg == 'PPC' else reg
+        reg_title = REGION_RENAME[reg]
         df_reg = df_filt_reg.get_group(reg)
+
+        if PRINT_INFO:
+            print(f'Figure 6 supp 5 {reg}')
+            print(f'N_inst: {df_reg.institute.nunique()}, N_sess: {df_reg.eid.nunique()}, '
+                  f'N_mice: {df_reg.subject.nunique()}, N_cells: {len(df_reg)}')
 
         binwidth = 0.04
         vals = df_reg.p2t.values
@@ -311,12 +325,10 @@ def plot_waveforms():
     adjust = 0.3
     fig.subplots_adjust(top=1 - adjust / height, bottom=adjust / height, left=(adjust + 0.2) / width,
                         right=1 - adjust / width)
-    save_path = save_figure_path('figure_spatial')
-    plt.savefig(save_path.joinpath(f'fig_wfs.pdf'))
-    plt.savefig(save_path.joinpath(f'fig_wfs.svg'))
 
-
-
+    plt.savefig(fig_save_path.joinpath(f'fig_wfs.pdf'))
+    plt.savefig(fig_save_path.joinpath(f'fig_wfs.svg'))
+    plt.close()
 
 def plot_task_modulation(condition0, condition1, modulated, binwidth=0.2,
                          xlabel=None, ylabel=None, leg=True, title=None, cols=['orange', 'grey'], ax=None):
@@ -360,9 +372,8 @@ def plot_task_modulation(condition0, condition1, modulated, binwidth=0.2,
 
     return fig, ax
 
-
-def plot_task_modulation_3D(df_reg, cofm_reg, tm_test='pre_move', hists={'x': 3e2, 'y': 7e2, 'z': 6.5e2}, camera=(13, -111),
-                            cols=['orange', 'grey'], ax=None):
+def plot_task_modulation_3D(df_reg, cofm_reg, tm_test='pre_move', hists={'x': 3e2, 'y': 7e2, 'z': 6.5e2},
+                            camera=(13, -111), cols=['orange', 'grey'], ax=None):
 
     x = (df_reg['x'].values - cofm_reg['x'].values) * 1e6
     y = (df_reg['y'].values - cofm_reg['y'].values) * 1e6
@@ -473,6 +484,12 @@ def plot_main_figure():
                          ha='right', weight='bold')
 
         df_reg = df_filt_reg.get_group(reg)
+
+        if PRINT_INFO:
+            print(f'Figure 6 {reg}')
+            print(f'N_inst: {df_reg.institute.nunique()}, N_sess: {df_reg.eid.nunique()}, '
+                  f'N_mice: {df_reg.subject.nunique()}, N_cells: {len(df_reg)}')
+
         cofm_reg = reg_cent_of_mass[reg_cent_of_mass['region'] == reg]
 
         axes['A'].set_axis_off()
@@ -521,23 +538,19 @@ def plot_main_figure():
         else:
             fig.subplots_adjust(right=0.95, bottom=0, top=0.98, left=0)
 
-
-        save_path = save_figure_path('figure_spatial')
-        plt.savefig(save_path.joinpath(f'fig_{reg}.pdf'))
-        plt.savefig(save_path.joinpath(f'fig_{reg}.svg'))
-
+        plt.savefig(fig_save_path.joinpath(f'fig_{reg}.pdf'))
+        plt.savefig(fig_save_path.joinpath(f'fig_{reg}.svg'))
+        plt.close()
 
 
-# Figure 6 supp 3
 def plot_supp1():
+    # Figure 6 supp 3
     df = load_dataframe()
     df_filt = filter_recordings(df, min_channels_region=5, min_neuron_region=4, min_regions=0, min_rec_lab=0,
                                 min_lab_region=0)
     df_filt = df_filt[df_filt['include'] == 1].reset_index()
     df_filt_reg = df_filt.groupby('region')
     reg_cent_of_mass = load_regions()
-
-
 
     scales = {
         'LP': {'fr': {'x': 3e2, 'y': 7e2}, 'tm': {'z': 5.8e2}, 'tm_lr': {'z': 6.5e2}},
@@ -546,7 +559,6 @@ def plot_supp1():
         'DG': {'fr': {}, 'tm': {}},
         'PO': {'fr': {'y': 6e2}, 'tm': {}}
     }
-
 
     figure_style()
     width = 7
@@ -569,6 +581,12 @@ def plot_supp1():
             }
     reg = 'DG'
     df_reg = df_filt_reg.get_group(reg)
+
+    if PRINT_INFO:
+        print(f'Figure 6 {reg}')
+        print(f'N_inst: {df_reg.institute.nunique()}, N_sess: {df_reg.eid.nunique()}, '
+              f'N_mice: {df_reg.subject.nunique()}, N_cells: {len(df_reg)}')
+
     cofm_reg = reg_cent_of_mass[reg_cent_of_mass['region'] == reg]
 
     axes['A_1'].set_axis_off()
@@ -610,6 +628,12 @@ def plot_supp1():
 
     reg = 'PO'
     df_reg = df_filt_reg.get_group(reg)
+
+    if PRINT_INFO:
+        print(f'Figure 6 {reg}')
+        print(f'N_inst: {df_reg.institute.nunique()}, N_sess: {df_reg.eid.nunique()}, '
+              f'N_mice: {df_reg.subject.nunique()}, N_cells: {len(df_reg)}')
+
     cofm_reg = reg_cent_of_mass[reg_cent_of_mass['region'] == reg]
 
 
@@ -622,8 +646,6 @@ def plot_supp1():
                      transform=axes['C_1'].transAxes,
                      fontsize=10, va='bottom',
                      ha='right', weight='bold')
-
-
 
     cond1, cond2 = plot_firing_rate_3D(df_reg, cofm_reg, reg=reg, hists=scales[reg]['fr'], inset=False, ax=axes['C_2'])
     inset = axes['C_2'].inset_axes([0.35, -0.05, 0.25, 0.1])
@@ -655,9 +677,9 @@ def plot_supp1():
 
     fig.subplots_adjust(right=0.97, bottom=0.08, top=0.99, left=0.1)
 
-    save_path = save_figure_path('figure_spatial')
-    plt.savefig(save_path.joinpath(f'fig_PO_DG.pdf'))
-    plt.savefig(save_path.joinpath(f'fig_PO_DG.svg'))
+    plt.savefig(fig_save_path.joinpath(f'fig_PO_DG.pdf'))
+    plt.savefig(fig_save_path.joinpath(f'fig_PO_DG.svg'))
+    plt.close()
 
 
 def plot_inset_histogram(vals, condition1, condition2, bins=30, xlabel=None, ylabel=None, minmax=None,
@@ -680,7 +702,6 @@ def plot_inset_histogram(vals, condition1, condition2, bins=30, xlabel=None, yla
     ax.text(sig_loc[0], sig_loc[1], sig, fontsize=9, transform=ax.transAxes)
 
 
-
 def compute_hist_and_percentiles(vals, incl, binwidth=100):
 
     minmax = (np.min(vals) - binwidth, np.max(vals) + binwidth)
@@ -695,7 +716,6 @@ def compute_hist_and_percentiles(vals, incl, binwidth=100):
     pc_80 = np.percentile(vals[incl], 80)
 
     return hist, bins, pc_20, pc_80
-
 
 
 def plot_histograms_along_x_axis(vals, condition1, condition2, ymax, zmax, scale=5e2, binwidth=100,
@@ -790,6 +810,7 @@ def plot_histograms_along_z_axis(vals, condition1, condition2, xmax, ymax, scale
             color=cols[0], linewidth=1
         )
 
+
 def plot_firing_rate_3D(df_reg, cofm_reg, reg=None, hists={'x': 3e2, 'y': 7e2}, camera=(13, -111), inset=False, ax=None):
 
 
@@ -875,9 +896,6 @@ def plot_firing_rate_3D(df_reg, cofm_reg, reg=None, hists={'x': 3e2, 'y': 7e2}, 
     return outlier_units, regular_units
 
 
-
-
-
 def plot_fanofactor_3D(df_reg, cofm_reg, camera=(13, -111), cb=False, ax=None):
 
 
@@ -943,7 +961,8 @@ def plot_fanofactor_3D(df_reg, cofm_reg, camera=(13, -111), cb=False, ax=None):
     ax.grid(False)
 
 
-
 if __name__ == '__main__':
-    #plot_supp_figure()
-    a=1
+    plot_main_figure()
+    plot_supp1()
+    plot_waveforms()
+    plot_fr_ff()
