@@ -14,11 +14,11 @@ trajectory.
 import matplotlib.pyplot as plt
 import numpy as np
 import iblatlas.atlas as atlas
-from reproducible_ephys_functions import figure_style, labs, save_figure_path
+from reproducible_ephys_functions import figure_style, LAB_MAP, save_figure_path
 from fig_hist.fig_hist_load_data import load_dataframe
 from fig_hist.fig_hist_functions import df_to_traj_dict
 
-
+PRINT_INFO = False
 def plot_trajs(plan_colour='w', lab_colour=True, ax1=None, ax2=None, save=True):
     '''Plot CCF in coronal & sagittal tilted slices along planned rep site traj
     and add histology trajs projections onto this plot.
@@ -54,7 +54,13 @@ def plot_trajs(plan_colour='w', lab_colour=True, ax1=None, ax2=None, save=True):
     sax = brain_atlas.plot_tilted_slice(ins_plan.xyz, axis=0, ax=ax2)
 
     # get institution map and colours
-    lab_number_map, institution_map, institution_colors = labs()
+    lab_number_map, institution_map, institution_colors = LAB_MAP()
+    probe_data['institute'] = probe_data['lab'].map(institution_map)
+
+    if PRINT_INFO:
+        print(f'Figure 2 c')
+        print(f'N_inst: {probe_data.institute.nunique()}, N_sess: {probe_data.eid.nunique()}, '
+              f'N_mice: {probe_data.subject.nunique()}, N_cells: NA')
 
     # Compute trajectory for each repeated site recording and plot on slice figures
     for idx, row in probe_data.iterrows():

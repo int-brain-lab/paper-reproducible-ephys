@@ -23,7 +23,7 @@ from reproducible_ephys_functions import save_figure_path, repo_path, figure_sty
 import figrid as fg
 import matplotlib.pyplot as plt
 
-def plot_hist_figure_test():
+def plot_hist_figure_new():
     
     figure_style()
     width = 7
@@ -37,6 +37,12 @@ def plot_hist_figure_test():
 
 
     yspan_inset = get_row_coord(height, [1, 5], pad=0, hspace=0.1, span=yspans[2])
+
+    fig = plt.figure(figsize=(7, 7))
+    ax = {'A': fg.place_axes_on_grid(fig, xspan=[0.1, 0.2], yspan=[0, 0.3]),
+          'B': fg.place_axes_on_grid(fig, xspan=[0.3, 0.9], yspan=[0, 0.3]),
+          'C': fg.place_axes_on_grid(fig, xspan=[0.1, 0.9], yspan=[0.4, 0.9], dim=[1, 2], wspace=0.05),
+    }
 
 
     ax = {'A': fg.place_axes_on_grid(fig, xspan=xspan_row1[0], yspan=yspans[0]),
@@ -101,13 +107,10 @@ def plot_hist_figure_test():
 
     adjust = 0.3
     fig.subplots_adjust(top=1-adjust/height, bottom=(adjust + 0.2)/height, left=(adjust + 0.2)/width, right=1-adjust/width)
-    plt.savefig(fig_path.joinpath('fig_hist_test.svg'))
-    plt.savefig(fig_path.joinpath('fig_hist_test.png'))
-    plt.savefig(fig_path.joinpath('fig_hist_test.pdf'))
+    plt.savefig(fig_path.joinpath('fig_hist.svg'))
+    plt.savefig(fig_path.joinpath('fig_hist.png'))
+    plt.savefig(fig_path.joinpath('fig_hist.pdf'))
     plt.close()
-
-
-
 
 
 def plot_hist_figure(raw_histology=False, perform_permutation_test=False):
@@ -181,5 +184,5 @@ def plot_hist_figure(raw_histology=False, perform_permutation_test=False):
 
 
 if __name__ == "__main__":
-    plot_hist_figure_test()  # generate the whole figure
+    plot_hist_figure_new()  # generate the whole figure
     #plot_hist_figure()

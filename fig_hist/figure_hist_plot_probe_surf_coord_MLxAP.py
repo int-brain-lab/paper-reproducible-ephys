@@ -20,12 +20,13 @@ import math
 
 from iblutil.numerical import ismember
 
-from reproducible_ephys_functions import figure_style, save_figure_path, labs, filter_recordings
+from reproducible_ephys_functions import figure_style, save_figure_path, LAB_MAP, filter_recordings
 from fig_hist.fig_hist_load_data import load_dataframe
 from permutation_test import permut_test, distribution_dist_approx_max
 
-lab_number_map, institution_map, institution_colors = labs()
+lab_number_map, institution_map, institution_colors = LAB_MAP()
 
+PRINT_INFO = False
 
 def plot_probe_surf_coord_micro_panel(min_rec_per_lab=4, perform_permutation_test=True):
     '''
@@ -143,6 +144,11 @@ def plot_probe_surf_coord(traj='micro', min_rec_per_lab=4, ax1=None, save=True):
         yPM = probe_data['planned_y'] == probe_data['micro_y']
         zPM = probe_data['planned_z'] == probe_data['micro_z']
         probe_data = probe_data[ (xPM & yPM & zPM) == False ].reset_index()
+
+    if PRINT_INFO:
+        print(f'Figure 2 {traj}')
+        print(f'N_inst: {probe_data.institute.nunique()}, N_sess: {probe_data.eid.nunique()}, '
+              f'N_mice: {probe_data.subject.nunique()}, N_cells: NA')
 
     # use repo-ephys figure style
     figure_style()
@@ -363,6 +369,11 @@ def plot_probe_distance_all_lab(traj='micro', min_rec_per_lab=4, perform_permuta
     for ie in inst_ex:
         print('excluding institute from ALL-PROBE analysis (below min_rec_per_lab): ', ie)
         probe_data = probe_data[probe_data['institute'] != ie]
+
+    if PRINT_INFO:
+        print(f'Figure 2 g/ h {traj}')
+        print(f'N_inst: {probe_data.institute.nunique()}, N_sess: {probe_data.eid.nunique()}, '
+              f'N_mice: {probe_data.subject.nunique()}, N_cells: NA')
 
     # get pass-only data & plot data (adding negative value distances to ensure institution is still plotted)
     probe_data_pass = probe_data[ probe_data['passed'] == 'PASS']

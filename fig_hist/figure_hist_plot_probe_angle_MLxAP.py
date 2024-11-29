@@ -20,13 +20,13 @@ import math
 
 from iblutil.numerical import ismember
 
-from reproducible_ephys_functions import figure_style, save_figure_path, labs, filter_recordings
+from reproducible_ephys_functions import figure_style, save_figure_path, LAB_MAP, filter_recordings
 from fig_hist.fig_hist_load_data import load_dataframe
 from permutation_test import permut_test, distribution_dist_approx_max
 
-lab_number_map, institution_map, institution_colors = labs()
+lab_number_map, institution_map, institution_colors = LAB_MAP()
 
-
+PRINT_INFO = False
 def plot_probe_angle_histology_panel(min_rec_per_lab=4, perform_permutation_test=True):
     """
     Plot the whole probe histology panel, consisting of:
@@ -96,6 +96,11 @@ def plot_probe_angle_histology(traj='hist', min_rec_per_lab=4, ax1=None, save=Tr
     for ie in inst_ex:
         print('\n\nexcluding institute from ALL-PROBE analysis (below min_rec_per_lab): ', ie)
         probe_data = probe_data[probe_data['institute'] != ie].reset_index()
+
+    if PRINT_INFO:
+        print(f'Figure 2 angle {traj}')
+        print(f'N_inst: {probe_data.institute.nunique()}, N_sess: {probe_data.eid.nunique()}, '
+              f'N_mice: {probe_data.subject.nunique()}, N_cells: NA')
     
     figure_style()
 
@@ -257,6 +262,11 @@ def plot_probe_angle_histology_all_lab(traj='hist', min_rec_per_lab=4, perform_p
     for ie in inst_ex:
         print('excluding institute from ALL-PROBE analysis (below min_rec_per_lab): ', ie)
         probe_data = probe_data[probe_data['institute'] != ie]
+
+    if PRINT_INFO:
+        print(f'Figure 2 i')
+        print(f'N_inst: {probe_data.institute.nunique()}, N_sess: {probe_data.eid.nunique()}, '
+              f'N_mice: {probe_data.subject.nunique()}, N_cells: NA')
 
     # get pass-only data
     probe_data_pass = probe_data[ probe_data['passed'] == 'PASS']
