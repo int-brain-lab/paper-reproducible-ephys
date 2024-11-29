@@ -3,15 +3,15 @@ import matplotlib.pyplot as plt
 
 from iblatlas.atlas import AllenAtlas, Trajectory
 
-from reproducible_ephys_functions import labs, figure_style, filter_recordings, save_figure_path
+from reproducible_ephys_functions import LAB_MAP, figure_style, filter_recordings, save_figure_path, plot_horizontal_institute_legend
 from fig_ephysfeatures.ephysfeatures_load_data import load_dataframe
 
-
+PRINT_INFO = False
 def plot_figure_supp2(freeze=None):
 
     ba = AllenAtlas()
 
-    lab_number_map, institution_map, lab_colors = labs()
+    lab_number_map, institution_map, lab_colors = LAB_MAP()
 
     n_rec_per_lab = 0
     df_chns = load_dataframe(df_name='chns')
@@ -23,6 +23,11 @@ def plot_figure_supp2(freeze=None):
     df_filt = df_filt.drop_duplicates(subset='subject').reset_index()
     rec_per_lab = df_filt.groupby('institute').size()
     df_filt['recording'] = np.concatenate([np.arange(i) for i in rec_per_lab.values])
+
+    if PRINT_INFO:
+        print(f'Figure 3 supp 2')
+        print(f'N_inst: {df_filt.institute.nunique()}, N_sess: {df_filt.eid.nunique()}, '
+              f'N_mice: {df_filt.subject.nunique()}, N_cells: NA')
 
     rows = 6
     cols = int(np.ceil(len(df_filt['subject']) / rows))
@@ -100,18 +105,7 @@ def plot_figure_supp2(freeze=None):
 
     ax = fig.add_subplot(gs[rows, :])
     ax.set_axis_off()
-    lab_number_map, institution_map, institution_colors = labs()
-    inst = list(set(list(institution_map.values())))
-    inst.sort()
-    for i, l in enumerate(inst):
-        if l == 'UCL (H)':
-            continue
-        if i == 0:
-            text = ax.text(0.2, 0.5, l, color=institution_colors[l], fontsize=8, transform=ax.transAxes)
-        else:
-            text = ax.annotate(
-                '  ' + l, xycoords=text, xy=(1, 0), verticalalignment="bottom",
-                color=institution_colors[l], fontsize=8)  # custom properties
+    plot_horizontal_institute_legend(df_filt.institute.unique(), ax)
 
     save_path = save_figure_path(figure='fig_ephysfeatures')
     adjust = 0.3

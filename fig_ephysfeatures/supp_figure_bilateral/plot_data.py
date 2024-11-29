@@ -68,32 +68,10 @@ def plot_main_figure(one=None):
                'ypos': get_label_pos(height, yspans[2][0], pad=0.3), 'fontsize': 10, 'weight': 'bold',
                'ha': 'right', 'va': 'bottom'}
               ]
-    # {'label_text':'g', 'xpos':0.7, 'ypos':0.85, 'fontsize':10, 'weight': 'bold',
-    # 'ha': 'right', 'va': 'bottom'}]
+
     fg.add_labels(fig, labels)
 
-    # ax = {'panel_A': fg.place_axes_on_grid(fig, xspan=[0.1, 1], yspan=[0.05, 0.4],
-    #                                        dim=[1, n_columns + 1], wspace=0.3),
-    #      'panel_B': fg.place_axes_on_grid(fig, xspan=[0.1, 1], yspan=[0.45, 0.75],
-    #                                       dim=[1, n_columns + 1], wspace=0.3),
-    #      'panel_C': fg.place_axes_on_grid(fig, xspan=[0.1, 0.2], yspan=[0.8, 1]),
-    #      'panel_D': fg.place_axes_on_grid(fig, xspan=[0.3, 0.4], yspan=[0.8, 1]),
-    #      'panel_E': fg.place_axes_on_grid(fig, xspan=[0.53, 0.63], yspan=[0.8, 1]),
-    #      'panel_F': fg.place_axes_on_grid(fig, xspan=[0.7, 1], yspan=[0.8, 1])}
-    #
-    # # Add subplot labels
-    # labels = [{'label_text':'a', 'xpos':0, 'ypos':0, 'fontsize':10, 'weight': 'bold',
-    #            'ha': 'right', 'va': 'bottom'},
-    #           {'label_text':'b', 'xpos':0, 'ypos':0.45, 'fontsize':10, 'weight': 'bold',
-    #            'ha': 'right', 'va': 'bottom'},
-    #           {'label_text':'c', 'xpos':0, 'ypos':0.8, 'fontsize':10, 'weight': 'bold',
-    #            'ha': 'right', 'va': 'bottom'},
-    #           {'label_text':'d', 'xpos':0.2, 'ypos':0.8, 'fontsize':10, 'weight': 'bold',
-    #            'ha': 'right', 'va': 'bottom'},
-    #           {'label_text':'e', 'xpos':0.42, 'ypos':0.8, 'fontsize':10, 'weight': 'bold',
-    #            'ha': 'right', 'va': 'bottom'},
-    #           {'label_text':'f', 'xpos':0.65, 'ypos':0.8, 'fontsize':10, 'weight': 'bold',
-    #            'ha': 'right', 'va': 'bottom'}]
+
     fg.add_labels(fig, labels)
 
     # Call functions to plot panels
@@ -125,6 +103,5 @@ def plot_main_figure(one=None):
 
 
 if __name__ == '__main__':
-    #one = ONE()
-    one = 3
+    one = ONE()
     plot_main_figure(one=one)

@@ -8,7 +8,7 @@ By: Guido Meijer
 from os.path import join
 import seaborn as sns
 import matplotlib.pyplot as plt
-from reproducible_ephys_functions import save_figure_path, figure_style, labs
+from reproducible_ephys_functions import save_figure_path, figure_style, LAB_MAP
 from fig_ephysfeatures.ephysfeatures_plot_functions import panel_example
 import numpy as np
 
@@ -52,7 +52,7 @@ def plot_figure_supp4():
 
     ax = fig.add_subplot(gs[len(METRICS), :])
     ax.set_axis_off()
-    lab_number_map, institution_map, institution_colors = labs()
+    lab_number_map, institution_map, institution_colors = LAB_MAP()
     inst = list(set(list(institution_map.values())))
     inst.sort()
     for i, l in enumerate(inst):
