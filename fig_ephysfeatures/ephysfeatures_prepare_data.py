@@ -274,6 +274,10 @@ def run_decoding(metrics=['yield_per_channel', 'median_firing_rate', 'lfp_power'
         for r in ['PPC', 'CA1', 'DG', 'LP', 'PO']:
             print(f'\nDecoding lab for region {r}..\n')
             region_data = data[data['region'] == r]
+
+            print(f'N_inst: {len(region_data.institute.unique())}, N_sess: {len(region_data.eid.unique())}, '
+                  f'N_mice: {len(region_data.subject.unique())}, N_cells: NA')
+
             decode_data = region_data[metrics].to_numpy()
             decode_labs = region_data['institute'].values
 

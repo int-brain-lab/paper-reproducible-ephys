@@ -12,10 +12,10 @@ import iblatlas.atlas as atlas
 
 from mayavi import mlab
 from atlaselectrophysiology import rendering
-from reproducible_ephys_functions import labs
+from reproducible_ephys_functions import LAB_MAP
 
 
-lab_number_map, institution_map, lab_colors = labs()
+lab_number_map, institution_map, lab_colors = LAB_MAP()
 
 eids = ['0802ced5-33a3-405e-8336-b65ebc5cb07c',
         '7cb81727-2097-4b52-b480-c89867b5b34c',

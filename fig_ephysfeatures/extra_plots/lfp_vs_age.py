@@ -11,7 +11,7 @@ import seaborn as sns
 from scipy.stats import pearsonr
 from datetime import datetime
 from figure3.figure3_load_data import load_dataframe
-from reproducible_ephys_functions import filter_recordings, labs
+from reproducible_ephys_functions import filter_recordings, LAB_MAP
 from one.api import ONE
 one = ONE()
 
@@ -31,7 +31,7 @@ for i, eid in enumerate(np.unique(df_use['eid'])):
 
 # %% Plot
 
-lab_number_map, institution_map, lab_colors = labs()
+lab_number_map, institution_map, lab_colors = LAB_MAP()
 cmap = []
 for i, inst in enumerate(df_use['institute'].unique()):
     cmap.append(lab_colors[inst])

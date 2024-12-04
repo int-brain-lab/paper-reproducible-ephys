@@ -11,10 +11,10 @@ from fig_ephysfeatures.ephysfeatures_plot_functions import (
     panel_example)
 import matplotlib.pyplot as plt
 import pickle
-from reproducible_ephys_functions import figure_style, filter_recordings, save_figure_path, labs
+from reproducible_ephys_functions import (figure_style, filter_recordings, save_figure_path,
+                                          LAB_MAP, get_row_coord, get_label_pos)
 from one.api import ONE
 import numpy as np
-
 
 def plot_main_figure(freeze=None, one=None):
 
@@ -32,12 +32,12 @@ def plot_main_figure(freeze=None, one=None):
               'AP band RMS', 'Spike amp.']
     N_PERMUT = 50000  # Amount of shuffles for permutation testing
     BH_CORRECTION = False  # Correction for multiple comparisons
-    #N_PERMUT = 50  # Amount of shuffles for permutation testing
+    # N_PERMUT = 50  # Amount of shuffles for permutation testing
     DPI = 150  # if the figure is too big on your screen, lower this number
     np.random.seed(42)  # fix the random seed for reproducible permutatation results
 
     # Get filtered dataframe 
-    lab_number_map, institution_map, lab_colors = labs()
+    lab_number_map, institution_map, lab_colors = LAB_MAP()
     df_filt = filter_recordings(min_rec_lab=MIN_REC_PER_LAB, min_regions=MIN_REGIONS)
     df_filt = df_filt[df_filt['lab_include'] == 1]
     df_filt['lab_number'] = df_filt['lab'].map(lab_number_map)
@@ -48,47 +48,51 @@ def plot_main_figure(freeze=None, one=None):
     n_columns = len(df_filt['subject'].unique())
 
     # Set up figure
+    # Set up figure
     figure_style()
-    fig = plt.figure(figsize=(7, 9), dpi=DPI)  # full width figure is 7 inches
-    ax = {'panel_A': fg.place_axes_on_grid(fig, xspan=[0.1, 1], yspan=[0, 0.18]),
-         'panel_B': fg.place_axes_on_grid(fig, xspan=[0.1, 1], yspan=[0.25, 0.5],
-                                          dim=[1, n_columns + 1], wspace=0.3),
-         'panel_C': fg.place_axes_on_grid(fig, xspan=[0.1, 1], yspan=[0.55, 0.8],
-                                          dim=[1, n_columns + 1], wspace=0.3),
-         'panel_D': fg.place_axes_on_grid(fig, xspan=[0.2, 0.35], yspan=[0.85, 1]),
-         'panel_E': fg.place_axes_on_grid(fig, xspan=[0.66, 0.88], yspan=[0.85, 1])}
-         #'panel_F': fg.place_axes_on_grid(fig, xspan=[0.78, 1], yspan=[0.85, 1])}
+    width = 7
+    height = 9
+    fig = plt.figure(figsize=(width, height), dpi=DPI)  # full width figure is 7 inches
+
+    xspan = get_row_coord(width, [1])
+    yspan = get_row_coord(height, [2, 2, 2, 1], hspace=0.8, pad=0.3)
+    xspan_inset = [[0.2, 0.35], [0.66, 0.88]]
+
+    ax = {'A': fg.place_axes_on_grid(fig, xspan=xspan[0], yspan=yspan[0]),
+          'B': fg.place_axes_on_grid(fig, xspan=xspan[0], yspan=yspan[1],
+                                           dim=[1, n_columns + 1], wspace=0.3),
+          'C': fg.place_axes_on_grid(fig, xspan=xspan[0], yspan=yspan[2],
+                                           dim=[1, n_columns + 1], wspace=0.3),
+          'D': fg.place_axes_on_grid(fig, xspan=xspan_inset[0], yspan=yspan[3]),
+          'E': fg.place_axes_on_grid(fig, xspan=xspan_inset[1], yspan=yspan[3])}
 
     # Add subplot labels
-    labels = [{'label_text':'a', 'xpos':0, 'ypos':0, 'fontsize':10, 'weight': 'bold',
+    labels = [{'label_text': 'a', 'xpos': get_label_pos(width, xspan[0][0]), 'ypos': get_label_pos(height, yspan[0][0], pad=0.3), 'fontsize': 10, 'weight': 'bold',
                'ha': 'right', 'va': 'bottom'},
-              {'label_text':'b', 'xpos':0, 'ypos':0.2, 'fontsize':10, 'weight': 'bold',
+              {'label_text': 'b', 'xpos': get_label_pos(width, xspan[0][0]), 'ypos': get_label_pos(height, yspan[1][0], pad=0.3), 'fontsize': 10, 'weight': 'bold',
                'ha': 'right', 'va': 'bottom'},
-              {'label_text':'c', 'xpos':0, 'ypos':0.55, 'fontsize':10, 'weight': 'bold',
+              {'label_text': 'c', 'xpos': get_label_pos(width, xspan[0][0]), 'ypos': get_label_pos(height, yspan[2][0], pad=0.3), 'fontsize': 10, 'weight': 'bold',
                'ha': 'right', 'va': 'bottom'},
-              {'label_text':'d', 'xpos':0.1, 'ypos':0.85, 'fontsize':10, 'weight': 'bold',
+              {'label_text': 'd', 'xpos': get_label_pos(width, xspan_inset[0][0]), 'ypos': get_label_pos(height, yspan[3][0], pad=0.3), 'fontsize': 10, 'weight': 'bold',
                'ha': 'right', 'va': 'bottom'},
-              {'label_text':'e', 'xpos':0.57, 'ypos':0.85, 'fontsize':10, 'weight': 'bold',
+              {'label_text': 'e', 'xpos': get_label_pos(width, xspan_inset[1][0]), 'ypos': get_label_pos(height, yspan[3][0], pad=0.3), 'fontsize': 10, 'weight': 'bold',
                'ha': 'right', 'va': 'bottom'}]
-    #{'label_text':'g', 'xpos':0.7, 'ypos':0.85, 'fontsize':10, 'weight': 'bold',
-    #'ha': 'right', 'va': 'bottom'}]
     fg.add_labels(fig, labels)
 
     # Call functions to plot panels
-    ax['panel_A'].axis('off')
-    pids_b = panel_probe_lfp(fig, ax['panel_B'], df_filt, boundary_align=BOUNDARY, freeze=freeze)
+    ax['A'].axis('off')
+    pids_b = panel_probe_lfp(fig, ax['B'], df_filt, boundary_align=BOUNDARY, freeze=freeze)
     
-    pids_c = panel_probe_neurons(fig, ax['panel_C'], df_filt, boundary_align=BOUNDARY, freeze=freeze)
-    
-    
-    p_permut, pids_d = panel_permutation(ax['panel_D'], METRICS, REGIONS, LABELS,
+    pids_c = panel_probe_neurons(fig, ax['C'], df_filt, boundary_align=BOUNDARY, freeze=freeze)
+
+    p_permut, pids_d = panel_permutation(ax['D'], METRICS, REGIONS, LABELS,
                                          n_permut=N_PERMUT,
                                          n_rec_per_lab=MIN_REC_PER_LAB,
                                          n_rec_per_region=MIN_REC_PER_REGION,
                                          bh_correction=BH_CORRECTION,
                                          freeze=freeze)
     
-    p_decoding = panel_decoding(ax['panel_E'], qc='pass', bh_correction=True)
+    p_decoding = panel_decoding(ax['E'], qc='pass', bh_correction=True)
     
     
     """
@@ -101,7 +105,7 @@ def plot_main_figure(freeze=None, one=None):
     # Save figure
     save_path = save_figure_path(figure='fig_ephysfeatures')
     print(f'Saving figures to {save_path}')
-    plt.savefig(save_path.joinpath('figure3.png'))
+    plt.savefig(save_path.joinpath('figure3.svg'))
     plt.savefig(save_path.joinpath('figure3.pdf'))
     
     # Save dict with pids

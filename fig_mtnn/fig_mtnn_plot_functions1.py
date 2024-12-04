@@ -4,6 +4,7 @@ from tqdm import notebook
 
 import figrid as fg
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 from matplotlib.ticker import FormatStrFormatter
 import seaborn as sns
 from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -11,7 +12,7 @@ import pylab as pl
 from tqdm import notebook
 from sklearn.metrics import r2_score
 
-from reproducible_ephys_functions import save_data_path, save_figure_path, figure_style, labs
+from reproducible_ephys_functions import save_data_path, save_figure_path, figure_style, LAB_MAP
 from fig_mtnn.neural_and_behav_rasters import plot_neural_behav_raster
 from fig_mtnn.utils import (cov_idx_dict, get_acronym_dict_reverse, compute_mean_frs, acronym_offset, noise_offset, lab_offset,
                                          session_offset, xyz_offset, stimulus_offset, leave_out_covs_for_glm, reshape_flattened)
@@ -362,7 +363,7 @@ def generate_figure9_supplement1(model_config,
                                  test_feature,
                                  sess_list,
                                  alpha=0.6, s=30,
-                                 xlims=[4.0,45.0], ylims=[-0.075,1.0], 
+                                 xlims=[4.0,45.0], ylims=[-0.075,1.0], axs=None,
                                  savefig=False):
     
 #     color_names = ["windows blue",
@@ -383,7 +384,7 @@ def generate_figure9_supplement1(model_config,
 #                    "dark brown"]
 #     colors = sns.xkcd_palette(color_names)
     
-    lab_number_map, institution_map, institution_colors = labs()
+    lab_number_map, institution_map, institution_colors = LAB_MAPS()
     shapes = ['o', 's', '^', '+']
 
     mean_frs = compute_mean_frs(data_load_path.joinpath('train/shape.npy'), data_load_path.joinpath('train/output.npy'))
@@ -396,16 +397,31 @@ def generate_figure9_supplement1(model_config,
         obs_list.append(obs[idx:idx+n].reshape(sh[:-1]))
         feature_list.append(test_feature[idx:idx+n].reshape(sh))
         idx += n
- 
+
     baseline_score = load_test_model(model_config, None, None, obs_list, preds_shape, use_psth=False)
     baseline_score_psth = load_test_model(model_config, None, None, obs_list, preds_shape, use_psth=True)
-    
+
     reshaped_score = reshape_flattened(baseline_score, preds_shape, trim=3)
     reshaped_score_psth = reshape_flattened(baseline_score_psth, preds_shape, trim=3)
     reshaped_frs = reshape_flattened(mean_frs, preds_shape, trim=3)
 
-    fig, axs = plt.subplots(1,2, sharey=True, figsize=(20,10))
-    plt.subplots_adjust(wspace=0.075)
+    if axs is None:
+        fig, axs = plt.subplots(1,2, sharey=True, figsize=(20,10))
+        plt.subplots_adjust(wspace=0.075)
+        label_size = 24
+        title_size = 24
+        suptitle_size = 32
+        ticklabel_size = 18
+        legend_size = 8.5
+        s = 10
+    else:
+        label_size = mpl.rcParams["axes.labelsize"]
+        ticklabel_size = mpl.rcParams["ytick.labelsize"]
+        title_size = label_size
+        suptitle_size = mpl.rcParams["axes.titlesize"]
+        legend_size = 4
+        s=2
+
     for i, sess in enumerate(sess_list):
         lab_id = np.where(feature_list[i][0,0,0,lab_offset:session_offset] == 1)[0][0]
         session_id = np.where(feature_list[i][0,0,0,session_offset:xyz_offset] == 1)[0][0]
@@ -426,15 +442,16 @@ def generate_figure9_supplement1(model_config,
         axs[1].scatter(reshaped_frs[i][1:], reshaped_score_psth[i][1:], s=s,
                        color=institution_color, marker=shapes[session_id],
                        alpha=alpha)
-    axs[0].set_ylabel('R2', fontsize=24)
-    axs[0].set_xlabel('Mean Firing Rate (spikes/sec)', fontsize=24)
-    axs[0].set_title('Held-out test trials', fontsize=24)
+
+    axs[0].set_ylabel('R2', fontsize=label_size)
+    axs[0].set_xlabel('Mean firing rate (spikes/s)', fontsize=label_size)
+    axs[0].set_title('Held-out test trials', fontsize=title_size)
     
-    axs[1].set_xlabel('Mean Firing Rate (spikes/sec)', fontsize=24)
-    axs[1].set_title('PETHs of Held-out test trials', fontsize=24)
+    axs[1].set_xlabel('Mean firing rate (spikes/s)', fontsize=label_size)
+    axs[1].set_title('PETHs of held-out test trials', fontsize=title_size)
     
-    axs[0].legend(fontsize=8.5)
-    axs[1].legend(fontsize=8.5)
+    # axs[0].legend(fontsize=legend_size)
+    axs[1].legend(fontsize=legend_size, bbox_to_anchor=(1, 1.05), loc='upper left', frameon=False)
     
     axs[0].set_xlim(xlims[0],xlims[1])
     axs[0].set_ylim(ylims[0],ylims[1])
@@ -442,22 +459,23 @@ def generate_figure9_supplement1(model_config,
     axs[1].set_ylim(ylims[0],ylims[1])
     
     axs[0].set_yticks(np.arange(0,1.2,0.2))
-    axs[0].set_yticklabels(np.arange(0,1.2,0.2), fontsize=18)
+    axs[0].set_yticklabels(np.arange(0,1.2,0.2), fontsize=ticklabel_size)
     axs[0].yaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
+    axs[1].set_yticklabels([])
     
-    axs[0].set_xticks(np.arange(0,50,5).astype(int))
-    axs[0].set_xticklabels(np.arange(0,50,5).astype(int), fontsize=18)
+    axs[0].set_xticks(np.arange(0,50,10).astype(int))
+    axs[0].set_xticklabels(np.arange(0,50,10).astype(int), fontsize=ticklabel_size)
     
-    axs[1].set_xticks(np.arange(0,50,5).astype(int))
-    axs[1].set_xticklabels(np.arange(0,50,5).astype(int), fontsize=18)
-    
-    plt.suptitle('MTNN Prediction Quality vs. Firing Rate', fontsize=32)
+    axs[1].set_xticks(np.arange(0,50,10).astype(int))
+    axs[1].set_xticklabels(np.arange(0,50,10).astype(int), fontsize=ticklabel_size)
+
+    axs[0].text(1, 1.1, 'MTNN prediction quality vs firing rate',
+                             transform=axs[0].transAxes, ha='center', fontsize=suptitle_size)
     
     if savefig:
         figname = save_path.joinpath(f'figure9_supplement1.png')
         plt.savefig(figname, bbox_inches='tight', facecolor='white')
-    
-    plt.show()
+        plt.show()
     
 def generate_figure9_supplement2(model_config, 
                                  glm_score,
@@ -465,6 +483,7 @@ def generate_figure9_supplement2(model_config,
                                  preds_shape,
                                  obs,
                                  test_feature,
+                                 ax=None,
                                  savefig=False):
 
     obs_list = []
@@ -482,8 +501,18 @@ def generate_figure9_supplement2(model_config,
     mtnn_score_glm_cov = load_test_model(model_config, leave_out_covs_for_glm, None, 
                                          obs_list, preds_shape, use_psth=False, 
                                          data_dir='test', model_name_suffix=None)
-    
-    plt.figure(figsize=(10,10))
+
+    if ax is None:
+        fig = plt.figure(figsize=(10,10))
+        ax = fig.fca()
+        labelsize = 24
+        ticklabel_size = 18
+        title_size = 24
+    else:
+        labelsize = mpl.rcParams["axes.labelsize"]
+        ticklabel_size = mpl.rcParams["ytick.labelsize"]
+        title_size = mpl.rcParams["axes.titlesize"]
+
     
     #plt.scatter(mtnn_score[0], glm_score_full_mtnn_cov[0], color='blue', label='MTNN: Full set of covariates\nGLM: GLM covariates + behavioral covariates', alpha=0.65)
     #plt.scatter(mtnn_score_glm_cov[0], glm_score[0], color='red', label='GLM covariates', alpha=0.65)
@@ -491,35 +520,33 @@ def generate_figure9_supplement2(model_config,
     #plt.scatter(mtnn_score[1:], glm_score_full_mtnn_cov[1:], color='blue', alpha=0.65)
     #plt.scatter(mtnn_score_glm_cov[1:], glm_score[1:], color='red', alpha=0.65)
     
-    plt.scatter(mtnn_score_glm_cov, glm_score_full_mtnn_cov, color='blue', alpha=0.65)
+    ax.scatter(mtnn_score_glm_cov, glm_score_full_mtnn_cov, color='blue', alpha=0.65)
     
-    plt.xlabel('MTNN Performance (R2)', fontsize=24)
-    plt.ylabel('GLM Performance (R2)', fontsize=24)
+    ax.set_xlabel('MTNN Performance (R2)', fontsize=labelsize)
+    ax.set_ylabel('GLM Performance (R2)', fontsize=labelsize)
     
-    plt.plot([-1,1],[-1,1], color='black')
-    plt.xlim(-0.02,0.52)
-    plt.ylim(-0.02,0.52)
+    ax.plot([-1,1],[-1,1], color='black')
+    ax.set_xlim(-0.02,0.52)
+    ax.set_ylim(-0.02,0.52)
     
-    plt.yticks(np.arange(0,0.6,0.1), fontsize=18)
-    plt.xticks(np.arange(0,0.6,0.1), fontsize=18)
+    ax.set_yticks(np.arange(0,0.6,0.1))#, fontsize=ticklabel_size)
+    ax.set_xticks(np.arange(0,0.6,0.1))#, fontsize=ticklabel_size)
     
-    plt.title('MTNN vs GLM Predictive Performance Comparison\nTrained on Movement/Task-related/Prior Covariates', fontsize=24, y=1.02)
-    
-    plt.legend(fontsize=20)
-    
+    ax.set_title('MTNN vs GLM predictive performance comparison\ntrained on movement/ task-related/ prior covariates',
+                 fontsize=title_size)
+
     
     if savefig:
         figname = save_path.joinpath(f'figure9_supplement2.png')
         plt.savefig(figname,bbox_inches='tight', facecolor='white')
-    
-    plt.show()
+        plt.show()
     
 def generate_figure9_supplement2_v2(model_config, 
                                      glm_score,
                                      glm_score_full_mtnn_cov,
                                      preds_shape,
                                      obs,
-                                     test_feature,
+                                     test_feature, ax=None,
                                      savefig=False):
 
     obs_list = []
@@ -537,8 +564,18 @@ def generate_figure9_supplement2_v2(model_config,
     mtnn_score_glm_cov = load_test_model(model_config, leave_out_covs_for_glm, None, 
                                          obs_list, preds_shape, use_psth=False, 
                                          data_dir='test', model_name_suffix=None)
-    
-    plt.figure(figsize=(10,10))
+
+    if ax is None:
+        fig = plt.figure(figsize=(10,10))
+        ax = fig.gca()
+        labelsize = 24
+        ticklabel_size = 18
+        title_size = 24
+    else:
+        labelsize = mpl.rcParams["axes.labelsize"]
+        ticklabel_size = mpl.rcParams["ytick.labelsize"]
+        title_size = mpl.rcParams["axes.titlesize"]
+
     
     #plt.scatter(mtnn_score[0], glm_score_full_mtnn_cov[0], color='blue', label='MTNN: Full set of covariates\nGLM: GLM covariates + behavioral covariates', alpha=0.65)
     #plt.scatter(mtnn_score_glm_cov[0], glm_score[0], color='red', label='GLM covariates', alpha=0.65)
@@ -548,8 +585,8 @@ def generate_figure9_supplement2_v2(model_config,
     
     plt.hist(100*(mtnn_score_glm_cov-glm_score_full_mtnn_cov)/glm_score_full_mtnn_cov, color='k')
     
-    plt.xlabel('% Increase of MTNN Performance over GLM(R2)', fontsize=24)
-    plt.ylabel('count', fontsize=24)
+    plt.xlabel('% Increase of MTNN Performance over GLM(R2)', fontsize=labelsize)
+    plt.ylabel('count', fontsize=labelsize)
     
     #plt.plot([-1,1],[-1,1], color='black')
     #plt.xlim(-20,20)
@@ -558,7 +595,7 @@ def generate_figure9_supplement2_v2(model_config,
     #plt.yticks(np.arange(0,0.7,0.1), fontsize=18)
     #plt.xticks(np.arange(0,0.7,0.1), fontsize=18)
     
-    plt.title('MTNN vs GLM Predictive Performance Comparison\nTrained on Movement/Task-related/Prior Covariates', fontsize=24, y=1.02)
+    plt.title('MTNN vs GLM Predictive Performance Comparison\nTrained on Movement/Task-related/Prior Covariates', fontsize=title_size)
     
     plt.legend(fontsize=20)
     
@@ -567,7 +604,7 @@ def generate_figure9_supplement2_v2(model_config,
         figname = save_path.joinpath(f'figure9_supplement2_v2.png')
         plt.savefig(figname,bbox_inches='tight', facecolor='white')
     
-    plt.show()
+        plt.show()
     
 def get_session_order(feature_list):
 
@@ -584,7 +621,7 @@ def generate_figure9_supplement3(model_config,
                                  obs,
                                  test_feature,
                                  sess_list,
-                                 preds,
+                                 preds, ax=None,
                                  savefig=False):
     
     obs_list = []
@@ -624,60 +661,72 @@ def generate_figure9_supplement3(model_config,
         curr_idx += obs_i.shape[0]
         n_neurons_list.append(obs_i.shape[0])
         
-    
-    plt.figure(figsize=(12,24))
+    if ax is None:
+        fig = plt.figure(figsize=(12,24))
+        ax = fig.gca()
+        labelsize = 24
+        ticklabel_size = 18
+        title_size = 24
+        lw = 2
+        text_size = 22
+    else:
+        labelsize = mpl.rcParams["axes.labelsize"]
+        ticklabel_size = mpl.rcParams["ytick.labelsize"]
+        title_size = mpl.rcParams["axes.titlesize"]
+        lw = 0.5
+        text_size = 7
+
     
     vlim = np.percentile(heatmap, [0,99.7])
-    plt.imshow(heatmap, aspect='auto', cmap='Greys', interpolation='none', vmin=vlim[0], vmax=vlim[1])
-    plt.axvline(x=[trial_len], linewidth=2, linestyle='-', 
+    ax.imshow(heatmap, aspect='auto', cmap='Greys', interpolation='none', vmin=vlim[0], vmax=vlim[1])
+    ax.axvline(x=[trial_len], linewidth=lw, linestyle='-',
                                        c='k',label='separate left and right')
-    plt.axvline(x=[3*trial_len], linewidth=2, linestyle='-', 
+    ax.axvline(x=[3*trial_len], linewidth=lw, linestyle='-',
                                        c='k',label='separate left and right')
-    plt.axvline(x=[2*trial_len], linewidth=3, linestyle='-', 
+    ax.axvline(x=[2*trial_len], linewidth=lw+0.5, linestyle='-',
                                        c='k',label='separate Y and Y_pred')
     for i in [trial_len//3,trial_len+trial_len//3,2*trial_len+trial_len//3,3*trial_len+trial_len//3]:
-        plt.axvline(x=[i], linewidth=2, linestyle='--', 
+        ax.axvline(x=[i], linewidth=lw, linestyle='--',
                                            c='green', label='movement onset')
 
     session_boundary = np.cumsum(n_neurons_list)
     for i in session_boundary[:-1]:
-        plt.axhline(y=[i-0.5], linewidth=2, linestyle='--', 
+        ax.axhline(y=[i-0.5], linewidth=lw, linestyle='--',
                                            c='red', label='session boundary')
     for idx, i in enumerate(session_boundary[:-1]):
         if (idx+1)%4 != 0:
             continue
-        plt.axhline(y=[i-0.5], linewidth=3, linestyle='-', 
+        ax.axhline(y=[i-0.5], linewidth=lw, linestyle='-',
                                            c='blue', label='lab boundary')
         
-    plt.text(trial_len-6, session_boundary[11]-5, 
-             'separate left and right choice PETHs',rotation=90,color='k',fontsize=22)
-    plt.text(3*trial_len-6, session_boundary[11]-5, 
-             'separate left and right choice MTNN prediction PETHs',rotation=90,color='k',fontsize=22)
+    ax.text(trial_len-6, session_boundary[11]-5,
+             'Separate left and right choice PETHs',rotation=90,color='k',fontsize=text_size)
+    ax.text(3*trial_len-6, session_boundary[11]-5,
+             'Separate left and right choice MTNN prediction PETHs',rotation=90,color='k',fontsize=text_size)
     
-    plt.text(10-5, 0.3*n_neurons, 'movement onset',rotation=90,color='green',fontsize=20)
-    plt.text(trial_len*4-33, session_boundary[0]-1, 'session boundary', color='red',fontsize=20)
-    plt.text(trial_len*4-25, session_boundary[3]-1, 'lab boundary', color='blue',fontsize=20)
-    plt.text(10-9, 0-2, 'SWC', color='k',fontsize=20)
-    plt.text(10-9, session_boundary[3]-2, 'CCU', color='k',fontsize=20)
-    plt.text(10-9, session_boundary[7]-2, 'CSHL (C)', color='k',fontsize=20)
-    plt.text(10-9, session_boundary[11]-2, 'UCL', color='k',fontsize=20)
-    plt.text(10-9, session_boundary[15]-2, 'Berkeley', color='k',fontsize=20)
-    plt.text(10-9, session_boundary[19]-2, 'NYU', color='k',fontsize=20)
-    plt.text(10-9, session_boundary[23]-2, 'UCLA', color='k',fontsize=20)
-    plt.text(10-9, session_boundary[27]-2, 'UW', color='k',fontsize=20)
+    ax.text(10-5, 0.3*n_neurons, 'Movement onset',rotation=90,color='green',fontsize=text_size-2)
+    ax.text(trial_len*4-33, session_boundary[0]-1, 'Session boundary', color='red',fontsize=text_size-2)
+    ax.text(trial_len*4-25, session_boundary[3]-1, 'Lab boundary', color='blue',fontsize=text_size-2)
+    ax.text(10-9, 0-2, 'SWC', color='k',fontsize=text_size-2)
+    ax.text(10-9, session_boundary[3]-2, 'CCU', color='k',fontsize=text_size-2)
+    ax.text(10-9, session_boundary[7]-2, 'CSHL (C)', color='k',fontsize=text_size-2)
+    ax.text(10-9, session_boundary[11]-2, 'UCL', color='k',fontsize=text_size-2)
+    ax.text(10-9, session_boundary[15]-2, 'Berkeley', color='k',fontsize=text_size-2)
+    ax.text(10-9, session_boundary[19]-2, 'NYU', color='k',fontsize=text_size-2)
+    ax.text(10-9, session_boundary[23]-2, 'UCLA', color='k',fontsize=text_size-2)
+    ax.text(10-9, session_boundary[27]-2, 'UW', color='k',fontsize=text_size-2)
     
-    plt.ylabel('neurons', fontsize=18)
-    plt.xlabel('time (sec)', fontsize=18)
-    plt.xticks([0,10,30],labels=['-0.5','0.0','1.0'], fontsize=14)
-    plt.yticks(fontsize=14)
+    ax.set_ylabel('Neurons', fontsize=labelsize)
+    ax.set_xlabel('Time (s)', fontsize=labelsize)
+    ax.set_xticks([0,10,30],labels=['-0.5','0.0','1.0'], fontsize=ticklabel_size)
+    #ax.set_yticks(fontsize=ticklabel_size)
     
-    plt.title('Observed and MTNN-predicted PETHs on held-out trials', fontsize=24, y=1.03)
+    ax.set_title('Observed and MTNN-predicted \n PETHs on held-out trials', fontsize=title_size)
     
     if savefig:
         figname = save_path.joinpath(f'figure9_supplement3.png')
         plt.savefig(figname,bbox_inches='tight', facecolor='white')
-    
-    plt.show()
+        plt.show()
     
 # def generate_figure9_supplement3(model_config, 
 #                                  preds_shape,

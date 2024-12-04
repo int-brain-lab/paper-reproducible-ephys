@@ -1,10 +1,10 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from supp_figure_bilateral.load_data import load_neural_data, load_dataframe
-from reproducible_ephys_functions import filter_recordings, BRAIN_REGIONS, labs
+from reproducible_ephys_functions import filter_recordings, BRAIN_REGIONS, LAB_MAP
 
 
-lab_number_map, institution_map, lab_colors = labs()
+lab_number_map, institution_map, lab_colors = LAB_MAP()
 probe_colors = {'probe00': 'blue', 'probe01': 'red'}
 
 def plot_comparative_psth():

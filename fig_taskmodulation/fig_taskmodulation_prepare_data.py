@@ -481,6 +481,38 @@ def compute_permutation_test(n_permut=20000, qc='pass', n_cores=8):
 
     pickle.dump(results.p_value_permut.values, open(save_data_path(figure='fig_taskmodulation').joinpath('p_values'), 'wb'))
 
+
+def compute_permutation_test_modulated(n_permut=10000, n_cores=8):
+
+    df = load_dataframe()
+    df_filt = filter_recordings(df, **filtering_criteria)
+    df_filt = df_filt[df_filt['permute_include'] == 1]
+
+    results = pd.DataFrame()
+
+    df_region = df_filt.groupby('region')
+    names = tests.keys()
+
+    for test in names:
+        for i, br in enumerate(BRAIN_REGIONS):
+            df_br = df_region.get_group(br)
+
+            vals = df_br.groupby(['subject', 'institute'])[test].mean()
+
+            labs = vals.index.get_level_values('institute')
+            subjects = vals.index.get_level_values('subject')
+            data = vals.values
+            p = permut_test(data, metric=distribution_dist_approx_max, labels1=np.array(labs),
+                            labels2=np.array(subjects), n_permut=n_permut, n_cores=n_cores)
+            if p == 0.:
+                p = 1e-12
+            results = pd.concat((results, pd.DataFrame(index=[results.shape[0] + 1],
+                                                       data={'test': test, 'region': br, 'p_value_permut': p})))
+
+    pickle.dump(results.p_value_permut.values, open(save_data_path(
+        figure='fig_taskmodulation').joinpath('p_values_percent_modulated'), 'wb'))
+
+
 def compute_power_analysis(n_permut=50000, n_cores=8):
     p_values = pickle.load(open(save_data_path(figure='fig_taskmodulation').joinpath('p_values'), 'rb'))  # renew by calling plot_panel_permutation
     print(p_values)
@@ -517,10 +549,12 @@ def compute_power_analysis(n_permut=50000, n_cores=8):
                 continue
 
             for j, manipulate_lab in enumerate(np.unique(labs)):
-                lower, higher = find_sig_manipulation(data.copy(), manipulate_lab, labs, subjects, 0.01, 'positive', n_permut=n_permut, n_cores=n_cores)
+                lower, higher = find_sig_manipulation(data.copy(), manipulate_lab, labs, subjects, 0.01, 'positive',
+                                                      n_permut=n_permut, n_cores=n_cores)
                 significant_disturbances[i, j, 0] = higher
                 print("found bound: {}".format(higher))
-                lower, higher = find_sig_manipulation(data.copy(), manipulate_lab, labs, subjects, 0.01, 'negative', n_permut=n_permut, n_cores=n_cores)
+                lower, higher = find_sig_manipulation(data.copy(), manipulate_lab, labs, subjects, 0.01, 'negative',
+                                                      n_permut=n_permut, n_cores=n_cores)
                 significant_disturbances[i, j, 1] = lower
                 print("found bound: {}".format(lower))
             pickle.dump(significant_disturbances, open(save_data_path(figure='fig_taskmodulation').joinpath('shifts'), 'wb'))
@@ -583,4 +617,5 @@ if __name__ == '__main__':
     prepare_data(insertions, one=one, recompute=True, **default_params)
     save_dataset_info(one, figure='fig_taskmodulation')
     compute_permutation_test(n_permut=40000, n_cores=8)
+    compute_permutation_test_modulated(n_permut=40000, n_cores=8)
     compute_power_analysis(n_permut=40000, n_cores=8)

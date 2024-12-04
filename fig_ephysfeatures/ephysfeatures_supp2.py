@@ -3,15 +3,15 @@ import matplotlib.pyplot as plt
 
 from iblatlas.atlas import AllenAtlas, Trajectory
 
-from reproducible_ephys_functions import labs, figure_style, filter_recordings, save_figure_path
+from reproducible_ephys_functions import LAB_MAP, figure_style, filter_recordings, save_figure_path, plot_horizontal_institute_legend
 from fig_ephysfeatures.ephysfeatures_load_data import load_dataframe
 
-
+PRINT_INFO = False
 def plot_figure_supp2(freeze=None):
 
     ba = AllenAtlas()
 
-    lab_number_map, institution_map, lab_colors = labs()
+    lab_number_map, institution_map, lab_colors = LAB_MAP()
 
     n_rec_per_lab = 0
     df_chns = load_dataframe(df_name='chns')
@@ -24,12 +24,20 @@ def plot_figure_supp2(freeze=None):
     rec_per_lab = df_filt.groupby('institute').size()
     df_filt['recording'] = np.concatenate([np.arange(i) for i in rec_per_lab.values])
 
-    rows = 4
+    if PRINT_INFO:
+        print(f'Figure 3 supp 2')
+        print(f'N_inst: {df_filt.institute.nunique()}, N_sess: {df_filt.eid.nunique()}, '
+              f'N_mice: {df_filt.subject.nunique()}, N_cells: NA')
+
+    rows = 6
     cols = int(np.ceil(len(df_filt['subject']) / rows))
     figure_style()
-    fig = plt.figure(constrained_layout=False, figsize=(7, 5), dpi=300)
-    gs = fig.add_gridspec(rows, cols + 1, width_ratios=np.r_[np.ones(cols) * 0.9, 0.1])
-    gs.update(wspace=0.05, hspace=0.3, left=0.1, right=0.9, top=0.9, bottom=0.1)
+    width = 7
+    height = 6
+    fig = plt.figure(figsize=(width, height), dpi=150)
+    gs = fig.add_gridspec(rows + 1, cols + 1, width_ratios=np.r_[np.ones(cols) * 0.9, 0.2],
+                          height_ratios=np.r_[np.ones(rows) * 1, 0.2])
+    gs.update(wspace=0.05, hspace=0.4)
 
     ml_ranges = []
     axs = []
@@ -73,7 +81,7 @@ def plot_figure_supp2(freeze=None):
         ax = fig.add_subplot(gs[int(iR / cols), np.mod(iR, cols)])
 
         ax.imshow(image, aspect='auto', extent=np.r_[[0, 4000], [0, 3840]], cmap='bone', alpha=1, vmin=cmin, vmax=cmax)
-        scat = ax.scatter(df['lateral_um'] + 2000, df['axial_um'], c=df['lfp'], cmap='viridis', s=2, vmin=-190, vmax=-150)
+        scat = ax.scatter(df['lateral_um'] + 2000, df['axial_um'], c=df['lfp_destriped'], cmap='viridis', s=2, vmin=-190, vmax=-150)
         ax.set_title(data['recording'] + 1, color=lab_colors[data['institute']])
         ax.plot([200, 200], [100, 1100], color='red', lw=2)
 
@@ -90,12 +98,19 @@ def plot_figure_supp2(freeze=None):
 
         axs.append(ax)
 
-    ax = fig.add_subplot(gs[0:rows, cols])
-    cbar = fig.colorbar(scat, cax=ax, ticks=scat.get_clim())
-    cbar.set_label('Power spectral density', rotation=270, labelpad=-8)
-    cbar.ax.set_yticklabels([f'{-190} dB', f'{-150} dB'])
+    ax = fig.add_subplot(gs[1:rows-1, cols])
+    cbar = fig.colorbar(scat, cax=ax, ticks=scat.get_clim(), location='right')
+    cbar.set_label('Power spectral density (dB)', rotation=270, labelpad=-8)
+    cbar.ax.set_yticklabels([f'{-190}', f'{-150}'])
+
+    ax = fig.add_subplot(gs[rows, :])
+    ax.set_axis_off()
+    plot_horizontal_institute_legend(df_filt.institute.unique(), ax)
 
     save_path = save_figure_path(figure='fig_ephysfeatures')
+    adjust = 0.3
+    fig.subplots_adjust(top=1 - adjust / height, bottom=adjust / height, left=adjust / width,
+                        right=1 - (adjust + 0.2) / width)
     plt.savefig(save_path.joinpath('figure3_supp2.png'))
     plt.savefig(save_path.joinpath('figure3_supp2.pdf'))
 

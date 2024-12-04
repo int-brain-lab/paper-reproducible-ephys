@@ -12,7 +12,7 @@ from fig_ephysfeatures.ephysfeatures_load_data import load_dataframe
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 import numpy as np
 
-
+PRINT_INFO = False
 def panel_probe_lfp(fig, ax, boundary_align='DG-TH', ylim=[-2000, 2000], normalize=False,
                     clim=[-190, -150]):
 
@@ -21,6 +21,11 @@ def panel_probe_lfp(fig, ax, boundary_align='DG-TH', ylim=[-2000, 2000], normali
     df_filt = filter_recordings(min_neuron_region=0)
     df_filt = df_filt.sort_values(by=['include'], ascending=False).reset_index(drop=True)
     df_filt = df_filt.drop_duplicates(subset='subject').reset_index()
+
+    if PRINT_INFO:
+        print(f'Figure 3 supp 1 a')
+        print(f'N_inst: {df_filt.institute.nunique()}, N_sess: {df_filt.eid.nunique()}, '
+              f'N_mice: {df_filt.subject.nunique()}, N_cells: NA')
     
     for iR, data in df_filt.iterrows():
         df = df_chns[df_chns['pid'] == data['pid']]
@@ -38,7 +43,7 @@ def panel_probe_lfp(fig, ax, boundary_align='DG-TH', ylim=[-2000, 2000], normali
             z = z - z_subtract
 
         # Plot
-        im = plot_probe(df['lfp'].values, z, ax[iR], clim=clim, normalize=normalize,
+        im = plot_probe(df['lfp_destriped'].values, z, ax[iR], clim=clim, normalize=normalize,
                         cmap='viridis')
 
         if data['include']:
@@ -84,6 +89,11 @@ def panel_probe_neurons(fig, ax, boundary_align='DG-TH', ylim=[-2000, 2000]):
     df_filt = filter_recordings(min_neuron_region=0)
     df_filt = df_filt.sort_values(by=['include'], ascending=False).reset_index(drop=True)
     df_filt = df_filt.drop_duplicates(subset='subject').reset_index()
+
+    if PRINT_INFO:
+        print(f'Figure 3 supp 1 b')
+        print(f'N_inst: {df_filt.institute.nunique()}, N_sess: {df_filt.eid.nunique()}, '
+              f'N_mice: {df_filt.subject.nunique()}, N_cells: NA')
 
     for iR, data in df_filt.iterrows():
         df_ch = df_chns[df_chns['pid'] == data['pid']]
@@ -161,4 +171,4 @@ def panel_probe_neurons(fig, ax, boundary_align='DG-TH', ylim=[-2000, 2000]):
                       bbox_to_anchor=(1, 0.1, 1, 1), bbox_transform=ax[-1].transAxes)
     cbar = fig.colorbar(im, cax=axin, ticks=im.get_clim())
     cbar.ax.set_yticklabels([f'{levels[0]}', f'{levels[1]}'])
-    cbar.set_label('Firing rate (spks/s)', rotation=270, labelpad=0)
+    cbar.set_label('Firing rate (spikes/s)', rotation=270, labelpad=0)

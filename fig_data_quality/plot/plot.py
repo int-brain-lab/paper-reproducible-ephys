@@ -36,13 +36,18 @@ def get_colors_region(region):
     colors_translucent = [np.array(list(colors[0]) + [0.75]), np.array(list(colors[1]) + [0.75])]
     return colors, colors_translucent
 
-def get_3colors_region(region):
+def get_3colors_region(region, blue=True):
     """
     Get 3 increasingly lighter shades of standard atlas color for a Cosmos region.
 
     :param region: Cosmos acronym
     :returns: colors, colors_translucent (both 3-vectors)
     """
+
+    if region == 'Isocortex' and blue:
+        region = 'VISam'
+    #     colors = [np.array([95, 100, 184]) / 255 , np.array([160, 180, 226]) / 255, np.array([211, 219, 242]) / 255]
+    # else:
     br = BrainRegions()
     region_idx = br.acronym2index([region])[1][0]
     region_rgb = br.rgb[region_idx][0]
