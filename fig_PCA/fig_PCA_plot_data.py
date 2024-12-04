@@ -28,6 +28,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 import seaborn as sns
 import matplotlib as mpl
 
+import statsmodels.formula.api as smf
 from statsmodels.stats.multitest import multipletests
 from sklearn.linear_model import LogisticRegression, Ridge
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
@@ -63,10 +64,13 @@ canon_regs = [ "VISa/am",
     "PO"]
        
 
-
 # set figure style
 figure_style()
+Dc = figure_style(return_colors=True)
+Dc['VISa/am'] = Dc['PPC']
 
+# for significance testing
+sig_lev=0.05
 
 def ecdf(a):
     '''
@@ -82,9 +86,9 @@ def distE(x, y):
     return np.sqrt(np.dot(x, x) - 2 * np.dot(x, y) + np.dot(y, y))
 
 
-def perm_test(inclu=False, print_=False, rerun = False,
-              nrand=2000, sig_lev =0.01, fdr = False, ax = None,
-              plot_=True, samp=True, nns = 100, nnf = 0.8):
+def perm_test(inclu=False, print_=False, rerun = True, align='move',
+              nrand=2000, fdr = False, ax = None,
+              plot_=True, samp=True, nns = 1000,):
 
     '''
     compute the distance of the mean of a subgroup
@@ -97,10 +101,9 @@ def perm_test(inclu=False, print_=False, rerun = False,
     incl: include tested cells into pack
     samp: for region-targeted test, restrict to random subset 
     nns: how many samplings
-    nnf: what fraction of cells is sampled
     '''
         
-    emb00, regs00, labss00 = all_panels(get_dat=True)
+    emb00, regs00, labss00, eids00 = all_panels(get_dat=True, align=align)
     labs__ = list(Counter(labss00))
 
     #order labs canonically
@@ -131,33 +134,40 @@ def perm_test(inclu=False, print_=False, rerun = False,
             AKS = np.load(fig_path.joinpath('A.npy'))
 
         else:
-            print('computing 100 sample averages, KS only')
+            print(f'computing {nns} sample averages, KS only')
                         
             As = []
+
             
+            df00 = pd.DataFrame({
+                'pc1': emb00[:,0],
+                'pc2': emb00[:,1],
+                'regs': regs00,
+                'labs': labss00,
+                'eids': eids00})
 
-            print(f'sampling {nnf} of all neurons, {nns} times')
             for i in range(nns):
-
-#                # restrict KS analysis to subset of cells
-#                reg0 = random.sample(list(regs_),1)[0]
-#                print('restricting tests on subsets of cells')
-#                n0 = dict(Counter(regs00))[reg0]
-#                print(f'sampling randomly {n0} cells ({reg0})')
-#                s0 = random.sample(range(len(regs00)),n0)
                 
-                s0 = random.sample(range(len(regs00)),
-                                   int(nnf*len(regs00)))
-
-                emb = emb00[s0]
-                regs = regs00[s0]
-                labss = labss00[s0]
                 
-                td = {'regs':regs,'labs':labss}
                 RKS = {}
 
-                for tarn in td:
-                    
+                for tarn in ['regs', 'labs']:
+
+                    # KS on min subset of cells
+
+                    min_cells_per_tarn = df00[tarn].value_counts().min()
+
+                    sampled_df = (df00.groupby(tarn).apply(
+                        lambda x: x.sample(n=min_cells_per_tarn, 
+                        random_state=random.randint(1, 10000))
+                        ).reset_index(drop=True))
+
+                    emb = sampled_df['pc1'].values
+                    regs = sampled_df['regs'].values
+                    labss = sampled_df['labs'].values
+
+                    td = {'regs':regs,'labs':labss}
+
                     tar = td[tarn]
 
                     for reg in list(regs_) + ['all']:
@@ -181,8 +191,8 @@ def perm_test(inclu=False, print_=False, rerun = False,
                         gsi = {}  # first PCs per remaining classes
                         
                         for x in tar_:
-                            gs[x] = emb0[tar0 == x][:,0]
-                            gsi[x] = emb0[tar0 != x][:,0]                
+                            gs[x] = emb0[tar0 == x]
+                            gsi[x] = emb0[tar0 != x]               
 
                         centsr = []  # null_d
                         centsir = []  # null_d inverse
@@ -190,7 +200,7 @@ def perm_test(inclu=False, print_=False, rerun = False,
                               
                         for x in tar_:
                             if inclu:
-                                g_ = emb0[:,0]
+                                g_ = emb0
                             else:
                                 g_ = gsi[x]
                             
@@ -275,7 +285,6 @@ def perm_test(inclu=False, print_=False, rerun = False,
             
             A = combined_p_values_matrix
             np.save(fig_path.joinpath('A.npy'),A)
-            AKS = A
 
     else:
         print('computing KS and dist test on all cells')
@@ -490,9 +499,9 @@ def perm_test(inclu=False, print_=False, rerun = False,
 
 def all_panels(rm_unre=True, align='move', split='rt',
                xyz_res=False, fdr=False, permute_include=True,
-               nrand = 2000, sig_lev = 0.01, inclu = False, 
+               nrand = 2000, inclu = False, 
                perm_tests=True, get_dat=False, freeze='freeze_2024_03',
-               get_info=False, nns = 100, nnf = 0.8, rerun=False):
+               get_info=False, nns = 1000, rerun=True):
                              
     '''
     Plotting main figure and supp figure;
@@ -541,6 +550,7 @@ def all_panels(rm_unre=True, align='move', split='rt',
     y = all_frs
     regs = concat_df['region'].values
     labs = concat_df['lab'].values
+    eids = concat_df['eid'].values
     
     print(len(Counter(concat_df['pid'].values)), 'insertions')
     
@@ -558,7 +568,7 @@ def all_panels(rm_unre=True, align='move', split='rt',
     emb = pca.transform(y)
 
     if get_dat:
-        return emb, regs, labs
+        return emb, regs, labs, eids
   
     if get_info:
         return concat_df
@@ -606,6 +616,7 @@ def all_panels(rm_unre=True, align='move', split='rt',
     yspans = get_row_coord(height_m, [1, 1, 1], hspace=1, pad=0.3)
     yspan_inset = get_row_coord(height_m, [1, 1], pad=0, hspace=0.15, span=yspans[0])
     xspan_inset = get_row_coord(width_m, [10, 1], pad=0, hspace=0, span=xspans[2])
+    xspans_row3 = get_row_coord(width_m, [1, 1, 1, 1], hspace=0.8)
 
     axs = {
         'Ea': fg.place_axes_on_grid(fig, xspan=xspans[0], yspan=yspan_inset[0]),  # A
@@ -617,9 +628,10 @@ def all_panels(rm_unre=True, align='move', split='rt',
         'KSregs': fg.place_axes_on_grid(fig, xspan=xspans[1], yspan=yspans[1]),  # E
         'c_labs': fg.place_axes_on_grid(fig, xspan=xspan_inset[0], yspan=yspans[1]),  # F
         'F_2': fg.place_axes_on_grid(fig, xspan=xspan_inset[1], yspan=yspans[1]),
-        'm_labs': fg.place_axes_on_grid(fig, xspan=xspans[0], yspan=yspans[2]),  # G
-        'KSlabs': fg.place_axes_on_grid(fig, xspan=xspans[1], yspan=yspans[2]),  # H
-        'KS': fg.place_axes_on_grid(fig, xspan=xspans[2], yspan=yspans[2]),  # I
+        'm_labs': fg.place_axes_on_grid(fig, xspan=xspans_row3[0], yspan=yspans[2]),  # G
+        'KSlabs': fg.place_axes_on_grid(fig, xspan=xspans_row3[1], yspan=yspans[2]),  # H
+        'KS': fg.place_axes_on_grid(fig, xspan=xspans_row3[2], yspan=yspans[2]),  # I
+        'KSmean': fg.place_axes_on_grid(fig, xspan=xspans_row3[3], yspan=yspans[2]),  # J
     }
 
     labels = [{'label_text': 'a', 'xpos': get_label_pos(width_m,xspans[0][0]), 'ypos': get_label_pos(height_m, yspans[0][0], pad=0.3),
@@ -634,15 +646,19 @@ def all_panels(rm_unre=True, align='move', split='rt',
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
               {'label_text': 'f', 'xpos': get_label_pos(width_m, xspans[2][0]), 'ypos': get_label_pos(height_m,yspans[1][0], pad=0.3), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'g', 'xpos': get_label_pos(width_m, xspans[0][0]),
+              {'label_text': 'g', 'xpos': get_label_pos(width_m, xspans_row3[0][0]),
                'ypos': get_label_pos(height_m, yspans[2][0], pad=0.3), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'h', 'xpos': get_label_pos(width_m, xspans[1][0]),
+              {'label_text': 'h', 'xpos': get_label_pos(width_m, xspans_row3[1][0]),
                'ypos': get_label_pos(height_m, yspans[2][0], pad=0.3), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'i', 'xpos': get_label_pos(width_m, xspans[2][0]),
+              {'label_text': 'i', 'xpos': get_label_pos(width_m, xspans_row3[2][0]),
                'ypos': get_label_pos(height_m, yspans[2][0], pad=0.3), 'fontsize': 10,
-               'weight': 'bold', 'ha': 'right', 'va': 'bottom'},]
+               'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
+              {'label_text': 'j', 'xpos': get_label_pos(width_m, xspans_row3[3][0]),
+               'ypos': get_label_pos(height_m, yspans[2][0], pad=0.3), 'fontsize': 10,
+               'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
+              ]
 
     fg.add_labels(fig, labels)
 
@@ -734,19 +750,15 @@ def all_panels(rm_unre=True, align='move', split='rt',
 
     if perm_tests:
         # run all permutation tests
-        perm_test(inclu=inclu, 
+        perm_test(inclu=inclu, align=align,
                   nrand=nrand, sig_lev =sig_lev, 
                   fdr = fdr, ax=axs['KS'],samp=False, rerun=rerun) 
                   
-#        # average across subset sampling
-#        perm_test(inclu=inclu, 
-#                  nrand=nrand, sig_lev =sig_lev, 
-#                  fdr = fdr, ax=axs['KSmean'],samp=True,
-#                  nns = nns, nnf = nnf, rerun=rerun)                   
-                  
-                  
-
-                        
+        # average across subset sampling
+        perm_test(inclu=inclu, align=align, nrand=nrand, sig_lev =sig_lev, 
+                    fdr = fdr, ax=axs['KSmean'], samp=True,
+                    nns = nns, rerun=rerun)                   
+              
         # put panel label
         # for pan in ['KS']:
         #     axs[pan].text(-0.1, 1.3, panel_n[pan],
@@ -759,8 +771,8 @@ def all_panels(rm_unre=True, align='move', split='rt',
     plot scatter, all cells, colored by reg
     ###
     '''
-    Dc = figure_style(return_colors=True)
-    Dc['VISa/am'] = Dc['PPC']
+    
+    
 
     # scatter 2d PCs
     cols_reg = [Dc[x] for x in regs]
@@ -1296,5 +1308,113 @@ def all_panels(rm_unre=True, align='move', split='rt',
     adjust = 0.3
     figs.subplots_adjust(top=1-adjust/height, bottom=adjust/height, left=(adjust + 0.2)/width, right=1-(adjust + 0.2)/width)
     figs.savefig(fig_path.joinpath('figure_PCA_supp1.pdf'))
-        
+
+
+def linear_mixed_effects(align='move', comp='pc1'):
+
+    emb00, regs00, labss00, eids00 = all_panels(get_dat=True, align=align)
+
+    df00 = pd.DataFrame({
+                        'pc1': emb00[:,0],
+                        'pc2': emb00[:,1],
+                        'regs': regs00,
+                        'labs': labss00,
+                        'eids': eids00})
+
+    model = smf.mixedlm(f"{comp} ~ regs + labs", data=df00, 
+                        groups="eids", re_formula="1")
+
+    return model.fit(method='cg')
+
+
+def plot_SI_lme(fdr=True):
+    '''
+    For alignments ['move', 'stim'] and components ['pc1', 'pc2'],
+    plot coefficients of linear mixed effects model in a 1x4 grid.
+    Each panel shows coefficients with error bars and 95% confidence intervals.
+    fdr: fasle discovery rate correction, at sigl=0.05
+    '''
     
+    fig, axs = plt.subplots(nrows=1, ncols=4, figsize=(7.14, 3), sharey=True)
+    plt.ion()
+
+    alignments = ['move', 'stim']
+    components = ['pc1', 'pc2']
+    pans = [(a, c) for a in alignments for c in components]
+
+    if fdr:
+        D = {}
+        for (align, comp) in pans:
+
+            result = linear_mixed_effects(align=align, comp=comp)
+            plot_df = pd.DataFrame(result.summary().tables[1])
+            # Convert necessary columns to numeric
+            plot_df[['Coef.', 'Std.Err.', 'z', 'P>|z|', '[0.025', '0.975]']] = plot_df[
+                ['Coef.', 'Std.Err.', 'z', 'P>|z|', '[0.025', '0.975]']
+            ].apply(pd.to_numeric, errors='coerce')
+            D[f'{align}_{comp}'] = plot_df
+
+        ps = np.concatenate([D[key]['P>|z|'].values for key in D])
+        ps[np.isnan(ps)] = 1
+        n_p = len(D[list(D.keys())[0]]['P>|z|'])
+        _, ps_c, _, _ = multipletests(ps, sig_lev, method='fdr_bh')
+
+        for k in range(len(D)):
+            D[list(D.keys())[k]]['P>|z|'] = ps_c[k*n_p:(k+1)*n_p] 
+            k+=1
+        print(f'fdr corrected p-values at {sig_lev}')
+
+    for idx, (align, comp) in enumerate(pans):
+        ax = axs[idx]
+
+        if fdr:
+            plot_df = D[f'{align}_{comp}'] 
+        else:
+            result = linear_mixed_effects(align=align, comp=comp)
+            plot_df = pd.DataFrame(result.summary().tables[1])
+
+            # Convert necessary columns to numeric
+            plot_df[['Coef.', 'Std.Err.', 'z', 'P>|z|', '[0.025', '0.975]']] = plot_df[
+                ['Coef.', 'Std.Err.', 'z', 'P>|z|', '[0.025', '0.975]']
+            ].apply(pd.to_numeric, errors='coerce')
+
+
+        # Define colors and error bars
+        for row_idx, row in plot_df.iterrows():
+            coef = row['Coef.']
+            lower_bound = row['[0.025']
+            upper_bound = row['0.975]']
+            color = 'red' if row['P>|z|'] < sig_lev else 'grey'
+            
+            ax.errorbar(
+                coef, row_idx, 
+                xerr=[[coef - lower_bound], [upper_bound - coef]], 
+                fmt='o', color=color , ecolor=color, elinewidth=2, capsize=0
+            )
+
+        # Set y-axis labels with colors for lab or region
+        y_labels = plot_df.index
+        y_colors = [
+            'black' if label in ['Intercept', 'eids Var']
+            else lab_cols[b[label.split('.')[1][:-1]]]
+            if 'labs' in label else Dc[label.split('.')[1][:-1]]
+            for label in y_labels
+        ]
+
+        ax.set_yticks(range(len(y_labels)))
+        for tick, color in zip(ax.get_yticklabels(), y_colors):
+            tick.set_color(color)
+
+        # Title and labels
+        ax.set_title(f"{align.capitalize()}, {comp.upper()}")
+        if idx == 0:
+            ax.set_yticks(range(len(plot_df)))
+            ax.set_yticklabels(plot_df.index)
+
+        ax.axhline(y=4.5, color='black', linestyle='--')
+        ax.axvline(x=0, color='gray', linestyle='--')
+        
+        ax.set_xlabel("Coefficient Estimate")
+
+    plt.tight_layout()
+    plt.show()
