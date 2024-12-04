@@ -26,7 +26,7 @@ SITES_COORDINATES = trace_header(version=1)
 
 
 
-def plot_main_figure_test(one, ba=None):
+def plot_main_figure(one, ba=None):
     ba = ba or AllenAtlas()
     width = 7
     height = 7
@@ -83,22 +83,11 @@ def plot_main_figure_test(one, ba=None):
     fig_path = save_figure_path(figure='fig_intro')
     adjust = 0.3
     fig.subplots_adjust(top=1-adjust/height, bottom=(adjust + 0.2)/height, left=(adjust)/width, right=1-adjust/width)
-    fig.savefig(fig_path.joinpath('fig_intro_test.pdf'))
-    fig.savefig(fig_path.joinpath('fig_intro_test.svg'))
+    fig.savefig(fig_path.joinpath('fig_intro.pdf'))
+    fig.savefig(fig_path.joinpath('fig_intro.svg'))
 
 
-
-def plot_supp2_figure_test(one, ba=None):
-
-    ba = ba or AllenAtlas()
-    plot_multiple_raster_with_regions(one, pids=None, ba=ba)
-    # width = 7
-    # height = 9
-    # figure_style()
-    # fig = plt.figure(figsize=(width, height), dpi=300)
-
-
-def plot_supp3_figure_test(one, ba=None):
+def plot_supp2_figure(one, ba=None):
     ba = ba or AllenAtlas()
     figure_style()
     width = 7
@@ -185,25 +174,7 @@ def plot_supp3_figure_test(one, ba=None):
     adjust = 0.3
     fig.subplots_adjust(top=1-adjust/height, bottom=(adjust + 0.2)/height, left=(adjust + 0.2)/width, right=1-adjust/width)
     fig_path = save_figure_path(figure='fig_intro')
-    fig.savefig(fig_path.joinpath('fig_intro_supp3.pdf'))
-
-
-
-
-
-def plot_main_figure(one, ba=None):
-    ba = ba or AllenAtlas()
-
-    plot_repeated_site_slice(one, ba=ba)
-    plot_example_raster_with_regions(one, ba=ba)
-    plot_3D_repeated_site_trajectories(one, ba=ba)
-
-
-def plot_supp2_figure(one, ba=None):
-    ba = ba or AllenAtlas()
-
-    plot_3D_select_pids(one, ba=ba)
-    plot_multiple_raster_with_regions(one, ba=ba)
+    fig.savefig(fig_path.joinpath('fig_intro_supp2.pdf'))
 
 
 def plot_repeated_site_slice(one, ba=None, axs=None, save=True):
@@ -269,6 +240,7 @@ def plot_repeated_site_slice(one, ba=None, axs=None, save=True):
         plt.savefig(fig_path.joinpath('fig_intro_panelC.png'))
         plt.close()
 
+
 def plot_raw_data(one, pid=None, t0=1000, ba=None, axs=None, save=True):
 
     ssl = SpikeSortingLoader(pid=pid, one=one, atlas=ba)
@@ -328,6 +300,7 @@ def plot_raw_data(one, pid=None, t0=1000, ba=None, axs=None, save=True):
     axs[0].add_artist(scalebar)
 
     return fig
+
 
 def plot_3D_repeated_site_trajectories(one, ba=None):
     try:
@@ -538,7 +511,7 @@ def plot_raster_with_regions(pid, one, ax_raster, ax_regions, ba, mapping='Allen
 
 if __name__ == "__main__":
     one = ONE()
-    plot_main_figure_test(one)
-    #plot_supp2_figure_test(one)
-    plot_supp3_figure_test(one)
+    plot_main_figure(one)
+    plot_3D_repeated_site_trajectories(one)
+    plot_supp2_figure(one)
 

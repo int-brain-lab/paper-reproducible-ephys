@@ -751,11 +751,11 @@ def all_panels(rm_unre=True, align='move', split='rt',
     if perm_tests:
         # run all permutation tests
         perm_test(inclu=inclu, align=align,
-                  nrand=nrand, sig_lev =sig_lev, 
+                  nrand=nrand, # sig_lev =sig_lev,
                   fdr = fdr, ax=axs['KS'],samp=False, rerun=rerun) 
                   
         # average across subset sampling
-        perm_test(inclu=inclu, align=align, nrand=nrand, sig_lev =sig_lev, 
+        perm_test(inclu=inclu, align=align, nrand=nrand, #sig_lev =sig_lev,
                     fdr = fdr, ax=axs['KSmean'], samp=True,
                     nns = nns, rerun=rerun)                   
               
@@ -1117,7 +1117,7 @@ def all_panels(rm_unre=True, align='move', split='rt',
  
     axs['KSregs'].sharex(axs['KSlabs'])
     axs['KSregs'].sharey(axs['KSlabs'])
-    axs['KSregs'].set_xlim(-2, 3)
+    axs['KSregs'].set_xlim(-2, 6)
 
 
     '''
@@ -1293,7 +1293,7 @@ def all_panels(rm_unre=True, align='move', split='rt',
     axs['B'].set_xlim([-2, 1.5])
     axs['B'].set_ylim([-1.1, 1.1])
     axs['D'].set_xlim([-0.2, 0.8])
-    axs['D'].set_ylim([-7, 12])
+    axs['D'].set_ylim([-3, 10])
 
     # shift x position of KSshift heatmap to correct for long text
     B = axs['KS'].get_position()
