@@ -166,7 +166,7 @@ def traj_list_to_dataframe(trajectories):
               'eid': [i['session']['id'] for i in trajectories],
               'probe_insertion': [i['probe_insertion'] for i in trajectories]})
 
-    trajectories['institution'] = trajectories.lab.map(labs()[1])
+    trajectories['institution'] = trajectories.lab.map(LAB_MAP()[1])
 
     return trajectories
 
@@ -402,7 +402,7 @@ def save_figure_path(figure=None):
 def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', save=True, bilateral=False):
     one = one or ONE()
     ba = ba or AllenAtlas()
-    lab_number_map, institution_map, _ = labs()
+    lab_number_map, institution_map, _ = LAB_MAP()
     metrics = pd.DataFrame()
 
     for i, ins in enumerate(insertions):

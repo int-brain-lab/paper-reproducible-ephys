@@ -3,7 +3,7 @@ import torch
 import figrid as fg
 import matplotlib.pyplot as plt
 
-from reproducible_ephys_functions import save_data_path, get_label_pos, get_row_coord, save_figure_path, figure_style, labs
+from reproducible_ephys_functions import save_data_path, get_label_pos, get_row_coord, save_figure_path, figure_style, LAB_MAP
 from fig_mtnn.utils import static_idx, grouped_cov_idx_dict
 from fig_mtnn.mtnn import run_eval, initialize_mtnn, get_device
 from fig_mtnn.fig_mtnn_plot_functions1 import (generate_figure_9, generate_figure9_supplement1, generate_figure9_supplement2,
@@ -429,7 +429,7 @@ def plot_supp3(test=False):
     generate_figure_10_supplement4(model_config, test=test, ax=ax['B'], savefig=False)
 
     ax['labs'].set_axis_off()
-    _, _, institution_colors = labs()
+    _, _, institution_colors = LAB_MAP()
     inst = list(set(inst))
     inst.sort()
     for i, l in enumerate(inst):

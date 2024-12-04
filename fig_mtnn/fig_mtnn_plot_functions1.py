@@ -12,7 +12,7 @@ import pylab as pl
 from tqdm import notebook
 from sklearn.metrics import r2_score
 
-from reproducible_ephys_functions import save_data_path, save_figure_path, figure_style, labs
+from reproducible_ephys_functions import save_data_path, save_figure_path, figure_style, LAB_MAP
 from fig_mtnn.neural_and_behav_rasters import plot_neural_behav_raster
 from fig_mtnn.utils import (cov_idx_dict, get_acronym_dict_reverse, compute_mean_frs, acronym_offset, noise_offset, lab_offset,
                                          session_offset, xyz_offset, stimulus_offset, leave_out_covs_for_glm, reshape_flattened)
@@ -384,7 +384,7 @@ def generate_figure9_supplement1(model_config,
 #                    "dark brown"]
 #     colors = sns.xkcd_palette(color_names)
     
-    lab_number_map, institution_map, institution_colors = labs()
+    lab_number_map, institution_map, institution_colors = LAB_MAPS()
     shapes = ['o', 's', '^', '+']
 
     mean_frs = compute_mean_frs(data_load_path.joinpath('train/shape.npy'), data_load_path.joinpath('train/output.npy'))

@@ -84,7 +84,7 @@ def plot_supplemental_neuron_metrics():
 
     figure_style()
     width = 7
-    height = 9
+    height = 8
     fig = plt.figure(figsize=(width, height))
     xspans = get_row_coord(width, [1])
     yspans = get_row_coord(height, [1, 1, 1], hspace=0.8, pad=0.3)

@@ -10,7 +10,7 @@ from copy import deepcopy
 from fig_mtnn.utils import *
 from fig_mtnn.mtnn import load_test_model, run_eval, initialize_mtnn, get_device
 
-from reproducible_ephys_functions import save_data_path, figure_style, save_figure_path, labs, get_row_coord, get_label_pos
+from reproducible_ephys_functions import save_data_path, figure_style, save_figure_path, LAB_MAP, get_row_coord, get_label_pos
 
 import torch
 
@@ -511,7 +511,7 @@ def generate_figure_10_supplement2(model_config,
 
 #     colors = sns.xkcd_palette(color_names)
 
-    lab_number_map, institution_map, institution_colors = labs()
+    lab_number_map, institution_map, institution_colors = LAB_MAP()
 
     shapes = ['o', '+', '^', 's']
 
@@ -623,7 +623,7 @@ def generate_figure_10_supplement2(model_config,
     
 def generate_figure_10_supplement3(model_config, test=False, axs=None, savefig=False):
     
-    lab_number_map, institution_map, institution_colors = labs()
+    lab_number_map, institution_map, institution_colors = LAB_MAP()
 
     data_path = save_data_path(figure='fig_mtnn')
     data_load_path = data_path.joinpath('mtnn_data')
