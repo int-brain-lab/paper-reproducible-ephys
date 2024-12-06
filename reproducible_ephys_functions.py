@@ -64,14 +64,14 @@ def LAB_MAP():
     return lab_number_map, institution_map, institution_colors
 
 
-def plot_vertical_institute_legend(institutes, ax, fontsize=7):
+def plot_vertical_institute_legend(institutes, ax, offset=0.5, span=(0, 1), fontsize=7):
     _, _, institution_colors = LAB_MAP()
     # institutes = [institution_map[lab] for lab in labs]
     institutes = list(set(institutes))
     institutes.sort()
-    pos = np.linspace(0, 1, len(institutes))[::-1]
+    pos = np.linspace(span[0], span[1], len(institutes))[::-1]
     for p, inst in zip(pos, institutes):
-        ax.text(0.5, p, inst, color=institution_colors[inst], fontsize=fontsize, transform=ax.transAxes)
+        ax.text(offset, p, inst, color=institution_colors[inst], fontsize=fontsize, transform=ax.transAxes)
 
 def plot_horizontal_institute_legend(institutes, ax, offset=0.2, fontsize=8):
     _, _, institution_colors = LAB_MAP()

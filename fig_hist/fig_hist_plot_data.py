@@ -23,7 +23,7 @@ from reproducible_ephys_functions import save_figure_path, repo_path, figure_sty
 import figrid as fg
 import matplotlib.pyplot as plt
 
-def plot_hist_figure_new():
+def plot_hist_figure_new(perform_permutation_test=False):
     
     figure_style()
     width = 7
@@ -65,7 +65,7 @@ def plot_hist_figure_new():
     plot_trajs(ax1=ax['C'][0], ax2=ax['C'][1], save=False)
 
     min_rec_per_lab = 4
-    perform_permutation_test = False
+
     plot_probe_surf_coord(traj='micro', min_rec_per_lab=min_rec_per_lab, ax1=ax['D'], save=False)
     plot_probe_surf_coord(traj='hist', min_rec_per_lab=min_rec_per_lab, ax1=ax['E'], save=False)
     plot_probe_angle_histology(min_rec_per_lab=min_rec_per_lab, ax1=ax['F'], save=False)

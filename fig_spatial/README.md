@@ -16,3 +16,6 @@ from fig_spatial.fig_spatial_run import run_fig_spatial
 one = ONE()
 run_fig_spatial(one)
 ```
+
+## Info
+The code to generate the panels a in Fig6, Fig6 supp11 and Fig6 supp 2 has not been released
