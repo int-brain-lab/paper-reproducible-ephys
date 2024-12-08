@@ -27,6 +27,9 @@ source 1_cache_data.sh
 
 ```
 source 2_decode_multi_region.sh choice
+source 2_decode_multi_region.sh stimside
+source 2_decode_multi_region.sh reward
+source 2_decode_multi_region.sh wheel-speed
 ```
 
 NOTE: The above code takes a long time so that you may want to change the `.sh` script and submit to slurm.
