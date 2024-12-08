@@ -6,7 +6,7 @@ git clone https://github.com/yzhang511/neural_decoding.git
 cd neural_decoding
 git checkout repro-ephys
 conda env create -f env.yaml
-conda activate decoding
+conda activate ibl_repro_ephys
 ```
 
 ### Create datasets

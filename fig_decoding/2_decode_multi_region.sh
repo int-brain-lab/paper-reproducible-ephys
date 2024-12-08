@@ -5,7 +5,7 @@ WORKING_DIR="XXX" # set the working directory (adjust as needed)
 
 target=${1}
 
-conda activate decoding
+conda activate ibl_repro_ephys
 cd $WORKING_DIR
 
 for fold_idx in {1..5}

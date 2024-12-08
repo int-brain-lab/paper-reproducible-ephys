@@ -3,7 +3,7 @@
 BASE_PATH="XXX"   # set the save path (adjust as needed)
 WORKING_DIR="XXX" # set the working directory (adjust as needed)
 
-conda activate decoding
+conda activate ibl_repro_ephys
 
 cd $WORKING_DIR
 
