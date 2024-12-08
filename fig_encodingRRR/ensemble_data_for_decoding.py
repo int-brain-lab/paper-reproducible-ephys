@@ -24,14 +24,14 @@ if inc_param['sel'] == "U":
     print(coef_vs.shape)
 
 eids_list = np.sort(RRR_res_df['eid'].unique())
-# from one.api import ONE
-# cache_folder = "./data/cache/"
-# one = ONE(base_url='https://openalyx.internationalbrainlab.org',
-#           password='international', 
-#           cache_dir=cache_folder)
-# labs_list = [one.eid2pid(eid, details=True)[2][0]['session_info']['lab'] for eid in eids_list]
-# print(labs_list)
-labs_list = ['mainenlab', 'churchlandlab_ucla', 'cortexlab', 'churchlandlab_ucla', 'zadorlab', 'churchlandlab_ucla', 'cortexlab', 'churchlandlab_ucla', 'mainenlab', 'mrsicflogellab', 'steinmetzlab', 'steinmetzlab', 'cortexlab', 'mrsicflogellab', 'danlab', 'churchlandlab', 'churchlandlab', 'angelakilab', 'danlab', 'mrsicflogellab', 'cortexlab', 'churchlandlab_ucla', 'angelakilab', 'steinmetzlab', 'churchlandlab_ucla', 'churchlandlab_ucla', 'steinmetzlab', 'hoferlab', 'angelakilab', 'mainenlab', 'wittenlab', 'mainenlab', 'angelakilab', 'cortexlab', 'angelakilab', 'mrsicflogellab', 'zadorlab', 'churchlandlab_ucla', 'hoferlab', 'mainenlab', 'cortexlab', 'churchlandlab_ucla', 'steinmetzlab', 'mainenlab', 'angelakilab', 'cortexlab', 'danlab', 'cortexlab', 'cortexlab', 'mainenlab', 'mainenlab', 'cortexlab', 'cortexlab', 'mainenlab', 'danlab', 'wittenlab', 'churchlandlab_ucla', 'wittenlab', 'hoferlab', 'danlab', 'churchlandlab_ucla', 'churchlandlab', 'churchlandlab_ucla', 'cortexlab', 'churchlandlab_ucla', 'churchlandlab', 'mainenlab', 'steinmetzlab', 'angelakilab', 'churchlandlab', 'wittenlab']
+from one.api import ONE
+cache_folder = "./data/cache/"
+one = ONE(base_url='https://openalyx.internationalbrainlab.org',
+          password='international', 
+          cache_dir=cache_folder)
+labs_list = [one.eid2pid(eid, details=True)[2][0]['session_info']['lab'] for eid in eids_list]
+print(labs_list)
+# labs_list = ['mainenlab', 'churchlandlab_ucla', 'cortexlab', 'churchlandlab_ucla', 'zadorlab', 'churchlandlab_ucla', 'cortexlab', 'churchlandlab_ucla', 'mainenlab', 'mrsicflogellab', 'steinmetzlab', 'steinmetzlab', 'cortexlab', 'mrsicflogellab', 'danlab', 'churchlandlab', 'churchlandlab', 'angelakilab', 'danlab', 'mrsicflogellab', 'cortexlab', 'churchlandlab_ucla', 'angelakilab', 'steinmetzlab', 'churchlandlab_ucla', 'churchlandlab_ucla', 'steinmetzlab', 'hoferlab', 'angelakilab', 'mainenlab', 'wittenlab', 'mainenlab', 'angelakilab', 'cortexlab', 'angelakilab', 'mrsicflogellab', 'zadorlab', 'churchlandlab_ucla', 'hoferlab', 'mainenlab', 'cortexlab', 'churchlandlab_ucla', 'steinmetzlab', 'mainenlab', 'angelakilab', 'cortexlab', 'danlab', 'cortexlab', 'cortexlab', 'mainenlab', 'mainenlab', 'cortexlab', 'cortexlab', 'mainenlab', 'danlab', 'wittenlab', 'churchlandlab_ucla', 'wittenlab', 'hoferlab', 'danlab', 'churchlandlab_ucla', 'churchlandlab', 'churchlandlab_ucla', 'cortexlab', 'churchlandlab_ucla', 'churchlandlab', 'mainenlab', 'steinmetzlab', 'angelakilab', 'churchlandlab', 'wittenlab']
 institution_map = {'cortexlab': 'UCL', 
                    'mainenlab': 'CCU', 
                    'zadorlab': 'CSHL (Z)', 
@@ -62,7 +62,7 @@ nis_incmask = (RRR_res_df["RRRglobal_r2"] >= 0.03)
 print("number of ctx neruons:", len(nis_incmask))
 print("number of selective ctx neruons:", np.sum(nis_incmask))
 print("mean R2:", np.mean(RRR_res_df.loc[nis_incmask, "RRRglobal_r2"]))
-print("# eids:", RRR_res_df.loc[nis_incmask, "eid"].nunique())
-print("# neurons:", RRR_res_df.loc[nis_incmask, "acronym"].value_counts())
-print("# eids:", RRR_res_df[nis_incmask].groupby('acronym').eid.nunique())
-
+print("# eids:", RRR_res_df["eid"].nunique())
+print("# neurons:", RRR_res_df["acronym"].value_counts())
+print("# eids:", RRR_res_df.groupby('acronym').eid.nunique())
+print(RRR_res_df["eid"].unique())

@@ -68,8 +68,8 @@ def main_clean(X, y, eids, method, split, n_permut, stest_fname,
     if ('legend' in plot_kwargs) and (plot_kwargs['legend']): 
         ax.legend(fontsize='small', frameon=True, 
                     loc='upper right', bbox_to_anchor=(1.5, 1.0))
-    # ax.set_title(f"{plot_kwargs['title']}")
-    ax.set_title(f"{plot_kwargs['title']} \n macro F1: {f1:.2f} \n p: {p:.4f}")
+    ax.set_title(f"{plot_kwargs['title']}")
+    # ax.set_title(f"{plot_kwargs['title']} \n macro F1: {f1:.2f} \n p: {p:.3f}")
 
     return res
 
