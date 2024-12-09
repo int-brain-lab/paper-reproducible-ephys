@@ -1,6 +1,7 @@
 ## Figure linear encoding model
 This code can be used to reproduce Figure 7.
 
+In order to run code for this figure pytorch must be installed. This figure can only be generated on a computer with an nvidia driver installed. To install pytorch for your OS please follow this link https://pytorch.org/ and refer to the Install Pytorch section
 
 #### Quick Start: Shortcut pipeline 
 To quickly reproduce Figure 7 using preprocessed data:
