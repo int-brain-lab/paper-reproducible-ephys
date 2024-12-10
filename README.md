@@ -71,7 +71,7 @@ The subfolders correspond to the following figures
 * Figure 4 - fig_taskmodulation
 * Figure 5 - fig_PCA
 * Figure 6 - fig_spatial
-* Figure 4 - fig_encodingRRR
+* Figure 7 - fig_encodingRRR
 * Figure 8 - fig_mtnn
 * Figure 9 - fig_decoding
 
