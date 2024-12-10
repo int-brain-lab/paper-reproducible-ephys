@@ -384,7 +384,7 @@ def generate_figure9_supplement1(model_config,
 #                    "dark brown"]
 #     colors = sns.xkcd_palette(color_names)
     
-    lab_number_map, institution_map, institution_colors = LAB_MAPS()
+    lab_number_map, institution_map, institution_colors = LAB_MAP()
     shapes = ['o', 's', '^', '+']
 
     mean_frs = compute_mean_frs(data_load_path.joinpath('train/shape.npy'), data_load_path.joinpath('train/output.npy'))
