@@ -20,7 +20,8 @@ save_path = save_figure_path(figure='fig_mtnn')
 
 regions = list(get_acronym_dict().keys())
 acronym_dict_reverse = get_acronym_dict_reverse()
-region_colors = get_region_colors()
+#region_colors = get_region_colors()
+region_colors = figure_style(return_colors=True)
 
 dynamic_covs = ['paw speed', 'nose speed', 'pupil diameter', 
                 'motion energy', 'stimuli', 'go cue', 'first movement',
@@ -183,9 +184,9 @@ def generate_figure_10(model_config,
     ax['panel_A'].set_title('Single-covariate analysis', fontsize=36)
     ax['panel_B'].set_title('Leave-one-out analysis', fontsize=36)
     ax['panel_C'].set_title('Leave-group-out', fontsize=36)
-    ax['panel_A'].set_ylabel('R2', fontsize=36)
+    ax['panel_A'].set_ylabel('R$^2$', fontsize=36)
 #     ax['panel_C'].set_ylabel('R2')
-    ax['panel_B'].set_ylabel(r'$\Delta$'+'R2', fontsize=36)
+    ax['panel_B'].set_ylabel(r'$\Delta$R$^2$', fontsize=36)
 #     ax['panel_D'].set_ylabel(r'$\Delta$'+'R2')
     
     # Leave-one-out
@@ -432,8 +433,8 @@ def generate_figure_10_supplement1(model_config,
     ax['panel_A'].set_xlim(down_lim, up_lim)
     ax['panel_A'].set_ylim(down_lim, up_lim)
     ax['panel_A'].plot([-1,1],[-1,1],color='k')
-    ax['panel_A'].set_ylabel('GLM predictive performance (R2)', fontsize=label_size)
-    ax['panel_A'].set_xlabel('MTNN predictive performance (R2)', fontsize=label_size)
+    ax['panel_A'].set_ylabel('GLM predictive performance (R$^2$)', fontsize=label_size)
+    ax['panel_A'].set_xlabel('MTNN predictive performance (R$^2$)', fontsize=label_size)
     ax['panel_A'].set_yticks(np.arange(0,0.8,0.2))
     ax['panel_A'].set_yticklabels(np.arange(0,0.8,0.2), fontsize=ticklabel_size)
     ax['panel_A'].yaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
@@ -471,13 +472,13 @@ def generate_figure_10_supplement1(model_config,
             if i == 0:
                 ax['panel_B'][i][j].set_xticks([])
             else:
-                ax['panel_B'][i][j].set_xlabel('MTNN effect size ' + r'($\Delta$' + 'R2)', fontsize=label_size)
+                ax['panel_B'][i][j].set_xlabel('MTNN effect size ' + r'($\Delta$' + 'R$^2$)', fontsize=label_size)
                 ax['panel_B'][i][j].set_xticks(np.arange(0, 0.8, 0.2))
                 ax['panel_B'][i][j].set_xticklabels(np.arange(0, 0.8, 0.2), fontsize=ticklabel_size)
                 ax['panel_B'][i][j].xaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
 
             if j == 0:
-                ax['panel_B'][i][j].set_ylabel('GLM effect size ' + r'($\Delta$' + 'R2)', fontsize=label_size)
+                ax['panel_B'][i][j].set_ylabel('GLM effect size ' + r'($\Delta$' + 'R$^2$)', fontsize=label_size)
                 ax['panel_B'][i][j].set_yticks(np.arange(0, 0.8, 0.2))
                 ax['panel_B'][i][j].set_yticklabels(np.arange(0, 0.8, 0.2), fontsize=ticklabel_size)
                 ax['panel_B'][i][j].yaxis.set_major_formatter(FormatStrFormatter('%0.1f'))
@@ -900,7 +901,7 @@ def generate_figure_10_supplement4(model_config, test=False, ax=None, savefig=Fa
     ax.set_xticks(np.arange(len(labels))*0.5, labels=xtick_labels, rotation=0)
     ax.set_xlim(-0.25, len(labID_es_list)*0.5-0.25)
     ax.set_ylim(-0.1, 1.5)
-    ax.set_ylabel(r'$\Delta$R2')
+    ax.set_ylabel(r'$\Delta$R$^2$')
     if savefig:
         figname = save_path.joinpath(f'labID_perturbed.png')
         plt.savefig(figname, bbox_inches='tight', facecolor='white', dpi=600)

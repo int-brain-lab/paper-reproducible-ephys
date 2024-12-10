@@ -443,7 +443,7 @@ def generate_figure9_supplement1(model_config,
                        color=institution_color, marker=shapes[session_id],
                        alpha=alpha)
 
-    axs[0].set_ylabel('R2', fontsize=label_size)
+    axs[0].set_ylabel('R$^2$', fontsize=label_size)
     axs[0].set_xlabel('Mean firing rate (spikes/s)', fontsize=label_size)
     axs[0].set_title('Held-out test trials', fontsize=title_size)
     
@@ -522,8 +522,8 @@ def generate_figure9_supplement2(model_config,
     
     ax.scatter(mtnn_score_glm_cov, glm_score_full_mtnn_cov, color='blue', alpha=0.65)
     
-    ax.set_xlabel('MTNN Performance (R2)', fontsize=labelsize)
-    ax.set_ylabel('GLM Performance (R2)', fontsize=labelsize)
+    ax.set_xlabel('MTNN Performance (R$^2$)', fontsize=labelsize)
+    ax.set_ylabel('GLM Performance (R$^2$)', fontsize=labelsize)
     
     ax.plot([-1,1],[-1,1], color='black')
     ax.set_xlim(-0.02,0.52)
@@ -585,7 +585,7 @@ def generate_figure9_supplement2_v2(model_config,
     
     plt.hist(100*(mtnn_score_glm_cov-glm_score_full_mtnn_cov)/glm_score_full_mtnn_cov, color='k')
     
-    plt.xlabel('% Increase of MTNN Performance over GLM(R2)', fontsize=labelsize)
+    plt.xlabel('% Increase of MTNN Performance over GLM (R$^2$)', fontsize=labelsize)
     plt.ylabel('count', fontsize=labelsize)
     
     #plt.plot([-1,1],[-1,1], color='black')
