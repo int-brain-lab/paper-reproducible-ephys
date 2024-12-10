@@ -7,28 +7,27 @@ import brainbox.behavior.wheel as wh
 """
 IBL BWM data process
 """
-def load_spikes_from_eid(one, ba, eid):
+def load_spikes_from_pid(one, ba, pid):
     """
     - iterate over pids of this eid,
         - read spike trains, cluster information 
     """
-    [pids_this_eid, _] = one.eid2pid(eid)
     # Manually combine spike data from all pids
-    spikes_eid = None;
-    clusters_eid = None;
+    spikes_eid = None
+    clusters_eid = None
     _nclusters = 0
-    for _pid in pids_this_eid:
-        # load all pids from this session
-        ssl = SpikeSortingLoader(pid=_pid, one=one, atlas=ba)
-        _spikes, _clusters, _channels = ssl.load_spike_sorting(dataset_types=['clusters.amps', 'clusters.peakToTrough'],
-                                                            revision='2024-03-22', enforce_version=False)
-        _clusters = ssl.merge_clusters(_spikes, _clusters, _channels)
-        if _clusters is None:
-            print(f"!!!! no spiking data in pid {_pid} !!!")
-            continue
-        spikes_eid = _append_spike_data(spikes_eid, _spikes, _nclusters)
-        clusters_eid = _append_clusters_data(ba.regions, clusters_eid, _clusters, _nclusters)
-        _nclusters += np.max((len(_clusters['atlas_id']), _clusters['atlas_id'].max()))
+    # load all pids from this session
+    ssl = SpikeSortingLoader(pid=pid, one=one, atlas=ba)
+    _spikes, _clusters, _channels = ssl.load_spike_sorting(dataset_types=['clusters.amps', 'clusters.peakToTrough'],
+                                                           revision='2024-03-22', enforce_version=False)
+    _clusters = ssl.merge_clusters(_spikes, _clusters, _channels)
+    if _clusters is None:
+        print(f"!!!! no spiking data in pid {pid} !!!")
+
+    spikes_eid = _append_spike_data(spikes_eid, _spikes, _nclusters)
+    clusters_eid = _append_clusters_data(ba.regions, clusters_eid, _clusters, _nclusters)
+
+    _nclusters += np.max((len(_clusters['atlas_id']), _clusters['atlas_id'].max()))
     return {"spikes": spikes_eid,
             "clusters": clusters_eid,
             "nclusters": _nclusters}
@@ -305,11 +304,13 @@ def filter_neurons_func(eid_spikes_res,
             "clusters_g": clusters_g}
 
 
-def load_data_from_eid(eid, one, ba,
+def load_data_from_pid(pid, one, ba,
                        filter_trials, filter_neurons,
                        min_trials=10, min_neurons=10, spsdt=5e-3, Twindow=2., t_bf_stimOn=0.4,
                        load_motion_energy=True, load_wheel_velocity=True, load_tongue=True):
     # ---------------------------------------------------
+
+    eid, _ = one.pid2eid(pid)
     # Load trials data
     sl = SessionLoader(eid=eid, one=one)
     try:
@@ -358,7 +359,7 @@ def load_data_from_eid(eid, one, ba,
 
     # ---------------------------------------------------
     # Load spike data
-    res = load_spikes_from_eid(one, ba, eid)
+    res = load_spikes_from_pid(one, ba, pid)
 
     # ---------------------------------------------------
     # Find cluster index with reasonable firing rates
