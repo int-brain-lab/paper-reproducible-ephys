@@ -1,11 +1,11 @@
 In this repo we have provided code that allows you to run the RIGOR metrics on your own data. 
 
-At the insertion level these include criteria on the rms of the AP band, the derivate of the LFP band and 
+At the insertion level these include criteria on the rms of the AP band, the derivative of the LFP band and 
 the neuron yield on the probe. Please refer to our paper for the code for the exact threshold values applied.
 
 At the single neuron level we apply quality control metrics that include an amplitude criteria, a noise cutoff criteria
-and sliding re criteria. The IBL spikesorting white paper contains more details about these single unit quality control
-metrics.
+and sliding refractory period criteria. The IBL spikesorting white paper contains more details about these single unit 
+quality control metrics.
 
 To run these RIGOR metrics on your data you will need to provide,
 1. The folder path containing your spikesorted data
