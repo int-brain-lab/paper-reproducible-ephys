@@ -58,14 +58,14 @@ for pid in tqdm(pids):
     np.savez(os.path.join(data_folder, neural_fname),
                 spike_count_matrix=data_ret['spike_count_matrix'],
                 clusters_g=data_ret['clusters_g'],
-                pid=pid,
+                eid=pid,
                 )
     
 
     np.savez(os.path.join(data_folder, beh_fname),
                 behavior=data_ret['behavior'],
                 timeline=data_ret['timeline'],
-                pid=pid,
+                eid=pid,
                 wheel_vel=data_ret['wheel_vel'],
                 whisker_motion=data_ret['whisker_motion'],
                 licks=data_ret["licks"],
