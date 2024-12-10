@@ -69,6 +69,7 @@ def create_dataset(binned_spikes, bwm_df, eid, params, meta_data=None, binned_be
             'binsize': [params['binsize']] * len(sparse_binned_spikes),
             'interval_len': [params['interval_len']] * len(sparse_binned_spikes),
             'eid': [meta_data['eid']] * len(sparse_binned_spikes),
+            'pid': [meta_data['pid']] * len(sparse_binned_spikes),
             'probe_name': [meta_data['probe_name']] * len(sparse_binned_spikes),
             'sampling_freq': [meta_data['sampling_freq']] * len(sparse_binned_spikes),
             'cluster_regions': [meta_data['cluster_regions']] * len(sparse_binned_spikes),

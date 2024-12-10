@@ -60,7 +60,7 @@ def load_spiking_data(one, pid, compute_metrics=False, qc=None, **kwargs):
     spike_loader = SpikeSortingLoader(pid=pid, one=one, eid=eid, pname=pname)
     sampling_freq = 30_000
     
-    spikes, clusters, channels = spike_loader.load_spike_sorting()
+    spikes, clusters, channels = spike_loader.load_spike_sorting(revision='2024-03-22', enforce_version=False)
 
     clusters_labeled = SpikeSortingLoader.merge_clusters(
             spikes, clusters, channels, compute_metrics=compute_metrics).to_df()
@@ -741,22 +741,14 @@ def bin_behaviors(
     return behave_dict, mask_dict
 
 
-def prepare_data(one, eid, bwm_df, params, n_workers=os.cpu_count()):
-    
-    # when merging probes we are interested in eids, not pids
-    pids, probe_names = one.eid2pid(eid)
-    print(f"Merge {len(probe_names)} probes for session eid: {eid}")
+def prepare_data(one, pid, params, n_workers=os.cpu_count()):
 
-    clusters_list = []
-    spikes_list = []
-    for pid, probe_name in zip(pids, probe_names):
-        tmp_spikes, tmp_clusters, sampling_freq = load_spiking_data(
-            one, pid, eid=eid, pname=probe_name, qc=1., 
-        )
-        tmp_clusters['pid'] = pid
-        spikes_list.append(tmp_spikes)
-        clusters_list.append(tmp_clusters)
-    spikes, clusters = merge_probes(spikes_list, clusters_list)
+    # Get the eid
+    eid, probe_name = one.pid2eid(pid)
+
+    spikes, clusters, sampling_freq = load_spiking_data(
+        one, pid, eid=eid, pname=probe_name, qc=1.,
+    )
 
     trials_df, trials_mask = load_trials_and_mask(one=one, eid=eid, max_trial_len=10.0)
         
@@ -770,6 +762,7 @@ def prepare_data(one, eid, bwm_df, params, n_workers=os.cpu_count()):
         
     meta_data = {
         'eid': eid,
+        'pid': pid,
         'probe_name': probe_name,
         'sampling_freq': sampling_freq,
         'cluster_channels': list(clusters['channels']),

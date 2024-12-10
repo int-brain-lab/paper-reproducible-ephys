@@ -35,11 +35,11 @@ one = ONE(
     cache_dir = args.base_path
 )
 
-freeze_file = 'data/bwm_release.csv'
-bwm_df = pd.read_csv(freeze_file, index_col=0)
+bwm_df = None
 
-concat_df = load_dataframe()
-concat_df = filter_recordings(concat_df, min_regions=0)
+filtering_criteria = {'min_regions': 0, 'min_lab_region': 3, 'min_rec_lab': 0, 'min_neuron_region': 4, 'freeze': 'freeze_2024_03'}
+concat_df = filter_recordings(**filtering_criteria)
+pids = concat_df[concat_df['permute_include'] == 1].pid.unique()
 
 # Trial setup
 params = {
@@ -49,22 +49,24 @@ params = {
 
 beh_names = ['choice', 'reward', 'stimside', 'wheel-speed', 'whisker-motion-energy']
 
-include_eids = np.unique(concat_df.eid)
-bad_eids = []
 
-print(f"Preprocess a total of {len(include_eids)} EIDs.")
+bad_pids = []
+
+print(f"Preprocess a total of {len(pids)} EIDs.")
 
 num_neurons = []
-for eid_idx, eid in enumerate(include_eids):
+for pid_idx, pid in enumerate(pids):
 
-    if eid in bad_eids:
+    if pid in bad_pids:
        continue
 
     print('==========================')
-    print(f'Preprocess session {eid}:')
+    print(f'Preprocess session {pid}:')
+
+    eid, _ = one.pid2eid(pid)
 
     # Load and preprocess data
-    neural_dict, behave_dict, meta_data, trials_data = prepare_data(one, eid, bwm_df, params, n_workers=args.n_workers)
+    neural_dict, behave_dict, meta_data, trials_data = prepare_data(one, pid, params, n_workers=args.n_workers)
     regions, beryl_reg = list_brain_regions(neural_dict, **params)
    
     region_cluster_ids = select_brain_regions(neural_dict, beryl_reg, regions, **params)
@@ -158,8 +160,8 @@ for eid_idx, eid in enumerate(include_eids):
         os.makedirs(save_path)
     partitioned_dataset.save_to_disk(f'{save_path}/{eid}')
 
-    print(f'Cached session {eid}.')
-    print(f'Progress: {eid_idx+1} / {len(include_eids)} sessions cached.')
+    print(f'Cached session {pid}.')
+    print(f'Progress: {pid_idx+1} / {len(pids)} sessions cached.')
 
 print(f"Min: {min(num_neurons)} max: {max(num_neurons)} mean: {sum(num_neurons)/len(num_neurons)} # of neurons.")
 
