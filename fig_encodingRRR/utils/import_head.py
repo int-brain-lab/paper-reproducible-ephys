@@ -4,7 +4,7 @@ def global_params(which_areas="all_new", var_types="all_new", inc_type='high_fr'
     gp['wa'] = which_areas
     if which_areas == "repsite":
         gp['data_id'] = "rep_ephys_22032024"
-        gp['al_include'] = ['VISa','CA1','DG','LP','PO']
+        gp['al_include'] = ['VISa', 'VISam', 'CA1','DG','LP','PO']
     else: 
         assert False, "invalid which_area"
 
@@ -28,7 +28,7 @@ def global_params(which_areas="all_new", var_types="all_new", inc_type='high_fr'
         assert False, "invalid var_types"
 
     if (which_areas == "repsite") and (var_types == "clean") and (inc_type == "good_unit_Xstandardized"):
-        gp['RRRGDglobal_p'] = dict(n_comp_list=list(range(3,6)), l2_list=[75,], lr=1.)  # model 4
+        gp['RRRGDglobal_p'] = dict(n_comp_list=list(range(3,6)), l2_list=[75,150,300], lr=1.)  # model 4
     else: 
         assert False, "invalid var_types"
     

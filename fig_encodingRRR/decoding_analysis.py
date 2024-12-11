@@ -1,7 +1,7 @@
 from utils.decoding_analysis import make_CV_prediction, trainpred_func_SVC
 from reproducible_ephys_functions import (figure_style, get_row_coord, get_label_pos, plot_horizontal_institute_legend,
                                           BRAIN_REGIONS, REGION_RENAME)
-from utils.utils import make_folder
+from utils.utils import make_folder, log_kv
 
 import pdb, os
 import numpy as np
@@ -37,9 +37,9 @@ def dec_perf(data, labels1, labels2, print_it=False, plot_it=False):
     return res['perf']['f1']
 
 
-def main_clean(X, y, eids, method, split, n_permut, stest_fname, 
+def main_clean(X, y, eids, n_permut, stest_fname, 
                plot_kwargs):
-    res = make_CV_prediction(X, y, trainpred_func_SVC, eid_all=eids, split=split)
+    res = make_CV_prediction(X, y, trainpred_func_SVC, eid_all=eids)
     f1 = res['perf']['f1']; 
     _f = os.path.join(resgood_folder, stest_fname)
     if os.path.isfile(_f):
@@ -48,9 +48,11 @@ def main_clean(X, y, eids, method, split, n_permut, stest_fname,
     else:
         from permutation_test import  permut_test
         p, _, null_dist = permut_test(X, dec_perf, y, eids, 
-                                    n_permut=n_permut, shuffling='labels1_based_on_2', return_details=True, n_cores=1)
+                                    n_permut=n_permut, 
+                                    shuffling='labels1' if plot_kwargs['laborarea'] == "area" else 'labels1_based_on_2', 
+                                    return_details=True, n_cores=1)
         np.save(_f, np.asarray(null_dist))
-
+    log_kv(f1=f1, p=p)
     # for visualization
     axes = plot_kwargs['axes']
     clf = LinearDiscriminantAnalysis(n_components=2)
@@ -68,8 +70,8 @@ def main_clean(X, y, eids, method, split, n_permut, stest_fname,
     if ('legend' in plot_kwargs) and (plot_kwargs['legend']): 
         ax.legend(fontsize='small', frameon=True, 
                     loc='upper right', bbox_to_anchor=(1.5, 1.0))
-    ax.set_title(f"{plot_kwargs['title']}")
-    # ax.set_title(f"{plot_kwargs['title']} \n macro F1: {f1:.2f} \n p: {p:.3f}")
+    # ax.set_title(f"{plot_kwargs['title']}")
+    ax.set_title(f"{plot_kwargs['title']} \n p: {p:.3f}")
 
     return res
 
@@ -85,9 +87,9 @@ labs = data['labs'][nis_incmask]
 
 eid_list = np.unique(eids)
 eid2li = {a: ai for ai, a in enumerate(eid_list)}
-area_list = np.unique(acronyms)
+area_list = ['VISa_am', 'CA1','DG','LP','PO']
 area2ai = {a: ai for ai, a in enumerate(area_list)}
-ai2area = {ai: "PPC" if a == "VISa" else a for ai, a in enumerate(area_list)}
+ai2area = {ai: "PPC" if a == "VISa_am" else a for ai, a in enumerate(area_list)}
 lab_list = np.unique(labs)
 lab2li = {a: ai for ai, a in enumerate(lab_list)}
 li2lab = {ai:a for ai, a in enumerate(lab_list)}
@@ -113,8 +115,8 @@ axs = {
     'A_2': fg.place_axes_on_grid(fig, xspan=xspans[1], yspan=yspans[1]),
     'B_1': fg.place_axes_on_grid(fig, xspan=xspans[2], yspan=yspans[0]),
     'B_2': fg.place_axes_on_grid(fig, xspan=xspans[2], yspan=yspans[1]),
-    'B_VISa_1': fg.place_axes_on_grid(fig, xspan=xspans[3], yspan=yspans[0]),
-    'B_VISa_2': fg.place_axes_on_grid(fig, xspan=xspans[3], yspan=yspans[1]),
+    'B_VISa_am_1': fg.place_axes_on_grid(fig, xspan=xspans[3], yspan=yspans[0]),
+    'B_VISa_am_2': fg.place_axes_on_grid(fig, xspan=xspans[3], yspan=yspans[1]),
     'B_CA1_1': fg.place_axes_on_grid(fig, xspan=xspans[4], yspan=yspans[0]),
     'B_CA1_2': fg.place_axes_on_grid(fig, xspan=xspans[4], yspan=yspans[1]),
     'B_DG_1': fg.place_axes_on_grid(fig, xspan=xspans[5], yspan=yspans[0]),
@@ -145,7 +147,7 @@ axs['label2'].annotate('LDA', xy=(0, 0.5), xycoords='axes fraction', size='8', h
 
 
 ### decoding analysis
-method = "SVC"; split = "stratifiedGroup"; n_permut=1000
+n_permut=1000
 for ci, k in enumerate(['acronym','lab']):
     if k == "lab":
         _ys = np.asarray([lab2li[l] for l in labs])
@@ -160,8 +162,11 @@ for ci, k in enumerate(['acronym','lab']):
         laborarea = 'area'
         ax = [axs['A_1'], axs['A_2']]
     eid_all = np.array([eid2li[a] for a in eids]).astype(int) 
+    print(k)
+    for _yi in np.unique(_ys):
+        print(_yi, len(np.unique(eid_all[_ys==_yi])))
     ### evaluate the performance
-    res = main_clean(coef_vs, _ys, eid_all, method, split, n_permut, f"{k}_decoding_{n_permut}.npy", 
+    res = main_clean(coef_vs, _ys, eid_all, n_permut, f"{k}_decoding_{n_permut}.npy", 
                      plot_kwargs=dict(axes=ax, title=title, labels=labels, legend=False, laborarea=laborarea))
 
 # per area lab decoding
@@ -169,11 +174,14 @@ for ai, area in enumerate(area_list):
     area_mask = acronyms==area
     _ys = np.asarray([lab2li[l] for l in labs[area_mask]])
     eid_all = np.array([eid2li[a] for a in eids[area_mask]]).astype(int) 
+    print(area)
+    for _yi in np.unique(_ys):
+        print(_yi, len(np.unique(eid_all[_ys==_yi])))
     title = f"{area} neurons"
     labels = li2lab
     ax = [axs[f'B_{area}_{_+1}'] for _ in range(2)]
     ### evaluate the performance
-    res = main_clean(coef_vs[area_mask], _ys, eid_all, method, split, n_permut, f"{area}_lab_decoding_{n_permut}.npy", 
+    res = main_clean(coef_vs[area_mask], _ys, eid_all, n_permut, f"{area}_lab_decoding_{n_permut}.npy", 
                      plot_kwargs=dict(axes=ax, title=title, labels=labels, legend=area=='PO', laborarea='lab'))
 
 

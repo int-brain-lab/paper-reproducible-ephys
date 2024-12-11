@@ -3,7 +3,7 @@ from utils.save_and_load_data import read_Xy_encoding2, load_df_from_Xy_regressi
 from utils.train_and_load_model import load_RRRglobal_res
 from utils.utils import load_neuron_nparray, make_folder
 
-import os
+import os, pdb
 import numpy as np
 
 ### load data
@@ -29,7 +29,7 @@ cache_folder = "./data/cache/"
 one = ONE(base_url='https://openalyx.internationalbrainlab.org',
           password='international', 
           cache_dir=cache_folder)
-labs_list = [one.eid2pid(eid, details=True)[2][0]['session_info']['lab'] for eid in eids_list]
+labs_list = [one.eid2pid(one.pid2eid(pid)[0], details=True)[2][0]['session_info']['lab'] for pid in eids_list]
 print(labs_list)
 # labs_list = ['mainenlab', 'churchlandlab_ucla', 'cortexlab', 'churchlandlab_ucla', 'zadorlab', 'churchlandlab_ucla', 'cortexlab', 'churchlandlab_ucla', 'mainenlab', 'mrsicflogellab', 'steinmetzlab', 'steinmetzlab', 'cortexlab', 'mrsicflogellab', 'danlab', 'churchlandlab', 'churchlandlab', 'angelakilab', 'danlab', 'mrsicflogellab', 'cortexlab', 'churchlandlab_ucla', 'angelakilab', 'steinmetzlab', 'churchlandlab_ucla', 'churchlandlab_ucla', 'steinmetzlab', 'hoferlab', 'angelakilab', 'mainenlab', 'wittenlab', 'mainenlab', 'angelakilab', 'cortexlab', 'angelakilab', 'mrsicflogellab', 'zadorlab', 'churchlandlab_ucla', 'hoferlab', 'mainenlab', 'cortexlab', 'churchlandlab_ucla', 'steinmetzlab', 'mainenlab', 'angelakilab', 'cortexlab', 'danlab', 'cortexlab', 'cortexlab', 'mainenlab', 'mainenlab', 'cortexlab', 'cortexlab', 'mainenlab', 'danlab', 'wittenlab', 'churchlandlab_ucla', 'wittenlab', 'hoferlab', 'danlab', 'churchlandlab_ucla', 'churchlandlab', 'churchlandlab_ucla', 'cortexlab', 'churchlandlab_ucla', 'churchlandlab', 'mainenlab', 'steinmetzlab', 'angelakilab', 'churchlandlab', 'wittenlab']
 institution_map = {'cortexlab': 'UCL', 
@@ -46,7 +46,8 @@ institution_map = {'cortexlab': 'UCL',
                    'hausserlab': 'UCL (H)'}
 eid2labid = {eids_list[i]: institution_map[labs_list[i]] for i in range(len(eids_list))}
 RRR_res_df['lab'] = RRR_res_df.eid.apply(lambda eid: eid2labid[eid])
-
+RRR_res_df.loc[RRR_res_df.acronym=="VISa", 'acronym'] = "VISa_am"
+RRR_res_df.loc[RRR_res_df.acronym=="VISam", 'acronym'] = "VISa_am"
 
 np.savez(os.path.join(resgood_folder, "data.npz"), 
          coef_vs=coef_vs,
