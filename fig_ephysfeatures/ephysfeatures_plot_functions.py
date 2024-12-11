@@ -13,6 +13,7 @@ from matplotlib.sankey import Sankey
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from permutation_test import permut_test, distribution_dist_approx_max
 from statsmodels.stats.multitest import multipletests
+from iblutil.numerical import ismember
 
 br = BrainRegions()
 PRINT_INFO = False
@@ -24,6 +25,16 @@ def panel_probe_lfp(fig, ax, df_filt, boundary_align='DG-TH', ylim=[-2000, 2000]
                     normalize=False, clim=[-190, -150], freeze=None):
 
     df_chns = load_dataframe(df_name='chns')
+
+
+    df_lim = df_chns.drop_duplicates(subset='pid')
+
+    a_in, b_in = ismember(df_lim.pid.values, df_filt.pid.values)
+    df_filt.loc[b_in, 'avg_dist'] = df_lim.avg_dist.values[a_in]
+    df_filt = df_filt.sort_values(by=['institute', 'avg_dist'], ascending=[True, True]).reset_index(drop=True)
+    rec_per_lab = df_filt.groupby('institute', group_keys=False).size()
+    df_filt['recording'] = np.mod(np.concatenate([np.arange(i) for i in rec_per_lab.values]), 10)
+
 
     if PRINT_INFO:
         print(f'Figure 3 b')
@@ -104,7 +115,7 @@ def panel_probe_lfp(fig, ax, df_filt, boundary_align='DG-TH', ylim=[-2000, 2000]
     else:
         cbar.ax.set_yticklabels([f'{clim[0]}', f'{clim[1]}'])
     cbar.set_label('Power spectral density (dB)', rotation=270, labelpad=-5)
-    
+
     # Return the list of pids used in this figure
     return np.unique(df_filt['pid'])
 
@@ -113,6 +124,14 @@ def panel_probe_neurons(fig, ax, df_filt, boundary_align='DG-TH', ylim=[-2000, 2
 
     df_chns = load_dataframe(df_name='chns')
     df_clust = load_dataframe(df_name='clust')
+
+    df_lim = df_chns.drop_duplicates(subset='pid')
+
+    a_in, b_in = ismember(df_lim.pid.values, df_filt.pid.values)
+    df_filt.loc[b_in, 'avg_dist'] = df_lim.avg_dist.values[a_in]
+    df_filt = df_filt.sort_values(by=['institute', 'avg_dist'], ascending=[True, True]).reset_index(drop=True)
+    rec_per_lab = df_filt.groupby('institute', group_keys=False).size()
+    df_filt['recording'] = np.mod(np.concatenate([np.arange(i) for i in rec_per_lab.values]), 10)
 
     if PRINT_INFO:
         print(f'Figure 3 b')
