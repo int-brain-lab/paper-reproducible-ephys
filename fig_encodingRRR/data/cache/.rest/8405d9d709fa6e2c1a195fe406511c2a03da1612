@@ -1,1 +1,0 @@
-[{"date_created": "2024-10-04 12:43", "origin": "public", "min_api_version": "2.7", "tables": {"sessions": {"nrecs": 8161, "size": 4311}, "datasets": {"nrecs": 106163, "size": 6426}}, "location": "https://ibl-brain-wide-map-public.s3.us-east-1.amazonaws.com/caches/openalyx/cache.zip"}, "2024-12-11T02:16:31.049147"]
