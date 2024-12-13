@@ -100,8 +100,8 @@ region_colors = figure_style(return_colors=True)
 width = 9
 height = 4
 fig = plt.figure(figsize=(width, height))
-
-xspans = get_row_coord(width, [1, 5, 5, 5, 5, 5, 5, 5], hspace=[0.5, 0.6, 0.5, 0.3, 0.3, 0.3, 0.3])
+padx=0.6
+xspans = get_row_coord(width, [1, 5, 5, 5, 5, 5, 5, 5], hspace=[0.5, 0.6, 0.5, 0.3, 0.3, 0.3, 0.3], pad=padx)
 xspans_labels = get_row_coord(width, [1, 5, 25], hspace=[0.5, 0.6])
 yspans = get_row_coord(height, [10, 10, 2], hspace=[0.6, 0.4], pad=0.3)
 
@@ -126,13 +126,13 @@ axs = {
     'B_PO_1': fg.place_axes_on_grid(fig, xspan=xspans[7], yspan=yspans[0]),
     'B_PO_2': fg.place_axes_on_grid(fig, xspan=xspans[7], yspan=yspans[1]),
 }
-labels = [{'label_text': 'a', 'xpos': get_label_pos(width, xspans[1][0]),
+labels = [{'label_text': 'a', 'xpos': get_label_pos(width, xspans[1][0], pad=padx),
            'ypos': get_label_pos(height, yspans[0][0], pad=0.3),
            'fontsize': 10, 'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-          {'label_text': 'b', 'xpos': get_label_pos(width, xspans[2][0]),
+          {'label_text': 'b', 'xpos': get_label_pos(width, xspans[2][0], pad=padx),
            'ypos': get_label_pos(height, yspans[0][0], pad=0.3), 'fontsize': 10,
            'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-           {'label_text': 'c', 'xpos': get_label_pos(width, xspans[3][0]),
+           {'label_text': 'c', 'xpos': get_label_pos(width, xspans[3][0], pad=padx),
            'ypos': get_label_pos(height, yspans[0][0], pad=0.3), 'fontsize': 10,
            'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
           ]

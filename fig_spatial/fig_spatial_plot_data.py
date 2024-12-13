@@ -171,7 +171,7 @@ def plot_fr_ff():
         ax.set_ylim(ylow[regIdx], yhigh[regIdx]) # May need to change
         ax.vlines(0, *ax.get_ylim(), color='k', linestyle='dashed')
         ax.set_xlim(-0.5, 1)
-        ax.text(1, 0.83, reg_title, transform=ax.transAxes, fontsize=8)
+        ax.text(1.05, 1, reg_title, transform=ax.transAxes, color='darkred', fontsize=8, weight='bold', ha='right')
 
         ax = axes['D']
         ax.fill_between(data['time_ff'], ffs_r_mean - ffs_r_std, ffs_r_mean + ffs_r_std, color='k', alpha=0.25, linewidth=0)
@@ -237,29 +237,29 @@ def plot_waveforms():
 
     xspans = get_row_coord(width, [1, 1], pad=0.6)
     xwidth = xspans[1][1] - xspans[1][0]
-    xspans_row3 = get_row_coord(width, [1], span=[(1 - xwidth) / 2, (1 - xwidth) / 2 + xwidth], pad=0)
+    xspans_row1 = get_row_coord(width, [1], span=[(1 - xwidth) / 2, (1 - xwidth) / 2 + xwidth], pad=0)
     yspans = get_row_coord(height, [1, 1, 1], hspace=1, pad=0.3)
 
-    axes = {'PPC': fg.place_axes_on_grid(fig, xspan=xspans[0], yspan=yspans[0], dim=[2, 1], hspace=0.8),
-          'CA1': fg.place_axes_on_grid(fig, xspan=xspans[1], yspan=yspans[0], dim=[2, 1], hspace=0.8),
-          'DG': fg.place_axes_on_grid(fig, xspan=xspans[0], yspan=yspans[1], dim=[2, 1], hspace=0.8),
-          'LP': fg.place_axes_on_grid(fig, xspan=xspans[1], yspan=yspans[1], dim=[2, 1], hspace=0.8),
-          'PO': fg.place_axes_on_grid(fig, xspan=xspans_row3[0], yspan=yspans[2], dim=[2, 1], hspace=0.8),
+    axes = {'PPC': fg.place_axes_on_grid(fig, xspan=xspans_row1[0], yspan=yspans[0], dim=[2, 1], hspace=0.8),
+          'CA1': fg.place_axes_on_grid(fig, xspan=xspans[0], yspan=yspans[1], dim=[2, 1], hspace=0.8),
+          'DG': fg.place_axes_on_grid(fig, xspan=xspans[1], yspan=yspans[1], dim=[2, 1], hspace=0.8),
+          'LP': fg.place_axes_on_grid(fig, xspan=xspans[0], yspan=yspans[2], dim=[2, 1], hspace=0.8),
+          'PO': fg.place_axes_on_grid(fig, xspan=xspans[1], yspan=yspans[2], dim=[2, 1], hspace=0.8),
           }
 
-    labels = [{'label_text': 'a', 'xpos': get_label_pos(width,xspans[0][0], pad=0.6),
+    labels = [{'label_text': 'a', 'xpos': get_label_pos(width,xspans_row1[0][0], pad=0.6),
                'ypos': get_label_pos(height, yspans[0][0], pad=0.3),
                'fontsize': 10, 'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'b', 'xpos': get_label_pos(width, xspans[1][0], pad=0.4),
-               'ypos': get_label_pos(height, yspans[0][0], pad=0.3), 'fontsize': 10,
-               'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'c', 'xpos': get_label_pos(width, xspans[0][0], pad=0.6),
+              {'label_text': 'b', 'xpos': get_label_pos(width, xspans[0][0], pad=0.6),
                'ypos': get_label_pos(height, yspans[1][0], pad=0.3), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'd', 'xpos': get_label_pos(width, xspans[1][0], pad=0.4),
+              {'label_text': 'c', 'xpos': get_label_pos(width, xspans[1][0], pad=0.4),
                'ypos': get_label_pos(height, yspans[1][0], pad=0.3), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'e', 'xpos': get_label_pos(width, xspans_row3[0][0], pad=0.6),
+              {'label_text': 'd', 'xpos': get_label_pos(width, xspans[0][0], pad=0.6),
+               'ypos': get_label_pos(height, yspans[2][0], pad=0.3), 'fontsize': 10,
+               'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
+              {'label_text': 'e', 'xpos': get_label_pos(width, xspans[1][0], pad=0.4),
                'ypos': get_label_pos(height, yspans[2][0], pad=0.3), 'fontsize': 10,
                'fontweight': 'bold', 'ha': 'right', 'va': 'bottom'},
               ]
@@ -286,7 +286,7 @@ def plot_waveforms():
         x_center = (bins_amp[:-1] + bins_amp[1:]) / 2
         ax[0].bar(x_center, hist_amp, width=binwidth, color='royalblue', edgecolor='k')
         ax[0].set_xlabel('Spike width (ms)')
-        if np.mod(i, 2) == 0:
+        if i in [0, 1, 3]:
             ax[0].set_ylabel('Probability \n density')
         ax[0].set_title(reg_title)
         ylim = ax[0].get_ylim()
@@ -317,7 +317,7 @@ def plot_waveforms():
         ax[1].plot(ecdf2.x, ecdf2.y, c='k', label='Narrow spike width')
         ax[1].plot(ecdf3.x, ecdf3.y, c=[0, 0.7, 0.7], label='Wide spike width')
         ax[1].set_xlabel('Average firing rate (spikes/s)')
-        if np.mod(i, 2) == 0:
+        if i in [0, 1, 3]:
             ax[1].set_ylabel('Cumulative \n probability')
         if i == 0:
             ax[1].legend(loc=4, frameon=False, fontsize=6)
@@ -333,7 +333,7 @@ def plot_waveforms():
 
 
 def plot_task_modulation(condition0, condition1, modulated, binwidth=0.2,
-                         xlabel=None, ylabel=None, leg=True, title=None, cols=['orange', 'grey'], ax=None):
+                         xlabel=None, ylabel=None, leg=True, title=None, cols=['orangered', 'grey'], ax=None):
 
     # Split the firing rates for the two conditions according to the neurons that
     # were modulated by the task
@@ -376,7 +376,7 @@ def plot_task_modulation(condition0, condition1, modulated, binwidth=0.2,
 
 
 def plot_task_modulation_3D(df_reg, cofm_reg, tm_test='pre_move', hists={'x': 3e2, 'y': 7e2, 'z': 6.5e2},
-                            camera=(13, -111), cols=['orange', 'grey'], ax=None):
+                            camera=(13, -111), cols=['orangered', 'grey'], ax=None):
 
     x = (df_reg['x'].values - cofm_reg['x'].values) * 1e6
     y = (df_reg['y'].values - cofm_reg['y'].values) * 1e6
@@ -397,18 +397,23 @@ def plot_task_modulation_3D(df_reg, cofm_reg, tm_test='pre_move', hists={'x': 3e
     ax.scatter(x_jitt[nm], y_jitt[nm], z_jitt[nm], c=cols[1], marker='o', s=0.4, alpha=0.8, zorder=5)
 
     # Plot the centre of mass
-    ax.scatter(0, 0, 0, c='r', marker='x', s=40, linewidths=3, zorder=10)
+    ax.scatter(0, 0, 0, c='k', marker='x', s=40, linewidths=3, zorder=10)
 
     if 'x' in hists.keys():
         plot_histograms_along_x_axis(x, tm, nm, np.max(y), np.max(z) + 10, sig='**', scale=hists['x'], cols=cols, ax=ax)
     if 'y' in hists.keys():
         plot_histograms_along_y_axis(y, tm, nm, np.max(x), np.max(z) + 10, sig='**', scale=hists['y'], cols=cols, ax=ax)
     if 'z' in hists.keys():
-        plot_histograms_along_z_axis(z, tm, nm, np.max(x), np.min(y) - 10, sig='**', scale=hists['z'], cols=cols,ax=ax)
+        plot_histograms_along_z_axis(z, tm, nm, np.max(x) - hists['z']['offset'], np.min(y) - 10,
+                                     scale=hists['z']['scale'], cols=cols, sig=hists['z']['sig'], ax=ax, dir=hists['z']['dir'])
 
-    ax.set_xlabel('\u0394ML (\u03bcm)', labelpad=-10)
-    ax.set_ylabel('\u0394AP (\u03bcm)', labelpad=-7)
-    ax.set_zlabel('\u0394DV (\u03bcm)', labelpad=-8)
+    # add_ML(ax, x, y, z)
+    # add_DV(ax, x, y, z)
+    # add_AP(ax, x, y, z)
+
+    ax.set_xlabel('\u0394x (\u03bcm)', labelpad=-10)
+    ax.set_ylabel('\u0394y (\u03bcm)', labelpad=-7)
+    ax.set_zlabel('\u0394z (\u03bcm)', labelpad=-8)
     ax.tick_params(axis='x', pad=-5)
     ax.tick_params(axis='y', pad=-1)
     ax.tick_params(axis='z', pad=-2)
@@ -443,9 +448,11 @@ def plot_main_figure():
     reg_cent_of_mass = load_regions()
 
     scales = {
-        'LP': {'fr': {'x': 3e2, 'y': 7e2}, 'tm': {'z': 4.5e2}, 'tm_lr': {'z': 4.5e2}},
-        'PPC': {'fr': {'x': 5e2}, 'tm': {'z': 3e2}, 'tm_lr': {}},
-        'CA1': {'fr': {'z': 3e2}, 'tm': {}, 'tm_lr': {'z': 3e2}},
+        'LP': {'fr': {'x': 3e2, 'y': 7e2}, 'tm': {'z': {'scale': 8e2, 'offset': 200, 'dir': 'down', 'sig': '**'}},
+               'tm_lr': {'z': {'scale': 8e2, 'offset': 200, 'dir': 'down', 'sig': '**'}}},
+        'PPC': {'fr': {'x': 5e2}, 'tm': {'z': {'scale': 5e2, 'offset': 100, 'dir': 'down', 'sig': '*'}}, 'tm_lr': {}},
+        'CA1': {'fr': {'z': {'scale': 6e2, 'offset': 200, 'dir': 'up', 'sig': '**'}}, 'tm': {},
+                'tm_lr': {'z': {'scale': 6e2, 'offset': 200, 'dir': 'up', 'sig': '**'}}},
     }
 
     for reg in ['LP', 'PPC', 'CA1']:
@@ -522,13 +529,13 @@ def plot_main_figure():
                              title='Left vs right movement test', leg=True, ax=axes['D_1'])
         if reg == 'LP':
             inset = axes['D_2'].inset_axes([0.55, 0.05, 0.25, 0.1])
-            plot_inset_histogram(df_reg.amp * 1e6, cond1, cond2, bins=30, xlabel='Amplitude (\u03bcv)', ylabel='Probability',
-                                 cols=['orange', 'grey'], sig='**', sig_loc=[0.3, 0.5], ax=inset,
+            plot_inset_histogram(df_reg.amp * 1e6, cond1, cond2, bins=15, xlabel='Amplitude (\u03bcv)', ylabel='Probability',
+                                 cols=['orangered', 'grey'], sig='**', sig_loc=[0.3, 0.5], ax=inset,
                                  minmax=(0, np.max(df_reg.amp * 1e6)))
 
             inset = axes['D_2'].inset_axes([0.88, 0.05, 0.2, 0.1])
             plot_inset_histogram(df_reg.p2t, cond1, cond2, bins=15, xlabel='Waveform duration (ms)', ylabel='',
-                                 cols=['orange', 'grey'], sig='*', sig_loc=[0.4, 0.5], ax=inset)
+                                 cols=['orangered', 'grey'], sig='*', sig_loc=[0.4, 0.5], ax=inset)
 
             axes['D_2'].set_xlabel('')
             axes['D_2'].set_xticklabels([])
@@ -536,13 +543,6 @@ def plot_main_figure():
         axes['D_1'].set_zorder(2)
         axes['D_2'].set_zorder(1)
 
-        # adjust = 0.3
-        # if reg == 'LP':
-        #     fig.subplots_adjust(top=1 - (adjust-0.2) / height, bottom=(adjust) / height, left=(adjust) / width,
-        #                         right=1 - (adjust + 0.1) / width)
-        # else:
-        #     fig.subplots_adjust(top=1 - (adjust-0.2) / height, bottom=(adjust - 0.2) / height, left=(adjust) / width,
-        #                         right=1 - (adjust - 0.2) / width)
 
         if reg == 'LP':
             fig.subplots_adjust(right=0.94, bottom=1-0.97, top=0.98, left=0.03)
@@ -564,9 +564,6 @@ def plot_supp1():
     reg_cent_of_mass = load_regions()
 
     scales = {
-        'LP': {'fr': {'x': 3e2, 'y': 7e2}, 'tm': {'z': 5.8e2}, 'tm_lr': {'z': 6.5e2}},
-        'PPC': {'fr': {'x': 5e2}, 'tm': {'z': 4.3e2}, 'tm_lr': {}},
-        'CA1': {'fr': {'z': 5e2}, 'tm': {}, 'tm_lr': {'z': 5e2}},
         'DG': {'fr': {}, 'tm': {}},
         'PO': {'fr': {'y': 6e2}, 'tm': {}}
     }
@@ -632,7 +629,7 @@ def plot_supp1():
     cond1, cond2 = plot_task_modulation_3D(df_reg, cofm_reg, tm_test='pre_move', hists=scales[reg]['tm'], ax=axes['B_2'])
     inset = axes['B_2'].inset_axes([0.84, 0.5, 0.2, 0.1])
     plot_inset_histogram(df_reg.p2t, cond1, cond2, bins=15, xlabel='Waveform duration (ms)', ylabel='Probability',
-                         cols=['orange', 'grey'], sig='*', sig_loc=[0.25, 0.5], ax=inset)
+                         cols=['orangered', 'grey'], sig='*', sig_loc=[0.25, 0.5], ax=inset)
 
     axes['B_1'].set_zorder(2)
     axes['B_2'].set_zorder(1)
@@ -660,13 +657,13 @@ def plot_supp1():
 
     cond1, cond2 = plot_firing_rate_3D(df_reg, cofm_reg, reg=reg, hists=scales[reg]['fr'], inset=False, ax=axes['C_2'])
     inset = axes['C_2'].inset_axes([0.35, -0.05, 0.25, 0.1])
-    plot_inset_histogram(df_reg.amp * 1e6, cond1, cond2, bins=30, xlabel='Amplitude (\u03bcv)', ylabel='Probability',
-                         cols=['orange', 'grey'], sig='**', sig_loc=[0.3, 0.5], ax=inset,
+    plot_inset_histogram(df_reg.amp * 1e6, cond1, cond2, bins=15, xlabel='Amplitude (\u03bcv)', ylabel='Probability',
+                         sig='**', sig_loc=[0.3, 0.5], ax=inset,
                          minmax=(0, np.max(df_reg.amp * 1e6)))
 
     inset = axes['C_2'].inset_axes([0.7, -0.05, 0.2, 0.1])
     plot_inset_histogram(df_reg.p2t, cond1, cond2, bins=15, xlabel='Waveform duration (ms)', ylabel='',
-                         cols=['orange', 'grey'], sig='**', sig_loc=[0.3, 0.5], ax=inset)
+                        sig='**', sig_loc=[0.3, 0.5], ax=inset)
 
     axes['C_1'].set_zorder(2)
     axes['C_2'].set_zorder(1)
@@ -694,7 +691,7 @@ def plot_supp1():
 
 
 def plot_inset_histogram(vals, condition1, condition2, bins=30, xlabel=None, ylabel=None, minmax=None,
-                         cols=['orange', 'blue'], sig='**', sig_loc=[0, 0], ax=None):
+                         cols=['tab:orange', 'tab:blue'], sig='**', sig_loc=[0, 0], ax=None):
 
     if minmax is None:
         minmax = (np.min(vals), np.max(vals))
@@ -782,23 +779,26 @@ def plot_histograms_along_y_axis(vals, condition1, condition2, xmax, zmax, scale
     ax.step(bins_2, hist_2 * scale + zmax, zs=xmax, zdir='x', color=cols[1], where='mid')
 
     if sig:
-        ax.text(xmax, width_max - 180, (bar_max * scale * 1) + zmax, '**', 'y', fontsize=10, ha='center', va='center')
+        ax.text(xmax, width_max - 180, (bar_max * scale * 1.1) + zmax, '**', 'y', fontsize=10, ha='center', va='center')
         ax.quiver(
-            xmax, width_max - 300, (bar_max * scale * 1) + zmax,  # Start of the arrow
+            xmax, width_max - 300, (bar_max * scale * 1.1) + zmax,  # Start of the arrow
             0, 250, 0,  # Direction vector (x, y, z components)
             color=cols[0], linewidth=1
         )
 
 
-def plot_histograms_along_z_axis(vals, condition1, condition2, xmax, ymax, scale=6.5e2, binwidth=100,
-                                 cols=['tab:orange', 'tab:blue'], sig='', ax=None):
+def plot_histograms_along_z_axis(vals, condition1, condition2, xmax, ymax, scale=6.5e2, binwidth=120,
+                                 cols=['tab:orange', 'tab:blue'], sig='', ax=None, dir='down'):
     # Compute histogram and percentiles for two conditions
     hist_1, bins_1, pc_20_1, pc_80_1 = compute_hist_and_percentiles(vals, condition1, binwidth=binwidth)
     hist_2, bins_2, pc_20_2, pc_80_2 = compute_hist_and_percentiles(vals, condition2, binwidth=binwidth)
 
     # Compute the amount we scale the plots by
     bar_max = np.max([np.max(hist_1), np.max(hist_2)])
-    width_max = np.min([pc_20_1, pc_80_1])
+    if dir == 'down':
+        width_max = np.max([pc_20_1, pc_80_1])
+    else:
+        width_max = np.min([pc_20_1, pc_80_1])
 
     # Add plots to figure
     # Condition 1
@@ -814,12 +814,21 @@ def plot_histograms_along_z_axis(vals, condition1, condition2, xmax, ymax, scale
     ax.step(hist_2 * scale + xmax, bins_2, zs=ymax, zdir='y', color=cols[1], where='mid')
 
     if sig:
-        ax.text((bar_max * scale * 1.2) + xmax, ymax, width_max - 50, '**', 'z', fontsize=10, ha='left', va='center')
-        ax.quiver(
-            (bar_max * scale * 1.1) + xmax, ymax, width_max - 150, # Start of the arrow
-            0, 0, 150,  # Direction vector (x, y, z components)
-            color=cols[0], linewidth=1
-        )
+        if dir == 'down':
+            ax.text((bar_max * scale * 1.2) + xmax, ymax, width_max + 50, sig, 'z', fontsize=10, ha='left',
+                    va='center')
+            ax.quiver(
+                (bar_max * scale * 1.1) + xmax, ymax, width_max + 150, # Start of the arrow
+                0, 0, -150,  # Direction vector (x, y, z components)
+                color=cols[0], linewidth=1
+            )
+        else:
+            ax.text((bar_max * scale * 1.2) + xmax, ymax, width_max - 50, sig, 'z', fontsize=10, ha='left', va='center')
+            ax.quiver(
+                (bar_max * scale * 1.1) + xmax, ymax, width_max - 150, # Start of the arrow
+                0, 0, 150,  # Direction vector (x, y, z components)
+                color=cols[0], linewidth=1
+            )
 
 
 def plot_firing_rate_3D(df_reg, cofm_reg, reg=None, hists={'x': 3e2, 'y': 7e2}, camera=(13, -111), inset=False, ax=None):
@@ -858,7 +867,7 @@ def plot_firing_rate_3D(df_reg, cofm_reg, reg=None, hists={'x': 3e2, 'y': 7e2}, 
     ax.scatter(x_jitt[outlier_units], y_jitt[outlier_units], z_jitt[outlier_units], c=cluster_color[outlier_units], marker='o',
                       s=15, edgecolor='k', alpha=1, zorder=5)
 
-    ax.scatter(0, 0, 0, c='r', marker='x', s=30, linewidths=3, zorder=10)
+    ax.scatter(0, 0, 0, c='k', marker='x', s=30, linewidths=3, zorder=10)
 
     ax_cbar = ax.inset_axes([-0.15, 0.15, 0.03, 0.7])
     cbar = plt.colorbar(cm.ScalarMappable(norm=norm, cmap=parula_map), cax=ax_cbar)
@@ -878,11 +887,16 @@ def plot_firing_rate_3D(df_reg, cofm_reg, reg=None, hists={'x': 3e2, 'y': 7e2}, 
         plot_histograms_along_y_axis(y, outlier_units, regular_units, np.max(x), np.max(z) + 10, scale=hists['y'], sig='**', ax=ax)
 
     if 'z' in hists.keys():
-        plot_histograms_along_z_axis(z, outlier_units, regular_units, np.max(x), np.min(y) - 10, scale=hists['z'], sig='**', ax=ax)
+        plot_histograms_along_z_axis(z, outlier_units, regular_units, np.max(x) - hists['z']['offset'], np.min(y) - 10,
+                                     scale=hists['z']['scale'], sig='**', ax=ax, dir=hists['z']['dir'])
 
-    ax.set_xlabel('\u0394ML (\u03bcm)', labelpad=-10)
-    ax.set_ylabel('\u0394AP (\u03bcm)', labelpad=-7)
-    ax.set_zlabel('\u0394DV (\u03bcm)', labelpad=-8)
+    # add_ML(ax, x, y, z)
+    # add_DV(ax, x, y, z)
+    # add_AP(ax, x, y, z)
+
+    ax.set_xlabel('\u0394x (\u03bcm)', labelpad=-10)
+    ax.set_ylabel('\u0394y (\u03bcm)', labelpad=-7)
+    ax.set_zlabel('\u0394z (\u03bcm)', labelpad=-8)
     ax.tick_params(axis='x', pad=-5)
     ax.tick_params(axis='y', pad=-1)
     ax.tick_params(axis='z', pad=-2)
@@ -906,6 +920,55 @@ def plot_firing_rate_3D(df_reg, cofm_reg, reg=None, hists={'x': 3e2, 'y': 7e2}, 
 
     return outlier_units, regular_units
 
+
+def add_ML(ax, x, y, z):
+
+    t_range = (np.max(x) - np.min(x)) * 0.2
+    t_offset = (np.max(x) - np.min(x)) * 0.05
+    ax.text(np.min(x) + t_offset * 0.75, np.min(y) + 20, np.min(z) + 20, 'L', 'x', fontsize=6, ha='center', va='center')
+    ax.text(np.min(x) + (t_offset + t_range) * 1.1, np.min(y) + 20, np.min(z) + 20, 'M', 'x', fontsize=6, ha='center', va='center')
+    ax.quiver(
+        np.min(x) + t_offset + t_range/2, np.min(y) + 20, np.min(z) + 20,  # Start of the arrow
+        -t_range/2, 0, 0,  # Direction vector (x, y, z components)
+        color='k', linewidth=0.5, arrow_length_ratio=100/t_range
+    )
+    ax.quiver(
+        np.min(x) + t_offset + t_range/2, np.min(y) + 20, np.min(z) + 20,  # Start of the arrow
+        t_range/2, 0, 0,  # Direction vector (x, y, z components)
+        color='k', linewidth=0.5, arrow_length_ratio=100/t_range
+    )
+
+def add_AP(ax, x, y, z):
+
+    t_range = (np.max(y) - np.min(y)) * 0.25
+    t_offset = (np.max(y) - np.min(y)) * 0.1
+    ax.text(np.min(x) + 20, np.min(y) + (t_offset + t_range) * 1.2, np.min(z) + 20, 'A', 'y', fontsize=6, ha='center', va='center')
+    ax.text(np.min(x) + 20, np.min(y) + t_offset * 0.6, np.min(z) + 20, 'P', 'y', fontsize=6, ha='center', va='center')
+    ax.quiver(
+        np.min(x) + 20, np.min(y) + t_offset + t_range/2, np.min(z) + 20,  # Start of the arrow
+        0, -170, 0,  # Direction vector (x, y, z components)
+        color='k', linewidth=0.5, arrow_length_ratio=100/t_range
+    )
+    ax.quiver(
+        np.min(x) + 20, np.min(y) + t_offset + t_range/2, np.min(z) + 20,  # Start of the arrow
+        0, 170, 0,  # Direction vector (x, y, z components)
+        color='k', linewidth=0.5, arrow_length_ratio=100/t_range
+    )
+
+def add_DV(ax, x, y, z):
+
+    ax.text(np.min(x) + 50, np.max(y) + 20, np.min(z) + 280, 'V', 'z', rotation=180, fontsize=6, ha='center', va='center')
+    ax.text(np.min(x) + 50, np.max(y) + 20, np.min(z) + 520, 'D', 'z', rotation=180, fontsize=6, ha='center', va='center')
+    ax.quiver(
+        np.min(x) + 50, np.max(y) + 20, np.min(z) + 400,  # Start of the arrow
+        0, 0, -100,  # Direction vector (x, y, z components)
+        color='k', linewidth=0.5, arrow_length_ratio=0.5
+    )
+    ax.quiver(
+        np.min(x) + 50, np.max(y) + 20, np.min(z) + 400,  # Start of the arrow
+        0, 0, 100,  # Direction vector (x, y, z components)
+        color='k', linewidth=0.5, arrow_length_ratio=0.5
+    )
 
 def plot_fanofactor_3D(df_reg, cofm_reg, camera=(13, -111), cb=False, ax=None):
 
@@ -947,9 +1010,9 @@ def plot_fanofactor_3D(df_reg, cofm_reg, camera=(13, -111), cb=False, ax=None):
         ax_cbar.axhline(filt_thres, xmin=ax_cbar.get_xlim()[0] - 0.4, xmax=ax_cbar.get_xlim()[1] + 0.4, c='k',
                         clip_on=False, lw=1.5)
 
-    ax.set_xlabel('\u0394ML (\u03bcm)', labelpad=-10)
-    ax.set_ylabel('\u0394AP (\u03bcm)', labelpad=-7)
-    ax.set_zlabel('\u0394DV (\u03bcm)', labelpad=-8)
+    ax.set_xlabel('\u0394x (\u03bcm)', labelpad=-10)
+    ax.set_ylabel('\u0394y (\u03bcm)', labelpad=-7)
+    ax.set_zlabel('\u0394z (\u03bcm)', labelpad=-8)
     ax.tick_params(axis='x', pad=-5)
     ax.tick_params(axis='y', pad=-1)
     ax.tick_params(axis='z', pad=-2)
