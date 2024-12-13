@@ -194,7 +194,7 @@ def plot_supp1():
     height = 7
     figure_style()
     fig = plt.figure(figsize=(width, height))
-    xspan = get_row_coord(width, [3, 2], hspace=1)
+    xspan = get_row_coord(width, [3, 2], hspace=1, pad=0.5)
     yspan = get_row_coord(height, [1, 1], hspace=1, pad=0.3)
     yspan_all = get_row_coord(height, [1], pad=0.3)
 
@@ -203,13 +203,13 @@ def plot_supp1():
           'C': fg.place_axes_on_grid(fig, xspan=xspan[1], yspan=yspan_all[0]),
           }
 
-    labels = [{'label_text': 'a', 'xpos': get_label_pos(width, xspan[0][0]),
+    labels = [{'label_text': 'a', 'xpos': get_label_pos(width, xspan[0][0], pad=0.5),
                'ypos': get_label_pos(height, yspan[0][0], pad=0.3), 'fontsize': 10, 'weight': 'bold',
                'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'b', 'xpos': get_label_pos(width, xspan[0][0]),
+              {'label_text': 'b', 'xpos': get_label_pos(width, xspan[0][0], pad=0.5),
                'ypos': get_label_pos(height, yspan[1][0], pad=0.3), 'fontsize': 10, 'weight': 'bold',
                'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'c', 'xpos': get_label_pos(width, xspan[1][0]),
+              {'label_text': 'c', 'xpos': get_label_pos(width, xspan[1][0], pad=0.5),
                'ypos': get_label_pos(height, yspan_all[0][0], pad=0.3), 'fontsize': 10, 'weight': 'bold',
                'ha': 'right', 'va': 'bottom'},
               ]
@@ -243,7 +243,7 @@ def plot_supp1():
                                  savefig=False)
     
     adjust = 0.3
-    fig.subplots_adjust(top=1-(adjust + 0.2)/height, bottom=(adjust+0.2)/height, left=(adjust+0.2)/width, right=1-(adjust)/width)
+    fig.subplots_adjust(top=1-(adjust + 0.2)/height, bottom=(adjust+0.2)/height, left=(adjust)/width, right=1-(adjust)/width)
     save_path = save_figure_path(figure='fig_mtnn')
     fig.savefig(save_path.joinpath('fig_mtnn_supp1.pdf'))
     fig.savefig(save_path.joinpath('fig_mtnn_supp1.png'))
@@ -290,17 +290,17 @@ def plot_supp2(test=False):
     figure_style()
     fig = plt.figure(figsize=(width, height))
     xspan_row1 = get_row_coord(width, [1], span=[0.33, 0.66], pad=0)
-    xspan_row2 = get_row_coord(width, [1])
+    xspan_row2 = get_row_coord(width, [1], pad=0.5)
     yspans = get_row_coord(height, [1, 2], hspace=1.2, pad=0.3)
 
     ax = {'panel_A': fg.place_axes_on_grid(fig, xspan=xspan_row1[0], yspan=yspans[0]),
           'panel_B': fg.place_axes_on_grid(fig, xspan=xspan_row2[0], yspan=yspans[1], dim=[2, 4])
           }
 
-    labels = [{'label_text': 'a', 'xpos': get_label_pos(width, xspan_row1[0][0]),
+    labels = [{'label_text': 'a', 'xpos': get_label_pos(width, xspan_row1[0][0], pad=0.5),
                'ypos': get_label_pos(height, yspans[0][0], pad=0.3), 'fontsize': 10, 'weight': 'bold',
                'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'b', 'xpos': get_label_pos(width, xspan_row2[0][0]),
+              {'label_text': 'b', 'xpos': get_label_pos(width, xspan_row2[0][0], pad=0.5),
                'ypos': get_label_pos(height, yspans[1][0], pad=0.3), 'fontsize': 10, 'weight': 'bold',
                'ha': 'right', 'va': 'bottom'},
               ]
@@ -308,7 +308,7 @@ def plot_supp2(test=False):
 
     generate_figure_10_supplement1(sim_model_config, glm_scores, glm_leave_one_out, ax=ax, test=test, savefig=False)
     adjust = 0.3
-    fig.subplots_adjust(top=1-adjust/height, bottom=(adjust + 0.2)/height, left=(adjust + 0.2)/width, right=1-(adjust)/width)
+    fig.subplots_adjust(top=1-adjust/height, bottom=(adjust + 0.2)/height, left=(adjust)/width, right=1-(adjust)/width)
     save_path = save_figure_path(figure='fig_mtnn')
     fig.savefig(save_path.joinpath('fig_mtnn_supp2.pdf'))
     fig.savefig(save_path.joinpath('fig_mtnn_supp2.png'))
@@ -403,8 +403,8 @@ def plot_supp3(test=False):
     height = 7
     figure_style()
     fig = plt.figure(figsize=(width, height))
-    xspan_row1 = get_row_coord(width, [1, 1, 1])
-    xspan_row2 = get_row_coord(width, [1])
+    xspan_row1 = get_row_coord(width, [1, 1, 1], pad=0.5)
+    xspan_row2 = get_row_coord(width, [1], pad=0.5)
     xspan_row3 = get_row_coord(width, [1], span=[0.2, 0.8], pad=0)
     yspans = get_row_coord(height, [4, 1, 5], hspace=[0.1, 0.8], pad=0.3)
 
@@ -415,10 +415,10 @@ def plot_supp3(test=False):
           'B': fg.place_axes_on_grid(fig, xspan=xspan_row3[0], yspan=yspans[2]),
           }
 
-    labels = [{'label_text': 'a', 'xpos': get_label_pos(width, xspan_row1[0][0]),
+    labels = [{'label_text': 'a', 'xpos': get_label_pos(width, xspan_row1[0][0], pad=0.5),
                'ypos': get_label_pos(height, yspans[0][0], pad=0.3), 'fontsize': 10, 'weight': 'bold',
                'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'b', 'xpos': get_label_pos(width, xspan_row3[0][0]),
+              {'label_text': 'b', 'xpos': get_label_pos(width, xspan_row3[0][0], pad=0.5),
                'ypos': get_label_pos(height, yspans[2][0], pad=0.3), 'fontsize': 10, 'weight': 'bold',
                'ha': 'right', 'va': 'bottom'},
               ]
@@ -441,7 +441,7 @@ def plot_supp3(test=False):
                 color=institution_colors[l], fontsize=8)  # custom properties
 
     adjust = 0.3
-    fig.subplots_adjust(top=1-adjust/height, bottom=(adjust + 0.2)/height, left=(adjust + 0.2)/width,
+    fig.subplots_adjust(top=1-adjust/height, bottom=(adjust + 0.2)/height, left=(adjust)/width,
                         right=1-(adjust)/width)
     save_path = save_figure_path(figure='fig_mtnn')
     fig.savefig(save_path.joinpath('fig_mtnn_supp3.pdf'))
