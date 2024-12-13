@@ -147,7 +147,7 @@ def plot_fr_ff():
         ax.set_ylim(ylow[regIdx], yhigh[regIdx]) # May need to change
         ax.vlines(0, *ax.get_ylim(), color='k', linestyle='dashed')
         ax.set_xlim(-0.5, 1)
-        ax.text(-0.1, 1.1, alph, transform=ax.transAxes,
+        ax.text(-0.35, 1.1, alph, transform=ax.transAxes,
                          fontsize=10, va='bottom',
                          ha='right', weight='bold')
 
@@ -184,6 +184,7 @@ def plot_fr_ff():
         ax.set_xlim(-0.5, 1)
         rect = patches.Rectangle((40/1e3, 0), (200-40)/1e3, ax.get_ylim()[1], facecolor='green', alpha=0.2, transform=ax.transData)
         ax.add_patch(rect)
+
 
     fig.subplots_adjust(bottom=0.05, top=0.95, left=0.1, right=0.98)
 
@@ -234,7 +235,7 @@ def plot_waveforms():
     height = 7
     fig = plt.figure(figsize=(width, height))
 
-    xspans = get_row_coord(width, [1, 1])
+    xspans = get_row_coord(width, [1, 1], pad=0.6)
     xwidth = xspans[1][1] - xspans[1][0]
     xspans_row3 = get_row_coord(width, [1], span=[(1 - xwidth) / 2, (1 - xwidth) / 2 + xwidth], pad=0)
     yspans = get_row_coord(height, [1, 1, 1], hspace=1, pad=0.3)
@@ -246,19 +247,19 @@ def plot_waveforms():
           'PO': fg.place_axes_on_grid(fig, xspan=xspans_row3[0], yspan=yspans[2], dim=[2, 1], hspace=0.8),
           }
 
-    labels = [{'label_text': 'a', 'xpos': get_label_pos(width,xspans[0][0]),
+    labels = [{'label_text': 'a', 'xpos': get_label_pos(width,xspans[0][0], pad=0.6),
                'ypos': get_label_pos(height, yspans[0][0], pad=0.3),
                'fontsize': 10, 'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'b', 'xpos': get_label_pos(width, xspans[1][0]),
+              {'label_text': 'b', 'xpos': get_label_pos(width, xspans[1][0], pad=0.4),
                'ypos': get_label_pos(height, yspans[0][0], pad=0.3), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'c', 'xpos': get_label_pos(width, xspans[0][0]),
+              {'label_text': 'c', 'xpos': get_label_pos(width, xspans[0][0], pad=0.6),
                'ypos': get_label_pos(height, yspans[1][0], pad=0.3), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'd', 'xpos': get_label_pos(width, xspans[1][0]),
+              {'label_text': 'd', 'xpos': get_label_pos(width, xspans[1][0], pad=0.4),
                'ypos': get_label_pos(height, yspans[1][0], pad=0.3), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'e', 'xpos': get_label_pos(width, xspans_row3[0][0]),
+              {'label_text': 'e', 'xpos': get_label_pos(width, xspans_row3[0][0], pad=0.6),
                'ypos': get_label_pos(height, yspans[2][0], pad=0.3), 'fontsize': 10,
                'fontweight': 'bold', 'ha': 'right', 'va': 'bottom'},
               ]
@@ -323,12 +324,13 @@ def plot_waveforms():
 
 
     adjust = 0.3
-    fig.subplots_adjust(top=1 - adjust / height, bottom=adjust / height, left=(adjust + 0.2) / width,
+    fig.subplots_adjust(top=1 - adjust / height, bottom=adjust / height, left=(adjust) / width,
                         right=1 - adjust / width)
 
     plt.savefig(fig_save_path.joinpath(f'fig_wfs.pdf'))
     plt.savefig(fig_save_path.joinpath(f'fig_wfs.svg'))
     plt.close()
+
 
 def plot_task_modulation(condition0, condition1, modulated, binwidth=0.2,
                          xlabel=None, ylabel=None, leg=True, title=None, cols=['orange', 'grey'], ax=None):
@@ -371,6 +373,7 @@ def plot_task_modulation(condition0, condition1, modulated, binwidth=0.2,
     ax.set_title(title)
 
     return fig, ax
+
 
 def plot_task_modulation_3D(df_reg, cofm_reg, tm_test='pre_move', hists={'x': 3e2, 'y': 7e2, 'z': 6.5e2},
                             camera=(13, -111), cols=['orange', 'grey'], ax=None):
@@ -440,9 +443,9 @@ def plot_main_figure():
     reg_cent_of_mass = load_regions()
 
     scales = {
-        'LP': {'fr': {'x': 3e2, 'y': 7e2}, 'tm': {'z': 5.8e2}, 'tm_lr': {'z': 6.5e2}},
-        'PPC': {'fr': {'x': 5e2}, 'tm': {'z': 4.3e2}, 'tm_lr': {}},
-        'CA1': {'fr': {'z': 5e2}, 'tm': {}, 'tm_lr': {'z': 5e2}},
+        'LP': {'fr': {'x': 3e2, 'y': 7e2}, 'tm': {'z': 4.5e2}, 'tm_lr': {'z': 4.5e2}},
+        'PPC': {'fr': {'x': 5e2}, 'tm': {'z': 3e2}, 'tm_lr': {}},
+        'CA1': {'fr': {'z': 3e2}, 'tm': {}, 'tm_lr': {'z': 3e2}},
     }
 
     for reg in ['LP', 'PPC', 'CA1']:
@@ -466,19 +469,19 @@ def plot_main_figure():
                 'D_2': fig.add_subplot(gs2[1], projection='3d'),
                 }
 
-        axes['C_1'].text(-0.05, 6, 'a',
+        axes['C_1'].text(-0.35, 6, 'a',
                          transform=axes['C_1'].transAxes,
                          fontsize=10, va='bottom',
                          ha='right', weight='bold')
-        axes['D_1'].text(-0.05, 6 ,'b',
+        axes['D_1'].text(-0.7, 6 ,'b',
                          transform=axes['D_1'].transAxes,
                          fontsize=10, va='bottom',
                          ha='right', weight='bold')
-        axes['C_1'].text(-0.05, 1.30, 'c',
+        axes['C_1'].text(-0.35, 1.30, 'c',
                          transform=axes['C_1'].transAxes,
                          fontsize=10, va='bottom',
                          ha='right', weight='bold')
-        axes['D_1'].text(-0.05, 1.30, 'd',
+        axes['D_1'].text(-0.35, 1.30, 'd',
                          transform=axes['D_1'].transAxes,
                          fontsize=10, va='bottom',
                          ha='right', weight='bold')
@@ -533,10 +536,18 @@ def plot_main_figure():
         axes['D_1'].set_zorder(2)
         axes['D_2'].set_zorder(1)
 
+        # adjust = 0.3
+        # if reg == 'LP':
+        #     fig.subplots_adjust(top=1 - (adjust-0.2) / height, bottom=(adjust) / height, left=(adjust) / width,
+        #                         right=1 - (adjust + 0.1) / width)
+        # else:
+        #     fig.subplots_adjust(top=1 - (adjust-0.2) / height, bottom=(adjust - 0.2) / height, left=(adjust) / width,
+        #                         right=1 - (adjust - 0.2) / width)
+
         if reg == 'LP':
-            fig.subplots_adjust(right=0.95, bottom=1-0.97, top=0.98, left=0)
+            fig.subplots_adjust(right=0.94, bottom=1-0.97, top=0.98, left=0.03)
         else:
-            fig.subplots_adjust(right=0.95, bottom=0, top=0.98, left=0)
+            fig.subplots_adjust(right=0.98, bottom=0, top=0.98, left=0.04)
 
         plt.savefig(fig_save_path.joinpath(f'fig_{reg}.pdf'))
         plt.savefig(fig_save_path.joinpath(f'fig_{reg}.svg'))
@@ -594,7 +605,7 @@ def plot_supp1():
                      transform=axes['A_1'].transAxes,
                      fontsize=mpl.rcParams["axes.titlesize"], va='bottom',
                      ha='center')
-    axes['A_1'].text(0.1, -0.5, 'a',
+    axes['A_1'].text(-0.25, -0.5, 'a',
                      transform=axes['A_1'].transAxes,
                      fontsize=10, va='bottom',
                      ha='right', weight='bold')
@@ -609,7 +620,7 @@ def plot_supp1():
 
 
     axes['B_1'].set_axis_off()
-    axes['B_1'].text(0.1, -0.5, 'b',
+    axes['B_1'].text(-0.025, -0.5, 'b',
                      transform=axes['B_1'].transAxes,
                      fontsize=10, va='bottom',
                      ha='right', weight='bold')
@@ -642,7 +653,7 @@ def plot_supp1():
                      transform=axes['C_1'].transAxes,
                      fontsize=mpl.rcParams["axes.titlesize"], va='bottom',
                      ha='center')
-    axes['C_1'].text(0.1, -0.5, 'c',
+    axes['C_1'].text(-0.25, -0.5, 'c',
                      transform=axes['C_1'].transAxes,
                      fontsize=10, va='bottom',
                      ha='right', weight='bold')
@@ -661,7 +672,7 @@ def plot_supp1():
     axes['C_2'].set_zorder(1)
 
     axes['D_1'].set_axis_off()
-    axes['D_1'].text(0.1, -0.5, 'd',
+    axes['D_1'].text(-0.025, -0.5, 'd',
                      transform=axes['D_1'].transAxes,
                      fontsize=10, va='bottom',
                      ha='right', weight='bold')
@@ -675,7 +686,7 @@ def plot_supp1():
     axes['D_1'].set_zorder(2)
     axes['D_2'].set_zorder(1)
 
-    fig.subplots_adjust(right=0.97, bottom=0.08, top=0.99, left=0.1)
+    fig.subplots_adjust(right=0.96, bottom=0.08, top=0.99, left=0.12)
 
     plt.savefig(fig_save_path.joinpath(f'fig_PO_DG.pdf'))
     plt.savefig(fig_save_path.joinpath(f'fig_PO_DG.svg'))

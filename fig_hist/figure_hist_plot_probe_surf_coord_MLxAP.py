@@ -495,7 +495,7 @@ def plot_probe_distance_all_lab(traj='micro', min_rec_per_lab=4, perform_permuta
     else:
         axr1c0.axvline(x=mean_error_surf_xy, linestyle='--', linewidth=lw, color='k')
         if traj == 'micro':
-            axr0c0.set_title('Micromanipulator to planned distance')
+            axr0c0.set_title('Micromanipulator to planned \n distance')
             axr1c0.set_xlabel('Micromanipulator distance (\u03bcm)')
             axr0c0.set_ylabel('Density')
             axr1c0.set_ylabel('Lab', labelpad=-2)

@@ -86,7 +86,7 @@ def plot_supplemental_neuron_metrics():
     width = 7
     height = 8
     fig = plt.figure(figsize=(width, height))
-    xspans = get_row_coord(width, [1])
+    xspans = get_row_coord(width, [1], pad=0.6)
     yspans = get_row_coord(height, [1, 1, 1], hspace=0.8, pad=0.3)
 
     ax = {'A': fg.place_axes_on_grid(fig, xspan=xspans[0], yspan=yspans[0], dim=[2, 4], hspace=0.3, wspace=0.5),
@@ -97,18 +97,21 @@ def plot_supplemental_neuron_metrics():
     for ax_label, region in zip(['A', 'B', 'C'], ['Isocortex', 'HPF', 'TH']):
         plot_neuron_metrics_per_region(region, axes=np.array(ax[ax_label]).reshape(2, 4), save=False)
 
-    labels = [{'label_text': 'a', 'xpos': get_label_pos(width,xspans[0][0]), 'ypos': get_label_pos(height, yspans[0][0], pad=0.3),
+    labels = [{'label_text': 'a', 'xpos': get_label_pos(width,xspans[0][0], pad=0.6),
+               'ypos': get_label_pos(height, yspans[0][0], pad=0.3),
                'fontsize': 10, 'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'b', 'xpos': get_label_pos(width, xspans[0][0]), 'ypos': get_label_pos(height, yspans[1][0], pad=0.3), 'fontsize': 10,
+              {'label_text': 'b', 'xpos': get_label_pos(width, xspans[0][0], pad=0.6),
+               'ypos': get_label_pos(height, yspans[1][0], pad=0.3), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'c', 'xpos': get_label_pos(width, xspans[0][0]), 'ypos': get_label_pos(height, yspans[2][0], pad=0.3), 'fontsize': 10,
+              {'label_text': 'c', 'xpos': get_label_pos(width, xspans[0][0], pad=0.6),
+               'ypos': get_label_pos(height, yspans[2][0], pad=0.3), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
               ]
     fg.add_labels(fig, labels)
 
     fig_path = save_figure_path(figure="fig_data_quality")
     adjust = 0.3
-    fig.subplots_adjust(top=1-adjust/height, bottom=adjust/height, left=(adjust + 0.2)/width, right=1-adjust/width)
+    fig.subplots_adjust(top=1-adjust/height, bottom=adjust/height, left=(adjust)/width, right=1-adjust/width)
     fig.savefig(fig_path.joinpath(f"fig_supplemental_neuron_metrics_test.svg"))
     fig.savefig(fig_path.joinpath(f"fig_supplemental_neuron_metrics_test.pdf"))
 

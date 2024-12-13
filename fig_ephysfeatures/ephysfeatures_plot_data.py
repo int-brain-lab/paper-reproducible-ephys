@@ -27,7 +27,7 @@ def plot_main_figure(freeze=None, one=None):
                'rms_ap', 'spike_amp_mean']
     LABELS = ['Neuron yield', 'Firing rate', 'LFP power',
               'AP band RMS', 'Spike amp.']
-    N_PERMUT = 50000  # Amount of shuffles for permutation testing
+    N_PERMUT = 50  # Amount of shuffles for permutation testing
     BH_CORRECTION = False  # Correction for multiple comparisons
     # N_PERMUT = 50  # Amount of shuffles for permutation testing
     DPI = 150  # if the figure is too big on your screen, lower this number
@@ -47,7 +47,7 @@ def plot_main_figure(freeze=None, one=None):
     width = 7
     height = 9
     fig = plt.figure(figsize=(width, height), dpi=DPI)  # full width figure is 7 inches
-    xspan = get_row_coord(width, [1])
+    xspan = get_row_coord(width, [1], pad=0.6)
     yspan = get_row_coord(height, [2, 2, 2, 1], hspace=0.8, pad=0.3)
     xspan_inset = [[0.2, 0.35], [0.66, 0.88]]
     ax = {'A': fg.place_axes_on_grid(fig, xspan=xspan[0], yspan=yspan[0]),
@@ -58,19 +58,19 @@ def plot_main_figure(freeze=None, one=None):
           'D': fg.place_axes_on_grid(fig, xspan=xspan_inset[0], yspan=yspan[3]),
           'E': fg.place_axes_on_grid(fig, xspan=xspan_inset[1], yspan=yspan[3])}
     # Add subplot labels
-    labels = [{'label_text': 'a', 'xpos': get_label_pos(width, xspan[0][0]),
+    labels = [{'label_text': 'a', 'xpos': get_label_pos(width, xspan[0][0], pad=0.6),
                'ypos': get_label_pos(height, yspan[0][0], pad=0.3), 'fontsize': 10, 'weight': 'bold',
                'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'b', 'xpos': get_label_pos(width, xspan[0][0]),
+              {'label_text': 'b', 'xpos': get_label_pos(width, xspan[0][0], pad=0.6),
                'ypos': get_label_pos(height, yspan[1][0], pad=0.3), 'fontsize': 10, 'weight': 'bold',
                'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'c', 'xpos': get_label_pos(width, xspan[0][0]),
+              {'label_text': 'c', 'xpos': get_label_pos(width, xspan[0][0], pad=0.6),
                'ypos': get_label_pos(height, yspan[2][0], pad=0.3), 'fontsize': 10, 'weight': 'bold',
                'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'd', 'xpos': get_label_pos(width, xspan_inset[0][0]),
+              {'label_text': 'd', 'xpos': get_label_pos(width, xspan_inset[0][0], pad=0.5),
                'ypos': get_label_pos(height, yspan[3][0], pad=0.3), 'fontsize': 10, 'weight': 'bold',
                'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'e', 'xpos': get_label_pos(width, xspan_inset[1][0]),
+              {'label_text': 'e', 'xpos': get_label_pos(width, xspan_inset[1][0], pad=0.6),
                'ypos': get_label_pos(height, yspan[3][0], pad=0.3), 'fontsize': 10, 'weight': 'bold',
                'ha': 'right', 'va': 'bottom'}]
     # {'label_text':'g', 'xpos':0.7, 'ypos':0.85, 'fontsize':10, 'weight': 'bold',
@@ -80,13 +80,14 @@ def plot_main_figure(freeze=None, one=None):
     ax['A'].axis('off')
     pids_b = panel_probe_lfp(fig, ax['B'], df_filt, boundary_align=BOUNDARY, freeze=freeze)
     pids_c = panel_probe_neurons(fig, ax['C'], df_filt, boundary_align=BOUNDARY, freeze=freeze)
-    pids_d = []
     p_permut, pids_d = panel_permutation(ax['D'], METRICS, REGIONS, LABELS,
                                          n_permut=N_PERMUT,
                                          n_rec_per_lab=MIN_REC_PER_LAB,
                                          n_rec_per_region=MIN_REC_PER_REGION,
                                          bh_correction=BH_CORRECTION,
                                          freeze=freeze)
+    pids_d = None
+    p_permut = None
     p_decoding = panel_decoding(ax['E'], qc='pass', bh_correction=True)
     """
     ax['panel_E'].set(title='QC pass')
@@ -98,7 +99,7 @@ def plot_main_figure(freeze=None, one=None):
     save_path = save_figure_path(figure='fig_ephysfeatures')
     print(f'Saving figures to {save_path}')
     adjust = 0.3
-    fig.subplots_adjust(top=1 - adjust / height, bottom=(adjust + 0.3) / height, left=(adjust + 0.2) / width,
+    fig.subplots_adjust(top=1 - adjust / height, bottom=(adjust + 0.3) / height, left=(adjust) / width,
                         right=1 - (adjust + 0.2) / width)
     plt.savefig(save_path.joinpath('figure3.png'))
     plt.savefig(save_path.joinpath('figure3.pdf'))

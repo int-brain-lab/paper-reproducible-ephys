@@ -35,9 +35,9 @@ def plot_main_figure(one=None):
     height = 7
     fig = plt.figure(figsize=(7, 7), dpi=DPI)  # full width figure is 7 inches
 
-    xspans = get_row_coord(width, [1])
+    xspans = get_row_coord(width, [1], pad=0.6)
     yspans = get_row_coord(height, [3, 3, 2], hspace=0.8, pad=0.3)
-    xspans_row3 = get_row_coord(width, [1, 1, 1, 2])
+    xspans_row3 = get_row_coord(width, [1, 1, 1, 2], pad=0.6)
 
     ax = {'A': fg.place_axes_on_grid(fig, xspan=xspans[0], yspan=yspans[0],
                                      dim=[1, n_columns + 1], wspace=0.3),
@@ -49,22 +49,22 @@ def plot_main_figure(one=None):
           'F': fg.place_axes_on_grid(fig, xspan=xspans_row3[3], yspan=yspans[2]),
           }
 
-    labels = [{'label_text': 'a', 'xpos': get_label_pos(width, xspans[0][0]),
+    labels = [{'label_text': 'a', 'xpos': get_label_pos(width, xspans[0][0], pad=0.6),
                'ypos': get_label_pos(height, yspans[0][0], pad=0.3), 'fontsize': 10, 'weight': 'bold',
                'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'b', 'xpos': get_label_pos(width, xspans[0][0]),
+              {'label_text': 'b', 'xpos': get_label_pos(width, xspans[0][0], pad=0.6),
                'ypos': get_label_pos(height, yspans[1][0], pad=0.3), 'fontsize': 10, 'weight': 'bold',
                'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'c', 'xpos': get_label_pos(width, xspans_row3[0][0]),
+              {'label_text': 'c', 'xpos': get_label_pos(width, xspans_row3[0][0], pad=0.6),
                'ypos': get_label_pos(height, yspans[2][0], pad=0.3), 'fontsize': 10, 'weight': 'bold',
                'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'd', 'xpos': get_label_pos(width, xspans_row3[1][0]),
+              {'label_text': 'd', 'xpos': get_label_pos(width, xspans_row3[1][0], pad=0.6),
                'ypos': get_label_pos(height, yspans[2][0], pad=0.3), 'fontsize': 10, 'weight': 'bold',
                'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'e', 'xpos': get_label_pos(width, xspans_row3[2][0]),
+              {'label_text': 'e', 'xpos': get_label_pos(width, xspans_row3[2][0], pad=0.6),
                'ypos': get_label_pos(height, yspans[2][0], pad=0.3), 'fontsize': 10, 'weight': 'bold',
                'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'f', 'xpos': get_label_pos(width, xspans_row3[3][0]),
+              {'label_text': 'f', 'xpos': get_label_pos(width, xspans_row3[3][0], pad=0.6),
                'ypos': get_label_pos(height, yspans[2][0], pad=0.3), 'fontsize': 10, 'weight': 'bold',
                'ha': 'right', 'va': 'bottom'}
               ]
@@ -95,7 +95,7 @@ def plot_main_figure(one=None):
     # Save figure
     save_path = save_figure_path(figure='fig_ephysfeatures')
     adjust = 0.3
-    fig.subplots_adjust(top=1-adjust/height, bottom=(adjust + 0.3)/height, left=(adjust + 0.2)/width, right=1-(adjust + 0.3)/width)
+    fig.subplots_adjust(top=1-adjust/height, bottom=(adjust + 0.3)/height, left=(adjust)/width, right=1-(adjust + 0.3)/width)
     #print(f'Saving figures to {save_path}')
     plt.savefig(save_path.joinpath('figure3_supp3_bilateral.svg'))
     plt.savefig(save_path.joinpath('figure3_supp3_bilateral.pdf'))

@@ -81,16 +81,16 @@ def panel_probe_lfp(fig, ax, df_filt, boundary_align='DG-TH', ylim=[-2000, 2000]
     ax[-1].set_axis_off()
 
     # Add lab names
-    plt.figtext(0.12, 0.705, 'Berkeley', va="center", ha="center", size=7, color=lab_colors['Berkeley'])
-    plt.figtext(0.215, 0.705, 'CCU', va="center", ha="center", size=7, color=lab_colors['CCU'])
-    plt.figtext(0.300, 0.705, 'CSHL (C)', va="center", ha="center", size=7, color=lab_colors['CSHL (C)'])
-    plt.figtext(0.345, 0.705, '(Z)', va="center", ha="center", size=7, color=lab_colors['CSHL (Z)'])
-    plt.figtext(0.40, 0.705, 'NYU', va="center", ha="center", size=7, color=lab_colors['NYU'])
-    plt.figtext(0.465, 0.705, 'Princeton', va="center", ha="center", size=7, color=lab_colors['Princeton'])
-    plt.figtext(0.53, 0.705, 'SWC', va="center", ha="center", size=7, color=lab_colors['SWC'])
-    plt.figtext(0.635, 0.705, 'UCL', va="center", ha="center", size=7, color=lab_colors['UCL'])
+    plt.figtext(0.155, 0.705, 'Berkeley', va="center", ha="center", size=7, color=lab_colors['Berkeley'])
+    plt.figtext(0.235, 0.705, 'CCU', va="center", ha="center", size=7, color=lab_colors['CCU'])
+    plt.figtext(0.325, 0.705, 'CSHL (C)', va="center", ha="center", size=7, color=lab_colors['CSHL (C)'])
+    plt.figtext(0.365, 0.705, '(Z)', va="center", ha="center", size=7, color=lab_colors['CSHL (Z)'])
+    plt.figtext(0.42, 0.705, 'NYU', va="center", ha="center", size=7, color=lab_colors['NYU'])
+    plt.figtext(0.485, 0.705, 'Princeton', va="center", ha="center", size=7, color=lab_colors['Princeton'])
+    plt.figtext(0.55, 0.705, 'SWC', va="center", ha="center", size=7, color=lab_colors['SWC'])
+    plt.figtext(0.645, 0.705, 'UCL', va="center", ha="center", size=7, color=lab_colors['UCL'])
     #plt.figtext(0.805, 0.715, '(H)', va="center", ha="center", size=7, color=lab_colors['UCL (H)'])
-    plt.figtext(0.78, 0.705, 'UCLA', va="center", ha="center", size=7, color=lab_colors['UCLA'])
+    plt.figtext(0.785, 0.705, 'UCLA', va="center", ha="center", size=7, color=lab_colors['UCLA'])
     plt.figtext(0.89, 0.705, 'UW', va="center", ha="center", size=7, color=lab_colors['UW'])
 
     # Old positions Add lab names
@@ -275,7 +275,7 @@ def panel_permutation(ax, metrics, regions, labels, n_permut=10000, n_rec_per_la
             this_labs = this_labs[~np.isnan(this_data)]
             this_subjects = this_subjects[~np.isnan(this_data)]
             this_data = this_data[~np.isnan(this_data)]
-            this_sessions = this_sessions[~np.isnan(this_data)]
+            #this_sessions = this_sessions[~np.isnan(this_data)]
 
             # Exclude data from labs that do not have enough recordings
             lab_names, this_n_labs = np.unique(this_labs, return_counts=True)
@@ -283,7 +283,7 @@ def panel_permutation(ax, metrics, regions, labels, n_permut=10000, n_rec_per_la
             this_data = this_data[~np.isin(this_labs, excl_labs)]
             this_subjects = this_subjects[~np.isin(this_labs, excl_labs)]
             this_labs = this_labs[~np.isin(this_labs, excl_labs)]
-            this_sessions = this_sessions[~np.isin(this_labs, excl_labs)]
+            #this_sessions = this_sessions[~np.isin(this_labs, excl_labs)]
 
             if PRINT_INFO:
                 print(f'Figure 3 d: {metric}: {region}')

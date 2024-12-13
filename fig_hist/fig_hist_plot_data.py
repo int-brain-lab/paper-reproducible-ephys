@@ -30,20 +30,12 @@ def plot_hist_figure_new(perform_permutation_test=False):
     height = 8
     fig = plt.figure(figsize=(width, height))
 
-
-    xspan_row1 = get_row_coord(width, [3, 2, 2])
-    xspans_row = get_row_coord(width, [1, 1, 1])
+    xspan_row1 = get_row_coord(width, [3, 2, 2], pad=0.6)
+    xspans_row = get_row_coord(width, [1, 1, 1], hspace=0.8, pad=0.6)
     yspans = get_row_coord(height, [2, 2, 3], hspace=[0.6, 1])
 
 
     yspan_inset = get_row_coord(height, [1, 5], pad=0, hspace=0.1, span=yspans[2])
-
-    fig = plt.figure(figsize=(7, 7))
-    ax = {'A': fg.place_axes_on_grid(fig, xspan=[0.1, 0.2], yspan=[0, 0.3]),
-          'B': fg.place_axes_on_grid(fig, xspan=[0.3, 0.9], yspan=[0, 0.3]),
-          'C': fg.place_axes_on_grid(fig, xspan=[0.1, 0.9], yspan=[0.4, 0.9], dim=[1, 2], wspace=0.05),
-    }
-
 
     ax = {'A': fg.place_axes_on_grid(fig, xspan=xspan_row1[0], yspan=yspans[0]),
           'B': fg.place_axes_on_grid(fig, xspan=xspan_row1[1], yspan=yspans[0]),
@@ -59,8 +51,8 @@ def plot_hist_figure_new(perform_permutation_test=False):
           'I_2': fg.place_axes_on_grid(fig, xspan=xspans_row[2], yspan=yspan_inset[1]),
           }
 
-    remove_frame(ax['A'])
-    remove_frame(ax['B'])
+    ax['A'].set_axis_off()
+    ax['B'].set_axis_off()
 
     plot_trajs(ax1=ax['C'][0], ax2=ax['C'][1], save=False)
 
@@ -78,25 +70,34 @@ def plot_hist_figure_new(perform_permutation_test=False):
 
     plot_probe_angle_histology_all_lab(min_rec_per_lab=min_rec_per_lab,
                                        perform_permutation_test=perform_permutation_test, axs=[ax['I_1'], ax['I_2']],
-                                                                                               save=False)
+                                       save=False)
 
-    labels = [{'label_text': 'a', 'xpos': get_label_pos(width, xspan_row1[0][0]), 'ypos': get_label_pos(height, yspans[0][0], pad=0.1),
+    labels = [{'label_text': 'a', 'xpos': get_label_pos(width, xspan_row1[0][0], pad=0.6),
+               'ypos': get_label_pos(height, yspans[0][0], pad=0.1),
                'fontsize': 10, 'weight': 'heavy', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'b', 'xpos': get_label_pos(width, xspan_row1[1][0]), 'ypos': get_label_pos(height, yspans[0][0], pad=0.1), 'fontsize': 10,
+              {'label_text': 'b', 'xpos': get_label_pos(width, xspan_row1[1][0], pad=0.2),
+               'ypos': get_label_pos(height, yspans[0][0], pad=0.1), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'c', 'xpos': get_label_pos(width, xspan_row1[2][0]), 'ypos': get_label_pos(height, yspans[0][0], pad=0.1), 'fontsize': 10,
+              {'label_text': 'c', 'xpos': get_label_pos(width, xspan_row1[2][0], pad=0.2),
+               'ypos': get_label_pos(height, yspans[0][0], pad=0.1), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'd', 'xpos': get_label_pos(width, xspans_row[0][0]), 'ypos': get_label_pos(height, yspans[1][0], pad=0.3), 'fontsize': 10,
+              {'label_text': 'd', 'xpos': get_label_pos(width, xspans_row[0][0], pad=0.6),
+               'ypos': get_label_pos(height, yspans[1][0], pad=0.3), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'e', 'xpos': get_label_pos(width, xspans_row[1][0]), 'ypos': get_label_pos(height, yspans[1][0], pad=0.3), 'fontsize': 10,
+              {'label_text': 'e', 'xpos': get_label_pos(width, xspans_row[1][0], pad=0.6),
+               'ypos': get_label_pos(height, yspans[1][0], pad=0.3), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'f', 'xpos': get_label_pos(width, xspans_row[2][0]), 'ypos': get_label_pos(height, yspans[1][0], pad=0.3), 'fontsize': 10,
+              {'label_text': 'f', 'xpos': get_label_pos(width, xspans_row[2][0], pad=0.6),
+               'ypos': get_label_pos(height, yspans[1][0], pad=0.3), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'g', 'xpos': get_label_pos(width, xspans_row[0][0]), 'ypos': get_label_pos(height, yspans[2][0], pad=0.3), 'fontsize': 10,
+              {'label_text': 'g', 'xpos': get_label_pos(width, xspans_row[0][0], pad=0.6),
+               'ypos': get_label_pos(height, yspans[2][0], pad=0.3), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'h', 'xpos': get_label_pos(width, xspans_row[1][0]), 'ypos': get_label_pos(height, yspans[2][0], pad=0.3), 'fontsize': 10,
+              {'label_text': 'h', 'xpos': get_label_pos(width, xspans_row[1][0], pad=0.6),
+               'ypos': get_label_pos(height, yspans[2][0], pad=0.3), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'i', 'xpos': get_label_pos(width, xspans_row[2][0]), 'ypos': get_label_pos(height, yspans[2][0], pad=0.3), 'fontsize': 10,
+              {'label_text': 'i', 'xpos': get_label_pos(width, xspans_row[2][0], pad=0.6),
+               'ypos': get_label_pos(height, yspans[2][0], pad=0.3), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'}
               ]
 
@@ -106,7 +107,7 @@ def plot_hist_figure_new(perform_permutation_test=False):
     fg.add_labels(fig, labels)
 
     adjust = 0.3
-    fig.subplots_adjust(top=1-adjust/height, bottom=(adjust + 0.2)/height, left=(adjust + 0.2)/width, right=1-adjust/width)
+    fig.subplots_adjust(top=1-adjust/height, bottom=(adjust + 0.2)/height, left=(adjust)/width, right=1-adjust/width)
     plt.savefig(fig_path.joinpath('fig_hist.svg'))
     plt.savefig(fig_path.joinpath('fig_hist.png'))
     plt.savefig(fig_path.joinpath('fig_hist.pdf'))

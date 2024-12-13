@@ -27,7 +27,7 @@ def plot_figure_supp1():
     height = 8
     fig = plt.figure(figsize=(width, height), dpi=DPI)  # full width figure is 8 inches
 
-    xspan = get_row_coord(width, [1])
+    xspan = get_row_coord(width, [1], pad=0.6)
     yspan = get_row_coord(height, [1, 1, 1], hspace=0.8, pad=0.3)
 
     ax = {'A': fg.place_axes_on_grid(fig, xspan=xspan[0], yspan=yspan[0],
@@ -44,11 +44,13 @@ def plot_figure_supp1():
     panel_probe_neurons(fig, ax['B'], boundary_align=BOUNDARY)
 
     # Add subplot labels
-    labels = [{'label_text': 'a', 'xpos': get_label_pos(width, xspan[0][0]), 'ypos': get_label_pos(height, yspan[0][0], pad=0.3),
+    labels = [{'label_text': 'a', 'xpos': get_label_pos(width, xspan[0][0], pad=0.6),
+               'ypos': get_label_pos(height, yspan[0][0], pad=0.3),
                'fontsize': 10, 'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'b', 'xpos': get_label_pos(width, xspan[0][0]), 'ypos': get_label_pos(height, yspan[1][0], pad=0.3),
+              {'label_text': 'b', 'xpos': get_label_pos(width, xspan[0][0], pad=0.6),
+               'ypos': get_label_pos(height, yspan[1][0], pad=0.3),
                'fontsize': 10, 'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'c', 'xpos': get_label_pos(width, xspan[0][0]),
+              {'label_text': 'c', 'xpos': get_label_pos(width, xspan[0][0], pad=0.6),
                'ypos': get_label_pos(height, yspan[2][0], pad=0.3),
                'fontsize': 10, 'weight': 'bold', 'ha': 'right', 'va': 'bottom'}]
     fg.add_labels(fig, labels)
@@ -56,7 +58,7 @@ def plot_figure_supp1():
     # Save figure
     save_path = save_figure_path(figure='fig_ephysfeatures')
     adjust = 0.3
-    fig.subplots_adjust(top=1-adjust/height, bottom=adjust/height, left=(adjust + 0.2)/width, right=1-(adjust + 0.2)/width)
+    fig.subplots_adjust(top=1-adjust/height, bottom=adjust/height, left=(adjust)/width, right=1-(adjust + 0.2)/width)
     plt.savefig(save_path.joinpath('figure3_supp1.png'))
     plt.savefig(save_path.joinpath('figure3_supp1.pdf'))
 

@@ -462,24 +462,24 @@ def perm_test(inclu=False, print_=False, rerun = True, align='move',
     else:
         fig = plt.gcf()
 
-    if not samp:     
-        axin = inset_axes(ax, width="5%", height="80%", 
+    if samp:
+        axin = inset_axes(ax, width="10%", height="80%",
                           loc='lower right', borderpad=0,
                           bbox_to_anchor=(0.1, 0.1, 1, 1), 
                           bbox_transform=ax.transAxes)
                           
     sns.heatmap(np.log10(AKS.T), cmap=newcmp, square=True,
-                cbar=True if not samp else False, 
-                cbar_ax=axin if not samp else None,
+                cbar=True if samp else False,
+                cbar_ax=axin if samp else None,
                 annot=False, annot_kws={"size": 5},
                 linewidths=.5, fmt='.2f', vmin=-2.5, vmax=np.log10(1), 
                 ax=ax)
     
-    if not samp:            
+    if samp:
         cbar = ax.collections[0].colorbar
         cbar.set_ticks(np.log10([0.01, 0.1, 1]))
         cbar.set_ticklabels([0.01, 0.1, 1])
-        cbar.set_label('p-value (log scale)', labelpad=8)
+        cbar.set_label('p-value (log scale)', labelpad=2)
     
     ax.set(xlabel='', ylabel='', 
               xticks=np.arange(len(list(regs_) + ['all'])) + 0.5, 
@@ -487,14 +487,14 @@ def perm_test(inclu=False, print_=False, rerun = True, align='move',
               title='KS test mean' if samp else 'KS test')
     ax.set_yticklabels([b[x] for x in labs_] + ['all'], 
                           va='center', rotation=0)
-    ax.set_xticklabels(list(regs_) + ['all'], rotation=45, ha='right')
-    
+    ax.set_xticklabels(list(regs_) + ['all'], rotation=45, ha='right', rotation_mode="anchor")
+
     # separate 'all' from others via lines
     ax.axvline(x=len(regs_),c='k', linewidth=2)
     ax.axhline(y=len(labs_),c='k', linewidth=2)
 
-    fig = plt.gcf()
-    fig.tight_layout()
+    # fig = plt.gcf()
+    # fig.tight_layout()
 
 
 def all_panels(rm_unre=True, align='move', split='rt',
@@ -608,15 +608,20 @@ def all_panels(rm_unre=True, align='move', split='rt',
 
     # Main figure
     width_m = 7
-    height_m = 6.125
+    height_m = 5.5
     figure_style()
     fig = plt.figure(figsize=(width_m, height_m), facecolor='w')
 
-    xspans = get_row_coord(width_m, [1, 1, 2], hspace=0.8)
-    yspans = get_row_coord(height_m, [1, 1, 1], hspace=1, pad=0.3)
+    padx = 0.5
+    pady = 0.3
+    xspans = get_row_coord(width_m, [1, 1, 2], hspace=0.8, pad=padx)
+    yspans = get_row_coord(height_m, [1, 1, 1], hspace=1, pad=pady)
     yspan_inset = get_row_coord(height_m, [1, 1], pad=0, hspace=0.15, span=yspans[0])
     xspan_inset = get_row_coord(width_m, [10, 1], pad=0, hspace=0, span=xspans[2])
-    xspans_row3 = get_row_coord(width_m, [1, 1, 1, 1], hspace=0.8)
+    xspans_row3 = get_row_coord(width_m, [1, 1], hspace=0.8, pad=padx)
+    xspans_row3_1 = get_row_coord(width_m, [1, 1], hspace=0.8, pad=0, span=xspans_row3[0])
+    xspans_row3_2 = get_row_coord(width_m, [1, 1], hspace=-0.4, pad=0.6, span=(xspans_row3[1][0], 1))
+    print(xspans_row3)
 
     axs = {
         'Ea': fg.place_axes_on_grid(fig, xspan=xspans[0], yspan=yspan_inset[0]),  # A
@@ -628,35 +633,41 @@ def all_panels(rm_unre=True, align='move', split='rt',
         'KSregs': fg.place_axes_on_grid(fig, xspan=xspans[1], yspan=yspans[1]),  # E
         'c_labs': fg.place_axes_on_grid(fig, xspan=xspan_inset[0], yspan=yspans[1]),  # F
         'F_2': fg.place_axes_on_grid(fig, xspan=xspan_inset[1], yspan=yspans[1]),
-        'm_labs': fg.place_axes_on_grid(fig, xspan=xspans_row3[0], yspan=yspans[2]),  # G
-        'KSlabs': fg.place_axes_on_grid(fig, xspan=xspans_row3[1], yspan=yspans[2]),  # H
-        'KS': fg.place_axes_on_grid(fig, xspan=xspans_row3[2], yspan=yspans[2]),  # I
-        'KSmean': fg.place_axes_on_grid(fig, xspan=xspans_row3[3], yspan=yspans[2]),  # J
+        'm_labs': fg.place_axes_on_grid(fig, xspan=xspans_row3_1[0], yspan=yspans[2]),  # G
+        'KSlabs': fg.place_axes_on_grid(fig, xspan=xspans_row3_1[1], yspan=yspans[2]),  # H
+        'KS': fg.place_axes_on_grid(fig, xspan=xspans_row3_2[0], yspan=yspans[2]),  # I
+        'KSmean': fg.place_axes_on_grid(fig, xspan=xspans_row3_2[1], yspan=yspans[2]),  # J
     }
 
-    labels = [{'label_text': 'a', 'xpos': get_label_pos(width_m,xspans[0][0]), 'ypos': get_label_pos(height_m, yspans[0][0], pad=0.3),
+    labels = [{'label_text': 'a', 'xpos': get_label_pos(width_m,xspans[0][0], pad=padx),
+               'ypos': get_label_pos(height_m, yspans[0][0], pad=pady),
                'fontsize': 10, 'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'b', 'xpos': get_label_pos(width_m, xspans[1][0]), 'ypos': get_label_pos(height_m, yspans[0][0], pad=0.3), 'fontsize': 10,
+              {'label_text': 'b', 'xpos': get_label_pos(width_m, xspans[1][0], pad=padx),
+               'ypos': get_label_pos(height_m, yspans[0][0], pad=pady), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'c', 'xpos': get_label_pos(width_m, xspans[2][0]), 'ypos': get_label_pos(height_m, yspans[0][0], pad=0.3), 'fontsize': 10,
+              {'label_text': 'c', 'xpos': get_label_pos(width_m, xspans[2][0], pad=padx),
+               'ypos': get_label_pos(height_m, yspans[0][0], pad=pady), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'd', 'xpos': get_label_pos(width_m, xspans[0][0]), 'ypos': get_label_pos(height_m, yspans[1][0], pad=0.3), 'fontsize': 10,
+              {'label_text': 'd', 'xpos': get_label_pos(width_m, xspans[0][0], pad=padx),
+               'ypos': get_label_pos(height_m, yspans[1][0], pad=pady), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'e', 'xpos': get_label_pos(width_m, xspans[1][0]), 'ypos': get_label_pos(height_m, yspans[1][0], pad=0.3), 'fontsize': 10,
+              {'label_text': 'e', 'xpos': get_label_pos(width_m, xspans[1][0], pad=padx),
+               'ypos': get_label_pos(height_m, yspans[1][0], pad=pady), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'f', 'xpos': get_label_pos(width_m, xspans[2][0]), 'ypos': get_label_pos(height_m,yspans[1][0], pad=0.3), 'fontsize': 10,
+              {'label_text': 'f', 'xpos': get_label_pos(width_m, xspans[2][0], pad=padx),
+               'ypos': get_label_pos(height_m,yspans[1][0], pad=pady), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'g', 'xpos': get_label_pos(width_m, xspans_row3[0][0]),
-               'ypos': get_label_pos(height_m, yspans[2][0], pad=0.3), 'fontsize': 10,
+              {'label_text': 'g', 'xpos': get_label_pos(width_m, xspans_row3_1[0][0], pad=padx),
+               'ypos': get_label_pos(height_m, yspans[2][0], pad=pady), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'h', 'xpos': get_label_pos(width_m, xspans_row3[1][0]),
-               'ypos': get_label_pos(height_m, yspans[2][0], pad=0.3), 'fontsize': 10,
+              {'label_text': 'h', 'xpos': get_label_pos(width_m, xspans_row3_1[1][0], pad=padx),
+               'ypos': get_label_pos(height_m, yspans[2][0], pad=pady), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'i', 'xpos': get_label_pos(width_m, xspans_row3[2][0]),
-               'ypos': get_label_pos(height_m, yspans[2][0], pad=0.3), 'fontsize': 10,
+              {'label_text': 'i', 'xpos': get_label_pos(width_m, xspans_row3_2[0][0], pad=0.2),
+               'ypos': get_label_pos(height_m, yspans[2][0], pad=pady), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'j', 'xpos': get_label_pos(width_m, xspans_row3[3][0]),
-               'ypos': get_label_pos(height_m, yspans[2][0], pad=0.3), 'fontsize': 10,
+              {'label_text': 'j', 'xpos': get_label_pos(width_m, xspans_row3_2[1][0], pad=-0.2),
+               'ypos': get_label_pos(height_m, yspans[2][0], pad=pady), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
               ]
 
@@ -667,8 +678,8 @@ def all_panels(rm_unre=True, align='move', split='rt',
     height = 7
     figs = plt.figure(figsize=(width, height))
 
-    xspans = get_row_coord(width, [1, 1, 1])
-    xspan_full = get_row_coord(width, [1])
+    xspans = get_row_coord(width, [1, 1, 1], hspace=0.8, pad=0.6)
+    xspan_full = get_row_coord(width, [1], pad=0)
     yspans = get_row_coord(height, [8, 8, 8, 8, 8, 1], hspace=[0.8, 0.8, 0.8, 0.8, 0.6], pad=0.3)
 
     axss = {
@@ -690,44 +701,50 @@ def all_panels(rm_unre=True, align='move', split='rt',
         'Labs': fg.place_axes_on_grid(figs, xspan=xspan_full[0], yspan=yspans[5]),
     }
 
-    labels = [{'label_text': 'a', 'xpos': get_label_pos(width,xspans[0][0]), 'ypos': get_label_pos(height, yspans[0][0], pad=0.3),
+    labels = [{'label_text': 'a', 'xpos': get_label_pos(width,xspans[0][0], pad=0.6),
+               'ypos': get_label_pos(height, yspans[0][0], pad=pady),
                'fontsize': 10, 'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'b', 'xpos': get_label_pos(width, xspans[1][0]), 'ypos': get_label_pos(height, yspans[0][0], pad=0.3), 'fontsize': 10,
+              {'label_text': 'b', 'xpos': get_label_pos(width, xspans[1][0], pad=0.5),
+               'ypos': get_label_pos(height, yspans[0][0], pad=pady), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'c', 'xpos': get_label_pos(width, xspans[2][0]), 'ypos': get_label_pos(height, yspans[0][0], pad=0.3), 'fontsize': 10,
+              {'label_text': 'c', 'xpos': get_label_pos(width, xspans[2][0], pad=0.5),
+               'ypos': get_label_pos(height, yspans[0][0], pad=pady), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'd', 'xpos': get_label_pos(width, xspans[0][0]), 'ypos': get_label_pos(height, yspans[1][0], pad=0.3), 'fontsize': 10,
+              {'label_text': 'd', 'xpos': get_label_pos(width, xspans[0][0], pad=0.6),
+               'ypos': get_label_pos(height, yspans[1][0], pad=pady), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'e', 'xpos': get_label_pos(width, xspans[1][0]), 'ypos': get_label_pos(height, yspans[1][0], pad=0.3), 'fontsize': 10,
+              {'label_text': 'e', 'xpos': get_label_pos(width, xspans[1][0], pad=0.5),
+               'ypos': get_label_pos(height, yspans[1][0], pad=pady), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'f', 'xpos': get_label_pos(width, xspans[2][0]), 'ypos': get_label_pos(height,yspans[1][0], pad=0.3), 'fontsize': 10,
+              {'label_text': 'f', 'xpos': get_label_pos(width, xspans[2][0], pad=0.5),
+               'ypos': get_label_pos(height,yspans[1][0], pad=pady), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'g', 'xpos': get_label_pos(width, xspans[0][0]),
-               'ypos': get_label_pos(height, yspans[2][0], pad=0.3), 'fontsize': 10,
+              {'label_text': 'g', 'xpos': get_label_pos(width, xspans[0][0], pad=0.6),
+               'ypos': get_label_pos(height, yspans[2][0], pad=pady), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'h', 'xpos': get_label_pos(width, xspans[1][0]),
-               'ypos': get_label_pos(height, yspans[2][0], pad=0.3), 'fontsize': 10,
+              {'label_text': 'h', 'xpos': get_label_pos(width, xspans[1][0], pad=0.5),
+               'ypos': get_label_pos(height, yspans[2][0], pad=pady), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'i', 'xpos': get_label_pos(width, xspans[2][0]),
-               'ypos': get_label_pos(height, yspans[2][0], pad=0.3), 'fontsize': 10,
+              {'label_text': 'i', 'xpos': get_label_pos(width, xspans[2][0], pad=0.5),
+               'ypos': get_label_pos(height, yspans[2][0], pad=pady), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'j', 'xpos': get_label_pos(width, xspans[0][0]),
-               'ypos': get_label_pos(height, yspans[3][0], pad=0.3), 'fontsize': 10,
+              {'label_text': 'j', 'xpos': get_label_pos(width, xspans[0][0], pad=0.6),
+               'ypos': get_label_pos(height, yspans[3][0], pad=pady), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'k', 'xpos': get_label_pos(width, xspans[1][0]),
-               'ypos': get_label_pos(height, yspans[3][0], pad=0.3), 'fontsize': 10,
+              {'label_text': 'k', 'xpos': get_label_pos(width, xspans[1][0], pad=0.5),
+               'ypos': get_label_pos(height, yspans[3][0], pad=pady), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'l', 'xpos': get_label_pos(width, xspans[2][0]),
-               'ypos': get_label_pos(height, yspans[3][0], pad=0.3), 'fontsize': 10,
+              {'label_text': 'l', 'xpos': get_label_pos(width, xspans[2][0], pad=0.5),
+               'ypos': get_label_pos(height, yspans[3][0], pad=pady), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'm', 'xpos': get_label_pos(width, xspans[0][0]),
-               'ypos': get_label_pos(height, yspans[4][0], pad=0.3), 'fontsize': 10,
+              {'label_text': 'm', 'xpos': get_label_pos(width, xspans[0][0], pad=0.6),
+               'ypos': get_label_pos(height, yspans[4][0], pad=pady), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'n', 'xpos': get_label_pos(width, xspans[1][0]),
-               'ypos': get_label_pos(height, yspans[4][0], pad=0.3), 'fontsize': 10,
+              {'label_text': 'n', 'xpos': get_label_pos(width, xspans[1][0], pad=0.5),
+               'ypos': get_label_pos(height, yspans[4][0], pad=pady), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'o', 'xpos': get_label_pos(width, xspans[2][0]),
-               'ypos': get_label_pos(height, yspans[4][0], pad=0.3), 'fontsize': 10,
+              {'label_text': 'o', 'xpos': get_label_pos(width, xspans[2][0], pad=0.5),
+               'ypos': get_label_pos(height, yspans[4][0], pad=pady), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'}
               ]
 
@@ -757,7 +774,8 @@ def all_panels(rm_unre=True, align='move', split='rt',
         # average across subset sampling
         perm_test(inclu=inclu, align=align, nrand=nrand, #sig_lev =sig_lev,
                     fdr = fdr, ax=axs['KSmean'], samp=True,
-                    nns = nns, rerun=rerun)                   
+                    nns = nns, rerun=rerun)
+        axs['KSmean'].set_yticklabels([])
               
         # put panel label
         # for pan in ['KS']:
@@ -1021,9 +1039,9 @@ def all_panels(rm_unre=True, align='move', split='rt',
     #                  ha='right', weight='bold')
 
     # plot ks scores as bar plot inset with asterics for small p
-    axsir = inset_axes(axs['KSlabs'], width="40%", height="35%",
+    axsir = inset_axes(axs['KSlabs'], width="65%", height="35%",
                            borderpad=0, loc=4,
-                           bbox_to_anchor=(0.1, 0.2, 1, 1),
+                           bbox_to_anchor=(0.45, 0.2, 1, 1),
                            bbox_transform=axs['KSlabs'].transAxes)
                
     bars = axsir.bar(range(len(ksr)), [ksr[lab][0] for lab in ksr], 
@@ -1296,17 +1314,17 @@ def all_panels(rm_unre=True, align='move', split='rt',
     axs['D'].set_ylim([-3, 10])
 
     # shift x position of KSshift heatmap to correct for long text
-    B = axs['KS'].get_position()
-    axs['KS'].set_position([B.x0 - 0.02, B.y0, B.width, B.height])
+    # B = axs['KS'].get_position()
+    # axs['KS'].set_position([B.x0 -0.02, B.y0, B.width, B.height])
 
     fig_path = save_figure_path(figure='fig_PCA')
     print(f'Saving figures to {fig_path}')
     adjust = 0.3
-    fig.subplots_adjust(top=1-adjust/height_m, bottom=(adjust + 0.2)/height_m, left=(adjust + 0.2)/width_m, right=1-(adjust + 0.2)/width_m)
+    fig.subplots_adjust(top=1-adjust/height_m, bottom=(adjust + 0.2)/height_m, left=(adjust)/width_m, right=1-(adjust + 0.2)/width_m)
     fig.savefig(fig_path.joinpath('figure_PCA.pdf'))
 
     adjust = 0.3
-    figs.subplots_adjust(top=1-adjust/height, bottom=adjust/height, left=(adjust + 0.2)/width, right=1-(adjust + 0.2)/width)
+    figs.subplots_adjust(top=1-adjust/height, bottom=(adjust - 0.1)/height, left=(adjust)/width, right=1-(adjust)/width)
     figs.savefig(fig_path.joinpath('figure_PCA_supp1.pdf'))
 
 

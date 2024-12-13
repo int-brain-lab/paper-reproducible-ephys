@@ -36,9 +36,9 @@ def plot_main_figure():
     width = 7
 
     yspans = get_row_coord(height, [1, 1, 4], hspace=0.8, pad=0.3)
-    xspan_row1 = get_row_coord(width, [1, 1, 1])
-    xspan_row2 = get_row_coord(width, [3, 3, 3, 3, 1], hspace=0.1)
-    xspan_row3 = get_row_coord(width, [1, 1])
+    xspan_row1 = get_row_coord(width, [1, 1, 1], pad=0.5)
+    xspan_row2 = get_row_coord(width, [3, 3, 3, 3, 1], hspace=0.1, pad=0.5)
+    xspan_row3 = get_row_coord(width, [1, 1], pad=0.5)
 
     xspan_inset = get_row_coord(width, [1, 3], hspace=0.2, pad=0, span=xspan_row3[1])
     yspan_inset = get_row_coord(height, [1, 3], pad=0, span=yspans[2])
@@ -61,21 +61,29 @@ def plot_main_figure():
             'H': fg.place_axes_on_grid(fig, xspan=hxcoords, yspan=hycoords)
           }
 
-    labels = [{'label_text': 'a', 'xpos': get_label_pos(width,xspan_row1[0][0]), 'ypos': get_label_pos(height, yspans[0][0], pad=0.3),
+    labels = [{'label_text': 'a', 'xpos': get_label_pos(width,xspan_row1[0][0], pad=0.5),
+               'ypos': get_label_pos(height, yspans[0][0], pad=0.3),
                'fontsize': 10, 'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'b', 'xpos': get_label_pos(width, xspan_row1[1][0]), 'ypos': get_label_pos(height, yspans[0][0], pad=0.3), 'fontsize': 10,
+              {'label_text': 'b', 'xpos': get_label_pos(width, xspan_row1[1][0], pad=0.5),
+               'ypos': get_label_pos(height, yspans[0][0], pad=0.3), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'c', 'xpos': get_label_pos(width, xspan_row1[2][0]), 'ypos': get_label_pos(height, yspans[0][0], pad=0.3), 'fontsize': 10,
+              {'label_text': 'c', 'xpos': get_label_pos(width, xspan_row1[2][0], pad=0.5),
+               'ypos': get_label_pos(height, yspans[0][0], pad=0.3), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'd', 'xpos': get_label_pos(width, xspan_row2[0][0]), 'ypos': get_label_pos(height, yspans[1][0], pad=0.3), 'fontsize': 10,
+              {'label_text': 'd', 'xpos': get_label_pos(width, xspan_row2[0][0], pad=0.5),
+               'ypos': get_label_pos(height, yspans[1][0], pad=0.3), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'e', 'xpos': get_label_pos(width, xspan_row3[0][0]), 'ypos': get_label_pos(height, yspans[2][0], pad=0.3), 'fontsize': 10,
+              {'label_text': 'e', 'xpos': get_label_pos(width, xspan_row3[0][0], pad=0.5),
+               'ypos': get_label_pos(height, yspans[2][0], pad=0.3), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'f', 'xpos': get_label_pos(width, xspan_inset[0][0]), 'ypos': get_label_pos(height,yspan_inset[0][0], pad=0.3), 'fontsize': 10,
+              {'label_text': 'f', 'xpos': get_label_pos(width, xspan_inset[0][0], pad=0.5),
+               'ypos': get_label_pos(height,yspan_inset[0][0], pad=0.3), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'g', 'xpos': get_label_pos(width, xspan_inset[1][0]), 'ypos': get_label_pos(height, yspan_inset[0][0], pad=0.3), 'fontsize': 10,
+              {'label_text': 'g', 'xpos': get_label_pos(width, xspan_inset[1][0]),
+               'ypos': get_label_pos(height, yspan_inset[0][0], pad=0.3), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'h', 'xpos': get_label_pos(width, hxcoords[0]), 'ypos': get_label_pos(height, hycoords[0], pad=0.3), 'fontsize': 10,
+              {'label_text': 'h', 'xpos': get_label_pos(width, hxcoords[0], pad=0.5),
+               'ypos': get_label_pos(height, hycoords[0], pad=0.3), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'}]
 
     fg.add_labels(fig, labels)
@@ -119,7 +127,7 @@ def plot_main_figure():
 
     print(f'Saving figures to {fig_path}')
     adjust = 0.3
-    fig.subplots_adjust(top=1 - adjust / height, bottom=(adjust + 0.2) / height, left=(adjust + 0.2)/ width,
+    fig.subplots_adjust(top=1 - adjust / height, bottom=(adjust + 0.2) / height, left=(adjust)/ width,
                         right=1 - adjust / width)
     plt.savefig(fig_path.joinpath('fig_taskmodulation.svg'))
     plt.savefig(fig_path.joinpath('fig_taskmodulation.pdf'))
@@ -131,7 +139,9 @@ def plot_supp_figure():
     height = 9
     fig = plt.figure(figsize=(width, height))
 
-    xspans = get_row_coord(width, [1, 1])
+    padx = 0.4
+
+    xspans = get_row_coord(width, [1, 1], pad=padx)
     yspans = get_row_coord(height, [7, 7, 7, 1], hspace=[0.5, 0.5, 0.4], pad=0.3)
     xspan_all = get_row_coord(width, [1])
     ax = {'A': fg.place_axes_on_grid(fig, xspan=xspans[0], yspan=yspans[0], dim=[7, 1], hspace=0.8),
@@ -143,18 +153,24 @@ def plot_supp_figure():
           'G': fg.place_axes_on_grid(fig, xspan=xspan_all[0], yspan=yspans[3])
           }
 
-    labels = [{'label_text': 'a', 'xpos': get_label_pos(width,xspans[0][0]), 'ypos': get_label_pos(height, yspans[0][0], pad=0.3),
+    labels = [{'label_text': 'a', 'xpos': get_label_pos(width,xspans[0][0], pad=padx),
+               'ypos': get_label_pos(height, yspans[0][0], pad=0.3),
                'fontsize': 10, 'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'b', 'xpos': get_label_pos(width, xspans[1][0]), 'ypos': get_label_pos(height, yspans[0][0], pad=0.3), 'fontsize': 10,
+              {'label_text': 'b', 'xpos': get_label_pos(width, xspans[1][0], pad=padx),
+               'ypos': get_label_pos(height, yspans[0][0], pad=0.3), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'c', 'xpos': get_label_pos(width, xspans[0][0]), 'ypos': get_label_pos(height, yspans[1][0], pad=0.3), 'fontsize': 10,
+              {'label_text': 'c', 'xpos': get_label_pos(width, xspans[0][0], pad=padx),
+               'ypos': get_label_pos(height, yspans[1][0], pad=0.3), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'd', 'xpos': get_label_pos(width, xspans[1][0]), 'ypos': get_label_pos(height, yspans[1][0], pad=0.3), 'fontsize': 10,
+              {'label_text': 'd', 'xpos': get_label_pos(width, xspans[1][0], pad=padx),
+               'ypos': get_label_pos(height, yspans[1][0], pad=0.3), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'e', 'xpos': get_label_pos(width, xspans[0][0]), 'ypos': get_label_pos(height, yspans[2][0], pad=0.3), 'fontsize': 10,
+              {'label_text': 'e', 'xpos': get_label_pos(width, xspans[0][0], pad=padx),
+               'ypos': get_label_pos(height, yspans[2][0], pad=0.3), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'f', 'xpos': get_label_pos(width, xspans[1][0]), 'ypos': get_label_pos(height,yspans[2][0], pad=0.3), 'fontsize': 10,
-               'weight': 'bold', 'ha': 'right', 'va': 'bottom'},]
+              {'label_text': 'f', 'xpos': get_label_pos(width, xspans[1][0], pad=padx),
+               'ypos': get_label_pos(height,yspans[2][0], pad=0.3), 'fontsize': 10,
+               'weight': 'bold', 'ha': 'right', 'va': 'bottom'}]
 
 
     fg.add_labels(fig, labels)
@@ -695,8 +711,9 @@ def plot_power_analysis():
     height = 8
     fig = plt.figure(figsize=(width, height))
 
-    xspans = get_row_coord(width, [1])
-    xspans_row2 = get_row_coord(width, [1, 1], hspace=1.4, span=[0.1, 0.9])
+    padx = 0.5
+    xspans = get_row_coord(width, [1], pad=padx)
+    xspans_row2 = get_row_coord(width, [1, 1], hspace=1.4, span=[0.1, 0.9], pad=padx)
     yspans = get_row_coord(height, [21, 1, 6], hspace=[0.3, 0.5], pad=0.3)
 
     axs = {'A': fg.place_axes_on_grid(fig, xspan=xspans[0], yspan=yspans[0], dim=[7, 5], wspace=0.1, hspace=0.2),
@@ -705,11 +722,14 @@ def plot_power_analysis():
           'C': fg.place_axes_on_grid(fig, xspan=xspans_row2[1], yspan=yspans[2]),
           }
 
-    labels = [{'label_text': 'a', 'xpos': get_label_pos(width, xspans[0][0]), 'ypos': get_label_pos(height, yspans[0][0], pad=0.3),
+    labels = [{'label_text': 'a', 'xpos': get_label_pos(width, xspans[0][0], pad=padx),
+               'ypos': get_label_pos(height, yspans[0][0], pad=0.3),
                'fontsize': 10, 'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'b', 'xpos': get_label_pos(width, xspans_row2[0][0]), 'ypos': get_label_pos(height, yspans[2][0], pad=0.3), 'fontsize': 10,
+              {'label_text': 'b', 'xpos': get_label_pos(width, xspans_row2[0][0], pad=padx),
+               'ypos': get_label_pos(height, yspans[2][0], pad=0.3), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'c', 'xpos': get_label_pos(width, xspans_row2[1][0]), 'ypos': get_label_pos(height, yspans[2][0], pad=0.3), 'fontsize': 10,
+              {'label_text': 'c', 'xpos': get_label_pos(width, xspans_row2[1][0], pad=padx),
+               'ypos': get_label_pos(height, yspans[2][0], pad=0.3), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},]
 
     fg.add_labels(fig, labels)
@@ -838,7 +858,7 @@ def plot_power_analysis():
 
     axs['A_1'].set_axis_off()
     inst = df_filt.institute.unique()
-    plot_horizontal_institute_legend(inst, axs['A_1'])
+    plot_horizontal_institute_legend(inst, axs['A_1'], offset=0.15)
 
     if PRINT_INFO:
         print(f'Figure 4 supp2 b/c')
@@ -861,7 +881,7 @@ def plot_power_analysis():
 
     print(f'Saving figures to {fig_path}')
     adjust = 0.3
-    fig.subplots_adjust(top=1 - adjust / height, bottom=(adjust + 0.2) / height, left=(adjust + 0.2) / width,
+    fig.subplots_adjust(top=1 - adjust / height, bottom=(adjust + 0.2) / height, left=(adjust) / width,
                         right=1 - (adjust + 0.2) / width)
     plt.savefig(fig_path.joinpath('figure_power_analysis.svg'))
     plt.savefig(fig_path.joinpath('figure_power_analysis.pdf'))

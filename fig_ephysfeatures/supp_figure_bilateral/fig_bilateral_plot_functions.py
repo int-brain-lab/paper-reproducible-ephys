@@ -258,9 +258,7 @@ def panel_distribution(ax, example_region='CA1', example_metric='lfp_power',
 
     # Calculate within animal variability
     within_var = np.empty(np.unique(df_bl_slice['subject']).shape[0])
-    print(within_var)
     for i, subject in enumerate(np.unique(df_bl_slice['subject'])):
-        print(subject)
         within_var[i] = np.abs(df_bl_slice[(df_bl_slice['subject'] == subject)
                                         & (df_bl_slice['probe'] == 'probe00')][example_metric].values[0]
                                - df_bl_slice[(df_bl_slice['subject'] == subject)
