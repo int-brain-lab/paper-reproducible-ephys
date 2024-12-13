@@ -100,7 +100,7 @@ region_colors = figure_style(return_colors=True)
 width = 9
 height = 4
 fig = plt.figure(figsize=(width, height))
-padx=0.6
+padx=0.5
 xspans = get_row_coord(width, [1, 5, 5, 5, 5, 5, 5, 5], hspace=[0.5, 0.6, 0.5, 0.3, 0.3, 0.3, 0.3], pad=padx)
 xspans_labels = get_row_coord(width, [1, 5, 25], hspace=[0.5, 0.6])
 yspans = get_row_coord(height, [10, 10, 2], hspace=[0.6, 0.4], pad=0.3)
