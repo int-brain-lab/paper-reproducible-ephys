@@ -42,8 +42,8 @@ def setup_figure_layout(width, height):
     """Set up the figure layout."""
     fig = plt.figure(figsize=(width, height))
 
-    xspans = get_row_coord(width, [10, 1], hspace=0.2)
-    yspans = get_row_coord(height, [3, 2], hspace=0.8, pad=0.1)
+    xspans = get_row_coord(width, [10, 1], hspace=0.2, pad=0.5)
+    yspans = get_row_coord(height, [3, 2], hspace=0.8, pad=0.3)
 
     axs = {
         'A': fg.place_axes_on_grid(fig, xspan=xspans[0], yspan=yspans[0], dim=[1, 4], wspace=0.3),
@@ -58,11 +58,11 @@ def setup_figure_layout(width, height):
 def configure_labels(fig, xspans, yspans, width, height):
     """Add figure labels."""
     labels = [
-        {'label_text': 'a', 'xpos': get_label_pos(width, xspans[0][0]),
-         'ypos': get_label_pos(height, yspans[0][0], pad=0.1),
+        {'label_text': 'a', 'xpos': get_label_pos(width, xspans[0][0], pad=0.5),
+         'ypos': get_label_pos(height, yspans[0][0], pad=0.3),
          'fontsize': 10, 'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-        {'label_text': 'b', 'xpos': get_label_pos(width, xspans[0][0]),
-         'ypos': get_label_pos(height - 2.5, yspans[1][0], pad=0.1), 'fontsize': 10,
+        {'label_text': 'b', 'xpos': get_label_pos(width, xspans[0][0], pad=0.5),
+         'ypos': get_label_pos(height, yspans[1][0], pad=0.3), 'fontsize': 10,
          'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
     ]
     fg.add_labels(fig, labels)
@@ -76,7 +76,8 @@ def plot_panel_a(ax, varis, regs, tt, sb, nscores):
         data_file = f'{vari}.parquet'
         d = pd.read_parquet(data_file)
         # Process data
-        pths = one.eid2path(d['eid'].values)
+        eids = [one.pid2eid(pid)[0] for pid in d['pid'].values]
+        pths = one.eid2path(eids)
         d['lab'] = [b[str(p).split('/')[str(p).split('/').index('Subjects') - 1]] for p in pths]
         d['subject'] = [str(p).split('/')[str(p).split('/').index('Subjects') + 1] for p in pths]
 
@@ -159,7 +160,8 @@ def plot_panel_b(ax, varis, region_f1_dict, lab_f1_dict, lab_pval_dict, region_c
         data_file = f'{vari}.parquet'
         d = pd.read_parquet(data_file)
         # Process data
-        pths = one.eid2path(d['eid'].values)
+        eids = [one.pid2eid(pid)[0] for pid in d['pid'].values]
+        pths = one.eid2path(eids)
         d['lab'] = [b[str(p).split('/')[str(p).split('/').index('Subjects') - 1]] for p in pths]
         d['subject'] = [str(p).split('/')[str(p).split('/').index('Subjects') + 1] for p in pths]
         d = d.dropna(subset=['score', 'lab', 'region', 'subject'])
@@ -249,8 +251,8 @@ if __name__ == "__main__":
     height = 7.3
     fig = plt.figure(figsize=(width, height))
 
-    xspans = get_row_coord(width, [10, 1], hspace=0.2)
-    yspans = get_row_coord(height, [3, 2], hspace=0.8, pad=0.1)
+    xspans = get_row_coord(width, [10, 1], hspace=0.2, pad=0.5)
+    yspans = get_row_coord(height, [3, 2], hspace=0.8, pad=0.3)
 
     axs = {
         'A': fg.place_axes_on_grid(fig, xspan=xspans[0], yspan=yspans[0], dim=[1, 4], wspace=0.3),
@@ -260,14 +262,13 @@ if __name__ == "__main__":
     }
 
     # Add figure labels
-    labels = [
-        {'label_text': 'a', 'xpos': get_label_pos(width, xspans[0][0]),
-        'ypos': get_label_pos(height, yspans[0][0], pad=0.1),
-        'fontsize': 10, 'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-        {'label_text': 'b', 'xpos': get_label_pos(width, xspans[0][0]),
-        'ypos': get_label_pos(height-2.5, yspans[1][0], pad=0.1), 'fontsize': 10,
-        'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-    ]
+    labels = [{'label_text': 'a', 'xpos': get_label_pos(width, xspans[0][0], pad=0.5),
+           'ypos': get_label_pos(height, yspans[0][0], pad=0.3),
+           'fontsize': 10, 'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
+          {'label_text': 'b', 'xpos': get_label_pos(width, xspans[0][0], pad=0.5),
+           'ypos': get_label_pos(height, yspans[1][0], pad=0.3), 'fontsize': 10,
+           'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
+          ]
     fg.add_labels(fig, labels)
 
     # Plot institutions and regions
@@ -284,8 +285,8 @@ if __name__ == "__main__":
 
     # Adjust figure layout
     adjust = 0.3
-    fig.subplots_adjust(top=1 - adjust / height, bottom=(adjust + 0.2) / height, left=(adjust + 0.2) / width,
-                        right=1 - (adjust - 0.2) / width)
+    fig.subplots_adjust(top=1 - adjust / height, bottom=(adjust + 0.2) / height, left=(adjust) / width,
+                     right=1 - (adjust - 0.2) / width)
 
     plot_panel_a(ax=axs['A'], varis=varis, regs=['VISa', 'CA1', 'DG', 'LP', 'PO'], tt='stripplot', sb='lab', nscores=3)
     plot_panel_b(ax=axs['B'], varis=varis, region_f1_dict=region_f1_dict, lab_f1_dict=lab_f1_dict, lab_pval_dict=lab_pval_dict, region_cols=region_colors)

@@ -64,12 +64,12 @@ def process_results(varis, re_regions, res_path, save_path, score_threshold=-0.0
             # Create a DataFrame and reshape it
             df = pd.DataFrame(res_dict).reset_index()
             df_melted = pd.melt(df, id_vars=['index'], var_name='region', value_name='score')
-            df_melted.columns = ["eid", "region", "score"]
+            df_melted.columns = ["pid", "region", "score"]
 
             # Add unit count information
             df_melted["unitcount"] = None
             for config in configs:
-                mask = (df_melted["eid"] == config["eid"]) & (df_melted["region"] == config["region"])
+                mask = (df_melted["pid"] == config["eid"]) & (df_melted["region"] == config["region"])
                 if not mask.any():
                     continue
                 row_idx = df_melted[mask].index.item()
@@ -79,10 +79,10 @@ def process_results(varis, re_regions, res_path, save_path, score_threshold=-0.0
 
         # Merge data and calculate mean scores
         merged_df = pd.concat(df_list)
-        df = merged_df.groupby(["eid", "region"]).agg({"score": 'mean', "unitcount": "first"}).reset_index()
+        df = merged_df.groupby(["pid", "region"]).agg({"score": 'mean', "unitcount": "first"}).reset_index()
 
         # Filter out EIDs with outlier scores
-        filter_out_eids += list(df.loc[df["score"] < score_threshold, "eid"])
+        filter_out_eids += list(df.loc[df["score"] < score_threshold, "pid"])
         df_per_var.append(df)
 
     # Remove duplicate EIDs
@@ -92,15 +92,15 @@ def process_results(varis, re_regions, res_path, save_path, score_threshold=-0.0
     for i, var in enumerate(varis):
         df = df_per_var[i]
         for _eid in filter_out_eids:
-            df.drop(df[df["eid"] == _eid].index, inplace=True)
+            df.drop(df[df["pid"] == _eid].index, inplace=True)
         output_path = Path(save_path) / f"{var}.parquet"
         df.to_parquet(output_path, engine="pyarrow")
 
 
 def evaluate_f1_with_permutation(unit, varis, index, b, one, n_permutations=5000, random_state=42):
     """
-    Evaluate F1 score with permutation testing.
-    
+    Evaluate F1 score with permutation testing using scipy.stats.permutation_test.
+
     Parameters:
         varis (list): A list of variable names.
         index (int): Index to select the variable from `varis`.
@@ -108,7 +108,7 @@ def evaluate_f1_with_permutation(unit, varis, index, b, one, n_permutations=5000
         one (object): An object with method `eid2path` to retrieve paths based on `eid`.
         n_permutations (int): Number of permutations for the test.
         random_state (int): Seed for controlling random number generation (default is 42).
-    
+
     Returns:
         dict: Observed F1 score and p-value from the permutation test.
     """
@@ -117,61 +117,56 @@ def evaluate_f1_with_permutation(unit, varis, index, b, one, n_permutations=5000
     print(f"Processing variable: {vari}")
     data_file = f'{vari}.parquet'
     d = pd.read_parquet(data_file)
-    
+
     # Add 'lab' and 'subject' columns based on paths
-    pths = one.eid2path(d['eid'].values)
-    d['lab'] = [b[str(p).split('/')[7]] for p in pths]
-    d['subject'] = [str(p).split('/')[9] for p in pths]
-    
+    eids = [one.pid2eid(pid)[0] for pid in d['pid'].values]
+    pths = one.eid2path(eids)
+    d['lab'] = [b[str(p).split('/')[6]] for p in pths]
+    d['subject'] = [str(p).split('/')[8] for p in pths]
+
     # Drop rows with missing values in specified columns
     d = d.dropna(subset=['score', 'lab', 'region', 'subject'])
-    
+
     # Prepare feature matrix X and target vector y
     X = np.c_[d.score.to_numpy(), d.unitcount.to_numpy()]
-    if unit == "region":
-        y = d.region.to_numpy()
-    elif unit == "lab":
-        y = d.lab.to_numpy()
+    y = d.region.to_numpy() if unit == "region" else d.lab.to_numpy()
 
     print(f"Compare {unit} for variable {vari}:")
-    
+
     # Initialize cross-validation
     skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=random_state)
-    
-    # Compute F1 score for the original data
-    f1_cv = []
-    for train_idx, test_idx in skf.split(X, y):
-        clf = make_pipeline(StandardScaler(), SVC(gamma='auto'))
-        clf.fit(X[train_idx], y[train_idx])
-        pred = clf.predict(X[test_idx])
-        f1 = f1_score(y[test_idx], pred, average='macro')
-        f1_cv.append(f1)
-    
-    observed_f1 = np.mean(f1_cv)
-    print(f"Observed F1 score: {observed_f1}")
-    
-    # Permutation test
-    f1_permuted = []
-    np.random.seed(random_state)  # Set seed for reproducibility of permutations
-    for _ in range(n_permutations):
-        # Permute the labels
-        y_permuted = np.random.permutation(y)
-        
-        # Recompute F1 score with permuted labels
-        f1_cv_perm = []
-        for train_idx, test_idx in skf.split(X, y_permuted):
-            clf = make_pipeline(StandardScaler(), SVC(gamma='auto'))
-            clf.fit(X[train_idx], y_permuted[train_idx])
+
+    def compute_f1(y_true, y_pred):
+        """Helper function to compute the mean F1 score across folds."""
+        f1_cv = []
+        for train_idx, test_idx in skf.split(X, y_true):
+            clf = make_pipeline(StandardScaler(), KNeighborsClassifier())
+            clf.fit(X[train_idx], y_true[train_idx])
             pred = clf.predict(X[test_idx])
-            f1 = f1_score(y_permuted[test_idx], pred, average='macro')
-            f1_cv_perm.append(f1)
-        
-        f1_permuted.append(np.mean(f1_cv_perm))
-    
-    # Calculate p-value
-    p_value = np.mean(np.array(f1_permuted) >= observed_f1)
+            f1 = f1_score(y_true[test_idx], pred, average='macro')
+            f1_cv.append(f1)
+        return np.mean(f1_cv)
+
+    # Compute the observed F1 score
+    observed_f1 = compute_f1(y, y)
+    print(f"Observed F1 score: {observed_f1}")
+
+    # Permutation test
+    def statistic(y_true, y_permuted):
+        return compute_f1(y_permuted, y_true)
+
+    result = permutation_test(
+        data=(y, y),
+        statistic=statistic,
+        vectorized=False,
+        n_resamples=n_permutations,
+        random_state=random_state,
+        alternative='greater'
+    )
+
+    p_value = result.pvalue
     print(f"Permutation test p-value: {p_value}")
-    
+
     return observed_f1, p_value
 
 
