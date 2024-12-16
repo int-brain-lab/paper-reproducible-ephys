@@ -12,6 +12,7 @@ of the histology track surface coords are coloured based on lab affiliation.
 """
 
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 import seaborn as sns
 import numpy as np
 import svgutils.compose as sc  # layout figure in svgutils
@@ -19,12 +20,13 @@ import math
 
 from iblutil.numerical import ismember
 
-from reproducible_ephys_functions import figure_style, save_figure_path, labs, filter_recordings
+from reproducible_ephys_functions import figure_style, save_figure_path, LAB_MAP, filter_recordings
 from fig_hist.fig_hist_load_data import load_dataframe
 from permutation_test import permut_test, distribution_dist_approx_max
 
-lab_number_map, institution_map, institution_colors = labs()
+lab_number_map, institution_map, institution_colors = LAB_MAP()
 
+PRINT_INFO = False
 
 def plot_probe_surf_coord_micro_panel(min_rec_per_lab=4, perform_permutation_test=True):
     '''
@@ -102,7 +104,7 @@ def plot_probe_surf_coord_histology_panel(min_rec_per_lab=4, perform_permutation
     fig.save(fig_path.joinpath("surf_coord_histology_panel.svg"))
 
 
-def plot_probe_surf_coord(traj='micro', min_rec_per_lab=4):
+def plot_probe_surf_coord(traj='micro', min_rec_per_lab=4, ax1=None, save=True):
     '''Plot the PLANNED surface coord at [0,0], VECTORS from planned surface to
     actual surface coord of histology tracks, histology track points coloured
     by lab affiliation.
@@ -143,24 +145,53 @@ def plot_probe_surf_coord(traj='micro', min_rec_per_lab=4):
         zPM = probe_data['planned_z'] == probe_data['micro_z']
         probe_data = probe_data[ (xPM & yPM & zPM) == False ].reset_index()
 
+    if PRINT_INFO:
+        print(f'Figure 2 {traj}')
+        print(f'N_inst: {probe_data.institute.nunique()}, N_sess: {probe_data.eid.nunique()}, '
+              f'N_mice: {probe_data.subject.nunique()}, N_cells: NA')
+
     # use repo-ephys figure style
     figure_style()
-    fig1, ax1 = plt.subplots()
+    if ax1 is None:
+        fig1, ax1 = plt.subplots()
+        ax_lw = 0.5
+        ax_lc = "grey"
+        lw = 0.2
+        alp = 0.8
+        ms = 0.5
+        avg_alp = 0.5
+        avg_ms = 3
+        mean_alp = 0.7
+        mean_ms = 6
+        mean_me = 1
+    else:
+        fig1 = plt.gcf()
+        ax_lw = mpl.rcParams['lines.linewidth']
+        ax_lc = 'k'
+        lw = 0.4
+        alp = 0.5
+        ms = 1
+        avg_alp = 1
+        avg_ms = 4
+        mean_alp = 1
+        mean_ms = 7
+        mean_me = 1.5
+
 
     # draw 0,0 lines
-    ax1.axvline(x=-2243, color="grey", linestyle="--", linewidth=0.5)
-    ax1.axhline(y=-2000, color="grey", linestyle="--", linewidth=0.5)
+    ax1.axvline(x=-2243, color=ax_lc, linestyle="--", linewidth=ax_lw)
+    ax1.axhline(y=-2000, color=ax_lc, linestyle="--", linewidth=ax_lw)
 
     # plot each micro-manipulator position on ax1 as line from origin (planned) and dot
     for idx, row in probe_data.iterrows():
 
         ax1.plot([row[f'{traj}_x'], row['planned_x']], [row[f'{traj}_y'], row['planned_y']],
                  color=institution_colors[institution_map[row['lab']]], 
-                 linewidth=0.2, alpha=0.8)
+                 linewidth=lw, alpha=alp)
 
         ax1.plot(row[f'{traj}_x'], row[f'{traj}_y'], 
                  color=institution_colors[institution_map[row['lab']]],
-                 marker="o", markersize=0.5, alpha=0.8, markeredgewidth=0.5)
+                 marker="o", markersize=ms, alpha=alp, markeredgewidth=0.5)
 
     # Plot mean micro coords - institution means - as cross
     inst_mean_x = probe_data.groupby('institute')[f'{traj}_x'].mean()
@@ -170,14 +201,13 @@ def plot_probe_surf_coord(traj='micro', min_rec_per_lab=4):
         ax1.plot(x, y, 
                  color=institution_colors[k], 
                  label=k, 
-                 marker="+", markersize=3, alpha=0.5)
+                 marker="+", markersize=avg_ms, alpha=avg_alp)
 
     # Plot overall mean (mean of institutions) - as large cross
     mean_x = probe_data[f'{traj}_x'].mean()
     mean_y = probe_data[f'{traj}_y'].mean()
 
-    ax1.plot(mean_x, mean_y, color='k', marker="+", markersize=6, alpha=0.7, label="MEAN")
-    ax1.tick_params(axis='both', which='major', labelsize=5)
+    ax1.plot(mean_x, mean_y, color='k', marker="+", markersize=mean_ms, markeredgewidth=mean_me, alpha=mean_alp, label="MEAN")
 
     # Compute targeting error at surface of brain
     df = filter_recordings(by_anatomy_only=True, min_neuron_region=0)
@@ -194,75 +224,96 @@ def plot_probe_surf_coord(traj='micro', min_rec_per_lab=4):
     top_mean_include = np.mean(probe_data[f'{traj}_error_surf_xy'][probe_data['include'] == 1].values)
     top_std_include = np.std(probe_data[f'{traj}_error_surf_xy'][probe_data['include'] == 1].values)
 
-    # set x/y axis labels
     if traj == 'micro':
-        ax1.set_xlabel('micro-manipulator ML displacement (µm)', fontsize=7)
-        ax1.set_ylabel('micro-manipulator AP displacement (µm)', fontsize=7)
-        ax1.set_title('Targeting variability')
-        #ax1.set_title('MICRO-MANIPULATOR: Mean (SD) distance \n    '
-        #              'ALL : ' + str(np.around(top_mean_all, 1)) + ' (' + str(np.around(top_std_all, 2)) + ')' + ' µm \n' +
-        #              'PASS : ' + str(np.around(top_mean_include, 1)) + ' (' + str(np.around(top_std_include, 2)) + ')' + ' µm',
-        #              fontsize=8)
-        
-        # print average values
-        print('MICRO-MANIPULATOR: Mean (SD) distance \n    '
-              'ALL : ' + str(np.around(top_mean_all, 1)) + ' (' + str(np.around(top_std_all, 2)) + ')' + ' µm \n' )
-        #      'PASS : ' + str(np.around(top_mean_include, 1)) + ' (' + str(np.around(top_std_include, 2)) + ')' + ' µm')
-        # add legend
-        ax1.legend(loc='upper right', prop={'size': 3.5})
+        ax1.set_xlim((-3200, -1200))
+        ax1.set_ylim((-3200, -1200))
     else:
-        ax1.set_xlabel('histology ML displacement (µm)', fontsize=7)
-        ax1.set_ylabel('histology AP displacement (µm)', fontsize=7)
-        ax1.set_title('Geometrical variability')
-        #ax1.set_title('HISTOLOGY: Mean (SD) distance \n    '
-        #              'ALL : ' + str(np.around(top_mean_all, 1)) + ' (' + str(np.around(top_std_all, 2)) + ')' + ' µm \n' +
-        #              'PASS : ' + str(np.around(top_mean_include, 1)) + ' (' + str(np.around(top_std_include, 2)) + ')' + ' µm',
-        #              fontsize=8)
-        # print average values
-        print('HISTOLOGY: Mean (SD) distance \n    '
-              'ALL : ' + str(np.around(top_mean_all, 1)) + ' (' + str(np.around(top_std_all, 2)) + ')' + ' µm \n' )
-        #      'PASS : ' + str(np.around(top_mean_include, 1)) + ' (' + str(np.around(top_std_include, 2)) + ')' + ' µm')
+        ax1.set_xlim((-3200, -1200))
+        ax1.set_ylim((-3200, -1200))
 
-    if traj == 'micro':
-        ax1.set_xlim((-3200, -1200))
-        ax1.set_ylim((-3200, -1200))
-        #ax1.set_xlim((-2600, -1600))
-        #ax1.set_ylim((-2400, -1400))
-    else:
-        ax1.set_xlim((-3200, -1200))
-        ax1.set_ylim((-3200, -1200))
     ax1.xaxis.set_major_locator(plt.MaxNLocator(5))
     ax1.yaxis.set_major_locator(plt.MaxNLocator(5))
 
-    plt.tight_layout()  # tighten layout around xlabel & ylabel
-    fig1.set_size_inches(2.15, 2.15)
+    if save:
+        ax1.tick_params(axis='both', which='major', labelsize=5)
+        ax1.xaxis.set_major_locator(plt.MaxNLocator(5))
+        ax1.yaxis.set_major_locator(plt.MaxNLocator(5))
+        # set x/y axis labels
+        if traj == 'micro':
+            ax1.set_xlabel('micro-manipulator ML displacement (\u03bcm)', fontsize=7)
+            ax1.set_ylabel('micro-manipulator AP displacement (\u03bcm)', fontsize=7)
+            ax1.set_title('Targeting variability')
+            # ax1.set_title('MICRO-MANIPULATOR: Mean (SD) distance \n    '
+            #              'ALL : ' + str(np.around(top_mean_all, 1)) + ' (' + str(np.around(top_std_all, 2)) + ')' + ' µm \n' +
+            #              'PASS : ' + str(np.around(top_mean_include, 1)) + ' (' + str(np.around(top_std_include, 2)) + ')' + ' µm',
+            #              fontsize=8)
 
-    # add a subplot INSIDE the fig1 ax1
-    #axav = fig1.add_axes([0.66, 0.12, 0.28, 0.28])
-    #axav.xaxis.tick_top()
-    #axav.tick_params(axis='both', labelsize=3, pad=1)
+            # print average values
+            print('MICRO-MANIPULATOR: Mean (SD) distance \n    '
+                  'ALL : ' + str(np.around(top_mean_all, 1)) + ' (' + str(np.around(top_std_all, 2)) + ')' + ' µm \n')
+            #      'PASS : ' + str(np.around(top_mean_include, 1)) + ' (' + str(np.around(top_std_include, 2)) + ')' + ' µm')
+            # add legend
+            ax1.legend(loc='upper right', prop={'size': 3.5})
+        else:
+            ax1.set_xlabel('histology ML displacement (\u03bcm)', fontsize=7)
+            ax1.set_ylabel('histology AP displacement (\u03bcm)', fontsize=7)
+            ax1.set_title('Geometrical variability')
+            # ax1.set_title('HISTOLOGY: Mean (SD) distance \n    '
+            #              'ALL : ' + str(np.around(top_mean_all, 1)) + ' (' + str(np.around(top_std_all, 2)) + ')' + ' µm \n' +
+            #              'PASS : ' + str(np.around(top_mean_include, 1)) + ' (' + str(np.around(top_std_include, 2)) + ')' + ' µm',
+            #              fontsize=8)
+            # print average values
+            print('HISTOLOGY: Mean (SD) distance \n    '
+                  'ALL : ' + str(np.around(top_mean_all, 1)) + ' (' + str(np.around(top_std_all, 2)) + ')' + ' µm \n')
+            #      'PASS : ' + str(np.around(top_mean_include, 1)) + ' (' + str(np.around(top_std_include, 2)) + ')' + ' µm')
 
-    #axav.axhline(y=-2000, color="grey", linestyle="--", linewidth=0.5)
-    #axav.axvline(x=-2243, color="grey", linestyle="--", linewidth=0.5)
+        plt.tight_layout()  # tighten layout around xlabel & ylabel
+        fig1.set_size_inches(2.15, 2.15)
 
-    #if traj == 'micro':
-    #    axav.set_xlim((-2350, -2000))
-    #    axav.set_ylim((-2100, -1850))
-    #else:
-    #    axav.set_xlim((-2500, -1650))
-    #    axav.set_ylim((-2400, -1550))
+        # add a subplot INSIDE the fig1 ax1
+        #axav = fig1.add_axes([0.66, 0.12, 0.28, 0.28])
+        #axav.xaxis.tick_top()
+        #axav.tick_params(axis='both', labelsize=3, pad=1)
 
-    #for x, y, k in zip(inst_mean_x, inst_mean_y, inst_mean_x.keys()):
-    #    axav.plot(x, y, color=institution_colors[institution_map[k]], marker="+", markersize=5, alpha=0.7,
-    #              label=institution_map[k])
+        #axav.axhline(y=-2000, color="grey", linestyle="--", linewidth=0.5)
+        #axav.axvline(x=-2243, color="grey", linestyle="--", linewidth=0.5)
 
-    #axav.plot(mean_x, mean_y, color='k', marker="+", markersize=8, alpha=0.7, label="MEAN")
+        #if traj == 'micro':
+        #    axav.set_xlim((-2350, -2000))
+        #    axav.set_ylim((-2100, -1850))
+        #else:
+        #    axav.set_xlim((-2500, -1650))
+        #    axav.set_ylim((-2400, -1550))
 
-    fig_path = save_figure_path(figure='fig_hist')
-    fig1.savefig(fig_path.joinpath(f'D_probe_surf_coord_{traj}_label.svg'), bbox_inches="tight")
+        #for x, y, k in zip(inst_mean_x, inst_mean_y, inst_mean_x.keys()):
+        #    axav.plot(x, y, color=institution_colors[institution_map[k]], marker="+", markersize=5, alpha=0.7,
+        #              label=institution_map[k])
+
+        #axav.plot(mean_x, mean_y, color='k', marker="+", markersize=8, alpha=0.7, label="MEAN")
+
+        fig_path = save_figure_path(figure='fig_hist')
+        fig1.savefig(fig_path.joinpath(f'D_probe_surf_coord_{traj}_label.svg'), bbox_inches="tight")
+
+    else:
+        ax1.xaxis.set_major_locator(plt.MaxNLocator(4))
+        ax1.yaxis.set_major_locator(plt.MaxNLocator(4))
+
+        if traj == 'micro':
+            ax1.set_xlabel('Micromanipulator ML displacement (\u03bcm)')
+            ax1.set_ylabel('Micromanipulator AP displacement (\u03bcm)')
+            ax1.set_title('Targeting variability')
+            ax1.legend(loc='lower left', prop={'size': 4})
+        else:
+            ax1.set_xlabel('Histology ML displacement (\u03bcm)')
+            ax1.set_ylabel('Histology AP displacement (\u03bcm)')
+            ax1.set_title('Geometrical variability')
+
+        ax1.spines[['right', 'top']].set_visible(False)
 
 
-def plot_probe_distance_all_lab(traj='micro', min_rec_per_lab=4, perform_permutation_test=True):
+
+
+def plot_probe_distance_all_lab(traj='micro', min_rec_per_lab=4, perform_permutation_test=True, axs=None, save=True):
     '''Plot the DISTANCES from planned to micro displacement, histogram plus
     density plot of ALL distances - to see its distribution shape.
     COMBINED with plot of distances, split by lab
@@ -319,6 +370,11 @@ def plot_probe_distance_all_lab(traj='micro', min_rec_per_lab=4, perform_permuta
         print('excluding institute from ALL-PROBE analysis (below min_rec_per_lab): ', ie)
         probe_data = probe_data[probe_data['institute'] != ie]
 
+    if PRINT_INFO:
+        print(f'Figure 2 g/ h {traj}')
+        print(f'N_inst: {probe_data.institute.nunique()}, N_sess: {probe_data.eid.nunique()}, '
+              f'N_mice: {probe_data.subject.nunique()}, N_cells: NA')
+
     # get pass-only data & plot data (adding negative value distances to ensure institution is still plotted)
     probe_data_pass = probe_data[ probe_data['passed'] == 'PASS']
     probe_data_pass = probe_data_pass.reset_index()
@@ -357,22 +413,26 @@ def plot_probe_distance_all_lab(traj='micro', min_rec_per_lab=4, perform_permuta
     figure_style()
 
     # generate 2x2 subplots with 1:9 height ratios
-    fig, fig_axes = plt.subplots(ncols=1, nrows=2, constrained_layout=True,
-        gridspec_kw={'height_ratios': [1, 9]})
-    axr0c0 = fig_axes[0]
-    axr1c0 = fig_axes[1]
+    if axs is None:
+        fig, fig_axes = plt.subplots(ncols=1, nrows=2, constrained_layout=True,
+            gridspec_kw={'height_ratios': [1, 9]})
+        axr0c0 = fig_axes[0]
+        axr1c0 = fig_axes[1]
+        lw = 0.5
+    else:
+        axr0c0 = axs[0]
+        axr1c0 = axs[1]
+        lw = mpl.rcParams['lines.linewidth']
 
     # Create an array with colors to use
     colors_pts = ["#000000"]  # BLACK
 
     # Plot ALL kdeplot + boxplot/stripplot
     sns.kdeplot( x=f'{traj}_error_surf_xy', data=probe_data, color='#000000', fill=True, ax=axr0c0)
-    axr0c0.tick_params(axis='both', which='major', labelsize=5)
     # round up to nearest hundred from maximum xy surface error for histoloy
     max_distance = int(math.ceil( max(probe_data[f'{traj}_error_surf_xy']) / 100.0)) * 100
     max_distance = int(math.ceil( max(probe_data['hist_error_surf_xy']) / 100.0)) * 100 # use histology error for both plots
     axr0c0.set_xlim(0, max_distance)
-    axr0c0.set_ylabel('density', fontsize=6)
     axr0c0.set_xlabel(None)
     axr0c0.set(xticklabels=[])
     axr0c0.tick_params(bottom=False)
@@ -392,7 +452,7 @@ def plot_probe_distance_all_lab(traj='micro', min_rec_per_lab=4, perform_permuta
 
     # plot boxplot
     sns.boxplot(y='institute', x=f'{traj}_error_surf_xy', data=probe_data, 
-                palette=order_colors, orient="h", showfliers=False, linewidth=0.5, 
+                palette=order_colors, orient="h", showfliers=False, linewidth=0.5,
                 order=order_by, ax=axr1c0)
 
     # overlay points
@@ -401,34 +461,53 @@ def plot_probe_distance_all_lab(traj='micro', min_rec_per_lab=4, perform_permuta
 
     # plot overall mean distance (mean of labs)
     mean_error_surf_xy = probe_data[f'{traj}_error_surf_xy'].mean()
-    axr1c0.axvline(x=mean_error_surf_xy, linestyle='--', linewidth=0.5, color='gray')
+    axr1c0.axvline(x=mean_error_surf_xy, linestyle='--', linewidth=lw, color='gray')
 
-    axr1c0.tick_params(axis='both', which='major', labelsize=5)
     axr1c0.set_ylabel(None)
     axr1c0.set_xlim(0, max_distance)
     axr1c0.set_xlabel(None)
     axr1c0.xaxis.set_major_locator(plt.MaxNLocator(5))
-    #axr1c0.tick_params(axis='x', labelrotation=90)
-    #axr1c0.get_legend().remove()
 
-    if traj == 'micro':
-        # add legend to micro group plot only
-        #handles, labels = axr1c0.get_legend_handles_labels()
-        #axr1c0.legend(handles[0:2], labels[0:2], bbox_to_anchor=(0.98, 0.05), loc=4, 
-        #       borderaxespad=0., prop={'size': 4}, markerscale=0.2)
-        fig.suptitle('Micromanipulator-to-planned distance', fontsize=7)
-        #fig.supxlabel('\nMicromanipulator distance (µm)', fontsize=7)
-        axr1c0.set_xlabel('Micromanipulator distance (µm)')
+    if save:
+        axr0c0.set_ylabel('density', fontsize=6)
+        axr0c0.tick_params(axis='both', which='major', labelsize=5)
+        axr1c0.tick_params(axis='both', which='major', labelsize=5)
+        axr1c0.axvline(x=mean_error_surf_xy, linestyle='--', linewidth=lw, color='gray')
+
+        if traj == 'micro':
+            # add legend to micro group plot only
+            # handles, labels = axr1c0.get_legend_handles_labels()
+            # axr1c0.legend(handles[0:2], labels[0:2], bbox_to_anchor=(0.98, 0.05), loc=4,
+            #       borderaxespad=0., prop={'size': 4}, markerscale=0.2)
+            fig.suptitle('Micromanipulator to planned distance', fontsize=7)
+            # fig.supxlabel('\nMicromanipulator distance (µm)', fontsize=7)
+            axr1c0.set_xlabel('Micromanipulator distance (\u03bcm)')
+        else:
+            fig.suptitle('Histology to planned distance', fontsize=7)
+            # fig.supxlabel('\nHistology distance (µm)', fontsize=7)
+            axr1c0.set_xlabel('Histology distance (\u03bcm)')
+
+        plt.tight_layout()  # tighten layout around xlabel & ylabel
+        fig.set_size_inches(2.15, 2.8)
+
+        fig_path = save_figure_path(figure='fig_hist')
+        fig.savefig(fig_path.joinpath(f'D_probe_dist_{traj}_all_lab.svg'), bbox_inches="tight")
     else:
-        fig.suptitle('Histology-to-planned distance', fontsize=7)
-        #fig.supxlabel('\nHistology distance (µm)', fontsize=7)
-        axr1c0.set_xlabel('Histology distance (µm)')
+        axr1c0.axvline(x=mean_error_surf_xy, linestyle='--', linewidth=lw, color='k')
+        if traj == 'micro':
+            axr0c0.set_title('Micromanipulator to planned \n distance')
+            axr1c0.set_xlabel('Micromanipulator distance (\u03bcm)')
+            axr0c0.set_ylabel('Density')
+            axr1c0.set_ylabel('Lab', labelpad=-2)
+        else:
+            axr0c0.set_title('Histology to planned distance')
+            axr1c0.set_xlabel('Histology distance (\u03bcm)')
+            axr0c0.set_ylabel('')
+            axr1c0.set_ylabel('')
 
-    plt.tight_layout()  # tighten layout around xlabel & ylabel
-    fig.set_size_inches(2.15, 2.8)
+        axr1c0.spines[['right', 'top']].set_visible(False)
+        axr0c0.spines[['right', 'top']].set_visible(False)
 
-    fig_path = save_figure_path(figure='fig_hist')
-    fig.savefig(fig_path.joinpath(f'D_probe_dist_{traj}_all_lab.svg'), bbox_inches="tight")
 
     if perform_permutation_test == True:
 

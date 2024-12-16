@@ -3,7 +3,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 from fig_data_quality.tables import load_channels, load_clusters
-from fig_data_quality.plot import compute_yield
+from fig_data_quality.plot import compute_yield, get_3colors_region
 
 from reproducible_ephys_functions import save_figure_path, save_data_path
 
@@ -12,7 +12,7 @@ Generates Figure 1f
 Also includes the ANOVA on dataset and region (Results > Neuropixels recordings during decision-making target the same brain location)
 """
 
-regions = ["Isocortex", "TH", "HPF"]
+regions = ["Isocortex", "HPF", "TH"]
 
 def load_yield_info():
     
@@ -80,14 +80,17 @@ def load_yield_info():
     return pd.concat(dfs)
 
 
-def plot_neuron_yield():
+def plot_neuron_yield(ax=None, save=True):
 
     df = load_yield_info()
+    if ax is None:
+        fontsize = 7.0
+        plt.rcParams["axes.labelsize"] = fontsize
+        fig, ax = plt.subplots(1, 3, figsize=(3, 2))
+    else:
+        fig = plt.gcf()
 
-    fontsize = 7.0
-    plt.rcParams["axes.labelsize"] = fontsize
-    fig, ax = plt.subplots(1, 3, figsize=(3, 2))
-    region_fullname = {"Isocortex": "Cortex", "TH": "Thalamus", "HPF": "Hippocampus"}
+    region_fullname = {"Isocortex": "Cortex", "HPF": "Hippocampus", "TH": "Thalamus"}
     err_kws = {"markersize": 20, "linewidth": 1.0}
     for i, region in enumerate(regions):
 
@@ -97,7 +100,9 @@ def plot_neuron_yield():
             y="yield",
             ax=ax[i],
             zorder=-1,
+            size=2,
             alpha=0.6,
+            color='grey',
             order=["IBL", "Steinmetz", "Allen"],
         )
 
@@ -115,10 +120,12 @@ def plot_neuron_yield():
             linestyle="none",
             order=["IBL", "Steinmetz", "Allen"],
         )
-        ax[i].set_title(region_fullname[region], fontsize=fontsize)
+
+        colors, _ = get_3colors_region(region, blue=True)
+        ax[i].set_title(region_fullname[region], fontsize=7, color=colors[0])
         ax[i].set_xlabel(None)
         tx = ax[i].get_xticks()
-        ax[i].set_xticks(tx, ["IBL", "STE", "ALN"], fontsize=fontsize)
+        ax[i].set_xticks(tx, ["IBL", "STE", "ALN"])
 
         ax[i].set_ylim(0, 1.5)
 
@@ -128,15 +135,17 @@ def plot_neuron_yield():
             sns.despine(ax=ax[i], left=True)
 
         else:
-            ax[i].set_ylabel("QC passing neurons per electrode site", fontsize=fontsize)
+            ax[i].set_ylabel("Neuron yield")
             ax[i].set_yticks([0.0, 0.5, 1.0, 1.5])
             sns.despine(ax=ax[i], trim=True)
             ty = ax[i].get_yticks()
             ly = ax[i].get_yticklabels()
-            ax[i].set_yticks(ty, ly, fontsize=fontsize)
+            ax[i].set_yticks(ty, ly)
 
-    fig_path = save_figure_path(figure="fig_data_quality")
-    fig.savefig(fig_path.joinpath("fig_neuron_yield.svg"))
+    if save:
+        fig_path = save_figure_path(figure="fig_data_quality")
+        fig.savefig(fig_path.joinpath("fig_neuron_yield.svg"))
+        fig.savefig(fig_path.joinpath("fig_neuron_yield.pdf"))
 
 def save_neuron_yield_anova():
 

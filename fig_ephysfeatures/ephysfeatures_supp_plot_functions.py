@@ -11,16 +11,27 @@ from reproducible_ephys_functions import filter_recordings, BRAIN_REGIONS
 from fig_ephysfeatures.ephysfeatures_load_data import load_dataframe
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 import numpy as np
+from iblutil.numerical import ismember
 
-
-def panel_probe_lfp(fig, ax, boundary_align='DG-TH', ylim=[-2000, 2000], normalize=False,
-                    clim=[-190, -150]):
+PRINT_INFO = False
+def panel_probe_lfp_unaligned(fig, ax, boundary_align='DG-TH', ylim=[-2000, 2000], normalize=False,
+                              clim=[-190, -150]):
 
     df_chns = load_dataframe(df_name='chns')
 
     df_filt = filter_recordings(min_neuron_region=0)
-    df_filt = df_filt.sort_values(by=['include'], ascending=False).reset_index(drop=True)
     df_filt = df_filt.drop_duplicates(subset='subject').reset_index()
+
+    df_lim = df_chns.drop_duplicates(subset='pid')
+
+    a_in, b_in = ismember(df_lim.pid.values, df_filt.pid.values)
+    df_filt.loc[b_in, 'avg_dist'] = df_lim.avg_dist.values[a_in]
+    df_filt = df_filt.sort_values(by=['include', 'avg_dist'], ascending=[False, True]).reset_index(drop=True)
+
+    if PRINT_INFO:
+        print(f'Figure 3 supp 1 a')
+        print(f'N_inst: {df_filt.institute.nunique()}, N_sess: {df_filt.eid.nunique()}, '
+              f'N_mice: {df_filt.subject.nunique()}, N_cells: NA')
     
     for iR, data in df_filt.iterrows():
         df = df_chns[df_chns['pid'] == data['pid']]
@@ -29,16 +40,20 @@ def panel_probe_lfp(fig, ax, boundary_align='DG-TH', ylim=[-2000, 2000], normali
             continue
 
         la = {}
-        la['id'] = df['region_id'].values
-        z = df['z'].values * 1e6
+        la['id'] = df['region_id_unaligned'].values
+        z = df['z_unaligned'].values * 1e6
 
         boundaries, colours, regions = get_brain_boundaries(la, z)
         if boundary_align is not None:
-            z_subtract = boundaries[np.where(np.array(regions) == boundary_align)[0][0] + 1]
+            idx = np.where(np.array(regions) == boundary_align)[0]
+            if len(idx) > 0:
+                z_subtract = boundaries[idx[0] + 1]
+            else:
+                z_subtract = 0
             z = z - z_subtract
 
         # Plot
-        im = plot_probe(df['lfp'].values, z, ax[iR], clim=clim, normalize=normalize,
+        im = plot_probe(df['lfp_destriped'].values, z, ax[iR], clim=clim, normalize=normalize,
                         cmap='viridis')
 
         if data['include']:
@@ -75,6 +90,83 @@ def panel_probe_lfp(fig, ax, boundary_align='DG-TH', ylim=[-2000, 2000], normali
     cbar.set_label('Power spectral density (dB)', rotation=270, labelpad=-5)
 
 
+def panel_probe_lfp(fig, ax, boundary_align='DG-TH', ylim=[-2000, 2000], normalize=False,
+                    clim=[-190, -150]):
+
+    df_chns = load_dataframe(df_name='chns')
+
+    df_filt = filter_recordings(min_neuron_region=0)
+    df_filt = df_filt.drop_duplicates(subset='subject').reset_index()
+
+    df_lim = df_chns.drop_duplicates(subset='pid')
+
+    a_in, b_in = ismember(df_lim.pid.values, df_filt.pid.values)
+    df_filt.loc[b_in, 'avg_dist'] = df_lim.avg_dist.values[a_in]
+    df_filt = df_filt.sort_values(by=['include', 'avg_dist'], ascending=[False, True]).reset_index(drop=True)
+
+    if PRINT_INFO:
+        print(f'Figure 3 supp 1 a')
+        print(f'N_inst: {df_filt.institute.nunique()}, N_sess: {df_filt.eid.nunique()}, '
+              f'N_mice: {df_filt.subject.nunique()}, N_cells: NA')
+
+    for iR, data in df_filt.iterrows():
+        df = df_chns[df_chns['pid'] == data['pid']]
+        if len(df) == 0:
+            print(f'pid {data["pid"]} not found!')
+            continue
+
+        la = {}
+        la['id'] = df['region_id'].values
+        z = df['z'].values * 1e6
+
+        boundaries, colours, regions = get_brain_boundaries(la, z)
+        if boundary_align is not None:
+            idx = np.where(np.array(regions) == boundary_align)[0]
+            if len(idx) > 0:
+                z_subtract = boundaries[idx[0] + 1]
+            else:
+                z_subtract = 0
+            #z_subtract = boundaries[np.where(np.array(regions) == boundary_align)[0][0] + 1]
+            z = z - z_subtract
+
+        # Plot
+        im = plot_probe(df['lfp_destriped'].values, z, ax[iR], clim=clim, normalize=normalize,
+                        cmap='viridis')
+
+        if data['include']:
+            ax[iR].set_title(data.subject, rotation=45, ha='left', color='green', fontsize=4)
+        else:
+            ax[iR].set_title(data.subject, rotation=45, ha='left', color='red', fontsize=4)
+
+        if iR == 0:
+            ax[iR].set(yticks=np.arange(ylim[0], ylim[1] + 1, 500),
+                       yticklabels=np.arange(ylim[0], ylim[1] + 1, 500) / 1000,
+                       xticks=[])
+            ax[iR].tick_params(axis='y')
+            ax[iR].spines["right"].set_visible(False)
+            ax[iR].spines["bottom"].set_visible(False)
+            ax[iR].spines["top"].set_visible(False)
+            ax[iR].set_ylabel('Depth relative to DG-Thalamus (mm)')
+        else:
+            ax[iR].set_axis_off()
+        ax[iR].set(ylim=ylim)
+
+        # Add squigly line if probe plot is cut off
+        if np.min(z) < np.min(ylim):
+            ax[iR].text(ax[iR].get_xlim()[1] / 2, ylim[0] - 180, '~', fontsize=10, ha='center')
+    ax[-1].set_axis_off()
+
+    # Add colorbar
+    axin = inset_axes(ax[-1], width="50%", height="90%", loc='lower right', borderpad=0,
+                      bbox_to_anchor=(1, 0.1, 1, 1), bbox_transform=ax[-1].transAxes)
+    cbar = fig.colorbar(im, cax=axin, ticks=im.get_clim())
+    if normalize:
+        cbar.ax.set_yticklabels(['10th\nperc.', '90th\nperc'])
+    else:
+        cbar.ax.set_yticklabels([f'{clim[0]}', f'{clim[1]}'])
+    cbar.set_label('Power spectral density (dB)', rotation=270, labelpad=-5)
+
+
 def panel_probe_neurons(fig, ax, boundary_align='DG-TH', ylim=[-2000, 2000]):
     br = BrainRegions()
 
@@ -82,8 +174,18 @@ def panel_probe_neurons(fig, ax, boundary_align='DG-TH', ylim=[-2000, 2000]):
     df_clust = load_dataframe(df_name='clust')
 
     df_filt = filter_recordings(min_neuron_region=0)
-    df_filt = df_filt.sort_values(by=['include'], ascending=False).reset_index(drop=True)
     df_filt = df_filt.drop_duplicates(subset='subject').reset_index()
+
+    df_lim = df_chns.drop_duplicates(subset='pid')
+
+    a_in, b_in = ismember(df_lim.pid.values, df_filt.pid.values)
+    df_filt.loc[b_in, 'avg_dist'] = df_lim.avg_dist.values[a_in]
+    df_filt = df_filt.sort_values(by=['include', 'avg_dist'], ascending=[False, True]).reset_index(drop=True)
+
+    if PRINT_INFO:
+        print(f'Figure 3 supp 1 b')
+        print(f'N_inst: {df_filt.institute.nunique()}, N_sess: {df_filt.eid.nunique()}, '
+              f'N_mice: {df_filt.subject.nunique()}, N_cells: NA')
 
     for iR, data in df_filt.iterrows():
         df_ch = df_chns[df_chns['pid'] == data['pid']]
@@ -94,10 +196,16 @@ def panel_probe_neurons(fig, ax, boundary_align='DG-TH', ylim=[-2000, 2000]):
         z = df_ch['z'].values * 1e6
         boundaries, colours, regions = get_brain_boundaries(la, z)
         if boundary_align is not None:
-            z_subtract = boundaries[np.where(np.array(regions) == boundary_align)[0][0] + 1]
-            z = z - z_subtract
+            idx = np.where(np.array(regions) == boundary_align)[0]
+            if len(idx) > 0:
+                z_subtract = boundaries[idx[0] + 1]
+            else:
+                z_subtract = 0
+            #z_subtract = boundaries[np.where(np.array(regions) == boundary_align)[0][0] + 1]
         else:
             z_subtract = 0
+
+        z = z - z_subtract
 
         levels = [0, 30]
         im = ax[iR].scatter(np.log10(df_clu['amps'] * 1e6), df_clu['depths_aligned'] - z_subtract, c=df_clu['fr'], s=1,
@@ -161,4 +269,4 @@ def panel_probe_neurons(fig, ax, boundary_align='DG-TH', ylim=[-2000, 2000]):
                       bbox_to_anchor=(1, 0.1, 1, 1), bbox_transform=ax[-1].transAxes)
     cbar = fig.colorbar(im, cax=axin, ticks=im.get_clim())
     cbar.ax.set_yticklabels([f'{levels[0]}', f'{levels[1]}'])
-    cbar.set_label('Firing rate (spks/s)', rotation=270, labelpad=0)
+    cbar.set_label('Firing rate (spikes/s)', rotation=270, labelpad=0)

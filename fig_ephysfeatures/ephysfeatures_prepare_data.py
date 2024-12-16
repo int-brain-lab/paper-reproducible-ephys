@@ -1,3 +1,4 @@
+import neuropixel
 import numpy as np
 import pandas as pd
 from os.path import isfile, join
@@ -12,8 +13,9 @@ from sklearn.utils import shuffle
 from sklearn.metrics import confusion_matrix
 
 from one.api import ONE
-from iblatlas.atlas import AllenAtlas
+from iblatlas.atlas import AllenAtlas, Insertion
 from ibllib.pipes.ephys_alignment import EphysAlignment
+from ibllib.pipes.histology import interpolate_along_track
 from iblutil.numerical import ismember
 from brainbox.processing import compute_cluster_average
 from brainbox.io.one import SpikeSortingLoader
@@ -44,6 +46,12 @@ def prepare_data(insertions, one, recompute=False):
                 df_chns = load_dataframe(df_name='chns')
                 return df_chns, df_clust, df
 
+    # Get the channels for the planned coordinate
+    depths = neuropixel.trace_header(version=1)['y'] / 1e6
+    planned_dict = {'x': -2243, 'y': -2000, 'z': -200, 'depth': 4000, 'theta': 15, 'phi': 180}
+    ins_planned = Insertion.from_dict(planned_dict, brain_atlas=ba)
+    chns_planned = interpolate_along_track(np.vstack([ins_planned.tip, ins_planned.entry]), depths)
+
     all_df_clust = []
     all_df_chns = []
     metrics = pd.DataFrame()
@@ -66,7 +74,8 @@ def prepare_data(insertions, one, recompute=False):
             print(traceback.format_exc())
             continue
 
-        channels['rawInd'] = one.load_dataset(eid, dataset='channels.rawInd.npy', collection=sl.collection)
+        channels['rawInd'] = one.load_dataset(eid, dataset='channels.rawInd.npy', collection=sl.collection,
+                                              revision='2024-03-22')
         clusters = sl.merge_clusters(spikes, clusters, channels)
 
         channels['rep_site_acronym'] = combine_regions(channels['acronym'])
@@ -91,11 +100,21 @@ def prepare_data(insertions, one, recompute=False):
 
         insertion = one.alyx.rest('insertions', 'list', id=pid)[0]
         traj = one.alyx.rest('trajectories', 'list', provenance='Ephys aligned histology track', probe_insertion=pid)[0]
+        ins_final = Insertion.from_dict(traj, brain_atlas=ba)
+        chns_final = interpolate_along_track(np.vstack([ins_final.tip, ins_final.entry]), depths)
+
         feature, track = [*traj['json'][insertion['json']['extended_qc']['alignment_stored']]][:2]
         xyz_picks = np.array(insertion['json']['xyz_picks']) / 1e6
         ephysalign = EphysAlignment(xyz_picks, channels['axial_um'], brain_atlas=ba, feature_prev=feature, track_prev=track,
                                     speedy=True)
         data_clust['depths_aligned'] = ephysalign.get_channel_locations(feature, track, data_clust['depths'] / 1e6)[:, 2] * 1e6
+
+        ephysalign = EphysAlignment(xyz_picks, channels['axial_um'], brain_atlas=ba, speedy=True)
+        xyz_unaligned = ephysalign.get_channel_locations(ephysalign.feature_init, ephysalign.track_init)
+        locations_unaligned = ephysalign.get_brain_locations(xyz_unaligned)
+
+        chns_dist = np.mean(np.sqrt(np.sum((chns_planned - chns_final) ** 2, axis=1)), axis=0)
+
 
         df_clust = pd.DataFrame.from_dict(data_clust)
         df_clust['eid'] = eid
@@ -124,6 +143,7 @@ def prepare_data(insertions, one, recompute=False):
         data_chns['x'] = channels['x']
         data_chns['y'] = channels['y']
         data_chns['z'] = channels['z']
+        data_chns['z_unaligned'] = xyz_unaligned[:, 2]
         data_chns['axial_um'] = channels['axial_um']
         data_chns['lateral_um'] = channels['lateral_um']
         data_chns['lfp_destriped'] = lfp_psd['lfp_power'].values
@@ -131,10 +151,12 @@ def prepare_data(insertions, one, recompute=False):
         data_chns['lfp_raw'] = lfp_power_raw
         data_chns['lfp_theta_raw'] = lfp_theta_raw
         data_chns['region_id'] = channels['atlas_id']
+        data_chns['region_id_unaligned'] = locations_unaligned['id']
         data_chns['region_id_rep'] = channels['rep_site_id']
         data_chns['region'] = channels['rep_site_acronym']
 
         df_chns = pd.DataFrame.from_dict(data_chns)
+        df_chns['avg_dist'] = chns_dist
         df_chns['eid'] = eid
         df_chns['pid'] = pid
         df_chns['subject'] = ins['session']['subject']
@@ -274,6 +296,10 @@ def run_decoding(metrics=['yield_per_channel', 'median_firing_rate', 'lfp_power'
         for r in ['PPC', 'CA1', 'DG', 'LP', 'PO']:
             print(f'\nDecoding lab for region {r}..\n')
             region_data = data[data['region'] == r]
+
+            print(f'N_inst: {len(region_data.institute.unique())}, N_sess: {len(region_data.eid.unique())}, '
+                  f'N_mice: {len(region_data.subject.unique())}, N_cells: NA')
+
             decode_data = region_data[metrics].to_numpy()
             decode_labs = region_data['institute'].values
 

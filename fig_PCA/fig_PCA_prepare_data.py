@@ -14,9 +14,9 @@ ba = AllenAtlas()
 
 # Defaults parameters for psth computation
 default_params = {'bin_size': 0.02,
-                  'align_event': 'move',
-                  'event_epoch': [-0.5, 1],
-                  'base_event': 'move',
+                  'align_event': 'stim', # was 'move'
+                  'event_epoch': [-0.5, .1], # was -0.5, 1
+                  'base_event': 'stim', # was 'move'
                   'base_epoch': [-0.5, 0],
                   'norm': 'z_score',
                   'smoothing': None,

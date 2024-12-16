@@ -8,30 +8,68 @@ By: Guido Meijer
 from os.path import join
 import seaborn as sns
 import matplotlib.pyplot as plt
-from reproducible_ephys_functions import save_figure_path
+from reproducible_ephys_functions import save_figure_path, figure_style, LAB_MAP
 from fig_ephysfeatures.ephysfeatures_plot_functions import panel_example
+import numpy as np
 
 REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
 METRICS = ['yield_per_channel', 'median_firing_rate', 'lfp_power', 'rms_ap', 'spike_amp_mean']
-LABELS = ['Neuron yield\n(neurons/channel)', 'Firing rate\n(spks/s)', 'LFP power (dB)', 'AP band RMS', 'Spike amp. (uV)']
+LABELS = ['Neuron yield\n(neurons/channel)', 'Firing rate\n(spikes/s)', 'LFP power (dB)', 'AP band RMS (\u03bcV)', 'Spike amp. (\u03bcV)']
 N_REC_PER_REGION = 2
 
 
 def plot_figure_supp4():
-    f, axs = plt.subplots(len(REGIONS), len(METRICS), figsize=(12, 10), dpi=100)
+    figure_style()
 
-    for i, region in enumerate(REGIONS):
-        for j, metric in enumerate(METRICS):
-            panel_example(axs[i, j], n_rec_per_region=N_REC_PER_REGION, ylabel=LABELS[j],
+    width = 7
+    height = 6
+    fig = plt.figure(figsize=(width, height), dpi=300)
+    gs = fig.add_gridspec(len(METRICS) + 1, len(REGIONS),
+                          height_ratios=np.r_[np.ones(len(METRICS)) * 1, 0.3])
+    gs.update(wspace=0.3)
+
+    for i, metric in enumerate(METRICS):
+        for j, region in enumerate(REGIONS):
+            if j == 0:
+                ylabel = LABELS[i]
+            else:
+                ylabel = ''
+
+            ax = fig.add_subplot(gs[i, j])
+
+            panel_example(ax, n_rec_per_region=N_REC_PER_REGION, ylabel=ylabel,
                           example_metric=metric, example_region=region,
                           despine=False, freeze='freeze_2024_03')
-            if region == 'PPC':
-                axs[i, j].set(title='VISa/am')
-            else:
-                axs[i, j].set(title=region)
-    plt.tight_layout()
+            ax.set_xticklabels([])
+            if i == 0:
+                if region == 'PPC':
+                    ax.set_title('VISa/am')
+                else:
+                    ax.set_title(region)
+            if i == len(METRICS) - 1:
+                ax.set_xlabel('Labs')
+
+
+    ax = fig.add_subplot(gs[len(METRICS), :])
+    ax.set_axis_off()
+    lab_number_map, institution_map, institution_colors = LAB_MAP()
+    inst = list(set(list(institution_map.values())))
+    inst.sort()
+    for i, l in enumerate(inst):
+        if l == 'UCL (H)':
+            continue
+        if i == 0:
+            text = ax.text(0.2, -0.2, l, color=institution_colors[l], fontsize=8, transform=ax.transAxes)
+        else:
+            text = ax.annotate(
+                '  ' + l, xycoords=text, xy=(1, 0), verticalalignment="bottom",
+                color=institution_colors[l], fontsize=8)  # custom properties
+
     sns.despine()
-    plt.savefig(join(save_figure_path(figure='fig_ephysfeatures'), 'figure3_supp4_metrics.pdf'))
+    adjust = 0.3
+    fig.subplots_adjust(top=1 - adjust / height, bottom=adjust / height, left=(adjust + 0.3) / width,
+                        right=1 - adjust / width)
+    plt.savefig(join(save_figure_path(figure='fig_ephysfeatures'), 'figure3_supp4.pdf'))
 
 
 if __name__ == '__main__':

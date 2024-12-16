@@ -1,4 +1,4 @@
-from reproducible_ephys_functions import filter_recordings, labs, BRAIN_REGIONS, query, get_insertions
+from reproducible_ephys_functions import filter_recordings, LAB_MAP, BRAIN_REGIONS
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -13,16 +13,33 @@ from matplotlib.sankey import Sankey
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from permutation_test import permut_test, distribution_dist_approx_max
 from statsmodels.stats.multitest import multipletests
+from iblutil.numerical import ismember
 
 br = BrainRegions()
+PRINT_INFO = False
 
-lab_number_map, institution_map, lab_colors = labs()
+lab_number_map, institution_map, lab_colors = LAB_MAP()
 
 
 def panel_probe_lfp(fig, ax, df_filt, boundary_align='DG-TH', ylim=[-2000, 2000],
                     normalize=False, clim=[-190, -150], freeze=None):
 
     df_chns = load_dataframe(df_name='chns')
+
+
+    df_lim = df_chns.drop_duplicates(subset='pid')
+
+    a_in, b_in = ismember(df_lim.pid.values, df_filt.pid.values)
+    df_filt.loc[b_in, 'avg_dist'] = df_lim.avg_dist.values[a_in]
+    df_filt = df_filt.sort_values(by=['institute', 'avg_dist'], ascending=[True, True]).reset_index(drop=True)
+    rec_per_lab = df_filt.groupby('institute', group_keys=False).size()
+    df_filt['recording'] = np.mod(np.concatenate([np.arange(i) for i in rec_per_lab.values]), 10)
+
+
+    if PRINT_INFO:
+        print(f'Figure 3 b')
+        print(f'N_inst: {df_filt.institute.nunique()}, N_sess: {df_filt.eid.nunique()}, '
+              f'N_mice: {df_filt.subject.nunique()}, N_cells: NA')
 
     for iR, data in df_filt.iterrows():
         df = df_chns[df_chns['pid'] == data['pid']]
@@ -64,17 +81,30 @@ def panel_probe_lfp(fig, ax, df_filt, boundary_align='DG-TH', ylim=[-2000, 2000]
     ax[-1].set_axis_off()
 
     # Add lab names
-    plt.figtext(0.22, 0.715, 'Berkeley', va="center", ha="center", size=7, color=lab_colors['Berkeley'])
-    plt.figtext(0.305, 0.715, 'Champalimaud', va="center", ha="center", size=7, color=lab_colors['CCU'])
-    plt.figtext(0.385, 0.715, 'CSHL (C)', va="center", ha="center", size=7, color=lab_colors['CSHL (C)'])
-    plt.figtext(0.425, 0.715, '(Z)', va="center", ha="center", size=7, color=lab_colors['CSHL (Z)'])
-    plt.figtext(0.46, 0.715, 'NYU', va="center", ha="center", size=7, color=lab_colors['NYU'])
-    plt.figtext(0.52, 0.715, 'Princeton', va="center", ha="center", size=7, color=lab_colors['Princeton'])
-    plt.figtext(0.57, 0.715, 'SWC', va="center", ha="center", size=7, color=lab_colors['SWC'])
-    plt.figtext(0.645, 0.715, 'UCL', va="center", ha="center", size=7, color=lab_colors['UCL'])
+    plt.figtext(0.155, 0.705, 'Berkeley', va="center", ha="center", size=7, color=lab_colors['Berkeley'])
+    plt.figtext(0.235, 0.705, 'CCU', va="center", ha="center", size=7, color=lab_colors['CCU'])
+    plt.figtext(0.325, 0.705, 'CSHL (C)', va="center", ha="center", size=7, color=lab_colors['CSHL (C)'])
+    plt.figtext(0.365, 0.705, '(Z)', va="center", ha="center", size=7, color=lab_colors['CSHL (Z)'])
+    plt.figtext(0.42, 0.705, 'NYU', va="center", ha="center", size=7, color=lab_colors['NYU'])
+    plt.figtext(0.485, 0.705, 'Princeton', va="center", ha="center", size=7, color=lab_colors['Princeton'])
+    plt.figtext(0.55, 0.705, 'SWC', va="center", ha="center", size=7, color=lab_colors['SWC'])
+    plt.figtext(0.645, 0.705, 'UCL', va="center", ha="center", size=7, color=lab_colors['UCL'])
     #plt.figtext(0.805, 0.715, '(H)', va="center", ha="center", size=7, color=lab_colors['UCL (H)'])
-    plt.figtext(0.77, 0.715, 'UCLA', va="center", ha="center", size=7, color=lab_colors['UCLA'])
-    plt.figtext(0.86, 0.715, 'UW', va="center", ha="center", size=7, color=lab_colors['UW'])
+    plt.figtext(0.785, 0.705, 'UCLA', va="center", ha="center", size=7, color=lab_colors['UCLA'])
+    plt.figtext(0.89, 0.705, 'UW', va="center", ha="center", size=7, color=lab_colors['UW'])
+
+    # Old positions Add lab names
+    # plt.figtext(0.22, 0.715, 'Berkeley', va="center", ha="center", size=7, color=lab_colors['Berkeley'])
+    # plt.figtext(0.305, 0.715, 'Champalimaud', va="center", ha="center", size=7, color=lab_colors['CCU'])
+    # plt.figtext(0.385, 0.715, 'CSHL (C)', va="center", ha="center", size=7, color=lab_colors['CSHL (C)'])
+    # plt.figtext(0.425, 0.715, '(Z)', va="center", ha="center", size=7, color=lab_colors['CSHL (Z)'])
+    # plt.figtext(0.46, 0.715, 'NYU', va="center", ha="center", size=7, color=lab_colors['NYU'])
+    # plt.figtext(0.52, 0.715, 'Princeton', va="center", ha="center", size=7, color=lab_colors['Princeton'])
+    # plt.figtext(0.57, 0.715, 'SWC', va="center", ha="center", size=7, color=lab_colors['SWC'])
+    # plt.figtext(0.645, 0.715, 'UCL', va="center", ha="center", size=7, color=lab_colors['UCL'])
+    # #plt.figtext(0.805, 0.715, '(H)', va="center", ha="center", size=7, color=lab_colors['UCL (H)'])
+    # plt.figtext(0.77, 0.715, 'UCLA', va="center", ha="center", size=7, color=lab_colors['UCLA'])
+    # plt.figtext(0.86, 0.715, 'UW', va="center", ha="center", size=7, color=lab_colors['UW'])
 
     # Add colorbar
     axin = inset_axes(ax[-1], width="50%", height="90%", loc='lower right', borderpad=0,
@@ -85,7 +115,7 @@ def panel_probe_lfp(fig, ax, df_filt, boundary_align='DG-TH', ylim=[-2000, 2000]
     else:
         cbar.ax.set_yticklabels([f'{clim[0]}', f'{clim[1]}'])
     cbar.set_label('Power spectral density (dB)', rotation=270, labelpad=-5)
-    
+
     # Return the list of pids used in this figure
     return np.unique(df_filt['pid'])
 
@@ -94,6 +124,19 @@ def panel_probe_neurons(fig, ax, df_filt, boundary_align='DG-TH', ylim=[-2000, 2
 
     df_chns = load_dataframe(df_name='chns')
     df_clust = load_dataframe(df_name='clust')
+
+    df_lim = df_chns.drop_duplicates(subset='pid')
+
+    a_in, b_in = ismember(df_lim.pid.values, df_filt.pid.values)
+    df_filt.loc[b_in, 'avg_dist'] = df_lim.avg_dist.values[a_in]
+    df_filt = df_filt.sort_values(by=['institute', 'avg_dist'], ascending=[True, True]).reset_index(drop=True)
+    rec_per_lab = df_filt.groupby('institute', group_keys=False).size()
+    df_filt['recording'] = np.mod(np.concatenate([np.arange(i) for i in rec_per_lab.values]), 10)
+
+    if PRINT_INFO:
+        print(f'Figure 3 b')
+        print(f'N_inst: {df_filt.institute.nunique()}, N_sess: {df_filt.eid.nunique()}, '
+              f'N_mice: {df_filt.subject.nunique()}, N_cells: {len(df_filt)}')
 
     for iR, data in df_filt.iterrows():
 
@@ -204,7 +247,7 @@ def panel_probe_neurons(fig, ax, df_filt, boundary_align='DG-TH', ylim=[-2000, 2
                       bbox_to_anchor=(1, 0.1, 1, 1), bbox_transform=ax[-1].transAxes)
     cbar = fig.colorbar(im, cax=axin, ticks=im.get_clim())
     cbar.ax.set_yticklabels([f'{levels[0]}', f'{levels[1]}'])
-    cbar.set_label('Firing rate (spks/s)', rotation=270, labelpad=-2)
+    cbar.set_label('Firing rate (spikes/s)', rotation=270, labelpad=-2)
 
     # Return the list of pids used in this figure
     return np.unique(df_filt['pid'])
@@ -228,9 +271,11 @@ def panel_permutation(ax, metrics, regions, labels, n_permut=10000, n_rec_per_la
             this_data = data.loc[data['region'] == region, metric].values
             this_labs = data.loc[data['region'] == region, 'institute'].values
             this_subjects = data.loc[data['region'] == region, 'subject'].values
+            this_sessions = data.loc[data['region'] == region, 'eid'].values
             this_labs = this_labs[~np.isnan(this_data)]
             this_subjects = this_subjects[~np.isnan(this_data)]
             this_data = this_data[~np.isnan(this_data)]
+            #this_sessions = this_sessions[~np.isnan(this_data)]
 
             # Exclude data from labs that do not have enough recordings
             lab_names, this_n_labs = np.unique(this_labs, return_counts=True)
@@ -238,6 +283,13 @@ def panel_permutation(ax, metrics, regions, labels, n_permut=10000, n_rec_per_la
             this_data = this_data[~np.isin(this_labs, excl_labs)]
             this_subjects = this_subjects[~np.isin(this_labs, excl_labs)]
             this_labs = this_labs[~np.isin(this_labs, excl_labs)]
+            #this_sessions = this_sessions[~np.isin(this_labs, excl_labs)]
+
+            if PRINT_INFO:
+                print(f'Figure 3 d: {metric}: {region}')
+                print(f'N_inst: {len(np.unique(this_labs))}, N_sess: {len(np.unique(this_sessions))}, '
+                      f'N_mice: {len(np.unique(this_subjects))}, N_cells: NA')
+
 
             # Do permutation test
             p = permut_test(this_data, metric=distribution_dist_approx_max, labels1=this_labs,
@@ -360,8 +412,15 @@ def panel_example(ax, n_rec_per_lab=0, n_rec_per_region=3,
     data_example = pd.DataFrame(data={
         'institute': data.loc[data['region'] == example_region, 'institute'],
         'lab_number': data.loc[data['region'] == example_region, 'lab_number'],
+        'session': data.loc[data['region'] == example_region, 'eid'],
+        'subject': data.loc[data['region'] == example_region, 'subject'],
         example_metric: data.loc[data['region'] == example_region, example_metric].values})
     data_example = data_example[~data_example[example_metric].isnull()]
+
+    if PRINT_INFO:
+        print(f'Figure 3 supp 4 {example_region}: {example_metric}')
+        print(f'N_inst: {data_example.institute.nunique()}, N_sess: {data_example.session.nunique()}, '
+              f'N_mice: {data_example.subject.nunique()}, N_cells: NA')
 
     data_example = data_example.sort_values('institute')
     cmap = []

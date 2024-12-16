@@ -1,3 +1,4 @@
+.DS_Store
 __pycache__
 reproducible_ephys_paths.py
 .idea

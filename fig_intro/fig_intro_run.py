@@ -11,7 +11,7 @@ from one.api import ONE
 logger = logging.getLogger('paper_reproducible_ephys')
 
 
-def run_fig_intro(one, supplementary=True):
+def run_fig_intro(one, supplementary=False):
 
     ba = AllenAtlas()
     prepare_data(one, ba=ba)

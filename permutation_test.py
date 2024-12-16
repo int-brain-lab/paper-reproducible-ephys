@@ -8,9 +8,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 import multiprocessing as mp
-from reproducible_ephys_functions import labs
+from reproducible_ephys_functions import LAB_MAP
 
-lab_number_map, institution_map, lab_colors = labs()
+lab_number_map, institution_map, lab_colors = LAB_MAP()
 
 def permut_test(data, metric, labels1, labels2, n_permut=10000, shuffling='labels1', plot=False, return_details=False, mark_p=None, n_cores=1, title=None):
     """
@@ -53,6 +53,7 @@ def permut_test(data, metric, labels1, labels2, n_permut=10000, shuffling='label
 
     # Prepare permutations
     permuted_labels1, permuted_labels2 = shuffle_labels(labels1, labels2, n_permut, shuffling, n_cores=n_cores)
+
 
     # Compute null dist (if this could be vectorized it would be a lot faster, but depends on metric...)
     null_dist = np.zeros(n_permut)

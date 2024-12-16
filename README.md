@@ -71,7 +71,9 @@ The subfolders correspond to the following figures
 * Figure 4 - fig_taskmodulation
 * Figure 5 - fig_PCA
 * Figure 6 - fig_spatial
-* Figure 7 - fig_mtnn
+* Figure 7 - fig_encodingRRR
+* Figure 8 - fig_mtnn
+* Figure 9 - fig_decoding
 
 ## Finding the insertions used for analysis
 The list of insertions probe insertions considered for analysis in this version of the paper 
@@ -89,4 +91,4 @@ A detailed overview of the criteria and insertions that have been used for each 
 [spreadsheet](https://docs.google.com/spreadsheets/d/1_bJLDG0HNLFx3SOb4GxLxL52H4R2uPRcpUlIw6n4n-E)
 
 # Running RIGOR metrics on your data
-To run the RIGOR metrics on your own data please refer to this [readme](RIGOR_readme.md)
+To run the RIGOR metrics on your own data please refer to [this notebook](RIGOR_script.ipynb)

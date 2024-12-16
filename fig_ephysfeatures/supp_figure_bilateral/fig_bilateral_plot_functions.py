@@ -1,4 +1,4 @@
-from reproducible_ephys_functions import filter_recordings, labs, BRAIN_REGIONS, query, get_insertions
+from reproducible_ephys_functions import filter_recordings, LAB_MAP, BRAIN_REGIONS, query, get_insertions
 import pandas as pd
 import numpy as np
 from fig_ephysfeatures.ephysfeatures_functions import get_brain_boundaries, plot_probe
@@ -11,20 +11,26 @@ import seaborn as sns
 
 br = BrainRegions()
 
-lab_number_map, institution_map, lab_colors = labs()
+lab_number_map, institution_map, lab_colors = LAB_MAP()
 
-
+PRINT_INFO = True
 def panel_probe_lfp(fig, ax, boundary_align='DG-TH', ylim=[-2000, 2000],
                     normalize=False, clim=[-190, -150]):
 
     df_chns = load_bilateral_data(df_name='chns')
     df_chns['institute'] = df_chns['lab'].map(institution_map)
     df_chns['lab_number'] = df_chns['lab'].map(lab_number_map)
+    df_chns = df_chns[~df_chns.institute.isin(['UCLA', 'UW'])]
+
     df_filt = df_chns.copy()
     df_filt = df_filt.sort_values(by=['institute', 'subject', 'probe']).reset_index(drop=True)
     df_filt = df_filt.drop_duplicates(subset=['subject', 'pid']).reset_index()
     df_filt['recording'] = [i[-1] for i in df_filt['probe']]
     df_filt['recording'] = df_filt['recording'].map({'0': 'L', '1': 'R'})
+
+    print(f'Figure 3 supp 3 a')
+    print(f'N_inst: {df_filt.institute.nunique()}, N_sess: {df_filt.eid.nunique()}, '
+          f'N_mice: {df_filt.subject.nunique()}, N_cells: NA')
 
     for iR, data in df_filt.iterrows():
         df = df_chns[df_chns['pid'] == data['pid']]
@@ -75,11 +81,18 @@ def panel_probe_neurons(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[
 
     df_chns['institute'] = df_chns['lab'].map(institution_map)
     df_chns['lab_number'] = df_chns['lab'].map(lab_number_map)
+
+    df_chns = df_chns[~df_chns.institute.isin(['UCLA', 'UW'])]
+
     df_filt = df_chns.copy()
     df_filt = df_filt.sort_values(by=['institute', 'subject', 'probe']).reset_index(drop=True)
     df_filt = df_filt.drop_duplicates(subset=['subject', 'pid']).reset_index()
     df_filt['recording'] = [i[-1] for i in df_filt['probe']]
     df_filt['recording'] = df_filt['recording'].map({'0': 'L', '1': 'R'})
+
+    print(f'Figure 3 supp 3 b')
+    print(f'N_inst: {df_filt.institute.nunique()}, N_sess: {df_filt.eid.nunique()}, '
+          f'N_mice: {df_filt.subject.nunique()}, N_cells: NA')
 
     df_bilateral_ins = load_bilateral_data(df_name='ins')
 
@@ -228,8 +241,9 @@ def panel_distribution(ax, example_region='CA1', example_metric='lfp_power',
 
     # Load in bilateral data
     df_bilateral_ins = load_bilateral_data(df_name='ins')
+    df_bilateral_ins['institute'] = df_bilateral_ins['lab'].map(institution_map)
+    df_bilateral_ins = df_bilateral_ins[~df_bilateral_ins.institute.isin(['UCLA', 'UW'])]
     df_bl_slice = df_bilateral_ins[(df_bilateral_ins['region'] == example_region)]
-    print(df_bl_slice)
 
     # Load in all data
     df_all_ins = load_all_data(df_name='ins')
@@ -237,11 +251,14 @@ def panel_distribution(ax, example_region='CA1', example_metric='lfp_power',
                                 recompute=False)
     df_all_slice = df_filt[(df_filt['region'] == example_region)]
 
+    if PRINT_INFO:
+        print(f'Figure 3 supp 3')
+        print(f'N_inst: {df_bl_slice.institute.nunique()}, N_sess: {df_bl_slice.eid.nunique()}, '
+              f'N_mice: {df_bl_slice.subject.nunique()}, N_cells: NA')
+
     # Calculate within animal variability
     within_var = np.empty(np.unique(df_bl_slice['subject']).shape[0])
-    print(within_var)
     for i, subject in enumerate(np.unique(df_bl_slice['subject'])):
-        print(subject)
         within_var[i] = np.abs(df_bl_slice[(df_bl_slice['subject'] == subject)
                                         & (df_bl_slice['probe'] == 'probe00')][example_metric].values[0]
                                - df_bl_slice[(df_bl_slice['subject'] == subject)
@@ -273,6 +290,8 @@ def panel_summary(ax, regions=['PPC', 'CA1', 'DG']):
 
     # Load in bilateral data
     df_ins = load_bilateral_data(df_name='ins')
+    df_ins['institute'] = df_ins['lab'].map(institution_map)
+    df_ins = df_ins[~df_ins.institute.isin(['UCLA', 'UW'])]
 
     # Load in all data
     df_all_ins = load_all_data(df_name='ins')

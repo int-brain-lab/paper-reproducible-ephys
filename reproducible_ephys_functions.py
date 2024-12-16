@@ -41,9 +41,10 @@ STR_QUERY = 'probe_insertion__session__projects__name__icontains,ibl_neuropixel_
             'probe_insertion__session__n_trials__gte,400'
 
 BRAIN_REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
+REGION_RENAME = dict(zip(BRAIN_REGIONS, ['VISa/am', 'CA1', 'DG', 'LP', 'PO']))
 
 
-def labs():
+def LAB_MAP():
     lab_number_map = {'cortexlab': 'Lab 1', 'mainenlab': 'Lab 2', 'churchlandlab': 'Lab 3',
                       'angelakilab': 'Lab 4', 'wittenlab': 'Lab 5', 'hoferlab': 'Lab 6',
                       'mrsicflogellab': 'Lab 6', 'danlab': 'Lab 7', 'zadorlab': 'Lab 8',
@@ -61,6 +62,31 @@ def labs():
     for i, inst in enumerate(institutions):
         institution_colors[inst] = colors[i]
     return lab_number_map, institution_map, institution_colors
+
+
+def plot_vertical_institute_legend(institutes, ax, offset=0.5, span=(0, 1), fontsize=7):
+    _, _, institution_colors = LAB_MAP()
+    # institutes = [institution_map[lab] for lab in labs]
+    institutes = list(set(institutes))
+    institutes.sort()
+    pos = np.linspace(span[0], span[1], len(institutes))[::-1]
+    for p, inst in zip(pos, institutes):
+        ax.text(offset, p, inst, color=institution_colors[inst], fontsize=fontsize, transform=ax.transAxes)
+
+def plot_horizontal_institute_legend(institutes, ax, offset=0.2, fontsize=8):
+    _, _, institution_colors = LAB_MAP()
+
+    institutes = list(set(institutes))
+    institutes.sort()
+
+    for i, inst in enumerate(institutes):
+        if i == 0:
+            text = ax.text(offset, 0.5, inst, color=institution_colors[inst], fontsize=fontsize,
+                           transform=ax.transAxes)
+        else:
+            text = ax.annotate(
+                '  ' + inst, xycoords=text, xy=(1, 0), verticalalignment="bottom",
+                color=institution_colors[inst], fontsize=fontsize)
 
 
 def query(behavior=False, n_trials=400, resolved=True, min_regions=2, exclude_critical=True, one=None, str_query=None,
@@ -140,7 +166,7 @@ def traj_list_to_dataframe(trajectories):
               'eid': [i['session']['id'] for i in trajectories],
               'probe_insertion': [i['probe_insertion'] for i in trajectories]})
 
-    trajectories['institution'] = trajectories.lab.map(labs()[1])
+    trajectories['institution'] = trajectories.lab.map(LAB_MAP()[1])
 
     return trajectories
 
@@ -223,15 +249,18 @@ def figure_style(return_colors=False):
     """
     Set seaborn style for plotting figures
     """
-    sns.set(style="ticks", context="paper",
+    sns.set(style="ticks", context="paper", font="Arial",
             rc={"font.size": 7,
                 "axes.titlesize": 8,
                 "axes.labelsize": 7,
                 "axes.linewidth": 0.5,
+                "axes.spines.top": False,
+                "axes.spines.right": False,
+                "legend.title_fontsize": 7,
                 "lines.linewidth": 1,
                 "lines.markersize": 4,
-                "xtick.labelsize": 7,
-                "ytick.labelsize": 7,
+                "xtick.labelsize": 6,
+                "ytick.labelsize": 6,
                 "savefig.transparent": False,
                 "xtick.major.size": 2.5,
                 "ytick.major.size": 2.5,
@@ -240,7 +269,7 @@ def figure_style(return_colors=False):
                 "xtick.minor.size": 2,
                 "ytick.minor.size": 2,
                 "xtick.minor.width": 0.5,
-                "ytick.minor.width": 0.5
+                "ytick.minor.width": 0.5,
                 })
     matplotlib.rcParams['pdf.fonttype'] = 42
     matplotlib.rcParams['ps.fonttype'] = 42
@@ -255,6 +284,38 @@ def figure_style(return_colors=False):
                 'RS1': sns.color_palette('Set2')[2],
                 'RS2': sns.color_palette('Set2')[3]}
 
+def get_row_coord(height, ratios=None, hspace=0.6, pad=0.1, span=(0, 1)):
+    extent = span[1] - span[0]
+
+    if isinstance(hspace, list):
+        hspace = [h / height for h in hspace]
+    else:
+        hspace = [hspace / height] * (len(ratios) - 1)
+
+
+    hpad = pad / height
+    #space = hspace * (len(ratios) - 1)
+    space = sum(hspace)
+    # Todo check if we want to pad twice or just once
+    # available_space = (1 - space - hpad * 2) * extent
+    available_space = (1 - space - hpad) * extent
+    fig_extent = available_space / sum(ratios)
+    la = [[hpad + span[0], hpad + span[0] + fig_extent * ratios[0]]]
+
+    for i, r in enumerate(ratios[1:]):
+        la.append([la[i][-1] + hspace[i], la[i][-1] + hspace[i] + fig_extent * r])
+
+    return la
+
+
+def get_label_pos(height, coord, pad=0.1):
+    pad = pad / height
+    return coord - pad
+
+def remove_frame(axes):
+    axes.set_frame_on(False)
+    axes.axes.get_xaxis().set_visible(False)
+    axes.axes.get_yaxis().set_visible(False)
 
 def combine_regions(regions):
     """
@@ -341,7 +402,7 @@ def save_figure_path(figure=None):
 def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', save=True, bilateral=False):
     one = one or ONE()
     ba = ba or AllenAtlas()
-    lab_number_map, institution_map, _ = labs()
+    lab_number_map, institution_map, _ = LAB_MAP()
     metrics = pd.DataFrame()
 
     for i, ins in enumerate(insertions):

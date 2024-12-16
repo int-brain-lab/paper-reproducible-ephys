@@ -4,7 +4,7 @@ an nvidia driver installed.
 To install pytorch for your OS please follow this link https://pytorch.org/ and refer to the `Install Pytorch` section
 
 # Figures mtnn
-The figures for the mtnn analysos can be reproduced by executing fig_mtnn_run.py file 
+The figures for the mtnn analysis can be reproduced by executing fig_mtnn_run.py file 
 ```
 python fig_mtnn_run.py
 ```
