@@ -1,5 +1,5 @@
 This repository contains code to reproduce figures from the 
-[IBL reproducible ephys paper](https://www.biorxiv.org/content/10.1101/2022.05.09.491042v6)
+[IBL reproducible ephys paper](https://doi.org/10.7554/eLife.100840.1)
  
 # Installation
 ## Making a new python environment (optional)
