@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from pathlib import Path
 import brainbox.io.one as bbone
-from brainbox.lfp import butter_filter
+from scipy.signal import filtfilt, butter
 from ibllib.pipes.ephys_alignment import EphysAlignment
 from scratch_scripts.MF.features_2D import get_brain_boundaries
 from ibllib.io import spikeglx
@@ -118,6 +118,34 @@ acronyms = np.delete(acronyms, DROP_CH)
 if GLOBAL_REF:
     signal_ap = signal_ap - np.mean(signal_ap, axis=0)
     signal_lf = signal_lf - np.mean(signal_lf, axis=0)
+
+
+def butter_filter(signal, highpass_freq=None, lowpass_freq=None, order=4, fs=2500):
+
+    # The filter type is determined according to the values of cut-off frequencies
+    Fn = fs / 2.
+    if lowpass_freq and highpass_freq:
+        if highpass_freq < lowpass_freq:
+            Wn = (highpass_freq / Fn, lowpass_freq / Fn)
+            btype = 'bandpass'
+        else:
+            Wn = (lowpass_freq / Fn, highpass_freq / Fn)
+            btype = 'bandstop'
+    elif lowpass_freq:
+        Wn = lowpass_freq / Fn
+        btype = 'lowpass'
+    elif highpass_freq:
+        Wn = highpass_freq / Fn
+        btype = 'highpass'
+    else:
+        raise ValueError("Either highpass_freq or lowpass_freq must be given")
+
+    # Filter signal
+    b, a = butter(order, Wn, btype=btype, output='ba')
+    filtered_data = filtfilt(b=b, a=a, x=signal, axis=1)
+
+    return filtered_data
+
 
 # Zero-mean, amplify and filter traces
 for i in range(signal_ap.shape[0]):
