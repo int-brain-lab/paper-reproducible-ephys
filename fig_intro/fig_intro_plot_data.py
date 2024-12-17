@@ -71,10 +71,10 @@ def plot_main_figure(one, ba=None):
               {'label_text': 'd', 'xpos': get_label_pos(width, xspan_row3[0][0]),
                'ypos': get_label_pos(height, yspans[2][0], pad=0.3), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'e', 'xpos': get_label_pos(width, xspan_row3[1][0]),
+              {'label_text': 'e', 'xpos': get_label_pos(width, xspan_row3[1][0], pad=0.5),
                'ypos': get_label_pos(height, yspans[2][0], pad=0.3), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'f', 'xpos': get_label_pos(width, xspan_row3[2][0]),
+              {'label_text': 'f', 'xpos': get_label_pos(width, xspan_row3[2][0], pad=0.5),
                'ypos': get_label_pos(height, yspans[2][0], pad=0.3), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
               ]
@@ -512,6 +512,6 @@ def plot_raster_with_regions(pid, one, ax_raster, ax_regions, ba, mapping='Allen
 if __name__ == "__main__":
     one = ONE()
     plot_main_figure(one)
-    plot_3D_repeated_site_trajectories(one)
-    plot_supp2_figure(one)
+    # plot_3D_repeated_site_trajectories(one)
+    # plot_supp2_figure(one)
 
