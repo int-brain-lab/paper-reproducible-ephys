@@ -870,9 +870,9 @@ def plot_power_analysis():
         print(f'N_inst: {df_filt.institute.nunique()}, N_sess: {df_filt.eid.nunique()}, '
               f'N_mice: {df_filt.subject.nunique()}, N_cells: {len(df_filt)}')
 
-    axs['B'].scatter(powers, np.power(vars, 0.5), color='blue', label="Firing modulation", s=0.15)
-    axs['B'].scatter(powers_ff, np.power(vars_ff, 0.5), color='blue', label="Fano factor", s=0.15)
-    axs['B'].set_xlabel("Shifts")
+    axs['B'].scatter(powers, vars, color='blue', label="Firing modulation", s=0.15)
+    axs['B'].scatter(powers_ff, vars_ff, color='blue', label="Fano factor", s=0.15)
+    axs['B'].set_xlabel("Minimal shift magnitude (sp/s)")
     axs['B'].set_ylabel(r"Std / $\sqrt{N}$")
 
     std_limit = 3
