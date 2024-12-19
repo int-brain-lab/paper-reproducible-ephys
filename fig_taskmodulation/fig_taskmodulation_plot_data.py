@@ -708,8 +708,6 @@ def plot_power_analysis():
     powers_ff = []
     vars_ff = []
     perturb_in_std = []
-    all_powers = []
-    ns = []
 
     figure_style()
     width = 7
@@ -796,8 +794,6 @@ def plot_power_analysis():
                 if not (significant_disturbances[i, 0, 0] == 0 and significant_disturbances[i, 0, 1] == 0):
                     perturb_in_std.append(val / np.std(data[labs == lab]))
 
-                all_powers.append(val)
-                ns.append(np.sum(labs == lab))
                 if test == 'avg_ff_post_move':
                     powers_ff.append(val)
                     ax.axhline(1, color='grey', alpha=1/3, zorder=0)
@@ -812,8 +808,6 @@ def plot_power_analysis():
                 ax.plot([lab_to_num[lab] + perturbation_shift, lab_to_num[lab] + perturbation_shift], [lab_mean, lab_mean + val], color=temp_color)
                 obs_max = max(obs_max, lab_mean + val)
                 val = significant_disturbances[i, j, 1]
-
-                all_powers[-1] -= val
 
                 if test == 'avg_ff_post_move':
                     powers_ff[-1] -= val
