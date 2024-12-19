@@ -63,7 +63,7 @@ def main_clean(X, y, eids, n_permut, stest_fname,
                  ax=ax, legend=False, laborarea=plot_kwargs['laborarea'])
     
     ax = axes[0]
-    sns.histplot(null_dist, ax=ax, stat="count", label='permuted')
+    sns.histplot(null_dist, ax=ax, stat="count", label='permuted', binwidth=0.01)
     ax.axvline(x=f1, color='r', linestyle='--', label='original')
     ax.set_xlabel("Macro F1")
     ax.set_ylabel("Number of \n permutations")
@@ -177,7 +177,7 @@ for ai, area in enumerate(area_list):
     print(area)
     for _yi in np.unique(_ys):
         print(_yi, len(np.unique(eid_all[_ys==_yi])))
-    title = f"{area} neurons"
+    title = f"VISa/am neurons" if area == "VISa_am" else f"{area} neurons"
     labels = li2lab
     ax = [axs[f'B_{area}_{_+1}'] for _ in range(2)]
     ### evaluate the performance

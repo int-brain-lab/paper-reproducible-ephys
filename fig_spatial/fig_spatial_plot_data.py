@@ -509,7 +509,7 @@ def plot_main_figure():
         if reg == 'LP':
             inset = axes['B'].inset_axes([0.82, 0.5, 0.25, 0.1])
             plot_inset_histogram(df_reg.amp * 1e6, cond1, cond2, bins=30, xlabel='Amplitude (\u03bcv)', ylabel='Probability',
-                                 cols=['tab:orange', 'tab:blue'], sig='**', sig_loc=[0.3, 0.5], ax=inset,
+                                 cols=['goldenrod', 'tab:blue'], sig='**', sig_loc=[0.3, 0.5], ax=inset,
                                  minmax=(0, np.max(df_reg.amp * 1e6)))
 
 
@@ -610,7 +610,7 @@ def plot_supp1():
     cond1, cond2 = plot_firing_rate_3D(df_reg, cofm_reg, reg=reg, hists=scales[reg]['fr'], inset=False, ax=axes['A_2'])
     inset = axes['A_2'].inset_axes([0.84, 0.5, 0.2, 0.1])
     plot_inset_histogram(df_reg.p2t, cond1, cond2, bins=15, xlabel='Waveform duration (ms)', ylabel='Probability',
-                         cols=['tab:orange', 'tab:blue'], sig='*', sig_loc=[0.25, 0.5], ax=inset)
+                         cols=['goldenrod', 'tab:blue'], sig='*', sig_loc=[0.25, 0.5], ax=inset)
 
     axes['A_1'].set_zorder(2)
     axes['A_2'].set_zorder(1)
@@ -691,7 +691,7 @@ def plot_supp1():
 
 
 def plot_inset_histogram(vals, condition1, condition2, bins=30, xlabel=None, ylabel=None, minmax=None,
-                         cols=['tab:orange', 'tab:blue'], sig='**', sig_loc=[0, 0], ax=None):
+                         cols=['goldenrod', 'tab:blue'], sig='**', sig_loc=[0, 0], ax=None):
 
     if minmax is None:
         minmax = (np.min(vals), np.max(vals))
@@ -727,7 +727,7 @@ def compute_hist_and_percentiles(vals, incl, binwidth=100):
 
 
 def plot_histograms_along_x_axis(vals, condition1, condition2, ymax, zmax, scale=5e2, binwidth=100,
-                                cols=['tab:orange', 'tab:blue'], sig='', ax=None):
+                                cols=['goldenrod', 'tab:blue'], sig='', ax=None):
 
     # Compute histogram and percentiles for two conditions
     hist_1, bins_1, pc_20_1, pc_80_1 = compute_hist_and_percentiles(vals, condition1, binwidth=binwidth)
@@ -758,7 +758,7 @@ def plot_histograms_along_x_axis(vals, condition1, condition2, ymax, zmax, scale
 
 
 def plot_histograms_along_y_axis(vals, condition1, condition2, xmax, zmax, scale=5e2, binwidth=100,
-                                 cols=['tab:orange', 'tab:blue'], sig='', ax=None):
+                                 cols=['goldenrod', 'tab:blue'], sig='', ax=None):
     # Compute histogram and percentiles for two conditions
     hist_1, bins_1, pc_20_1, pc_80_1 = compute_hist_and_percentiles(vals, condition1, binwidth=binwidth)
     hist_2, bins_2, pc_20_2, pc_80_2 = compute_hist_and_percentiles(vals, condition2, binwidth=binwidth)
@@ -788,7 +788,7 @@ def plot_histograms_along_y_axis(vals, condition1, condition2, xmax, zmax, scale
 
 
 def plot_histograms_along_z_axis(vals, condition1, condition2, xmax, ymax, scale=6.5e2, binwidth=120,
-                                 cols=['tab:orange', 'tab:blue'], sig='', ax=None, dir='down'):
+                                 cols=['goldenrod', 'tab:blue'], sig='', ax=None, dir='down'):
     # Compute histogram and percentiles for two conditions
     hist_1, bins_1, pc_20_1, pc_80_1 = compute_hist_and_percentiles(vals, condition1, binwidth=binwidth)
     hist_2, bins_2, pc_20_2, pc_80_2 = compute_hist_and_percentiles(vals, condition2, binwidth=binwidth)
@@ -849,13 +849,12 @@ def plot_firing_rate_3D(df_reg, cofm_reg, reg=None, hists={'x': 3e2, 'y': 7e2}, 
     avg_fr = df_reg.avg_fr.values
     log_avg_fr = np.log10(avg_fr)
 
-    # filt_thres = 0.15
-    # deviation_from_median = (avg_fr - np.median(avg_fr)) / (np.max(avg_fr) - np.min(avg_fr))
-    # regular_units = np.abs(deviation_from_median) < filt_thres
-    # outlier_units = np.abs(deviation_from_median) >= filt_thres
-    filt_thres = 13.5
-    regular_units = avg_fr < filt_thres
-    outlier_units = avg_fr >= filt_thres
+    filt_thres = 0.15
+    deviation_from_median = (avg_fr - np.median(avg_fr)) / (np.max(avg_fr) - np.min(avg_fr))
+    regular_units = np.abs(deviation_from_median) < filt_thres
+    outlier_units = np.abs(deviation_from_median) >= filt_thres
+
+    thres = ((np.max(avg_fr) - np.min(avg_fr)) * filt_thres) + np.median(avg_fr)
 
     norm = colors.Normalize(vmin=np.min(log_avg_fr), vmax=np.max(log_avg_fr), clip=False)
     mapper = cm.ScalarMappable(norm=norm, cmap=parula_map)
@@ -877,7 +876,7 @@ def plot_firing_rate_3D(df_reg, cofm_reg, reg=None, hists={'x': 3e2, 'y': 7e2}, 
     cbar.set_ticklabels(ticks)
     cbar.set_label('Average firing rate (spikes/s)', rotation=90, labelpad=-40)
 
-    ax_cbar.axhline(np.log10(filt_thres), xmin=ax_cbar.get_xlim()[0] - 0.4, xmax=ax_cbar.get_xlim()[1] + 0.4, c='k',
+    ax_cbar.axhline(np.log10(thres), xmin=ax_cbar.get_xlim()[0] - 0.4, xmax=ax_cbar.get_xlim()[1] + 0.4, c='k',
                     clip_on=False, lw=1.5)
 
     if 'x' in hists.keys():

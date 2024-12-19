@@ -71,10 +71,10 @@ def plot_main_figure(one, ba=None):
               {'label_text': 'd', 'xpos': get_label_pos(width, xspan_row3[0][0]),
                'ypos': get_label_pos(height, yspans[2][0], pad=0.3), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'e', 'xpos': get_label_pos(width, xspan_row3[1][0]),
+              {'label_text': 'e', 'xpos': get_label_pos(width, xspan_row3[1][0], pad=0.5),
                'ypos': get_label_pos(height, yspans[2][0], pad=0.3), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
-              {'label_text': 'f', 'xpos': get_label_pos(width, xspan_row3[2][0]),
+              {'label_text': 'f', 'xpos': get_label_pos(width, xspan_row3[2][0], pad=0.5),
                'ypos': get_label_pos(height, yspans[2][0], pad=0.3), 'fontsize': 10,
                'weight': 'bold', 'ha': 'right', 'va': 'bottom'},
               ]
@@ -205,6 +205,7 @@ def plot_repeated_site_slice(one, ba=None, axs=None, save=True):
     region_labels[region_labels[:, 1] == 'VISa', 1] = 'PPC'
     reg_idx = np.where(np.isin(region_labels[:, 1], BRAIN_REGIONS))[0]
     region_labels = region_labels[reg_idx, :]
+    region_labels[region_labels[:, 1] == 'PPC', 1] = 'VISa/am'
 
     # Create a figure and arrange using gridspec
     if axs is None:
@@ -512,6 +513,6 @@ def plot_raster_with_regions(pid, one, ax_raster, ax_regions, ba, mapping='Allen
 if __name__ == "__main__":
     one = ONE()
     plot_main_figure(one)
-    plot_3D_repeated_site_trajectories(one)
-    plot_supp2_figure(one)
+    # plot_3D_repeated_site_trajectories(one)
+    # plot_supp2_figure(one)
 

@@ -13,7 +13,7 @@ br = BrainRegions()
 
 lab_number_map, institution_map, lab_colors = LAB_MAP()
 
-PRINT_INFO = True
+PRINT_INFO = False
 def panel_probe_lfp(fig, ax, boundary_align='DG-TH', ylim=[-2000, 2000],
                     normalize=False, clim=[-190, -150]):
 
@@ -50,14 +50,14 @@ def panel_probe_lfp(fig, ax, boundary_align='DG-TH', ylim=[-2000, 2000],
 
         ax[iR].set_title(data['recording'], color=lab_colors[data['institute']])
         if iR == 0:
-            ax[iR].set(yticks=np.arange(ylim[0], ylim[1] + 1, 500),
-                       yticklabels=np.arange(ylim[0], ylim[1] + 1, 500) / 1000,
-                       xticks=[])
-            ax[iR].tick_params(axis='y')
             ax[iR].spines["right"].set_visible(False)
             ax[iR].spines["bottom"].set_visible(False)
             ax[iR].spines["top"].set_visible(False)
+            ax[iR].set_yticks(np.arange(ylim[0], ylim[1] + 1, 500))
+            ax[iR].set_yticklabels(np.arange(ylim[0], ylim[1] + 1, 500) / 1000)
             ax[iR].set_ylabel('Depth relative to DG-Thalamus (mm)')
+            ax[iR].xaxis.set_visible(False)
+            ax[iR].spines["bottom"].set_color('w')
         else:
             ax[iR].set_axis_off()
         ax[iR].set(ylim=ylim)
@@ -155,17 +155,18 @@ def panel_probe_neurons(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[
         ax[iR].set_title(data['recording'], color=lab_colors[data['institute']])
 
         if iR == 0:
-            ax[iR].set(yticks=np.arange(ylim[0], ylim[1] + 1, 500),
-                       yticklabels=np.arange(ylim[0], ylim[1] + 1, 500) / 1000,
-                       xticks=[])
-            ax[iR].tick_params(axis='y')
             ax[iR].spines["right"].set_visible(False)
             ax[iR].spines["bottom"].set_visible(False)
             ax[iR].spines["top"].set_visible(False)
+            ax[iR].set_yticks(np.arange(ylim[0], ylim[1] + 1, 500))
+            ax[iR].set_yticklabels(np.arange(ylim[0], ylim[1] + 1, 500) / 1000)
             ax[iR].set_ylabel('Depth relative to DG-Thalamus (mm)')
+            ax[iR].xaxis.set_visible(False)
+            ax[iR].spines["bottom"].set_color('w')
         else:
             ax[iR].set_axis_off()
         ax[iR].set(ylim=ylim)
+
 
     # Add brain regions
     width = ax[-1].get_xlim()[1]
@@ -192,7 +193,7 @@ def panel_probe_neurons(fig, ax, n_rec_per_lab=4, boundary_align='DG-TH', ylim=[
                       bbox_to_anchor=(1, 0.1, 1, 1), bbox_transform=ax[-1].transAxes)
     cbar = fig.colorbar(im, cax=axin, ticks=im.get_clim())
     cbar.ax.set_yticklabels([f'{levels[0]}', f'{levels[1]}'])
-    cbar.set_label('Firing rate (spks/s)', rotation=270, labelpad=-2)
+    cbar.set_label('Firing rate (spikes/s)', rotation=270, labelpad=-2)
 
 
 def panel_boxplot(ax, example_region='CA1', example_metric='lfp_power',
@@ -345,7 +346,7 @@ def panel_summary(ax, regions=['PPC', 'CA1', 'DG']):
     cbar.set_label('Ratio var. within / across', rotation=270, labelpad=8)
     labels = ['Neuron yield', 'Firing rate', 'LFP power', 'AP band RMS', 'Spike amp.']
     ax.set(xlabel='', ylabel='', xticks=np.arange(len(labels)) + 0.5, yticks=np.arange(len(regions)) + 0.5)
-    ax.set_yticklabels(regions, va='center', rotation=0)
+    ax.set_yticklabels(['VISa/am', 'CA1', 'DG'], va='center', rotation=0)
     ax.set_xticklabels(labels, rotation=45, ha='right')
 
 
