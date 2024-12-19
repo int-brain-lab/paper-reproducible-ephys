@@ -205,6 +205,7 @@ def plot_repeated_site_slice(one, ba=None, axs=None, save=True):
     region_labels[region_labels[:, 1] == 'VISa', 1] = 'PPC'
     reg_idx = np.where(np.isin(region_labels[:, 1], BRAIN_REGIONS))[0]
     region_labels = region_labels[reg_idx, :]
+    region_labels[region_labels[:, 1] == 'PPC', 1] = 'VISa/am'
 
     # Create a figure and arrange using gridspec
     if axs is None:

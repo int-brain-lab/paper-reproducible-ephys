@@ -33,7 +33,7 @@ def plot_main_figure(one=None):
     figure_style()
     width = 7
     height = 7
-    fig = plt.figure(figsize=(7, 7), dpi=DPI)  # full width figure is 7 inches
+    fig = plt.figure(figsize=(width, height), dpi=DPI)  # full width figure is 7 inches
 
     xspans = get_row_coord(width, [1], pad=0.6)
     yspans = get_row_coord(height, [3, 3, 2], hspace=0.8, pad=0.3)
@@ -68,9 +68,6 @@ def plot_main_figure(one=None):
                'ypos': get_label_pos(height, yspans[2][0], pad=0.3), 'fontsize': 10, 'weight': 'bold',
                'ha': 'right', 'va': 'bottom'}
               ]
-
-    fg.add_labels(fig, labels)
-
 
     fg.add_labels(fig, labels)
 

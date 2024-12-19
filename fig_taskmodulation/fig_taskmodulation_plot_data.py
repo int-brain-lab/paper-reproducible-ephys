@@ -349,9 +349,14 @@ def plot_panel_all_subjects(max_neurons, min_neurons, ax=None, save=True, plotte
 
             if inst not in all_present_labs:
                 all_present_labs.append(df_inst.iloc[0]['institute'])
-            ax[iR].errorbar(data['time'], np.mean(frs_inst, axis=0), yerr=sem(frs_inst, axis=0) / 2, c=lab_colors[inst],
-                            lw=min_lw + ((inst_idx.shape[0] - min_neurons) / (max_neurons - min_neurons)) * max_lw,
-                            alpha=0.8)
+            fr = np.mean(frs_inst, axis=0)
+            err = sem(frs_inst, axis=0) / 2
+            # ax[iR].errorbar(data['time'], np.mean(frs_inst, axis=0), yerr=sem(frs_inst, axis=0) / 2, c=lab_colors[inst],
+            #                 #lw=min_lw + ((inst_idx.shape[0] - min_neurons) / (max_neurons - min_neurons)) * max_lw,
+            #                 lw=1,
+            #                 alpha=0.8)
+            ax[iR].plot(data['time'], fr, c=lab_colors[inst])
+            ax[iR].fill_between(data['time'], fr - err, fr + err, color=lab_colors[inst], alpha=0.25)
         ax[iR].set_ylim(bottom=-4, top=8)
         ax[iR].set_yticks([-4, 0, 4, 8])
         ax[iR].axvline(0, color='k', ls='--')
