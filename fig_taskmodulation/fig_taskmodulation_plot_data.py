@@ -864,7 +864,7 @@ def plot_power_analysis():
 
     axs['B'].scatter(powers, vars, color='blue', label="Firing modulation", s=0.15)
     axs['B'].scatter(powers_ff, vars_ff, color='blue', label="Fano factor", s=0.15)
-    axs['B'].set_xlabel("Minimal shift magnitude (sp/s)")
+    axs['B'].set_xlabel("Minimal shift magnitude (spikes/s)")
     axs['B'].set_ylabel(r"Std / $\sqrt{N}$")
 
     std_limit = 3

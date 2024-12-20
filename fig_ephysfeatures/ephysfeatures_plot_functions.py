@@ -263,6 +263,7 @@ def panel_permutation(ax, metrics, regions, labels, n_permut=10000, n_rec_per_la
     data['yield_per_channel'] = data['neuron_yield'] / data['n_channels']
     data.loc[data['lfp_power'] < -100000, 'lfp_power'] = np.nan
     data.loc[data['rms_ap_p90'] == 0, 'rms_ap_p90'] = np.nan
+    data['spike_amp_median'] = data['spike_amp_median'] * 1e6
 
     results = pd.DataFrame()
     for i, metric in enumerate(metrics):
@@ -408,6 +409,7 @@ def panel_example(ax, n_rec_per_lab=0, n_rec_per_region=3,
     df_filt['yield_per_channel'] = df_filt['neuron_yield'] / df_filt['n_channels']
     df_filt.loc[df_filt['lfp_power'] < -100000, 'lfp_power'] = np.nan
     data = df_filt[df_filt['permute_include'] == 1]
+    data['spike_amp_median'] = data['spike_amp_median'] * 1e6
 
     data_example = pd.DataFrame(data={
         'institute': data.loc[data['region'] == example_region, 'institute'],

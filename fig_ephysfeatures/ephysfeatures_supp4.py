@@ -13,7 +13,7 @@ from fig_ephysfeatures.ephysfeatures_plot_functions import panel_example
 import numpy as np
 
 REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
-METRICS = ['yield_per_channel', 'median_firing_rate', 'lfp_power', 'rms_ap_p90', 'spike_amp_mean']
+METRICS = ['yield_per_channel', 'median_firing_rate', 'lfp_power', 'rms_ap_p90', 'spike_amp_median']
 LABELS = ['Neuron yield\n(neurons/channel)', 'Firing rate\n(spikes/s)', 'LFP power (dB)', 'AP band RMS (\u03bcV)', 'Spike amp. (\u03bcV)']
 N_REC_PER_REGION = 3
 

@@ -229,7 +229,7 @@ def prepare_data(insertions, one, recompute=False):
     return all_df_chns, all_df_clust, metrics
 
 
-def run_decoding(metrics=['yield_per_channel', 'median_firing_rate', 'lfp_power', 'rms_ap_p90', 'spike_amp_mean'],
+def run_decoding(metrics=['yield_per_channel', 'median_firing_rate', 'lfp_power', 'rms_ap_p90', 'spike_amp_median'],
                  qc='pass', n_shuffle=500, min_lab_region=3, min_rec_lab=3, recompute=False):
     """
     qc can be "pass" (only include recordings that pass QC)
