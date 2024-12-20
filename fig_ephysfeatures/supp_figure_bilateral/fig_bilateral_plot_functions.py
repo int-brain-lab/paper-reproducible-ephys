@@ -264,6 +264,7 @@ def panel_distribution(ax, example_region='CA1', example_metric='lfp_power',
                                         & (df_bl_slice['probe'] == 'probe00')][example_metric].values[0]
                                - df_bl_slice[(df_bl_slice['subject'] == subject)
                                           & (df_bl_slice['probe'] == 'probe01')][example_metric].values[0])
+
     within_var = within_var[~np.isnan(within_var)]
 
     # Calculate across animal variability of entire dataset
@@ -329,7 +330,7 @@ def panel_summary(ax, regions=['PPC', 'CA1', 'DG']):
                                                   & (df_bl_slice['probe'] == 'probe01')][metric].values[0])
             within_var = within_var[~np.isnan(within_var)]
 
-            #diff = np.mean(within_var) / np.mean(across_var)
+
             diff = np.mean(within_var) / np.mean(across_var)
             #diff = (iqr(within_var) - iqr(across_var)) / (iqr(within_var) + iqr(across_var))
             diff_df = pd.concat((diff_df, pd.DataFrame(index=[diff_df.shape[0] + 1], data={

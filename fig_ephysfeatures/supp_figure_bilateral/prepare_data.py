@@ -185,6 +185,7 @@ def prepare_data(insertions, one, recompute=False):
                                                         'spike_amp_mean': np.nan,
                                                         'spike_amp_median': np.nan,
                                                         'spike_amp_90': np.nan,
+                                                        'lfp_power': lfp_region,
                                                         'rms_ap_p90': rms_ap})))
             else:
                 # Get firing rate and spike amplitude
@@ -200,7 +201,7 @@ def prepare_data(insertions, one, recompute=False):
                         'pid': pid, 'eid': eid, 'probe': probe,
                         'lab': lab, 'subject': subject,
                         'region': region, 'date': date,
-                        'median_firing_rate': np.median(neuron_fr),
+                        'median_firing_rate': np.nanmedian(neuron_fr),
                         'mean_firing_rate': np.mean(neuron_fr),
                         'spike_amp_mean': np.nanmean(spike_amp) * 1e6,
                         'spike_amp_median': np.nanmedian(spike_amp),
