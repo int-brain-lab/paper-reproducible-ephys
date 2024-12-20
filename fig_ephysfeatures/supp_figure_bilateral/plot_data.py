@@ -75,11 +75,11 @@ def plot_main_figure(one=None):
     panel_probe_lfp(fig, ax['A'], boundary_align=BOUNDARY)
     panel_probe_neurons(fig, ax['B'], boundary_align=BOUNDARY)
     panel_distribution(ax['C'], example_region='CA1', example_metric='lfp_power',
-                       ylabel='LFP power diff. in CA1 (db)', yticks=[0, 30, 60])
-    panel_distribution(ax['D'], example_region='PPC', example_metric='median_firing_rate',
-                       ylabel='Firing rate diff. in PPC (spks/s)', yticks=[0, 5, 10])
-    panel_distribution(ax['E'], example_region='PPC', example_metric='spike_amp_median',
-                       ylabel='Spike amp. diff. in PPC (uV)', yticks=[0, 0.0003])
+                       ylabel='LFP power diff. in CA1 (dB)')#, yticks=[0, 30, 60])
+    panel_distribution(ax['D'], example_region='CA1', example_metric='median_firing_rate',
+                       ylabel='Firing rate diff. in CA1 (spikes/s)')#, yticks=[0, 5, 10])
+    panel_distribution(ax['E'], example_region='CA1', example_metric='spike_amp_median',
+                       ylabel='Spike amp. diff. in CA1 (\u03bcV)')#, yticks=[0, 0.0003])
     #panel_distribution(ax['panel_E'], example_region='PPC', example_metric='rms_ap',
     #                   ylabel='Spike amp. diff. in PPC (uV)')
     #panel_boxplot(ax['panel_C'], example_region='DG', example_metric='lfp_power', yticks=[0, 5, 10, 15])

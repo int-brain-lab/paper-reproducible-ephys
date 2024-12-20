@@ -708,8 +708,6 @@ def plot_power_analysis():
     powers_ff = []
     vars_ff = []
     perturb_in_std = []
-    all_powers = []
-    ns = []
 
     figure_style()
     width = 7
@@ -784,25 +782,22 @@ def plot_power_analysis():
                 parts['bodies'][0].set_facecolor(lab_colors[lab])
                 parts['bodies'][0].set_edgecolor(lab_colors[lab])
 
-                if test == 'avg_ff_post_move':
-                    vars_ff.append(np.std(data[labs == lab]) / np.sqrt(np.sum(labs == lab)))
-                else:
-                    vars.append(np.std(data[labs == lab]) / np.sqrt(np.sum(labs == lab)))
-
                 # parts['cmeans'].set_color('k') # this can be used to check whether the means align -> whether the datasets are assigned correctly
 
                 val = significant_disturbances[i, j, 0]
 
                 if not (significant_disturbances[i, 0, 0] == 0 and significant_disturbances[i, 0, 1] == 0):
                     perturb_in_std.append(val / np.std(data[labs == lab]))
+                    if test == 'avg_ff_post_move':
+                        powers_ff.append(val)
+                        vars_ff.append(np.std(data[labs == lab]) / np.sqrt(np.sum(labs == lab)))
+                    else:
+                        powers.append(val)
+                        vars.append(np.std(data[labs == lab]) / np.sqrt(np.sum(labs == lab)))
 
-                all_powers.append(val)
-                ns.append(np.sum(labs == lab))
                 if test == 'avg_ff_post_move':
-                    powers_ff.append(val)
                     ax.axhline(1, color='grey', alpha=1/3, zorder=0)
                 else:
-                    powers.append(val)
                     ax.axhline(0, color='grey', alpha=1/3, zorder=0)
 
                 temp_color = lab_colors[lab] if val < 1000 else 'red'
@@ -813,15 +808,12 @@ def plot_power_analysis():
                 obs_max = max(obs_max, lab_mean + val)
                 val = significant_disturbances[i, j, 1]
 
-                all_powers[-1] -= val
-
-                if test == 'avg_ff_post_move':
-                    powers_ff[-1] -= val
-                else:
-                    powers[-1] -= val
-
                 if not (significant_disturbances[i, 0, 0] == 0 and significant_disturbances[i, 0, 1] == 0):
                     perturb_in_std.append(val / np.std(data[labs == lab]))
+                    if test == 'avg_ff_post_move':
+                        powers_ff[-1] -= val
+                    else:
+                        powers[-1] -= val
 
                 temp_color = lab_colors[lab] if val > -1000 else 'red'
                 if isinstance(temp_color, str):
@@ -870,9 +862,9 @@ def plot_power_analysis():
         print(f'N_inst: {df_filt.institute.nunique()}, N_sess: {df_filt.eid.nunique()}, '
               f'N_mice: {df_filt.subject.nunique()}, N_cells: {len(df_filt)}')
 
-    axs['B'].scatter(powers, np.power(vars, 0.5), color='blue', label="Firing modulation", s=0.15)
-    axs['B'].scatter(powers_ff, np.power(vars_ff, 0.5), color='blue', label="Fano factor", s=0.15)
-    axs['B'].set_xlabel("Shifts")
+    axs['B'].scatter(powers, vars, color='blue', label="Firing modulation", s=0.15)
+    axs['B'].scatter(powers_ff, vars_ff, color='blue', label="Fano factor", s=0.15)
+    axs['B'].set_xlabel("Minimal shift magnitude (spikes/s)")
     axs['B'].set_ylabel(r"Std / $\sqrt{N}$")
 
     std_limit = 3

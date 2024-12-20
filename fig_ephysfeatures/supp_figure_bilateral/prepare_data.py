@@ -3,6 +3,7 @@ import pandas as pd
 from os.path import isfile
 
 from one.api import ONE
+from one.alf.exceptions import ALFObjectNotFound
 from iblatlas.atlas import AllenAtlas
 from ibllib.pipes.ephys_alignment import EphysAlignment
 from iblutil.numerical import ismember
@@ -54,8 +55,12 @@ def prepare_data(insertions, one, recompute=False):
         probe = ins['probe_name']
 
         sl = SpikeSortingLoader(eid=eid, pname=probe, one=one, atlas=ba)
-        spikes, clusters, channels = sl.load_spike_sorting(dataset_types=['clusters.amps', 'clusters.peakToTrough'],
-                                                           revision='2024-03-22', enforce_version=False)
+        try:
+            spikes, clusters, channels = sl.load_spike_sorting(dataset_types=['clusters.amps', 'clusters.peakToTrough'],
+                                                               revision='2024-03-22', enforce_version=False)
+        except:
+            spikes, clusters, channels = sl.load_spike_sorting(dataset_types=['clusters.amps', 'clusters.peakToTrough'],
+                                                               revision='2024-05-06', enforce_version=False)
 
         channels['rawInd'] = one.load_dataset(eid, dataset='channels.rawInd.npy', collection=sl.collection)
         clusters = sl.merge_clusters(spikes, clusters, channels)
@@ -140,6 +145,20 @@ def prepare_data(insertions, one, recompute=False):
         rms_ap_data_median = (np.apply_along_axis(lambda x: x - np.median(x), 1, rms_ap_data)
                               + median)
 
+        try:
+            ap = one.load_object(eid, 'ephysChannels', collection=f'raw_ephys_data/{probe}', attribute=['apRMS'])
+            if 'apRMS' not in ap.keys():
+                pid_qc = one.alyx.rest('insertions', 'list', id=pid)[0]['json']['extended_qc']
+                ap_val = pid_qc['apRms_p90_proc'] * 1e6 if 'apRms_p90_proc' in pid_qc.keys() else np.nan
+        except ALFObjectNotFound:
+            print(f'ephysChannels object not found for pid: {pid}')
+            ap = {}
+            try:
+                pid_qc = one.alyx.rest('insertions', 'list', id=pid)[0]['json']['extended_qc']
+                ap_val = pid_qc['apRms_p90_proc'] * 1e6 if 'apRms_p90_proc' in pid_qc.keys() else np.nan
+            except Exception:
+                ap_val = np.nan
+
 
         for region in BRAIN_REGIONS:
             region_clusters = np.where(np.bitwise_and(clusters['rep_site_acronym'] == region,
@@ -147,7 +166,13 @@ def prepare_data(insertions, one, recompute=False):
             region_chan = channels['rawInd'][np.where(channels['rep_site_acronym'] == region)[0]]
 
             # Get AP band rms
-            rms_ap_region = np.median(rms_ap_data_median[:, region_chan])
+            if 'apRMS' in ap.keys() and region_chan.shape[0] > 0:
+                ap_rms = np.median(ap['apRMS'][1, region_chan]) * 1e6
+            elif region_chan.shape[0] > 0:
+                ap_rms = ap_val
+            else:
+                ap_rms = np.nan
+
             lfp_region = np.median(lfp_power[region_chan])
 
             if region_clusters.size == 0:
@@ -160,7 +185,8 @@ def prepare_data(insertions, one, recompute=False):
                                                         'spike_amp_mean': np.nan,
                                                         'spike_amp_median': np.nan,
                                                         'spike_amp_90': np.nan,
-                                                        'rms_ap': rms_ap_region})))
+                                                        'lfp_power': lfp_region,
+                                                        'rms_ap_p90': rms_ap})))
             else:
                 # Get firing rate and spike amplitude
                 neuron_fr = np.empty(len(region_clusters))
@@ -175,12 +201,12 @@ def prepare_data(insertions, one, recompute=False):
                         'pid': pid, 'eid': eid, 'probe': probe,
                         'lab': lab, 'subject': subject,
                         'region': region, 'date': date,
-                        'median_firing_rate': np.median(neuron_fr),
+                        'median_firing_rate': np.nanmedian(neuron_fr),
                         'mean_firing_rate': np.mean(neuron_fr),
                         'spike_amp_mean': np.nanmean(spike_amp) * 1e6,
                         'spike_amp_median': np.nanmedian(spike_amp),
                         'spike_amp_90': np.percentile(spike_amp, 95),
-                        'rms_ap': rms_ap_region,
+                        'rms_ap_p90': ap_rms,
                         'lfp_power': lfp_region,
                         'yield_per_channel': len(region_clusters) / len(region_chan)})))
 

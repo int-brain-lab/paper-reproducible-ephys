@@ -24,10 +24,10 @@ def plot_main_figure(freeze=None, one=None):
     BOUNDARY = 'DG-TH'
     REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
     METRICS = ['yield_per_channel', 'median_firing_rate', 'lfp_power',
-               'rms_ap', 'spike_amp_mean']
+               'rms_ap_p90', 'spike_amp_median']
     LABELS = ['Neuron yield', 'Firing rate', 'LFP power',
               'AP band RMS', 'Spike amp.']
-    N_PERMUT = 50  # Amount of shuffles for permutation testing
+    N_PERMUT = 50000  # Amount of shuffles for permutation testing
     BH_CORRECTION = False  # Correction for multiple comparisons
     # N_PERMUT = 50  # Amount of shuffles for permutation testing
     DPI = 150  # if the figure is too big on your screen, lower this number

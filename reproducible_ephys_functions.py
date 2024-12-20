@@ -436,13 +436,13 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
             ap = one.load_object(eid, 'ephysChannels', collection=f'raw_ephys_data/{probe}', attribute=['apRMS'])
             if 'apRMS' not in ap.keys():
                 pid_qc = one.alyx.rest('insertions', 'list', id=pid)[0]['json']['extended_qc']
-                ap_val = pid_qc['apRms_p90_proc'] * 1e6 if 'apRms_p90_proc' in pid_qc.keys() else 0
+                ap_val = pid_qc['apRms_p90_proc'] * 1e6 if 'apRms_p90_proc' in pid_qc.keys() else np.nan
         except ALFObjectNotFound:
             logger.warning(f'ephysChannels object not found for pid: {pid}')
             ap = {}
             try:
                 pid_qc = one.alyx.rest('insertions', 'list', id=pid)[0]['json']['extended_qc']
-                ap_val = pid_qc['apRms_p90_proc'] * 1e6 if 'apRms_p90_proc' in pid_qc.keys() else 0
+                ap_val = pid_qc['apRms_p90_proc'] * 1e6 if 'apRms_p90_proc' in pid_qc.keys() else np.nan
             except Exception:
                 ap_val = np.nan
 
@@ -522,11 +522,11 @@ def compute_metrics(insertions, one=None, ba=None, spike_sorter='pykilosort', sa
                     lfp_region_raw = np.nan
                     lfp_theta_region_raw = np.nan
                 if 'apRMS' in ap.keys() and region_chan.shape[0] > 0:
-                    ap_rms = np.percentile(ap['apRMS'][1, region_chan], 90) * 1e6
+                    ap_rms = np.median(ap['apRMS'][1, region_chan]) * 1e6
                 elif region_chan.shape[0] > 0:
                     ap_rms = ap_val
                 else:
-                    ap_rms = 0
+                    ap_rms = np.nan
 
                 metrics = pd.concat((metrics, pd.DataFrame(
                     index=[metrics.shape[0] + 1], data={'pid': pid, 'eid': eid, 'probe': probe,
