@@ -13,9 +13,9 @@ from fig_ephysfeatures.ephysfeatures_plot_functions import panel_example
 import numpy as np
 
 REGIONS = ['PPC', 'CA1', 'DG', 'LP', 'PO']
-METRICS = ['yield_per_channel', 'median_firing_rate', 'lfp_power', 'rms_ap', 'spike_amp_mean']
+METRICS = ['yield_per_channel', 'median_firing_rate', 'lfp_power', 'rms_ap_p90', 'spike_amp_mean']
 LABELS = ['Neuron yield\n(neurons/channel)', 'Firing rate\n(spikes/s)', 'LFP power (dB)', 'AP band RMS (\u03bcV)', 'Spike amp. (\u03bcV)']
-N_REC_PER_REGION = 2
+N_REC_PER_REGION = 3
 
 
 def plot_figure_supp4():
@@ -29,6 +29,7 @@ def plot_figure_supp4():
     gs.update(wspace=0.3)
 
     for i, metric in enumerate(METRICS):
+        ax_metric = []
         for j, region in enumerate(REGIONS):
             if j == 0:
                 ylabel = LABELS[i]
@@ -36,7 +37,7 @@ def plot_figure_supp4():
                 ylabel = ''
 
             ax = fig.add_subplot(gs[i, j])
-
+            ax_metric.append(ax)
             panel_example(ax, n_rec_per_region=N_REC_PER_REGION, ylabel=ylabel,
                           example_metric=metric, example_region=region,
                           despine=False, freeze='freeze_2024_03')
@@ -49,6 +50,10 @@ def plot_figure_supp4():
             if i == len(METRICS) - 1:
                 ax.set_xlabel('Labs')
 
+        max_y = np.max([ax.get_ylim()[1] for ax in ax_metric])
+        min_y = np.min([ax.get_ylim()[0] for ax in ax_metric])
+        for ax in ax_metric:
+            ax.set_ylim(min_y, max_y)
 
     ax = fig.add_subplot(gs[len(METRICS), :])
     ax.set_axis_off()

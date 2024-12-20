@@ -274,17 +274,20 @@ def panel_distribution(ax, example_region='CA1', example_metric='lfp_power',
     across_var = np.concatenate(across_var)
     across_var = across_var[~np.isnan(across_var)]
 
+    if example_metric == 'spike_amp_median':
+        across_var = across_var * 1e6
+        within_var = within_var * 1e6
+
     # Plot
     ax.violinplot(across_var, showextrema=False)
     ax.plot(np.ones(within_var.shape[0]), within_var, '_', color='k', markersize=10)
-    #ax.spines['bottom'].set_visible(False)
     ax.set(ylabel=ylabel, xticks=[1])
     if yticks is not None:
         ax.set(yticks=yticks)
     ax.tick_params(bottom=False, labelbottom=False)
-    sns.despine(trim=True)
-
-    #ax.spines['bottom'].set_visible(False)
+    # sns.despine(trim=True)
+    #
+    ax.spines['bottom'].set_visible(False)
 
 
 def panel_summary(ax, regions=['PPC', 'CA1', 'DG']):
@@ -305,7 +308,7 @@ def panel_summary(ax, regions=['PPC', 'CA1', 'DG']):
     for r, region in enumerate(regions):
         df_bl_slice = df_ins[df_ins['region'] == region]
         df_all_slice = df_filt[df_filt['region'] == region]
-        for m, metric in enumerate(['median_firing_rate', 'spike_amp_median', 'rms_ap', 'lfp_power',
+        for m, metric in enumerate(['median_firing_rate', 'spike_amp_median', 'rms_ap_p90', 'lfp_power',
                                     'yield_per_channel']):
 
 
@@ -325,25 +328,32 @@ def panel_summary(ax, regions=['PPC', 'CA1', 'DG']):
                                        - df_bl_slice[(df_bl_slice['subject'] == subject)
                                                   & (df_bl_slice['probe'] == 'probe01')][metric].values[0])
             within_var = within_var[~np.isnan(within_var)]
-            diff = (iqr(within_var) - iqr(across_var)) / (iqr(within_var) + iqr(across_var))
+
+            #diff = np.mean(within_var) / np.mean(across_var)
+            diff = np.mean(within_var) / np.mean(across_var)
+            #diff = (iqr(within_var) - iqr(across_var)) / (iqr(within_var) + iqr(across_var))
             diff_df = pd.concat((diff_df, pd.DataFrame(index=[diff_df.shape[0] + 1], data={
                 'diff': diff, 'region': region, 'metric': metric})))
 
     diff_table = diff_df.pivot(index='region', columns='metric', values='diff')
-    results_plot = diff_table.reindex(columns=['yield_per_channel', 'median_firing_rate', 'lfp_power', 'rms_ap', 'spike_amp_median'])
-    results_plot = diff_table.reindex(index=regions)
+    results_plot = diff_table.reindex(columns=['yield_per_channel', 'median_firing_rate', 'lfp_power', 'rms_ap_p90', 'spike_amp_median'])
+    results_plot = results_plot.reindex(index=regions)
+
+
 
     axin = inset_axes(ax, width="5%", height="80%", loc='lower right', borderpad=0,
                       bbox_to_anchor=(0.1, 0.1, 1, 1), bbox_transform=ax.transAxes)
     # cmap = sns.color_palette('viridis_r', n_colors=20)
     # cmap[0] = [1, 0, 0]
+
     sns.heatmap(results_plot, cmap='RdYlGn', square=True,
-                cbar=True, cbar_ax=axin, vmin=-0.8, vmax=0.8,
+                cbar=True, cbar_ax=axin, #vmin=-0.8, vmax=0.8,
                 annot=False, annot_kws={"size": 5},
                 linewidths=.5, fmt='.2f', ax=ax)
     cbar = ax.collections[0].colorbar
-    cbar.set_ticks([-0.8, 0, 0.8])
-    cbar.set_label('Ratio var. within / across', rotation=270, labelpad=8)
+    #cbar.set_ticks([-0.8, 0, 0.8])
+    #cbar.set_label('Ratio var. within / across', rotation=270, labelpad=8)
+    cbar.set_label('Ratio of mean error within/ across', rotation=270, labelpad=8)
     labels = ['Neuron yield', 'Firing rate', 'LFP power', 'AP band RMS', 'Spike amp.']
     ax.set(xlabel='', ylabel='', xticks=np.arange(len(labels)) + 0.5, yticks=np.arange(len(regions)) + 0.5)
     ax.set_yticklabels(['VISa/am', 'CA1', 'DG'], va='center', rotation=0)

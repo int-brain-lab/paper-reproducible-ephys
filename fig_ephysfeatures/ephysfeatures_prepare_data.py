@@ -229,8 +229,8 @@ def prepare_data(insertions, one, recompute=False):
     return all_df_chns, all_df_clust, metrics
 
 
-def run_decoding(metrics=['yield_per_channel', 'median_firing_rate', 'lfp_power', 'rms_ap', 'spike_amp_mean'],
-                 qc='pass', n_shuffle=500, min_lab_region=3, recompute=False):
+def run_decoding(metrics=['yield_per_channel', 'median_firing_rate', 'lfp_power', 'rms_ap_p90', 'spike_amp_mean'],
+                 qc='pass', n_shuffle=500, min_lab_region=3, min_rec_lab=3, recompute=False):
     """
     qc can be "pass" (only include recordings that pass QC)
     "high_noise": add the recordings with high noise
@@ -250,8 +250,7 @@ def run_decoding(metrics=['yield_per_channel', 'median_firing_rate', 'lfp_power'
 
         # Load in data
         df_ins = load_dataframe(df_name='ins')
-        data = filter_recordings(df_ins, min_lab_region=min_lab_region, min_rec_lab=0)
-        
+        data = filter_recordings(df_ins, min_neuron_region=2, min_lab_region=min_lab_region, min_rec_lab=min_rec_lab)
         # Manually remove ibl_witten_26 
         data = data[data['subject'] != 'ibl_witten_26']
         
@@ -264,8 +263,9 @@ def run_decoding(metrics=['yield_per_channel', 'median_firing_rate', 'lfp_power'
             data = data[data['decode_no_qc_include'] == 1]
 
         # exclude recordings that miss LFP or AP data
-        data = data[data['lfp_power'].notna()]  
-        data = data[data['rms_ap'].notna()]  
+        data = data[data['lfp_power'].notna()]
+        data[data['rms_ap_p90'] == 0] = np.nan
+        data = data[data['rms_ap_p90'].notna()]
         
         # Save pid list to file
         save_path = save_figure_path(figure='fig_ephysfeatures')
@@ -296,6 +296,11 @@ def run_decoding(metrics=['yield_per_channel', 'median_firing_rate', 'lfp_power'
         for r in ['PPC', 'CA1', 'DG', 'LP', 'PO']:
             print(f'\nDecoding lab for region {r}..\n')
             region_data = data[data['region'] == r]
+
+            inst, inst_counts = np.unique(region_data['institute'].values, return_counts=True)
+            for i, c in zip(inst, inst_counts):
+                if c < min_rec_lab:
+                    region_data = region_data[~region_data['institute'].isin([i])]
 
             print(f'N_inst: {len(region_data.institute.unique())}, N_sess: {len(region_data.eid.unique())}, '
                   f'N_mice: {len(region_data.subject.unique())}, N_cells: NA')
@@ -339,7 +344,7 @@ def run_decoding(metrics=['yield_per_channel', 'median_firing_rate', 'lfp_power'
 
         # Decode region
         print('\nDecoding brain region..\n')
-        decode_data = data[['yield_per_channel', 'median_firing_rate', 'lfp_power', 'rms_ap',
+        decode_data = data[['yield_per_channel', 'median_firing_rate', 'lfp_power', 'rms_ap_p90',
                             'spike_amp_mean']].to_numpy()
         decode_regions = data['region'].values
         region_predict = np.empty(data.shape[0]).astype(object)

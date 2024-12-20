@@ -258,10 +258,11 @@ def panel_permutation(ax, metrics, regions, labels, n_permut=10000, n_rec_per_la
 
     df_ins = load_dataframe(df_name='ins')
     df_filt = filter_recordings(df_ins, min_lab_region=n_rec_per_region, min_rec_lab=n_rec_per_lab,
-                                min_neuron_region=2, recompute=False, n_trials=0, freeze=freeze)
+                                min_neuron_region=2, recompute=False, freeze=freeze)
     data = df_filt[df_filt['permute_include'] == 1]
     data['yield_per_channel'] = data['neuron_yield'] / data['n_channels']
     data.loc[data['lfp_power'] < -100000, 'lfp_power'] = np.nan
+    data.loc[data['rms_ap_p90'] == 0, 'rms_ap_p90'] = np.nan
 
     results = pd.DataFrame()
     for i, metric in enumerate(metrics):
@@ -289,7 +290,6 @@ def panel_permutation(ax, metrics, regions, labels, n_permut=10000, n_rec_per_la
                 print(f'Figure 3 d: {metric}: {region}')
                 print(f'N_inst: {len(np.unique(this_labs))}, N_sess: {len(np.unique(this_sessions))}, '
                       f'N_mice: {len(np.unique(this_subjects))}, N_cells: NA')
-
 
             # Do permutation test
             p = permut_test(this_data, metric=distribution_dist_approx_max, labels1=this_labs,
@@ -446,8 +446,6 @@ def panel_example(ax, n_rec_per_lab=0, n_rec_per_region=3,
     if yticks is not None:
         ax.set(yticks=yticks)
     ax.set_xticklabels(data_example['institute'].unique(), rotation=90, ha='center')
-    #ax.plot([-.5, len(data['institute'].unique()) + .5], [-165, -165], lw=0.5, color='k')
-    #ax.plot([-0.5, -0.5], ax.get_ylim(),  lw=0.5, color='k')
 
     if despine:
-        sns.despine(trim=True)
+        sns.despine()
