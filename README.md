@@ -1,6 +1,8 @@
 This repository contains code to reproduce figures from the 
-[IBL reproducible ephys paper](https://doi.org/10.7554/eLife.100840.1)
- 
+[(2025) Reproducibility of In Vivo Electrophysiological Measurements in Mice paper](https://doi.org/10.7554/eLife.100840.1)
+
+The source code has been archived on [Software Heritage](https://archive.softwareheritage.org/browse/directory/694d5ac8f75ed01be5a288764a2b23ee04aba443/?origin_url=https://github.com/int-brain-lab/paper-reproducible-ephys&revision=f3a30b5eef55fbefa6bc8f400f56e38d6a4d92a1&snapshot=9e3531131d553090a4a9ceb55f2b9b7611d8e347)
+
 # Installation
 ## Making a new python environment (optional)
 
